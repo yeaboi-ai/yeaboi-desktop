@@ -42,7 +42,7 @@ CONTRACTS_REPO  := https://github.com/yeaboi-ai/yeaboi.ai.git
 CONTRACTS_DIR   := .
 CONTRACTS_PATHS := contracts/v1
 
-.PHONY: help check-manifest gen-manifest icons build-check bundle pack dist clean
+.PHONY: help check-manifest gen-manifest icons dev design-link design-unlink build-check bundle pack dist clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -62,6 +62,30 @@ gen-manifest: ## Regenerate contracts/v1/routes_manifest.json from the renderer'
 
 check-manifest: ## Assert the renderer's registries still produce the vendored manifest
 	$(NPM) run check-manifest
+
+# --- local development -------------------------------------------------------
+#
+# What runs here is an unpackaged shell over a yeaboi WORKING TREE, not over the
+# bundled runtime a release carries. `resolveCommand()` finds that tree at
+# $YEABOI_REPO, else a sibling checkout — and `eval "$(make workspace-env)"`
+# from any repo in the workspace sets it, along with $YEABOI_DESKTOP_PYTHON.
+
+dev: ## Run the shell against a sibling yeaboi checkout (electron-vite, HMR)
+	@test -n "$$YEABOI_REPO" || echo '[dev] note: no $$YEABOI_REPO — falling back to ../yeaboi.ai (eval "$$(make workspace-env)" to set it)'
+	$(NPM) run dev
+
+# The design system is a published npm package, so working on it and on this
+# app at once needs a local override. Uncommitted by construction: `npm ci`
+# puts the registry's copy back, which is what design-unlink is.
+design-link: ## Point @yeaboi-ai/design at a sibling yeaboi-frontend build (run `make pack-design` there first)
+	@test -d "$(DESIGN_SRC)" || { echo "no $(DESIGN_SRC) — run 'make pack-design' in the front-end checkout"; exit 1; }
+	$(NPM) install --no-save "file:$(DESIGN_SRC)"
+	@echo "[design] linked to $(DESIGN_SRC) — 'make design-unlink' to take the published one back"
+
+design-unlink: ## Take the published @yeaboi-ai/design back
+	$(NPM) ci
+
+DESIGN_SRC ?= ../yeaboi-frontend/dist-design
 
 # --- brand assets ------------------------------------------------------------
 #
