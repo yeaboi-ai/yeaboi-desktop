@@ -44,7 +44,10 @@ function CardGrid({ cards }: { cards: ModeCard[] }) {
       {cards.map((card) => (
         <article key={card.key} class="mode-card">
           <h3>
-            <span class="accent-dot" style={{ background: card.color, width: 8, height: 8, borderRadius: 99 }} />
+            <span
+              class="accent-dot"
+              style={{ background: card.color, width: 8, height: 8, borderRadius: 99 }}
+            />
             {card.title}
           </h3>
           <p>{card.description}</p>
@@ -62,7 +65,10 @@ export function Home() {
 
   useEffect(() => {
     apiGet<Capabilities>('/api/meta/capabilities').then(setCaps, (e: Error) => setError(e.message));
-    apiGet<{ tips: Tip[] }>('/api/meta/tips').then(({ tips: loaded }) => setTips(loaded), () => undefined);
+    apiGet<{ tips: Tip[] }>('/api/meta/tips').then(
+      ({ tips: loaded }) => setTips(loaded),
+      () => undefined,
+    );
   }, []);
 
   useEffect(() => {

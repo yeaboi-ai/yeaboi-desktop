@@ -19,14 +19,17 @@ export function Usage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    callTool<UsageData>('usage_get').then((envelope) => {
-      if (!envelope.ok) {
-        setError(envelope.error?.message ?? 'usage_get failed');
-        return;
-      }
-      setUsage(envelope.data);
-      setWarnings(envelope.warnings);
-    }, (e: Error) => setError(e.message));
+    callTool<UsageData>('usage_get').then(
+      (envelope) => {
+        if (!envelope.ok) {
+          setError(envelope.error?.message ?? 'usage_get failed');
+          return;
+        }
+        setUsage(envelope.data);
+        setWarnings(envelope.warnings);
+      },
+      (e: Error) => setError(e.message),
+    );
   }, []);
 
   if (error) return <p>Could not load usage: {error}</p>;

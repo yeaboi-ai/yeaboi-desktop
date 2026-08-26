@@ -5,7 +5,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 export interface YeaboiBridge {
-  api: (path: string, init?: { method?: string; body?: unknown }) => Promise<{ status: number; body: unknown }>;
+  api: (
+    path: string,
+    init?: { method?: string; body?: unknown },
+  ) => Promise<{ status: number; body: unknown }>;
   apiStream: (
     path: string,
     body: unknown,

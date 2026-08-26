@@ -63,7 +63,9 @@ export function RetroBoard() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Retro — {board.title}</h1>
-          <p class="dash-sub">Everyone adds cards from their own browser; the board updates as they land.</p>
+          <p class="dash-sub">
+            Everyone adds cards from their own browser; the board updates as they land.
+          </p>
         </div>
       </header>
 

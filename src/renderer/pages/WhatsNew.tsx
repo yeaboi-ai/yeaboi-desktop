@@ -59,9 +59,11 @@ export function WhatsNew() {
           </h3>
           {entry.summary && <p class="summary">{entry.summary}</p>}
           <ul>
-            {(area ? entry.highlights.filter((h) => h.areas.includes(area)) : entry.highlights).map((h) => (
-              <li key={h.text}>{h.text}</li>
-            ))}
+            {(area ? entry.highlights.filter((h) => h.areas.includes(area)) : entry.highlights).map(
+              (h) => (
+                <li key={h.text}>{h.text}</li>
+              ),
+            )}
           </ul>
         </section>
       ))}

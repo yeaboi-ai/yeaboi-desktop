@@ -33,10 +33,13 @@ extraResources:
 npmRebuild: false
 asar: true
 
+# electron-updater asks this repository what the latest version is, so it must
+# be the repository the release workflow publishes into — an installed app
+# pointed at the wrong one updates itself to nothing, silently, forever.
 publish:
   provider: github
-  owner: dinho149
-  repo: yeaboi.ai
+  owner: yeaboi-ai
+  repo: yeaboi-desktop
   releaseType: draft
 
 mac:

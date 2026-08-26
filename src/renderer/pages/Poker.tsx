@@ -29,11 +29,16 @@ export function Poker() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Planning poker</h1>
-          <p class="dash-sub">The team estimates from their own browsers; the points go back to the board.</p>
+          <p class="dash-sub">
+            The team estimates from their own browsers; the points go back to the board.
+          </p>
         </div>
         <div class="dash-actions">
           {live ? (
-            <a class="button primary" href={`#/humans/poker/board?id=${encodeURIComponent(live.board_id)}`}>
+            <a
+              class="button primary"
+              href={`#/humans/poker/board?id=${encodeURIComponent(live.board_id)}`}
+            >
               Rejoin the live table
             </a>
           ) : (
@@ -57,7 +62,10 @@ export function Poker() {
               </StatGrid>
               {/* Export only. A poker session has no share document in any
                   surface — the estimates go back to the tracker instead. */}
-              <ResultActions refer={{ kind: 'poker', session_id: run.session_id, run_id: run.id }} mode="poker" />
+              <ResultActions
+                refer={{ kind: 'poker', session_id: run.session_id, run_id: run.id }}
+                mode="poker"
+              />
             </Card>
           ))}
         </div>
@@ -66,8 +74,8 @@ export function Poker() {
       {runs && runs.length === 0 && (
         <Card title="No sessions yet">
           <p>
-            <Duck state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and everyone votes at
-            once — no anchoring on whoever spoke first.
+            <Duck state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and
+            everyone votes at once — no anchoring on whoever spoke first.
           </p>
         </Card>
       )}

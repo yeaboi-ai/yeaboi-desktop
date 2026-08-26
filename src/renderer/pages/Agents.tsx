@@ -103,10 +103,11 @@ export function Agents() {
             disabled={!report}
             onClick={() =>
               void exportAgentReport(kind, 'copy').then(
-                (result) => void navigator.clipboard.writeText(result.markdown ?? '').then(
-                  () => setNotice('Copied the report to the clipboard.'),
-                  () => setNotice('Could not reach the clipboard.'),
-                ),
+                (result) =>
+                  void navigator.clipboard.writeText(result.markdown ?? '').then(
+                    () => setNotice('Copied the report to the clipboard.'),
+                    () => setNotice('Could not reach the clipboard.'),
+                  ),
                 (e: Error) => setNotice(e.message),
               )
             }
@@ -125,7 +126,12 @@ export function Agents() {
           >
             Export
           </button>
-          <button type="button" class="primary" disabled={refreshing} onClick={() => void refresh()}>
+          <button
+            type="button"
+            class="primary"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
             {refreshing ? 'Refreshing…' : 'Re-run'}
           </button>
         </div>
@@ -133,7 +139,9 @@ export function Agents() {
 
       {modes && <p class="dash-note">{modes.beta_notice}</p>}
       {notice && <NoticeBlock title="Note" items={[notice]} />}
-      {asOf && refreshing && <p class="dash-note">Showing the report saved at {asOf} while a fresh pass runs.</p>}
+      {asOf && refreshing && (
+        <p class="dash-note">Showing the report saved at {asOf} while a fresh pass runs.</p>
+      )}
 
       {(refreshing || !report) && (run.components.length > 0 || run.phases.length > 0) && (
         <Card title="Scanning">
@@ -154,8 +162,8 @@ export function Agents() {
       {!report ? (
         <Card title="Nothing yet">
           <p>
-            <Duck state="idle" size={28} /> The first pass reads every session log on this machine — it takes a
-            moment.
+            <Duck state="idle" size={28} /> The first pass reads every session log on this machine —
+            it takes a moment.
           </p>
         </Card>
       ) : (
@@ -210,8 +218,14 @@ function UsageView({ report }: { report: Report }) {
         <StatGrid>
           <StatTile label="Estimated spend" value={money(num(report, 'total_cost_usd'))} />
           <StatTile label="Sessions" value={String(num(report, 'session_count'))} />
-          <StatTile label="Input tokens" value={num(report, 'total_input_tokens').toLocaleString()} />
-          <StatTile label="Output tokens" value={num(report, 'total_output_tokens').toLocaleString()} />
+          <StatTile
+            label="Input tokens"
+            value={num(report, 'total_input_tokens').toLocaleString()}
+          />
+          <StatTile
+            label="Output tokens"
+            value={num(report, 'total_output_tokens').toLocaleString()}
+          />
         </StatGrid>
         <p class="dash-note">Rates as of {text(report, 'pricing_as_of') || 'unknown'}.</p>
       </Card>
@@ -223,7 +237,12 @@ function UsageView({ report }: { report: Report }) {
           columns={[
             { key: 'model', header: 'Model', cell: (row) => String(row['model']) },
             { key: 'calls', header: 'Calls', numeric: true, cell: (row) => Number(row['calls']) },
-            { key: 'cost', header: 'Cost', numeric: true, cell: (row) => money(Number(row['cost_usd'])) },
+            {
+              key: 'cost',
+              header: 'Cost',
+              numeric: true,
+              cell: (row) => money(Number(row['cost_usd'])),
+            },
           ]}
         />
       </Card>
@@ -234,8 +253,18 @@ function UsageView({ report }: { report: Report }) {
           empty="No project activity in the window."
           columns={[
             { key: 'key', header: 'Project', cell: (row) => String(row['key']) },
-            { key: 'sessions', header: 'Sessions', numeric: true, cell: (row) => Number(row['sessions']) },
-            { key: 'cost', header: 'Cost', numeric: true, cell: (row) => money(Number(row['cost_usd'])) },
+            {
+              key: 'sessions',
+              header: 'Sessions',
+              numeric: true,
+              cell: (row) => Number(row['sessions']),
+            },
+            {
+              key: 'cost',
+              header: 'Cost',
+              numeric: true,
+              cell: (row) => money(Number(row['cost_usd'])),
+            },
           ]}
         />
       </Card>
@@ -249,7 +278,10 @@ function AdvisorView({ report }: { report: Report }) {
       <Card title="Recoverable spend">
         <StatGrid>
           <StatTile label="Recoverable" value={money(num(report, 'recoverable_usd'))} />
-          <StatTile label="Of window spend" value={`${Math.round(num(report, 'recoverable_share') * 100)}%`} />
+          <StatTile
+            label="Of window spend"
+            value={`${Math.round(num(report, 'recoverable_share') * 100)}%`}
+          />
           <StatTile label="Window spend" value={money(num(report, 'total_cost_usd'))} />
           <StatTile label="Alignment" value={`${num(report, 'alignment_score')}/100`} />
         </StatGrid>
@@ -262,7 +294,12 @@ function AdvisorView({ report }: { report: Report }) {
           columns={[
             { key: 'label', header: 'Mechanism', cell: (row) => String(row['label']) },
             { key: 'calls', header: 'Calls', numeric: true, cell: (row) => Number(row['calls']) },
-            { key: 'usd', header: 'Est.', numeric: true, cell: (row) => money(Number(row['est_usd'])) },
+            {
+              key: 'usd',
+              header: 'Est.',
+              numeric: true,
+              cell: (row) => money(Number(row['est_usd'])),
+            },
             { key: 'note', header: 'Note', cell: (row) => String(row['note'] ?? '') },
           ]}
         />
@@ -327,7 +364,11 @@ function SecurityView({ report }: { report: Report }) {
     <>
       <Card
         title={`Posture: ${posture || 'unknown'}`}
-        actions={<Lozenge category={posture === 'good' ? 'done' : 'blocked'}>{posture || 'unknown'}</Lozenge>}
+        actions={
+          <Lozenge category={posture === 'good' ? 'done' : 'blocked'}>
+            {posture || 'unknown'}
+          </Lozenge>
+        }
       >
         <StatGrid>
           <StatTile label="Sessions scanned" value={String(num(report, 'sessions_scanned'))} />

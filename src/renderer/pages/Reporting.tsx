@@ -68,8 +68,8 @@ export function Reporting() {
       {runs && runs.length === 0 && (
         <Card title="No reports yet">
           <p>
-            <Duck state="idle" size={28} /> Pick a period and yeaboi gathers what actually shipped, writes the
-            narrative, and lays it out as a deck you can present.
+            <Duck state="idle" size={28} /> Pick a period and yeaboi gathers what actually shipped,
+            writes the narrative, and lays it out as a deck you can present.
           </p>
         </Card>
       )}

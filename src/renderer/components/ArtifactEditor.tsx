@@ -14,11 +14,22 @@
 import { Card, NoticeBlock } from '@design/primitives';
 import { useEffect, useState } from 'react';
 import { quip } from '../ambience';
-import { type ArtifactEdits, type ArtifactRef, applyArtifactEdits, loadArtifactEdits } from '../boards';
+import {
+  type ArtifactEdits,
+  type ArtifactRef,
+  applyArtifactEdits,
+  loadArtifactEdits,
+} from '../boards';
 import { appendSpoken } from '../voice';
 import { MicButton } from './MicButton';
 
-export function ArtifactEditor({ refer, onApplied }: { refer: ArtifactRef; onApplied?: () => void }) {
+export function ArtifactEditor({
+  refer,
+  onApplied,
+}: {
+  refer: ArtifactRef;
+  onApplied?: () => void;
+}) {
   const [data, setData] = useState<ArtifactEdits | null>(null);
   const [error, setError] = useState('');
   const [path, setPath] = useState('');
@@ -99,9 +110,18 @@ export function ArtifactEditor({ refer, onApplied }: { refer: ArtifactRef; onApp
           </label>
           <label class="field">
             <span>Your name</span>
-            <input type="text" value={author} onInput={(e) => setAuthor((e.target as HTMLInputElement).value)} />
+            <input
+              type="text"
+              value={author}
+              onInput={(e) => setAuthor((e.target as HTMLInputElement).value)}
+            />
           </label>
-          <button type="button" class="primary" disabled={busy || !value.trim()} onClick={() => void apply()}>
+          <button
+            type="button"
+            class="primary"
+            disabled={busy || !value.trim()}
+            onClick={() => void apply()}
+          >
             {busy ? 'Applying…' : 'Apply correction'}
           </button>
         </>
@@ -110,7 +130,9 @@ export function ArtifactEditor({ refer, onApplied }: { refer: ArtifactRef; onApp
       <h3 class="card-subhead">
         {data.count} {data.count === 1 ? 'correction' : 'corrections'} on record
       </h3>
-      {data.count > 0 && <p class="dash-note">Names are {data.attribution} — not an audit trail.</p>}
+      {data.count > 0 && (
+        <p class="dash-note">Names are {data.attribution} — not an audit trail.</p>
+      )}
       <ul class="edit-log">
         {data.edits.map((edit) => (
           <li key={edit.id}>

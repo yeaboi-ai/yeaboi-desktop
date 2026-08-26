@@ -9,7 +9,13 @@ describe('reduceAgentRun', () => {
   const fold = (lines: unknown[]) => lines.reduce(reduceAgentRun, emptyAgentRun());
 
   it('starts empty and unfinished', () => {
-    expect(emptyAgentRun()).toEqual({ components: [], phases: [], report: null, error: '', finished: false });
+    expect(emptyAgentRun()).toEqual({
+      components: [],
+      phases: [],
+      report: null,
+      error: '',
+      finished: false,
+    });
   });
 
   it('accumulates bare progress strings in order', () => {
@@ -25,9 +31,18 @@ describe('reduceAgentRun', () => {
     // A scan emits an event per file; appending them all would draw the same
     // phase hundreds of times.
     const state = fold([
-      { type: 'component', component: { component_id: 'scan', label: 'Scanning', status: 'running', current: 1 } },
-      { type: 'component', component: { component_id: 'price', label: 'Pricing', status: 'running' } },
-      { type: 'component', component: { component_id: 'scan', label: 'Scanning', status: 'completed', current: 500 } },
+      {
+        type: 'component',
+        component: { component_id: 'scan', label: 'Scanning', status: 'running', current: 1 },
+      },
+      {
+        type: 'component',
+        component: { component_id: 'price', label: 'Pricing', status: 'running' },
+      },
+      {
+        type: 'component',
+        component: { component_id: 'scan', label: 'Scanning', status: 'completed', current: 500 },
+      },
     ]);
     expect(state.components.map((c) => c.component_id)).toEqual(['scan', 'price']);
     expect(state.components[0]?.status).toBe('completed');
@@ -41,7 +56,9 @@ describe('reduceAgentRun', () => {
   });
 
   it('finishes on an error, with a message to show', () => {
-    const state = fold([{ type: 'error', message: 'The usage pass stopped unexpectedly — see logs.' }]);
+    const state = fold([
+      { type: 'error', message: 'The usage pass stopped unexpectedly — see logs.' },
+    ]);
     expect(state.error).toContain('stopped unexpectedly');
     expect(state.finished).toBe(true);
   });

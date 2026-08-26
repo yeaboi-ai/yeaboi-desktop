@@ -52,7 +52,8 @@ export function QuestionsPanel({ projectId, busy, onAsk, onClose }: QuestionsPan
 
         {plan && rows.length === 0 && (
           <p class="modal-sub">
-            Nothing yet — describe the project and I'll work out which questions this plan actually needs.
+            Nothing yet — describe the project and I'll work out which questions this plan actually
+            needs.
           </p>
         )}
 

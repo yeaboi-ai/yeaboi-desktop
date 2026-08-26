@@ -13,12 +13,12 @@
 // drag-release falls. Cursor position is fed from main so the duck reacts to
 // your mouse anywhere on screen.
 
-const walker = document.getElementById("duck-walker");
-const rig = document.getElementById("duck-rig");
-const body = document.getElementById("duck-body");
-const bubble = document.getElementById("duck-bubble");
-const footFront = rig.querySelector(".d-foot-front");
-const footBack = rig.querySelector(".d-foot-back");
+const walker = document.getElementById('duck-walker');
+const rig = document.getElementById('duck-rig');
+const body = document.getElementById('duck-body');
+const bubble = document.getElementById('duck-bubble');
+const footFront = rig.querySelector('.d-foot-front');
+const footBack = rig.querySelector('.d-foot-back');
 
 // --- geometry -------------------------------------------------------------
 const DUCK_W = rig.offsetWidth || 72;
@@ -48,7 +48,7 @@ function groundBaseY(cx) {
 
 window.pet.onConfig((c) => {
   if (!c) return;
-  if (typeof c.bottomInset === "number") bottomInset = c.bottomInset;
+  if (typeof c.bottomInset === 'number') bottomInset = c.bottomInset;
   if (c.dock) dock = c.dock.present ? c.dock : { present: false, x: 0, top: 0, w: 0, h: 0 };
 });
 
@@ -59,7 +59,7 @@ let vx = 0;
 let vy = 0;
 let dir = -1; // facing: see applyFacing()
 let grounded = true;
-let mode = "wander";
+let mode = 'wander';
 let targetX = x;
 let idleUntil = 0;
 let jumpCd = 0;
@@ -107,16 +107,16 @@ const rand = (a, b) => a + Math.random() * (b - a);
 
 // --- personality (ported from the landing mascot) -------------------------
 const TAUNTS = [
-  "catch me if you can!",
+  'catch me if you can!',
   "you'll never catch me 🦆",
-  "too slow!",
+  'too slow!',
   "bet you can't catch me",
-  "nice try 😜",
-  "gotta be quicker than that!",
-  "over here! …nope 🦆",
+  'nice try 😜',
+  'gotta be quicker than that!',
+  'over here! …nope 🦆',
 ];
-const REACTIONS = ["whoa!", "hey! 🦆", "eek!", "missed me!", "nope!", "rude! 🦆"];
-const IDLE_LINES = ["yeaboi!", "just vibing 🦆", "nice dock", "🦆", "quack.", "brb, waddling"];
+const REACTIONS = ['whoa!', 'hey! 🦆', 'eek!', 'missed me!', 'nope!', 'rude! 🦆'];
+const IDLE_LINES = ['yeaboi!', 'just vibing 🦆', 'nice dock', '🦆', 'quack.', 'brb, waddling'];
 let sayIdx = 0;
 let tauntIdx = 0;
 let bubbleShown = false;
@@ -125,21 +125,21 @@ let bubbleHideT = null;
 // It holds the bubble until the duck is clicked, and nothing chattier may take
 // it — a question that fades out unanswered is worse than one never asked.
 let stickyLine = false;
-let noticeRoute = "";
+let noticeRoute = '';
 
 function say(line, sticky = false) {
   if (stickyLine && !sticky) return;
   bubble.textContent = line;
-  bubble.classList.remove("say");
+  bubble.classList.remove('say');
   void bubble.offsetWidth;
-  bubble.classList.add("say", "show");
+  bubble.classList.add('say', 'show');
   bubbleShown = true;
   stickyLine = sticky;
   clearTimeout(bubbleHideT);
   if (!sticky) bubbleHideT = setTimeout(hideBubble, 2600);
 }
 function hideBubble() {
-  bubble.classList.remove("show");
+  bubble.classList.remove('show');
   bubbleShown = false;
   stickyLine = false;
 }
@@ -149,14 +149,14 @@ function positionBubble() {
   const headY = baseY + 6;
   const vw = window.innerWidth;
   const toLeft = cx + DUCK_W + 230 > vw;
-  bubble.classList.toggle("flip", toLeft);
-  bubble.style.top = headY + "px";
+  bubble.classList.toggle('flip', toLeft);
+  bubble.style.top = headY + 'px';
   if (toLeft) {
-    bubble.style.right = vw - cx + 12 + "px";
-    bubble.style.left = "auto";
+    bubble.style.right = vw - cx + 12 + 'px';
+    bubble.style.left = 'auto';
   } else {
-    bubble.style.left = cx + DUCK_W + 12 + "px";
-    bubble.style.right = "auto";
+    bubble.style.left = cx + DUCK_W + 12 + 'px';
+    bubble.style.right = 'auto';
   }
 }
 
@@ -205,7 +205,7 @@ function setInteractive(on) {
   window.pet.setInteractive(on);
   // show the grab hand whenever the duck is hover-grabbable (the window is only
   // solid over the duck, so this cursor only ever appears on it)
-  if (!dragging) document.body.style.cursor = on ? "grab" : "default";
+  if (!dragging) document.body.style.cursor = on ? 'grab' : 'default';
 }
 window.pet.onCursor((p) => {
   mx = p.x;
@@ -213,54 +213,55 @@ window.pet.onCursor((p) => {
   setInteractive(dragging || overDuck());
 });
 
-rig.addEventListener("mousedown", (e) => {
+rig.addEventListener('mousedown', (e) => {
   e.preventDefault();
   dragging = true;
   tumbling = false;
-  mode = "drag";
+  mode = 'drag';
   vx = 0;
   vy = 0;
   tvx = 0;
   tvy = 0;
   dragDX = mx - x;
   dragDY = my - baseY;
-  rig.classList.add("grabbing");
-  document.body.style.cursor = "grabbing";
-  walker.classList.remove("walking");
+  rig.classList.add('grabbing');
+  document.body.style.cursor = 'grabbing';
+  walker.classList.remove('walking');
 });
-window.addEventListener("mouseup", () => {
+window.addEventListener('mouseup', () => {
   if (!dragging) return;
   dragging = false;
-  rig.classList.remove("grabbing");
-  document.body.style.cursor = interactive ? "grab" : "default";
+  rig.classList.remove('grabbing');
+  document.body.style.cursor = interactive ? 'grab' : 'default';
   const speed = Math.hypot(tvx, tvy);
   if (speed > THROW_MIN) {
     // Throw: launch with the release velocity and let physics tumble it to a
     // stop (it arcs, hits the ground, bounces, bounces off the side walls).
     tumbling = true;
-    mode = "throw";
+    mode = 'throw';
     vx = Math.max(-42, Math.min(42, tvx));
     vy = Math.max(-42, Math.min(42, tvy));
     grounded = false;
     sway.v += Math.max(-16, Math.min(16, tvx)); // spin flair in the throw direction
-    walker.classList.add("airborne");
-    if (Math.random() < 0.85) say(["wheee!", "yeaboi!", "wooo 🦆", "aaah!", "again!"][Math.floor(Math.random() * 5)]);
+    walker.classList.add('airborne');
+    if (Math.random() < 0.85)
+      say(['wheee!', 'yeaboi!', 'wooo 🦆', 'aaah!', 'again!'][Math.floor(Math.random() * 5)]);
   } else {
     // Gentle drop → fall back to the fixed resting height. Dragging just moves
     // the duck around; it doesn't redefine where it stands.
-    mode = "wander";
+    mode = 'wander';
     vy = 0;
     idleUntil = now() + rand(150, 500);
     pickTarget();
   }
 });
-rig.addEventListener("click", () => {
+rig.addEventListener('click', () => {
   if (dragging) return;
   // While the duck is holding a question, a click answers it — it opens the
   // page that resolves it rather than making him jump.
   if (stickyLine) {
     const route = noticeRoute;
-    noticeRoute = "";
+    noticeRoute = '';
     hideBubble();
     window.pet.open(route);
     return;
@@ -275,9 +276,9 @@ function startle(pushDir) {
   vy = -13;
   vx += pushDir * 5;
   grounded = false;
-  walker.classList.add("startled", "airborne");
+  walker.classList.add('startled', 'airborne');
   if (bubbleShown || Math.random() < 0.9) say(REACTIONS[sayIdx++ % REACTIONS.length]);
-  setTimeout(() => walker.classList.remove("startled"), 1350);
+  setTimeout(() => walker.classList.remove('startled'), 1350);
 }
 // jump sized to clear a step of height `h`, with clearance
 function hopTo(h, pushDir) {
@@ -285,7 +286,7 @@ function hopTo(h, pushDir) {
   vx += pushDir * 2.6;
   grounded = false;
   jumpCd = now() + 700;
-  walker.classList.add("airborne");
+  walker.classList.add('airborne');
 }
 
 // --- wander ---------------------------------------------------------------
@@ -297,7 +298,7 @@ function pickTarget() {
 pickTarget();
 
 setInterval(() => {
-  if (!dragging && mode !== "flee" && !bubbleShown && Math.random() < 0.5) {
+  if (!dragging && mode !== 'flee' && !bubbleShown && Math.random() < 0.5) {
     say(IDLE_LINES[Math.floor(Math.random() * IDLE_LINES.length)]);
   }
 }, 7000);
@@ -327,17 +328,17 @@ function step() {
         // scurry away as the cursor closes in (the "catch me" game) — but no
         // teleport-hop on proximity: that launched it out of reach every time.
         // You can grab it mid-scurry; clicking it still makes it hop.
-        mode = "flee";
+        mode = 'flee';
         const closeness = 1 - Math.abs(gap) / FLEE_RADIUS;
         const away = gap >= 0 ? -1 : 1;
         desired = away * FLEE_SPEED * (0.45 + 0.55 * closeness);
         const atWall = (away < 0 && x < 8) || (away > 0 && x > window.innerWidth - DUCK_W - 8);
         if (atWall) startle(away); // only hop when cornered against a wall
       } else if (t < idleUntil) {
-        mode = "wander";
+        mode = 'wander';
         desired = 0;
       } else {
-        mode = "wander";
+        mode = 'wander';
         const d = targetX - x;
         if (Math.abs(d) < 3) {
           pickTarget();
@@ -363,11 +364,11 @@ function step() {
     if (x < 0) {
       x = 0;
       vx *= tumbling ? -0.62 : -0.5;
-      if (!tumbling && mode === "wander") pickTarget();
+      if (!tumbling && mode === 'wander') pickTarget();
     } else if (x > window.innerWidth - DUCK_W) {
       x = window.innerWidth - DUCK_W;
       vx *= tumbling ? -0.62 : -0.5;
-      if (!tumbling && mode === "wander") pickTarget();
+      if (!tumbling && mode === 'wander') pickTarget();
     }
 
     // ---- vertical physics (gravity + landing on the surface under us) ----
@@ -387,10 +388,10 @@ function step() {
           grounded = false;
           sway.v += (vx >= 0 ? 1 : -1) * 6;
         } else {
-          walker.classList.remove("airborne");
+          walker.classList.remove('airborne');
           if (tumbling) {
             tumbling = false; // settled
-            mode = "wander";
+            mode = 'wander';
             idleUntil = now() + rand(200, 700);
             pickTarget();
           }
@@ -403,7 +404,7 @@ function step() {
 
   applyFacing();
   const moving = !dragging && !tumbling && grounded && Math.abs(vx) > 0.18;
-  walker.classList.toggle("walking", moving);
+  walker.classList.toggle('walking', moving);
   driveFeet();
 
   // ---- secondary motion (no squash — bounce + lean + jelly sway) ----
@@ -411,7 +412,9 @@ function step() {
   if (!dragging) sway.v += -(vx - prevVx) * 1.7;
   prevVx = vx;
   springTo(bnc, 0, 0.2, 0.7); // vertical bounce settles back to rest
-  const leanTarget = dragging ? 0 : -vx * 2.3 + (grounded ? 0 : Math.max(-9, Math.min(9, vy * 0.55)));
+  const leanTarget = dragging
+    ? 0
+    : -vx * 2.3 + (grounded ? 0 : Math.max(-9, Math.min(9, vy * 0.55)));
   springTo(lean, leanTarget, 0.2, 0.75);
   springTo(sway, 0, 0.16, 0.78);
 
@@ -426,17 +429,17 @@ function boot() {
   RIGH = rig.offsetHeight || RIGH;
   x = window.innerWidth * 0.5 - DUCK_W / 2;
   baseY = groundBaseY(x + DUCK_W / 2);
-  walker.classList.remove("unloaded");
-  walker.classList.add("hatch");
-  say("yeaboi! 🦆");
+  walker.classList.remove('unloaded');
+  walker.classList.add('hatch');
+  say('yeaboi! 🦆');
   requestAnimationFrame(step);
 }
 
-const baseImg = rig.querySelector(".d-base");
+const baseImg = rig.querySelector('.d-base');
 if (baseImg.complete) boot();
-else baseImg.addEventListener("load", boot);
+else baseImg.addEventListener('load', boot);
 
-window.addEventListener("resize", () => {
+window.addEventListener('resize', () => {
   x = Math.min(x, window.innerWidth - DUCK_W);
 });
 
@@ -448,17 +451,17 @@ window.pet.onNudge((d) => {
 // Awareness: something happened while nobody was looking. The main process
 // decides what qualifies (app/awareness.py) — the duck only reads it out.
 window.pet.onNotice((notice) => {
-  noticeRoute = notice.route || "";
+  noticeRoute = notice.route || '';
   say(notice.quip, !!notice.sticky);
 });
 
 window.pet.onRecenter(() => {
   dragging = false;
-  mode = "wander";
+  mode = 'wander';
   x = window.innerWidth * 0.5 - DUCK_W / 2;
   baseY = groundBaseY(x + DUCK_W / 2);
   vx = 0;
   vy = 0;
-  say("yeaboi!");
+  say('yeaboi!');
   pickTarget();
 });

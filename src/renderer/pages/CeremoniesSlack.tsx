@@ -47,7 +47,9 @@ export function CeremoniesSlack() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Ceremonies · Slack</h1>
-          <p class="dash-sub">Reactions and replies, read back and applied to the run they answered.</p>
+          <p class="dash-sub">
+            Reactions and replies, read back and applied to the run they answered.
+          </p>
         </div>
         <div class="dash-actions">
           <a class="button" href="#/ceremonies">
@@ -161,8 +163,9 @@ export function CeremoniesSlack() {
 
           <Card title="What Slack asked for">
             <p class="dash-note">
-              Every event the lane considered, including the refused ones — "you are not on the list", "I
-              could not tell what you meant" and "the write said no" are different problems.
+              Every event the lane considered, including the refused ones — "you are not on the
+              list", "I could not tell what you meant" and "the write said no" are different
+              problems.
             </p>
             <DataTable
               rows={page.events}

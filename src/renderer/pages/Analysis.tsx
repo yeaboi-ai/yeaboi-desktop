@@ -25,7 +25,9 @@ export function Analysis() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Team Analysis</h1>
-          <p class="dash-sub">How this team actually delivers — read off the tracker, the code and the docs.</p>
+          <p class="dash-sub">
+            How this team actually delivers — read off the tracker, the code and the docs.
+          </p>
         </div>
         <div class="dash-actions">
           <a class="button primary" href="#/humans/analysis/new">
@@ -37,7 +39,11 @@ export function Analysis() {
       {profiles.length ? (
         <div class="profile-list">
           {profiles.map((profile) => (
-            <a key={profile.team_id} class="profile-row" href={`#/humans/analysis/results?id=${encodeURIComponent(profile.team_id)}`}>
+            <a
+              key={profile.team_id}
+              class="profile-row"
+              href={`#/humans/analysis/results?id=${encodeURIComponent(profile.team_id)}`}
+            >
               <Card interactive title={profile.team_name || profile.project_key}>
                 <StatGrid>
                   <StatTile label="Source" value={profile.source} />
@@ -53,8 +59,8 @@ export function Analysis() {
       ) : (
         <Card title="Nothing analysed yet">
           <p>
-            <Duck state="idle" size={28} /> Point yeaboi at your tracker and it will read the last few sprints — how
-            fast the team goes, what a point means here, and where work spills.
+            <Duck state="idle" size={28} /> Point yeaboi at your tracker and it will read the last
+            few sprints — how fast the team goes, what a point means here, and where work spills.
           </p>
           <p>
             <a class="button primary" href="#/humans/analysis/new">

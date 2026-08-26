@@ -35,7 +35,10 @@ export function Ship() {
       },
       (e: Error) => setError(e.message),
     );
-    loadShipRuns().then((body) => setLive(body.runs.filter((row) => !row.finished)), () => undefined);
+    loadShipRuns().then(
+      (body) => setLive(body.runs.filter((row) => !row.finished)),
+      () => undefined,
+    );
   }, []);
 
   // Resolving costs a git call, so it follows the field rather than every
@@ -163,8 +166,12 @@ export function Ship() {
                 <StatTile label="Granted" value={target.allowed ? 'yes' : 'no'} />
               </StatGrid>
             )}
-            {target?.problem && <NoticeBlock title="That repository is not ready" items={[target.problem]} />}
-            {target?.consent_hint && <NoticeBlock title="Not granted yet" items={[target.consent_hint]} />}
+            {target?.problem && (
+              <NoticeBlock title="That repository is not ready" items={[target.problem]} />
+            )}
+            {target?.consent_hint && (
+              <NoticeBlock title="Not granted yet" items={[target.consent_hint]} />
+            )}
           </Card>
 
           <div class="dash-actions">

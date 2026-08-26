@@ -3,6 +3,7 @@
 // — the handshake token lives ONLY in this process, never in a renderer.
 
 import { spawn, type ChildProcess } from 'node:child_process';
+import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { app } from 'electron';
 
@@ -15,9 +16,7 @@ export interface Handshake {
 }
 
 export type BackendState =
-  | { kind: 'starting' }
-  | { kind: 'ready'; handshake: Handshake }
-  | { kind: 'down'; reason: string };
+  { kind: 'starting' } | { kind: 'ready'; handshake: Handshake } | { kind: 'down'; reason: string };
 
 const READY_PREFIX = 'YEABOI_APP_READY ';
 const HANDSHAKE_TIMEOUT_MS = 20_000;
@@ -29,8 +28,8 @@ const RESTART_WINDOW_MS = 5 * 60_000;
 
 /** How to launch the backend. Resolution order (dev escape hatch first):
  *  1. $YEABOI_DESKTOP_PYTHON — an explicit interpreter; runs `-m yeaboi app`
- *  2. packaged: the bundled python in resources/py (M13)
- *  3. dev fallback: `uv run yeaboi app` from the repo root (two dirs up)
+ *  2. packaged: the bundled python in resources/py
+ *  3. dev fallback: `uv run yeaboi app` in a sibling yeaboi checkout
  */
 export function resolveCommand(): { command: string; args: string[]; cwd?: string } {
   const explicit = process.env['YEABOI_DESKTOP_PYTHON'];
@@ -44,8 +43,13 @@ export function resolveCommand(): { command: string; args: string[]; cwd?: strin
       args: ['-m', 'yeaboi', 'app'],
     };
   }
-  // Unpackaged dev: drive the working tree through uv, like every Make target.
-  return { command: 'uv', args: ['run', 'yeaboi', 'app'], cwd: `${import.meta.dirname}/../../..` };
+  // Unpackaged dev: drive a sibling yeaboi checkout through uv. The Python lives
+  // in its own repo now, so there is no working tree above this one to reach for
+  // — $YEABOI_REPO names it, else it is a sibling of this repo.
+  // Resolved, not concatenated: this path reaches a person only inside a spawn
+  // error, where `…/src/main/../../../yeaboi.ai` says nothing about where it looked.
+  const repo = process.env['YEABOI_REPO'] ?? resolve(import.meta.dirname, '../../../yeaboi.ai');
+  return { command: 'uv', args: ['run', 'yeaboi', 'app'], cwd: repo };
 }
 
 export class Sidecar {
@@ -149,7 +153,8 @@ export class Sidecar {
       this.setState({ kind: 'down', reason: `${reason} — too many restarts, giving up` });
       return;
     }
-    const delay = RESTART_DELAYS_MS[Math.min(this.restarts.length, RESTART_DELAYS_MS.length - 1)] ?? 15_000;
+    const delay =
+      RESTART_DELAYS_MS[Math.min(this.restarts.length, RESTART_DELAYS_MS.length - 1)] ?? 15_000;
     this.restarts.push(now);
     this.setState({ kind: 'down', reason: `${reason} — restarting in ${delay / 1000}s` });
     setTimeout(() => {
@@ -169,7 +174,9 @@ export class Sidecar {
         headers: { Authorization: `Bearer ${handshake.token}` },
       }).catch(() => undefined);
     }
-    const exited = new Promise<void>((resolvePromise) => child.once('exit', () => resolvePromise()));
+    const exited = new Promise<void>((resolvePromise) =>
+      child.once('exit', () => resolvePromise()),
+    );
     child.kill('SIGTERM');
     const timeout = new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 5_000));
     await Promise.race([exited, timeout]);

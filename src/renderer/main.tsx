@@ -231,7 +231,10 @@ function Sidebar({
         <a href="#/setup" aria-current={active === '/setup' ? 'page' : undefined}>
           Setup
         </a>
-        <a href="#/settings/credentials" aria-current={active.startsWith('/settings/') ? 'page' : undefined}>
+        <a
+          href="#/settings/credentials"
+          aria-current={active.startsWith('/settings/') ? 'page' : undefined}
+        >
           Settings
         </a>
         <a href="#/feedback" aria-current={active === '/feedback' ? 'page' : undefined}>
@@ -305,10 +308,13 @@ function App() {
 
   useEffect(() => {
     if (backend.kind !== 'ready') return;
-    getAmbience().then((state) => {
-      setAmbienceState(state);
-      loadQuips(state.duck.quips);
-    }, () => setAmbienceState(null));
+    getAmbience().then(
+      (state) => {
+        setAmbienceState(state);
+        loadQuips(state.duck.quips);
+      },
+      () => setAmbienceState(null),
+    );
   }, [backend.kind]);
 
   useEffect(() => {
@@ -342,7 +348,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    getVersion().then((meta) => setVersion(meta.version), () => undefined);
+    getVersion().then(
+      (meta) => setVersion(meta.version),
+      () => undefined,
+    );
     getUpdateState().then(setUpdate, () => undefined);
     onUpdateState(setUpdate);
     onAbout(() => setAbout(true));

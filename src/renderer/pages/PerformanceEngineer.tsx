@@ -45,11 +45,15 @@ export function PerformanceEngineer() {
     // reload closes over `name`, which is the only thing it depends on.
   }, [name]);
 
-  if (!name) return <NoticeBlock title="No engineer" items={['Pick someone from the roster first.']} />;
+  if (!name)
+    return <NoticeBlock title="No engineer" items={['Pick someone from the roster first.']} />;
   if (error && !file) return <NoticeBlock title={`Nothing on file for ${name}`} items={[error]} />;
   if (!file) return <p>Loading…</p>;
 
-  async function act(kind: Busy, call: () => Promise<{ ok: boolean; error?: { message: string } }>) {
+  async function act(
+    kind: Busy,
+    call: () => Promise<{ ok: boolean; error?: { message: string } }>,
+  ) {
     if (busy) return;
     setBusy(kind);
     setMessage('');
@@ -131,7 +135,9 @@ export function PerformanceEngineer() {
       )}
 
       <Card title="Complete a 1:1">
-        <p class="dash-note">Paste the notes or the transcript; yeaboi summarises it and closes the open actions.</p>
+        <p class="dash-note">
+          Paste the notes or the transcript; yeaboi summarises it and closes the open actions.
+        </p>
         <textarea
           rows={6}
           value={transcript}
@@ -144,7 +150,9 @@ export function PerformanceEngineer() {
             type="button"
             disabled={Boolean(busy) || !transcript.trim()}
             onClick={() =>
-              void act('complete', () => completeOneOnOne(name, transcript, '')).then(() => setTranscript(''))
+              void act('complete', () => completeOneOnOne(name, transcript, '')).then(() =>
+                setTranscript(''),
+              )
             }
           >
             {busy === 'complete' ? 'Summarising…' : 'Complete'}

@@ -143,7 +143,10 @@ export class Pet {
       if (!this.window || this.window.isDestroyed()) return;
       queryDockRect((rect) => {
         if (!this.window || this.window.isDestroyed()) return;
-        this.window.webContents.send('pet:config', { bottomInset, dock: dockConfig(rect, { x, y }) });
+        this.window.webContents.send('pet:config', {
+          bottomInset,
+          dock: dockConfig(rect, { x, y }),
+        });
       });
     };
     window.webContents.once('did-finish-load', sendLayout);

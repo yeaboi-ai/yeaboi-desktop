@@ -2,7 +2,13 @@
 // ambience.ts is a call, which the route tests cover on the Python side.
 
 import { describe, expect, it } from 'vitest';
-import { DuckVoice, HOLD_MS, PRIORITY_COACH, PRIORITY_EVENT, betaKeyFor } from '../src/renderer/ambience';
+import {
+  DuckVoice,
+  HOLD_MS,
+  PRIORITY_COACH,
+  PRIORITY_EVENT,
+  betaKeyFor,
+} from '../src/renderer/ambience';
 
 describe('DuckVoice', () => {
   it('takes a line and shows it', () => {

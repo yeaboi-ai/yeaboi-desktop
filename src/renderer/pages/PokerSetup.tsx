@@ -49,7 +49,9 @@ export function PokerSetup() {
   const asksScope = Boolean(source) && source !== 'demo' && steps.includes('scope');
   const asksSprint = asksScope && scope === 'sprint';
   const asksTypes = Boolean(source) && source !== 'demo' && steps.includes('types');
-  const ready = Boolean(source) && (source === 'demo' || (Boolean(scope) && (!asksSprint || sprints.length > 0)));
+  const ready =
+    Boolean(source) &&
+    (source === 'demo' || (Boolean(scope) && (!asksSprint || sprints.length > 0)));
 
   async function pickSource(key: string) {
     setSource(key);
@@ -113,7 +115,12 @@ export function PokerSetup() {
     }
   }
 
-  if (!options) return error ? <NoticeBlock title="Could not load the wizard" items={[error]} /> : <p>Loading…</p>;
+  if (!options)
+    return error ? (
+      <NoticeBlock title="Could not load the wizard" items={[error]} />
+    ) : (
+      <p>Loading…</p>
+    );
 
   return (
     <div class="dash">
@@ -161,10 +168,14 @@ export function PokerSetup() {
         <Card title={options.titles.sprint ?? 'Which sprint?'}>
           {sprintOptions.length === 0 ? (
             <p class="dash-note">
-              No sprints found — check the board&apos;s credentials, or estimate the backlog instead.
+              No sprints found — check the board&apos;s credentials, or estimate the backlog
+              instead.
             </p>
           ) : (
-            <select value={String(sprintIndex)} onChange={(e) => setSprintIndex(Number((e.target as HTMLSelectElement).value))}>
+            <select
+              value={String(sprintIndex)}
+              onChange={(e) => setSprintIndex(Number((e.target as HTMLSelectElement).value))}
+            >
               {sprintOptions.map((option, index) => (
                 <option key={option.key} value={String(index)}>
                   {option.label}

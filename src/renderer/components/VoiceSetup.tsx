@@ -69,10 +69,19 @@ export function VoiceSetup({ status, onClose }: VoiceSetupProps) {
     return (
       <Shell title="Setting dictation up">
         <p class="voice-stage">{line}</p>
-        <div class="voice-bar" role="progressbar" aria-valuenow={fraction === null ? undefined : fraction * 100}>
-          <span class={fraction === null ? 'voice-bar-fill indeterminate' : 'voice-bar-fill'} style={barStyle(fraction)} />
+        <div
+          class="voice-bar"
+          role="progressbar"
+          aria-valuenow={fraction === null ? undefined : fraction * 100}
+        >
+          <span
+            class={fraction === null ? 'voice-bar-fill indeterminate' : 'voice-bar-fill'}
+            style={barStyle(fraction)}
+          />
         </div>
-        <p class="modal-foot">This happens once. You can keep working — it runs in the background.</p>
+        <p class="modal-foot">
+          This happens once. You can keep working — it runs in the background.
+        </p>
         <div class="modal-actions">
           <button
             type="button"
@@ -90,8 +99,8 @@ export function VoiceSetup({ status, onClose }: VoiceSetupProps) {
   return (
     <Shell title="Set dictation up?">
       <p>
-        Speaking instead of typing needs a speech engine — about {status.install.size_mb} MB, downloaded once. It runs
-        entirely on this machine: nothing you say is sent anywhere.
+        Speaking instead of typing needs a speech engine — about {status.install.size_mb} MB,
+        downloaded once. It runs entirely on this machine: nothing you say is sent anywhere.
       </p>
       <p class="modal-foot">Takes about two minutes.</p>
       <div class="modal-actions">

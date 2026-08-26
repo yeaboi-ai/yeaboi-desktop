@@ -6,7 +6,13 @@
 
 import { Card, NoticeBlock } from '@design/primitives';
 import { useEffect, useState } from 'react';
-import { type ScheduleView, loadSchedule, loadStandup, saveSchedule, weekdaySpec } from '../dashboards';
+import {
+  type ScheduleView,
+  loadSchedule,
+  loadStandup,
+  saveSchedule,
+  weekdaySpec,
+} from '../dashboards';
 
 const TIME_PRESETS = ['09:00', '09:30', '10:00', '10:30', '11:00'];
 const LEAD_PRESETS = [5, 10, 15, 30];
@@ -82,13 +88,18 @@ export function StandupSchedule() {
     <div class="dash">
       <h1 class="page-title">Standup schedule</h1>
       <p class="dash-sub">
-        The job runs {view.lead_minutes} minutes before the standup, so the summary is waiting when the meeting starts.
+        The job runs {view.lead_minutes} minutes before the standup, so the summary is waiting when
+        the meeting starts.
       </p>
 
       <Card title="When">
         <div class="field-row">
           <label for="standup-time">Standup at</label>
-          <select id="standup-time" value={view.time} onChange={(e) => set({ time: (e.target as HTMLSelectElement).value })}>
+          <select
+            id="standup-time"
+            value={view.time}
+            onChange={(e) => set({ time: (e.target as HTMLSelectElement).value })}
+          >
             {[...new Set([...TIME_PRESETS, view.time])].sort().map((time) => (
               <option key={time} value={time}>
                 {time}
@@ -120,7 +131,9 @@ export function StandupSchedule() {
                 key={label}
                 type="button"
                 class={days.includes(day) ? 'day active' : 'day'}
-                onClick={() => setDays(days.includes(day) ? days.filter((d) => d !== day) : [...days, day])}
+                onClick={() =>
+                  setDays(days.includes(day) ? days.filter((d) => d !== day) : [...days, day])
+                }
               >
                 {label}
               </button>
@@ -166,12 +179,17 @@ export function StandupSchedule() {
           </select>
         </div>
         <p class="dash-note">
-          A reminder only fires alongside a scheduled standup — switching the schedule off removes both jobs.
+          A reminder only fires alongside a scheduled standup — switching the schedule off removes
+          both jobs.
         </p>
       </Card>
 
       <label class="check-row">
-        <input type="checkbox" checked={view.enabled} onChange={() => set({ enabled: !view.enabled })} />
+        <input
+          type="checkbox"
+          checked={view.enabled}
+          onChange={() => set({ enabled: !view.enabled })}
+        />
         <span>
           <strong>Run this standup on a schedule</strong>
         </span>

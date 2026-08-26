@@ -43,7 +43,9 @@ describe('reduceTurn', () => {
 
 describe('bubblesOf', () => {
   it('renders a gate as its card followed by the verdict prompt', () => {
-    const bubbles = bubblesOf([{ type: 'await_confirm', kind: 'intake_summary', prompt: 'Pick one.' }]);
+    const bubbles = bubblesOf([
+      { type: 'await_confirm', kind: 'intake_summary', prompt: 'Pick one.' },
+    ]);
     expect(bubbles).toEqual([
       { role: 'card', text: '', kind: 'intake_summary' },
       { role: 'assistant', text: 'Pick one.' },
@@ -61,18 +63,37 @@ describe('bubblesOf', () => {
   });
 
   it('ignores line types that are not transcript rows', () => {
-    expect(bubblesOf([{ type: 'op', op_id: 'x' }, { type: 'done', stage: 'chat' }])).toEqual([]);
+    expect(
+      bubblesOf([
+        { type: 'op', op_id: 'x' },
+        { type: 'done', stage: 'chat' },
+      ]),
+    ).toEqual([]);
   });
 });
 
 describe('stageLabel', () => {
   it('names every stage the backend can report', () => {
-    for (const stage of ['intake', 'review', 'pipeline', 'epic', 'capacity', 'spike', 'chat'] as const) {
+    for (const stage of [
+      'intake',
+      'review',
+      'pipeline',
+      'epic',
+      'capacity',
+      'spike',
+      'chat',
+    ] as const) {
       expect(stageLabel(stage).length).toBeGreaterThan(0);
     }
   });
 
   it('the rail is a subset of the stages, in pipeline order', () => {
-    expect(STAGE_RAIL.map((step) => step.stage)).toEqual(['intake', 'epic', 'pipeline', 'review', 'chat']);
+    expect(STAGE_RAIL.map((step) => step.stage)).toEqual([
+      'intake',
+      'epic',
+      'pipeline',
+      'review',
+      'chat',
+    ]);
   });
 });

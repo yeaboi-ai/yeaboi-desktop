@@ -44,10 +44,14 @@ export function Roadmap() {
       },
       (e: Error) => setError(e.message),
     );
-    loadSavedRoadmaps().then((body) => setSaved(body.roadmaps), () => undefined);
+    loadSavedRoadmaps().then(
+      (body) => setSaved(body.roadmaps),
+      () => undefined,
+    );
   }, []);
 
-  if (error && !sources) return <NoticeBlock title="Could not open roadmap intake" items={[error]} />;
+  if (error && !sources)
+    return <NoticeBlock title="Could not open roadmap intake" items={[error]} />;
   if (!sources) return <p>Loading…</p>;
 
   const chosen = sources.find((source) => source.key === kind) ?? sources[0]!;
@@ -59,10 +63,13 @@ export function Roadmap() {
     let state = emptyModeRun();
     setRun(state);
     try {
-      await analyzeRoadmap({ source_type: kind, locator: locator.trim(), roadmap_id: reuseId }, (line) => {
-        state = reduceModeRun(state, line);
-        setRun(state);
-      });
+      await analyzeRoadmap(
+        { source_type: kind, locator: locator.trim(), roadmap_id: reuseId },
+        (line) => {
+          state = reduceModeRun(state, line);
+          setRun(state);
+        },
+      );
       if (state.done) {
         setAnalysis((state.done.analysis as RoadmapAnalysisView) ?? null);
         setRoadmapId(Number(state.done.roadmap_id ?? 0));
@@ -91,7 +98,9 @@ export function Roadmap() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Roadmap intake</h1>
-          <p class="dash-sub">Point yeaboi at the quarterly roadmap and it proposes what to plan next.</p>
+          <p class="dash-sub">
+            Point yeaboi at the quarterly roadmap and it proposes what to plan next.
+          </p>
         </div>
         <div class="dash-actions">
           <a class="button" href="#/humans/planning">
@@ -108,7 +117,12 @@ export function Roadmap() {
         <div class="chip-row">
           {sources.map((source) => (
             <label key={source.key} class="check-row">
-              <input type="radio" name="source" checked={kind === source.key} onChange={() => setKind(source.key)} />
+              <input
+                type="radio"
+                name="source"
+                checked={kind === source.key}
+                onChange={() => setKind(source.key)}
+              />
               <span>
                 <strong>{source.label}</strong>
                 <span class="dash-note">{source.hint}</span>
@@ -126,7 +140,12 @@ export function Roadmap() {
           />
         </div>
         <div class="dash-actions">
-          <button type="button" class="primary" disabled={busy || !locator.trim()} onClick={() => void analyze()}>
+          <button
+            type="button"
+            class="primary"
+            disabled={busy || !locator.trim()}
+            onClick={() => void analyze()}
+          >
             {busy ? 'Analyzing…' : analysis ? 'Re-analyze' : 'Analyze'}
           </button>
         </div>
@@ -156,12 +175,16 @@ export function Roadmap() {
               }}
             />
           </Card>
-          {analysis.warnings?.length > 0 && <NoticeBlock title="Notices" items={analysis.warnings} />}
+          {analysis.warnings?.length > 0 && (
+            <NoticeBlock title="Notices" items={analysis.warnings} />
+          )}
           <div class="profile-list">
             {analysis.projects.map((project, index) => (
               <Card key={`${project.name}-${index}`} title={maskText(project.name, mask)}>
                 <p>
-                  <Lozenge category={project.size === 'large' ? 'inprogress' : 'todo'}>{project.size}</Lozenge>{' '}
+                  <Lozenge category={project.size === 'large' ? 'inprogress' : 'todo'}>
+                    {project.size}
+                  </Lozenge>{' '}
                   {maskText(project.description, mask)}
                 </p>
                 <div class="dash-actions">
@@ -175,8 +198,8 @@ export function Roadmap() {
           {analysis.projects.length === 0 && (
             <Card title="Nothing to plan">
               <p>
-                <Duck state="idle" size={28} /> No concrete projects came out of that document — check its content,
-                or try another source.
+                <Duck state="idle" size={28} /> No concrete projects came out of that document —
+                check its content, or try another source.
               </p>
             </Card>
           )}
@@ -188,7 +211,8 @@ export function Roadmap() {
           <ul class="review-list">
             {saved.map((row) => (
               <li key={row.id}>
-                <strong>{row.label}</strong> · {row.project_count} project(s) · {String(row.analyzed_at).slice(0, 10)}
+                <strong>{row.label}</strong> · {row.project_count} project(s) ·{' '}
+                {String(row.analyzed_at).slice(0, 10)}
               </li>
             ))}
           </ul>

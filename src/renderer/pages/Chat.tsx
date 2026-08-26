@@ -101,7 +101,10 @@ export function Chat() {
   }, [bubbles, pending]);
 
   useEffect(() => {
-    getAmbience().then((state) => setDuckOn(state.duck.enabled), () => undefined);
+    getAmbience().then(
+      (state) => setDuckOn(state.duck.enabled),
+      () => undefined,
+    );
   }, []);
 
   /**
@@ -120,7 +123,12 @@ export function Chat() {
     setNotice('Pasting image…');
     try {
       const encoded = await toBase64(file);
-      const { path, chip } = await attachImage(projectId, encoded, file.type, attachments.length + 1);
+      const { path, chip } = await attachImage(
+        projectId,
+        encoded,
+        file.type,
+        attachments.length + 1,
+      );
       setAttachments((prior) => [...prior, path]);
       setDraft((prior) => (prior ? `${prior} ${chip}` : chip));
       setNotice('');
@@ -227,7 +235,10 @@ export function Chat() {
     if (turn.stage) setStage(turn.stage);
     // The question view (choices, progress, the phase label) is derived from
     // the state the turn just produced, so it is re-read rather than guessed.
-    loadChat(projectId).then((view) => setQuestion(view.question), () => undefined);
+    loadChat(projectId).then(
+      (view) => setQuestion(view.question),
+      () => undefined,
+    );
   }
 
   const choices = !busy && question?.choices ? question.choices : null;
@@ -253,7 +264,11 @@ export function Chat() {
 
       <div class="chat-scroll">
         {bubbles.map((bubble, index) => (
-          <Row key={`${index}-${bubble.role}-${bubble.kind ?? ''}`} bubble={bubble} projectId={projectId} />
+          <Row
+            key={`${index}-${bubble.role}-${bubble.kind ?? ''}`}
+            bubble={bubble}
+            projectId={projectId}
+          />
         ))}
         {pending && (
           <div class="bubble assistant streaming">
@@ -301,7 +316,11 @@ export function Chat() {
         )}
         <textarea
           rows={3}
-          placeholder={busy ? 'Working — your message sends when this finishes…' : 'Message yeaboi… (/ for commands)'}
+          placeholder={
+            busy
+              ? 'Working — your message sends when this finishes…'
+              : 'Message yeaboi… (/ for commands)'
+          }
           value={draft}
           onInput={(e) => setDraft((e.target as HTMLTextAreaElement).value)}
           onPaste={(e) => void paste(e as unknown as ClipboardEvent)}
@@ -319,10 +338,15 @@ export function Chat() {
           }}
         />
         <div class="composer-actions">
-          <MicButton disabled={busy} onText={(text) => setDraft((prior) => appendSpoken(prior, text))} />
+          <MicButton
+            disabled={busy}
+            onText={(text) => setDraft((prior) => appendSpoken(prior, text))}
+          />
           <span class="composer-hint">
             Enter sends · Shift+Enter for a new line · / for commands
-            {attachments.length ? ` · ${attachments.length} image${attachments.length > 1 ? 's' : ''} attached` : ''}
+            {attachments.length
+              ? ` · ${attachments.length} image${attachments.length > 1 ? 's' : ''} attached`
+              : ''}
           </span>
           {busy && opId ? (
             <button type="button" onClick={() => void cancelTurn(opId)}>

@@ -42,7 +42,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             if (event.key === 'Escape') onClose();
             else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
               event.preventDefault();
-              setSelected((at) => moveSelection(at, event.key === 'ArrowDown' ? 1 : -1, matches.length));
+              setSelected((at) =>
+                moveSelection(at, event.key === 'ArrowDown' ? 1 : -1, matches.length),
+              );
             } else if (event.key === 'Enter') {
               const match = matches[selected];
               if (match) go(match.path);

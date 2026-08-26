@@ -90,9 +90,11 @@ export interface FeedbackDraft {
   description: string;
 }
 
-export const submitFeedback = (draft: FeedbackDraft): Promise<FeedbackResult> => apiPost('/api/feedback', draft);
+export const submitFeedback = (draft: FeedbackDraft): Promise<FeedbackResult> =>
+  apiPost('/api/feedback', draft);
 
-export const polishFeedback = (draft: FeedbackDraft): Promise<PolishResult> => apiPost('/api/feedback/polish', draft);
+export const polishFeedback = (draft: FeedbackDraft): Promise<PolishResult> =>
+  apiPost('/api/feedback/polish', draft);
 
 // ── the beta gate ────────────────────────────────────────────────────────────
 
@@ -162,7 +164,8 @@ export class DuckVoice {
     if (this.muted || !text) return false;
     const live = this.line !== null && !this.expired(this.line, now);
     if (live && this.line && priority > this.line.priority) return false;
-    if (live && this.line && this.line.text === text && this.line.priority === priority) return true;
+    if (live && this.line && this.line.text === text && this.line.priority === priority)
+      return true;
     this.seq += 1;
     this.line = { text, priority, hold, seq: this.seq, at: now };
     return true;

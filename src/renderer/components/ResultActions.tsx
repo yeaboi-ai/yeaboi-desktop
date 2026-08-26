@@ -48,7 +48,13 @@ export interface ResultActionsProps {
   onAnonymize?: (replacements: [string, string][], note: string) => void;
 }
 
-export function ResultActions({ refer, mode, extras = [], anonNote = '', onAnonymize }: ResultActionsProps) {
+export function ResultActions({
+  refer,
+  mode,
+  extras = [],
+  anonNote = '',
+  onAnonymize,
+}: ResultActionsProps) {
   const [dialog, setDialog] = useState<Dialog>('');
   const [message, setMessage] = useState('');
   const [can, setCan] = useState<KindCapability | null>(null);
@@ -80,7 +86,10 @@ export function ResultActions({ refer, mode, extras = [], anonNote = '', onAnony
           onAnonymize &&
           (anonNote ? (
             <>
-              <button type="button" onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}>
+              <button
+                type="button"
+                onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}
+              >
                 Adjust
               </button>
               <button type="button" onClick={() => onAnonymize([], '')}>
@@ -88,7 +97,10 @@ export function ResultActions({ refer, mode, extras = [], anonNote = '', onAnony
               </button>
             </>
           ) : (
-            <button type="button" onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}>
+            <button
+              type="button"
+              onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}
+            >
               Anonymize
             </button>
           ))}
@@ -215,7 +227,13 @@ function ShareDialog({ refer, onClose }: { refer: ArtifactRef; onClose: () => vo
   // Poll while the link is still coming up: setup is a binary download plus an
   // edge handshake, and the page has nothing to show until it lands.
   useEffect(() => {
-    if (!share || share.link.state === 'ready' || share.link.state === 'failed' || share.link.state === 'off') return;
+    if (
+      !share ||
+      share.link.state === 'ready' ||
+      share.link.state === 'failed' ||
+      share.link.state === 'off'
+    )
+      return;
     const timer = setInterval(() => {
       loadShare(share.share_id).then(setShare, () => undefined);
     }, 1500);
@@ -224,7 +242,10 @@ function ShareDialog({ refer, onClose }: { refer: ArtifactRef; onClose: () => vo
 
   useEffect(() => {
     if (!share || share.link.state !== 'ready') return;
-    shareInvite(share.share_id).then((body) => setInvite(body.invite), () => undefined);
+    shareInvite(share.share_id).then(
+      (body) => setInvite(body.invite),
+      () => undefined,
+    );
   }, [share?.share_id, share?.link.state]);
 
   async function begin() {
@@ -366,8 +387,8 @@ function AnonymizeDialog({
   return (
     <Card title="Anonymize this output">
       <p class="dash-note">
-        Names, tickets and identifiers are replaced with stable placeholders. Review before sharing — a mask is a
-        starting position, not a guarantee.
+        Names, tickets and identifiers are replaced with stable placeholders. Review before sharing
+        — a mask is a starting position, not a guarantee.
       </p>
       <label class="field">
         <span>Also mask … · don&apos;t mask … (it&apos;s public/safe)</span>

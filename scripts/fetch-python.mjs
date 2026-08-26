@@ -23,9 +23,9 @@ import { dirname, join } from 'node:path';
 import { argv, exit, platform as hostPlatform, arch as hostArch } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const DESKTOP = dirname(dirname(fileURLToPath(import.meta.url)));
-const STAGE = join(DESKTOP, 'resources', 'py');
-const CACHE = join(DESKTOP, '.python-cache');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const STAGE = join(ROOT, 'resources', 'py');
+const CACHE = join(ROOT, '.python-cache');
 
 // Pinned python-build-standalone release. Bumping it means replacing every
 // digest below — they are what makes the download verifiable rather than
@@ -37,11 +37,26 @@ const PBS_BASE = `https://github.com/astral-sh/python-build-standalone/releases/
 
 /** `${platform}-${arch}` → [rust triple, sha256 of its install_only_stripped tarball]. */
 const TARGETS = {
-  'darwin-arm64': ['aarch64-apple-darwin', 'dd5b76ab11451a4a4367c17c61d944dded56b425396b07f102922a7ebef7d55f'],
-  'darwin-x64': ['x86_64-apple-darwin', 'aec265e3cddaccdb2a3d783331596351b24d4a63c97af0a38f75f643c9451de9'],
-  'win32-x64': ['x86_64-pc-windows-msvc', '89f18f6932917163b74339ebcec2645c8e47ae7f1c5f2ac37f2b4f4cf3beb647'],
-  'linux-x64': ['x86_64-unknown-linux-gnu', '5acfa3e9ba26b51ae161c83aff278da915b590d22373a424b2ba55b8afe91fcc'],
-  'linux-arm64': ['aarch64-unknown-linux-gnu', '2d8e17dfd732102cfeb18e0e1fa6769b24caa034e159981129590fe409c7157a'],
+  'darwin-arm64': [
+    'aarch64-apple-darwin',
+    'dd5b76ab11451a4a4367c17c61d944dded56b425396b07f102922a7ebef7d55f',
+  ],
+  'darwin-x64': [
+    'x86_64-apple-darwin',
+    'aec265e3cddaccdb2a3d783331596351b24d4a63c97af0a38f75f643c9451de9',
+  ],
+  'win32-x64': [
+    'x86_64-pc-windows-msvc',
+    '89f18f6932917163b74339ebcec2645c8e47ae7f1c5f2ac37f2b4f4cf3beb647',
+  ],
+  'linux-x64': [
+    'x86_64-unknown-linux-gnu',
+    '5acfa3e9ba26b51ae161c83aff278da915b590d22373a424b2ba55b8afe91fcc',
+  ],
+  'linux-arm64': [
+    'aarch64-unknown-linux-gnu',
+    '2d8e17dfd732102cfeb18e0e1fa6769b24caa034e159981129590fe409c7157a',
+  ],
 };
 
 // What the desktop needs out of the distribution. `voice` is deliberately
@@ -177,7 +192,8 @@ function check({ platform, arch, version }) {
   const staged = JSON.parse(readFileSync(stamp, 'utf8'));
   const target = `${platform}-${arch}`;
   if (staged.target !== target) throw new Error(`staged ${staged.target}, wanted ${target}`);
-  if (version && staged.yeaboi !== version) throw new Error(`staged yeaboi ${staged.yeaboi}, wanted ${version}`);
+  if (version && staged.yeaboi !== version)
+    throw new Error(`staged yeaboi ${staged.yeaboi}, wanted ${version}`);
   const python = pythonPath(STAGE, platform);
   if (!statSync(python, { throwIfNoEntry: false })) throw new Error(`missing ${python}`);
   console.log(`✓ ${target}: python ${staged.python}, yeaboi ${staged.yeaboi}`);

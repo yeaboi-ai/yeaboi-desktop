@@ -23,8 +23,12 @@ const backend: VersionMeta = { version: '3.28.0', schema_version: 30, python: '3
 
 describe('updateHeadline', () => {
   it('names the version rather than the state', () => {
-    expect(updateHeadline({ kind: 'available', version: '3.29.0' }, '3.28.0')).toBe('yeaboi 3.29.0 is available.');
-    expect(updateHeadline({ kind: 'ready', version: '3.29.0' }, '3.28.0')).toContain('Restart to finish');
+    expect(updateHeadline({ kind: 'available', version: '3.29.0' }, '3.28.0')).toBe(
+      'yeaboi 3.29.0 is available.',
+    );
+    expect(updateHeadline({ kind: 'ready', version: '3.29.0' }, '3.28.0')).toContain(
+      'Restart to finish',
+    );
   });
 
   it('says what is running when there is nothing to do', () => {
@@ -32,7 +36,9 @@ describe('updateHeadline', () => {
   });
 
   it('passes an error through instead of swallowing it', () => {
-    expect(updateHeadline({ kind: 'error', message: 'ENOTFOUND' }, '3.28.0')).toContain('ENOTFOUND');
+    expect(updateHeadline({ kind: 'error', message: 'ENOTFOUND' }, '3.28.0')).toContain(
+      'ENOTFOUND',
+    );
   });
 
   it('explains an unsupported channel in the words the channel gave', () => {

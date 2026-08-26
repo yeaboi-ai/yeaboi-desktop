@@ -100,7 +100,9 @@ export function loadSchedule(sessionId: string): Promise<ScheduleView> {
   return apiGet<ScheduleView>(`/api/standup/schedule?session_id=${encodeURIComponent(sessionId)}`);
 }
 
-export function saveSchedule(body: Partial<ScheduleView> & { session_id: string }): Promise<{ message: string }> {
+export function saveSchedule(
+  body: Partial<ScheduleView> & { session_id: string },
+): Promise<{ message: string }> {
   return apiPost<{ message: string }>('/api/standup/schedule', body);
 }
 
@@ -109,7 +111,9 @@ export function runStandup(
   deliver: boolean,
   onLine: (line: RunLine) => void,
 ): Promise<void> {
-  return apiStream('/api/standup/run', { session_id: sessionId, deliver }, (line) => onLine(line as RunLine));
+  return apiStream('/api/standup/run', { session_id: sessionId, deliver }, (line) =>
+    onLine(line as RunLine),
+  );
 }
 
 /** Record a thumbs up/down on one member's practice signal. */
@@ -178,7 +182,10 @@ export function runAnalysis(body: RunRequest, onLine: (line: RunLine) => void): 
 }
 
 export function loadRoster(source: string, projectKey = '') {
-  return callTool<{ members: { name: string }[] }>('team_roster', { source, project_key: projectKey });
+  return callTool<{ members: { name: string }[] }>('team_roster', {
+    source,
+    project_key: projectKey,
+  });
 }
 
 // ── Runs ───────────────────────────────────────────────────────────────────

@@ -12,7 +12,10 @@ export interface Envelope<T = unknown> {
 }
 
 interface Bridge {
-  api: (path: string, init?: { method?: string; body?: unknown }) => Promise<{ status: number; body: unknown }>;
+  api: (
+    path: string,
+    init?: { method?: string; body?: unknown },
+  ) => Promise<{ status: number; body: unknown }>;
   apiStream: (
     path: string,
     body: unknown,
@@ -41,20 +44,27 @@ function bridge(): Bridge {
 
 export async function apiGet<T>(path: string): Promise<T> {
   const { status, body } = await bridge().api(path);
-  if (status !== 200) throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
+  if (status !== 200)
+    throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
   return body as T;
 }
 
 export async function apiPost<T>(path: string, body: object = {}): Promise<T> {
   const { status, body: resp } = await bridge().api(path, { method: 'POST', body });
-  if (status !== 200) throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
+  if (status !== 200)
+    throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
   return resp as T;
 }
 
 /** POST a request whose response is NDJSON, calling back once per parsed line. */
-export async function apiStream(path: string, body: object, onLine: (line: unknown) => void): Promise<void> {
+export async function apiStream(
+  path: string,
+  body: object,
+  onLine: (line: unknown) => void,
+): Promise<void> {
   const { status, body: resp } = await bridge().apiStream(path, body, onLine);
-  if (status !== 200) throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
+  if (status !== 200)
+    throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
 }
 
 export async function callTool<T = unknown>(name: string, args: object = {}): Promise<Envelope<T>> {
@@ -62,7 +72,8 @@ export async function callTool<T = unknown>(name: string, args: object = {}): Pr
     method: 'POST',
     body: { arguments: args },
   });
-  if (status !== 200) throw new Error((body as { error?: string }).error ?? `tool ${name} → ${status}`);
+  if (status !== 200)
+    throw new Error((body as { error?: string }).error ?? `tool ${name} → ${status}`);
   return body as Envelope<T>;
 }
 
@@ -76,7 +87,9 @@ export function getBackendState(): Promise<{ kind: string; reason?: string }> {
 
 /** The ambient feed: consent requests and awareness notices, read once in main
  *  and pushed here. Not a second subscription — main owns the only one. */
-export function onAmbientEvent(callback: (event: { type: string; [key: string]: unknown }) => void): void {
+export function onAmbientEvent(
+  callback: (event: { type: string; [key: string]: unknown }) => void,
+): void {
   bridge().onEvent((event) => callback(event as { type: string; [key: string]: unknown }));
 }
 
@@ -125,9 +138,12 @@ export type UpdateState =
   | { kind: 'ready'; version: string }
   | { kind: 'error'; message: string };
 
-export const getUpdateState = (): Promise<UpdateState> => bridge().getUpdateState() as Promise<UpdateState>;
-export const checkForUpdate = (): Promise<UpdateState> => bridge().checkForUpdate() as Promise<UpdateState>;
-export const downloadUpdate = (): Promise<UpdateState> => bridge().downloadUpdate() as Promise<UpdateState>;
+export const getUpdateState = (): Promise<UpdateState> =>
+  bridge().getUpdateState() as Promise<UpdateState>;
+export const checkForUpdate = (): Promise<UpdateState> =>
+  bridge().checkForUpdate() as Promise<UpdateState>;
+export const downloadUpdate = (): Promise<UpdateState> =>
+  bridge().downloadUpdate() as Promise<UpdateState>;
 export const installUpdate = (): Promise<unknown> => bridge().installUpdate();
 
 export function onUpdateState(callback: (state: UpdateState) => void): void {

@@ -97,8 +97,8 @@ export function StandupReview() {
     <div class="dash">
       <h1 class="page-title">Transcript review</h1>
       <p class="dash-sub">
-        What the standup missed, and why — a missing integration, an unconfigured source, or a summary that dropped
-        what it collected.
+        What the standup missed, and why — a missing integration, an unconfigured source, or a
+        summary that dropped what it collected.
       </p>
 
       {view.nudge?.missed_dates.length ? (
@@ -144,8 +144,8 @@ export function StandupReview() {
         <>
           <Card title={`Latest review · ${latest.standup_date}`}>
             <p>
-              {latest.claims_matched} matched · {latest.claims_missing} missing · {latest.claims_contradicted}{' '}
-              contradicted
+              {latest.claims_matched} matched · {latest.claims_missing} missing ·{' '}
+              {latest.claims_contradicted} contradicted
             </p>
             {latest.accuracy_note && <p class="dash-note">{latest.accuracy_note}</p>}
           </Card>
@@ -181,7 +181,9 @@ export function StandupReview() {
             ) : (
               <p>Nothing to file — the report covered what the meeting discussed.</p>
             )}
-            <p class="dash-note">Filing writes public issues on the yeaboi repo. Nothing is sent until you press it.</p>
+            <p class="dash-note">
+              Filing writes public issues on the yeaboi repo. Nothing is sent until you press it.
+            </p>
           </Card>
 
           <Card title="Fix in your config">

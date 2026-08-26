@@ -81,7 +81,9 @@ export function Ceremonies() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Ceremonies</h1>
-          <p class="dash-sub">The clock other modes run on — declared once, fired by your machine.</p>
+          <p class="dash-sub">
+            The clock other modes run on — declared once, fired by your machine.
+          </p>
         </div>
         <div class="dash-actions">
           <a class="button" href="#/ceremonies/slack">
@@ -123,7 +125,11 @@ export function Ceremonies() {
           <Card
             key={row.name}
             title={row.name}
-            actions={<Lozenge category={outcomeCategory(row)}>{row.last_run?.outcome ?? 'never run'}</Lozenge>}
+            actions={
+              <Lozenge category={outcomeCategory(row)}>
+                {row.last_run?.outcome ?? 'never run'}
+              </Lozenge>
+            }
           >
             <StatGrid>
               <StatTile label="Runs" value={row.next_fire} />
@@ -132,7 +138,9 @@ export function Ceremonies() {
               <StatTile label="This month" value={`$${row.month_spend_usd.toFixed(2)}`} />
             </StatGrid>
             {row.last_run?.detail && <p class="dash-note">{row.last_run.detail}</p>}
-            {row.last_run?.error && <NoticeBlock title="Last run failed" items={[row.last_run.error]} />}
+            {row.last_run?.error && (
+              <NoticeBlock title="Last run failed" items={[row.last_run.error]} />
+            )}
             {running === row.name && (
               <ul class="phase-list">
                 {phases.map((phase, index) => (
@@ -252,7 +260,12 @@ function DeclareForm({
       </div>
       <div class="field-row">
         <label for="cer-at">At</label>
-        <input id="cer-at" type="text" value={at} onInput={(e) => setAt((e.target as HTMLInputElement).value)} />
+        <input
+          id="cer-at"
+          type="text"
+          value={at}
+          onInput={(e) => setAt((e.target as HTMLInputElement).value)}
+        />
       </div>
       <div class="field-row">
         <label for="cer-days">Days</label>
@@ -273,7 +286,9 @@ function DeclareForm({
                 checked={channels.includes(channel)}
                 onChange={() =>
                   setChannels((chosen) =>
-                    chosen.includes(channel) ? chosen.filter((c) => c !== channel) : [...chosen, channel],
+                    chosen.includes(channel)
+                      ? chosen.filter((c) => c !== channel)
+                      : [...chosen, channel],
                   )
                 }
               />
@@ -283,7 +298,12 @@ function DeclareForm({
         </div>
       </div>
       <div class="dash-actions">
-        <button type="button" class="primary" disabled={busy || !name || !mode} onClick={() => void submit()}>
+        <button
+          type="button"
+          class="primary"
+          disabled={busy || !name || !mode}
+          onClick={() => void submit()}
+        >
           {busy ? 'Installing…' : 'Declare and install'}
         </button>
       </div>

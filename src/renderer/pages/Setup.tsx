@@ -130,7 +130,11 @@ export function Setup() {
       {step === 0 && (
         <div class="card-grid">
           {catalog.providers.map((card) => (
-            <button key={card.provider_val} class="mode-card provider-card" onClick={() => pickProvider(card)}>
+            <button
+              key={card.provider_val}
+              class="mode-card provider-card"
+              onClick={() => pickProvider(card)}
+            >
               <h3>{card.full_name}</h3>
               <p>{card.tagline}</p>
               <p class="provider-instructions">{card.instructions}</p>
@@ -148,7 +152,10 @@ export function Setup() {
             <div class="settings-row">
               <span class="settings-label">Auth</span>
               <span class="settings-choices">
-                <button class={authMode === 'api_key' ? 'choice active' : 'choice'} onClick={() => setAuthMode('api_key')}>
+                <button
+                  class={authMode === 'api_key' ? 'choice active' : 'choice'}
+                  onClick={() => setAuthMode('api_key')}
+                >
                   api key
                 </button>
                 <button
@@ -172,13 +179,19 @@ export function Setup() {
                   }}
                 />
               ) : (
-                <button onClick={() => setSigningIn(true)}>{signedIn ? 'Sign in again' : 'Sign in with Claude…'}</button>
+                <button onClick={() => setSigningIn(true)}>
+                  {signedIn ? 'Sign in again' : 'Sign in with Claude…'}
+                </button>
               )}
             </div>
           ) : (
             <div class="settings-row">
               <span class="settings-label">
-                {provider.is_region_input ? 'AWS Region' : provider.is_base_url_input ? 'Server URL' : 'API Key'}
+                {provider.is_region_input
+                  ? 'AWS Region'
+                  : provider.is_base_url_input
+                    ? 'Server URL'
+                    : 'API Key'}
               </span>
               <input
                 class="wizard-credential"
@@ -221,14 +234,24 @@ export function Setup() {
           <div class="model-list">
             {models.map((id) => (
               <label key={id} class={model === id ? 'model-option active' : 'model-option'}>
-                <input type="radio" name="model" checked={model === id} onChange={() => setModel(id)} />
+                <input
+                  type="radio"
+                  name="model"
+                  checked={model === id}
+                  onChange={() => setModel(id)}
+                />
                 <code>{id}</code>
                 {id === provider.models.default && <span class="model-tag">recommended</span>}
                 {hints[id] && <span class="model-hint">{hints[id]}</span>}
               </label>
             ))}
             <label class={model === '__custom__' ? 'model-option active' : 'model-option'}>
-              <input type="radio" name="model" checked={model === '__custom__'} onChange={() => setModel('__custom__')} />
+              <input
+                type="radio"
+                name="model"
+                checked={model === '__custom__'}
+                onChange={() => setModel('__custom__')}
+              />
               <span>Custom…</span>
               {model === '__custom__' && (
                 <input
@@ -243,7 +266,10 @@ export function Setup() {
           {saveError && <p class="signin-error">{saveError}</p>}
           <div class="settings-dialog-actions">
             <button onClick={() => setStep(1)}>Back</button>
-            <button disabled={model === '__custom__' && !custom.trim()} onClick={() => void finish()}>
+            <button
+              disabled={model === '__custom__' && !custom.trim()}
+              onClick={() => void finish()}
+            >
               Save
             </button>
           </div>

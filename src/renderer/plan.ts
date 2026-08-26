@@ -23,14 +23,21 @@ export interface PlanSprint {
 
 export interface Plan {
   session_id?: string;
-  project?: { name?: string; description?: string; type?: string; tech_stack?: string[]; team_size?: string };
+  project?: {
+    name?: string;
+    description?: string;
+    type?: string;
+    tech_stack?: string[];
+    team_size?: string;
+  };
   features?: { id?: string; title?: string; description?: string }[];
   stories?: PlanStory[];
   tasks?: { id?: string; title?: string; story_id?: string }[];
   sprints?: PlanSprint[];
 }
 
-export const loadPlan = (sessionId: string): Promise<Envelope<Plan>> => callTool('plan_get', { session_id: sessionId });
+export const loadPlan = (sessionId: string): Promise<Envelope<Plan>> =>
+  callTool('plan_get', { session_id: sessionId });
 
 /** Formats a plan can be written as. `prd` costs one LLM call; the rest do not. */
 export const PLAN_FORMATS = [
@@ -39,7 +46,10 @@ export const PLAN_FORMATS = [
   { key: 'prd', label: 'PRD', note: 'a full requirements document — one LLM call' },
 ] as const;
 
-export const exportPlan = (sessionId: string, format: string): Promise<Envelope<Record<string, unknown>>> =>
+export const exportPlan = (
+  sessionId: string,
+  format: string,
+): Promise<Envelope<Record<string, unknown>>> =>
   callTool('plan_export', { session_id: sessionId, format });
 
 /** Where a plan can be published as a page. */
@@ -69,7 +79,12 @@ export const syncPlan = (
   callTool('plan_sync', { session_id: sessionId, destination, target_sprint: targetSprint });
 
 /** How far a plan got — what the page shows instead of an empty frame. */
-export function planCounts(plan: Plan): { epics: number; stories: number; tasks: number; sprints: number } {
+export function planCounts(plan: Plan): {
+  epics: number;
+  stories: number;
+  tasks: number;
+  sprints: number;
+} {
   return {
     epics: plan.features?.length ?? 0,
     stories: plan.stories?.length ?? 0,
@@ -86,7 +101,9 @@ export function isEmptyPlan(plan: Plan): boolean {
 /** The stories a sprint names, in the sprint's own order. */
 export function storiesOf(plan: Plan, sprint: PlanSprint): PlanStory[] {
   const byId = new Map((plan.stories ?? []).map((story) => [story.id ?? '', story]));
-  return (sprint.story_ids ?? []).map((id) => byId.get(id)).filter((story): story is PlanStory => Boolean(story));
+  return (sprint.story_ids ?? [])
+    .map((id) => byId.get(id))
+    .filter((story): story is PlanStory => Boolean(story));
 }
 
 /**
@@ -114,7 +131,9 @@ export function outcomeMessage(envelope: Envelope<Record<string, unknown>>): str
       .map(([one, many, count]) => `${count} ${count === 1 ? one : many}`);
     const skipped = Number(data.skipped_existing ?? 0);
     if (!parts.length) {
-      return skipped ? `Nothing new — all ${skipped} items were already on the board.` : 'Nothing was created.';
+      return skipped
+        ? `Nothing new — all ${skipped} items were already on the board.`
+        : 'Nothing was created.';
     }
     return `Created ${parts.join(', ')}${skipped ? ` · ${skipped} already existed` : ''}`;
   }

@@ -125,11 +125,14 @@ function ResultCard({
             <StatTile label="Spill" value={pct(profile.spillover?.carried_over_pct)} />
           </StatGrid>
           <p>
-            {profile.sprints_fully_completed} sprint{profile.sprints_fully_completed === 1 ? '' : 's'} finished whole,{' '}
+            {profile.sprints_fully_completed} sprint
+            {profile.sprints_fully_completed === 1 ? '' : 's'} finished whole,{' '}
             {profile.sprints_partially_completed} did not.
           </p>
           {profile.spillover?.most_common_spillover_reason && (
-            <p class="dash-note">Most work spills because: {profile.spillover.most_common_spillover_reason}</p>
+            <p class="dash-note">
+              Most work spills because: {profile.spillover.most_common_spillover_reason}
+            </p>
           )}
         </Card>
       );
@@ -177,7 +180,9 @@ function ResultCard({
               ))}
             </tbody>
           </table>
-          {!(profile.point_calibrations ?? []).length && <p>Not enough estimated stories to calibrate points yet.</p>}
+          {!(profile.point_calibrations ?? []).length && (
+            <p>Not enough estimated stories to calibrate points yet.</p>
+          )}
         </Card>
       );
 
@@ -198,7 +203,9 @@ function ResultCard({
               <li key={item}>{item}</li>
             ))}
           </ul>
-          {!(dod.common_checklist_items ?? []).length && <p>No consistent pre-close behaviour was detectable.</p>}
+          {!(dod.common_checklist_items ?? []).length && (
+            <p>No consistent pre-close behaviour was detectable.</p>
+          )}
         </Card>
       );
     }
@@ -210,7 +217,10 @@ function ResultCard({
           <StatGrid>
             <StatTile label="Median ACs" value={num(writing.median_ac_count)} />
             <StatTile label="Median tasks" value={num(writing.median_task_count_per_story)} />
-            <StatTile label="Stories with subtasks" value={pct(writing.stories_with_subtasks_pct)} />
+            <StatTile
+              label="Stories with subtasks"
+              value={pct(writing.stories_with_subtasks_pct)}
+            />
             <StatTile label="Epics described" value={pct(writing.epics_with_description_pct)} />
           </StatGrid>
           <p>
@@ -218,7 +228,9 @@ function ResultCard({
               {writing.uses_given_when_then ? 'Given/When/Then' : 'Prose acceptance criteria'}
             </Lozenge>{' '}
             <Lozenge category={writing.subtasks_use_consistent_naming ? 'done' : 'todo'} small>
-              {writing.subtasks_use_consistent_naming ? 'Consistent subtask naming' : 'Subtask naming varies'}
+              {writing.subtasks_use_consistent_naming
+                ? 'Consistent subtask naming'
+                : 'Subtask naming varies'}
             </Lozenge>
           </p>
           {(writing.common_personas ?? []).length ? (
@@ -264,7 +276,9 @@ function ResultCard({
               ))}
             </tbody>
           </table>
-          {!(profile.story_shapes ?? []).length && <p>Not enough labelled stories to compare disciplines.</p>}
+          {!(profile.story_shapes ?? []).length && (
+            <p>Not enough labelled stories to compare disciplines.</p>
+          )}
         </Card>
       );
 
@@ -328,8 +342,8 @@ function ResultCard({
             <StatTile label="With an owner" value={String(docs.owned_pages ?? 0)} />
           </StatGrid>
           <p>
-            {docs.clear_pages ?? 0} clear · {docs.mixed_pages ?? 0} mixed · {docs.unclear_pages ?? 0} unclear ·{' '}
-            {docs.ai_marked_pages ?? 0} disclose AI help
+            {docs.clear_pages ?? 0} clear · {docs.mixed_pages ?? 0} mixed ·{' '}
+            {docs.unclear_pages ?? 0} unclear · {docs.ai_marked_pages ?? 0} disclose AI help
           </p>
           {(docs.flagged_pages ?? []).length ? (
             <>
@@ -382,7 +396,9 @@ function RecommendationList({ examples }: { examples: Record<string, any> }) {
   return (
     <ul>
       {items.map((item, index) => (
-        <li key={typeof item === 'string' ? item : index}>{typeof item === 'string' ? item : item.text}</li>
+        <li key={typeof item === 'string' ? item : index}>
+          {typeof item === 'string' ? item : item.text}
+        </li>
       ))}
     </ul>
   );
@@ -429,7 +445,9 @@ function InsightGroups({ examples }: { examples: Record<string, any> }) {
           <h3>{label}</h3>
           <ul>
             {(insights[key] ?? []).map((item: string | Profile, index: number) => (
-              <li key={typeof item === 'string' ? item : index}>{typeof item === 'string' ? item : item.text}</li>
+              <li key={typeof item === 'string' ? item : index}>
+                {typeof item === 'string' ? item : item.text}
+              </li>
             ))}
           </ul>
         </div>

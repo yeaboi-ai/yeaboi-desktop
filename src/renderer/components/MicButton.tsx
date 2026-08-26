@@ -157,7 +157,9 @@ export function MicButton({ onText, disabled }: MicButtonProps) {
           class={phase === 'recording' ? 'mic-button recording' : 'mic-button'}
           aria-pressed={phase === 'recording'}
           aria-label={phase === 'recording' ? 'Stop recording' : 'Dictate'}
-          title={phase === 'recording' ? 'Stop and transcribe · Esc discards' : 'Speak instead of typing'}
+          title={
+            phase === 'recording' ? 'Stop and transcribe · Esc discards' : 'Speak instead of typing'
+          }
           disabled={disabled || busy}
           onClick={() => (phase === 'recording' ? void finish() : void begin())}
         >

@@ -3,7 +3,13 @@
 // persists it and only says that it did.
 
 import { useEffect, useRef, useState } from 'react';
-import { type SignInStatus, signInCancel, signInCode, signInStart, signInStatus } from '../settings';
+import {
+  type SignInStatus,
+  signInCancel,
+  signInCode,
+  signInStart,
+  signInStatus,
+} from '../settings';
 
 const POLL_MS = 1000;
 
@@ -67,8 +73,8 @@ export function SignInPanel({ onClose }: { onClose: (saved: boolean, message: st
   return (
     <div class="signin-panel">
       <p>
-        Sign in with your Claude subscription. A browser window opens; approve the request and paste the code back here
-        if asked.
+        Sign in with your Claude subscription. A browser window opens; approve the request and paste
+        the code back here if asked.
       </p>
       {status?.url ? (
         <p class="signin-url">

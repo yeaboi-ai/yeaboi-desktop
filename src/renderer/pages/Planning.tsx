@@ -40,7 +40,8 @@ export function Planning() {
         <div>
           <h1 class="page-title">Plan a project</h1>
           <p class="intake-lead">
-            Tell me what you're building and why. I'll ask the rest, then draw up epics, stories, tasks and sprints.
+            Tell me what you're building and why. I'll ask the rest, then draw up epics, stories,
+            tasks and sprints.
           </p>
         </div>
       </div>
@@ -55,7 +56,10 @@ export function Planning() {
       />
 
       <div class="intake-dictate">
-        <MicButton disabled={busy} onText={(text) => setDescription((prior) => appendSpoken(prior, text))} />
+        <MicButton
+          disabled={busy}
+          onText={(text) => setDescription((prior) => appendSpoken(prior, text))}
+        />
       </div>
 
       <div class="intake-sizes">
@@ -75,7 +79,12 @@ export function Planning() {
       {error && <p class="intake-error">{error}</p>}
 
       <div class="intake-actions">
-        <button type="button" class="primary" disabled={busy || !description.trim()} onClick={() => void start()}>
+        <button
+          type="button"
+          class="primary"
+          disabled={busy || !description.trim()}
+          onClick={() => void start()}
+        >
           {busy ? 'Opening…' : 'Start planning'}
         </button>
         <a href="#/humans/planning/roadmap">From your roadmap</a>

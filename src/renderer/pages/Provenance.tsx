@@ -8,7 +8,12 @@
 import { Card, DataTable, Lozenge, NoticeBlock, StatGrid, StatTile } from '@design/primitives';
 import { Duck } from '@design/primitives/Duck';
 import { useEffect, useState } from 'react';
-import { type ProvenanceAudit, type ProvenanceTrace, provenanceAudit, provenanceTrace } from '../ops';
+import {
+  type ProvenanceAudit,
+  type ProvenanceTrace,
+  provenanceAudit,
+  provenanceTrace,
+} from '../ops';
 
 const WINDOWS = [7, 30, 90];
 
@@ -42,7 +47,9 @@ export function Provenance() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Provenance</h1>
-          <p class="dash-sub">The tamper-evident record of what was decided, by whom, and on what.</p>
+          <p class="dash-sub">
+            The tamper-evident record of what was decided, by whom, and on what.
+          </p>
         </div>
         <div class="chip-row">
           {WINDOWS.map((days) => (
@@ -77,7 +84,9 @@ export function Provenance() {
         {audit.breaks.length > 0 && (
           <NoticeBlock
             title="Where the chain breaks"
-            items={audit.breaks.map(([sequence, entity, reason]) => `#${sequence} ${entity}: ${reason}`)}
+            items={audit.breaks.map(
+              ([sequence, entity, reason]) => `#${sequence} ${entity}: ${reason}`,
+            )}
           />
         )}
       </Card>
@@ -98,8 +107,8 @@ export function Provenance() {
       <Card title="Lately">
         {audit.recent.length === 0 ? (
           <p>
-            <Duck state="idle" size={28} /> Nothing in this window. Run a standup or a performance workflow and
-            the trail starts itself.
+            <Duck state="idle" size={28} /> Nothing in this window. Run a standup or a performance
+            workflow and the trail starts itself.
           </p>
         ) : (
           <DataTable

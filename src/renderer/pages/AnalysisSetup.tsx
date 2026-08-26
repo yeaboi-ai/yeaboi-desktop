@@ -66,7 +66,9 @@ export function AnalysisSetup() {
       (opts) => {
         setOptions(opts);
         setAnswers({
-          features: Object.keys(opts.features_available).filter((key) => opts.features_available[key]),
+          features: Object.keys(opts.features_available).filter(
+            (key) => opts.features_available[key],
+          ),
           components: { ...opts.grid },
           github_owners: [],
           azdo_projects: [],
@@ -220,13 +222,18 @@ export function AnalysisSetup() {
             <textarea
               id="scope-list"
               rows={4}
-              value={(step === 'github_owners' ? answers.github_owners : answers.azdo_projects).join('\n')}
+              value={(step === 'github_owners'
+                ? answers.github_owners
+                : answers.azdo_projects
+              ).join('\n')}
               onInput={(e) => {
                 const values = (e.target as HTMLTextAreaElement).value
                   .split('\n')
                   .map((v) => v.trim())
                   .filter(Boolean);
-                set(step === 'github_owners' ? { github_owners: values } : { azdo_projects: values });
+                set(
+                  step === 'github_owners' ? { github_owners: values } : { azdo_projects: values },
+                );
               }}
             />
           </div>
@@ -236,10 +243,16 @@ export function AnalysisSetup() {
           <div class="chip-row">
             {options.depths.map((depth) => (
               <label key={depth} class="check-row">
-                <input type="radio" checked={answers.depth === depth} onChange={() => set({ depth })} />
+                <input
+                  type="radio"
+                  checked={answers.depth === depth}
+                  onChange={() => set({ depth })}
+                />
                 <span>
                   <strong>{depth}</strong>
-                  {depth === 'quick' ? ' — no LLM calls, deterministic explanations' : ' — reads and explains tickets'}
+                  {depth === 'quick'
+                    ? ' — no LLM calls, deterministic explanations'
+                    : ' — reads and explains tickets'}
                 </span>
               </label>
             ))}
@@ -306,7 +319,8 @@ export function AnalysisSetup() {
               <strong>Window</strong> {plan.run.window_days} days
             </li>
             <li>
-              <strong>People</strong> {answers.members?.length ? answers.members.join(', ') : 'the whole team'}
+              <strong>People</strong>{' '}
+              {answers.members?.length ? answers.members.join(', ') : 'the whole team'}
             </li>
           </ul>
         )}
@@ -321,7 +335,12 @@ export function AnalysisSetup() {
           </button>
         )}
         {step === 'review' ? (
-          <button type="button" class="primary" disabled={!answers.features.length} onClick={() => void start()}>
+          <button
+            type="button"
+            class="primary"
+            disabled={!answers.features.length}
+            onClick={() => void start()}
+          >
             Run the analysis
           </button>
         ) : (

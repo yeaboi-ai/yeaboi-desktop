@@ -101,7 +101,8 @@ export class EventReader {
         for (const event of events) this.emit(event);
       }
     } catch (error) {
-      if (!controller.signal.aborted) console.error(`[events] feed dropped: ${(error as Error).message}`);
+      if (!controller.signal.aborted)
+        console.error(`[events] feed dropped: ${(error as Error).message}`);
     }
   }
 }

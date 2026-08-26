@@ -105,7 +105,11 @@ export class AppTray {
         { label: 'Come here', enabled: this.petEnabled, click: () => this.pet.recenter() },
         { type: 'separator' },
         { label: `yeaboi ${app.getVersion()}`, enabled: false },
-        { label: updateLabel(this.update), enabled: this.update.kind !== 'unsupported', click: () => this.actions.update() },
+        {
+          label: updateLabel(this.update),
+          enabled: this.update.kind !== 'unsupported',
+          click: () => this.actions.update(),
+        },
         { label: 'About yeaboi', click: () => this.actions.about() },
         { label: 'Quit yeaboi', click: () => this.actions.quit() },
       ]),

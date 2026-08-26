@@ -3,7 +3,13 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Envelope } from '../src/renderer/api';
-import { type Plan, isEmptyPlan, outcomeMessage, planCounts, storiesOf } from '../src/renderer/plan';
+import {
+  type Plan,
+  isEmptyPlan,
+  outcomeMessage,
+  planCounts,
+  storiesOf,
+} from '../src/renderer/plan';
 
 const PLAN: Plan = {
   session_id: 'abc',
@@ -49,7 +55,9 @@ describe('outcomeMessage', () => {
   });
 
   it('names the page a publish made', () => {
-    expect(outcomeMessage(envelope({ url: 'https://notion.so/x' }))).toContain('https://notion.so/x');
+    expect(outcomeMessage(envelope({ url: 'https://notion.so/x' }))).toContain(
+      'https://notion.so/x',
+    );
   });
 
   it('counts what a sync created', () => {
@@ -67,7 +75,12 @@ describe('outcomeMessage', () => {
 
   it('says an idempotent re-run created nothing, rather than reading as a failure', () => {
     const message = outcomeMessage(
-      envelope({ destination: 'jira', stories_created: {}, tasks_created: {}, skipped_existing: 5 }),
+      envelope({
+        destination: 'jira',
+        stories_created: {},
+        tasks_created: {},
+        skipped_existing: 5,
+      }),
     );
     expect(message).toContain('already on the board');
   });

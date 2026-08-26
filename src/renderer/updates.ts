@@ -50,7 +50,10 @@ export function updatePercent(state: UpdateState): number | null {
 }
 
 /** The rows of the About panel: what is running, and what it is running on. */
-export function aboutRows(shell: ShellMeta | null, backend: VersionMeta | null): [string, string][] {
+export function aboutRows(
+  shell: ShellMeta | null,
+  backend: VersionMeta | null,
+): [string, string][] {
   const rows: [string, string][] = [];
   if (shell) {
     rows.push(['App', `${shell.version}${shell.packaged ? '' : ' (dev)'}`]);

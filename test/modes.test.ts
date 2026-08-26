@@ -3,7 +3,12 @@
 // which the route tests cover on the Python side.
 
 import { describe, expect, it } from 'vitest';
-import { emptyModeRun, numberFromHash, reduceModeRun, shipKeyFromHash } from '../src/renderer/modes';
+import {
+  emptyModeRun,
+  numberFromHash,
+  reduceModeRun,
+  shipKeyFromHash,
+} from '../src/renderer/modes';
 
 describe('reduceModeRun', () => {
   const fold = (lines: unknown[]) => lines.reduce(reduceModeRun, emptyModeRun());
@@ -58,7 +63,10 @@ describe('reduceModeRun', () => {
   });
 
   it('ignores an unknown line type — a newer backend is not a failure', () => {
-    const state = fold([{ type: 'op', op_id: 'a' }, { type: 'telemetry', n: 3 }]);
+    const state = fold([
+      { type: 'op', op_id: 'a' },
+      { type: 'telemetry', n: 3 },
+    ]);
     expect(state).toMatchObject({ opId: 'a', finished: false });
   });
 

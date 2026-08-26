@@ -4,7 +4,10 @@
 // here, and the interpreter path must be the one sidecar.ts spawns.
 
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error — a plain .mjs script, deliberately untyped
+// @ts-expect-error — a plain .mjs script, deliberately untyped.
+// The prettier-ignore is load-bearing: the directive suppresses the NEXT line, so
+// a wrapped import moves the error off it and TS reports the directive as unused.
+// prettier-ignore
 import { EXTRAS, PBS_PYTHON, PBS_TAG, PRUNE, TARGETS, parseArgs, pythonPath } from '../scripts/fetch-python.mjs';
 
 describe('TARGETS', () => {
@@ -19,7 +22,10 @@ describe('TARGETS', () => {
   });
 
   it('pins a sha256 for each — a download that is merely successful is not verified', () => {
-    for (const [target, [triple, digest]] of Object.entries(TARGETS) as [string, [string, string]][]) {
+    for (const [target, [triple, digest]] of Object.entries(TARGETS) as [
+      string,
+      [string, string],
+    ][]) {
       expect(triple, target).toMatch(/^[a-z0-9_]+-[a-z0-9-]+$/);
       expect(digest, target).toMatch(/^[0-9a-f]{64}$/);
     }

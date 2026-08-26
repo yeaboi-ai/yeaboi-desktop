@@ -34,7 +34,11 @@ export interface UpdaterLike {
  *
  *  A `.deb` is owned by the system package manager and an unpackaged dev run
  *  has nothing to update — saying so plainly beats a button that fails. */
-export function updateSupport(packaged: boolean, platform: string, appImage: string | undefined): string | null {
+export function updateSupport(
+  packaged: boolean,
+  platform: string,
+  appImage: string | undefined,
+): string | null {
   if (!packaged) return 'Updates are handled by your dev server while running from source.';
   if (platform === 'linux' && !appImage) {
     return 'Installed from a package — update through your package manager.';
@@ -47,7 +51,11 @@ export class Updater implements UpdaterLike {
   private listeners = new Set<(state: UpdateState) => void>();
   private updater: import('electron-updater').AppUpdater | null = null;
 
-  constructor(packaged = app.isPackaged, platform = process.platform, appImage = process.env['APPIMAGE']) {
+  constructor(
+    packaged = app.isPackaged,
+    platform = process.platform,
+    appImage = process.env['APPIMAGE'],
+  ) {
     const unsupported = updateSupport(packaged, platform, appImage);
     this.state = unsupported ? { kind: 'unsupported', reason: unsupported } : { kind: 'idle' };
   }
@@ -75,10 +83,13 @@ export class Updater implements UpdaterLike {
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.on('download-progress', (progress) => {
-      const version = this.state.kind === 'idle' ? '' : ((this.state as { version?: string }).version ?? '');
+      const version =
+        this.state.kind === 'idle' ? '' : ((this.state as { version?: string }).version ?? '');
       this.set({ kind: 'downloading', version, percent: Math.round(progress.percent) });
     });
-    autoUpdater.on('update-downloaded', (info) => this.set({ kind: 'ready', version: info.version }));
+    autoUpdater.on('update-downloaded', (info) =>
+      this.set({ kind: 'ready', version: info.version }),
+    );
     autoUpdater.on('error', (error) => this.set({ kind: 'error', message: error.message }));
     this.updater = autoUpdater;
     return autoUpdater;
@@ -90,7 +101,9 @@ export class Updater implements UpdaterLike {
     try {
       const result = await (await this.engine()).checkForUpdates();
       const version = result?.updateInfo.version ?? app.getVersion();
-      return this.set(version && version !== app.getVersion() ? { kind: 'available', version } : { kind: 'idle' });
+      return this.set(
+        version && version !== app.getVersion() ? { kind: 'available', version } : { kind: 'idle' },
+      );
     } catch (error) {
       return this.set({ kind: 'error', message: (error as Error).message });
     }

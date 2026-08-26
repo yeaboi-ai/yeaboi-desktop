@@ -102,12 +102,16 @@ export function PlanView() {
           </Card>
 
           {(plan.sprints ?? []).map((sprint, index) => (
-            <Card key={`${sprint.name ?? 'sprint'}-${index}`} title={sprint.name || `Sprint ${index + 1}`}>
+            <Card
+              key={`${sprint.name ?? 'sprint'}-${index}`}
+              title={sprint.name || `Sprint ${index + 1}`}
+            >
               {sprint.goal && <p>{sprint.goal}</p>}
               <ul class="plan-stories">
                 {storiesOf(plan, sprint).map((story) => (
                   <li key={story.id}>
-                    <Lozenge category="todo">{story.story_points ?? 0}</Lozenge> {story.title || story.id}
+                    <Lozenge category="todo">{story.story_points ?? 0}</Lozenge>{' '}
+                    {story.title || story.id}
                   </li>
                 ))}
               </ul>

@@ -75,18 +75,29 @@ export interface SignInStatus {
 
 export const loadSettings = () => apiGet<SettingsSnapshot>('/api/settings');
 export const loadProviders = () => apiGet<ProviderCatalog>('/api/settings/providers');
-export const saveSetting = (key: string, value: string) => apiPost<WriteResult>('/api/settings/set', { key, value });
-export const saveAllowedPaths = (paths: string[]) => apiPost<WriteResult>('/api/settings/allowed-paths', { paths });
+export const saveSetting = (key: string, value: string) =>
+  apiPost<WriteResult>('/api/settings/set', { key, value });
+export const saveAllowedPaths = (paths: string[]) =>
+  apiPost<WriteResult>('/api/settings/allowed-paths', { paths });
 export const saveDataDir = (value: string, move: boolean) =>
   apiPost<WriteResult>('/api/settings/data-dir', { value, move });
 export const verifyProvider = (provider: string, credential: string, model = '') =>
-  apiPost<{ ok: boolean; message: string }>('/api/settings/provider/verify', { provider, credential, model });
-export const discoverModels = (provider: string, credential: string) =>
-  apiPost<{ models: string[]; default: string; hints: Record<string, string> }>('/api/settings/provider/models', {
+  apiPost<{ ok: boolean; message: string }>('/api/settings/provider/verify', {
     provider,
     credential,
+    model,
   });
-export const signInStart = () => apiPost<{ started: boolean; message: string }>('/api/settings/signin/start');
+export const discoverModels = (provider: string, credential: string) =>
+  apiPost<{ models: string[]; default: string; hints: Record<string, string> }>(
+    '/api/settings/provider/models',
+    {
+      provider,
+      credential,
+    },
+  );
+export const signInStart = () =>
+  apiPost<{ started: boolean; message: string }>('/api/settings/signin/start');
 export const signInStatus = () => apiGet<SignInStatus>('/api/settings/signin');
-export const signInCode = (code: string) => apiPost<{ ok: boolean }>('/api/settings/signin/code', { code });
+export const signInCode = (code: string) =>
+  apiPost<{ ok: boolean }>('/api/settings/signin/code', { code });
 export const signInCancel = () => apiPost<{ ok: boolean }>('/api/settings/signin/cancel');

@@ -49,7 +49,11 @@ function visibleProviderEnvs(fields: SettingField[], catalog: ProviderCatalog | 
   const provider = activeChoice(fields, 'LLM_PROVIDER');
   if (provider === 'anthropic') {
     visible.add('ANTHROPIC_AUTH_MODE');
-    visible.add(activeChoice(fields, 'ANTHROPIC_AUTH_MODE') === 'subscription' ? 'CLAUDE_CODE_OAUTH_TOKEN' : 'ANTHROPIC_API_KEY');
+    visible.add(
+      activeChoice(fields, 'ANTHROPIC_AUTH_MODE') === 'subscription'
+        ? 'CLAUDE_CODE_OAUTH_TOKEN'
+        : 'ANTHROPIC_API_KEY',
+    );
   } else if (provider === 'bedrock') {
     visible.add('AWS_REGION');
     visible.add('AWS_PROFILE');
@@ -160,14 +164,26 @@ export function Settings() {
     }
 
     if (field.action === 'allowed-paths') {
-      return <AllowedPathsRow key={field.env} field={field} onSaved={(m) => (setStatus(m), void refresh())} />;
+      return (
+        <AllowedPathsRow
+          key={field.env}
+          field={field}
+          onSaved={(m) => (setStatus(m), void refresh())}
+        />
+      );
     }
 
     if (field.action === 'voice-device') {
       // The snapshot's device list is PortAudio's — the terminal's stack, not
       // this window's. MicTest enumerates the engine's own devices and saves
       // the same VOICE_DEVICE *name* back, which is the part both surfaces share.
-      return <MicTest key={field.env} value={field.value} onSave={(name) => void save(field.env, name)} />;
+      return (
+        <MicTest
+          key={field.env}
+          value={field.value}
+          onSave={(name) => void save(field.env, name)}
+        />
+      );
     }
 
     const isEditing = editing === field.env;
@@ -205,7 +221,11 @@ export function Settings() {
         ) : (
           <>
             <span class={field.is_set ? 'settings-value' : 'settings-value unset'}>
-              {field.is_set ? field.value : field.default ? `${field.default} (default)` : 'not set'}
+              {field.is_set
+                ? field.value
+                : field.default
+                  ? `${field.default} (default)`
+                  : 'not set'}
             </span>
             <button onClick={() => beginEdit(field)}>Edit</button>
           </>
@@ -254,14 +274,20 @@ export function Settings() {
       <h1 class="page-title">Settings</h1>
       <nav class="settings-tabs">
         {SETTINGS_TABS.map((t) => (
-          <a key={t.route} href={`#${t.route}`} aria-current={t.route === tab.route ? 'page' : undefined}>
+          <a
+            key={t.route}
+            href={`#${t.route}`}
+            aria-current={t.route === tab.route ? 'page' : undefined}
+          >
             {t.title}
           </a>
         ))}
       </nav>
 
       {restartNeeded && (
-        <div class="settings-banner">Restart yeaboi (quit and reopen the app) to fully apply the data directory.</div>
+        <div class="settings-banner">
+          Restart yeaboi (quit and reopen the app) to fully apply the data directory.
+        </div>
       )}
       {status && (
         <div class="settings-status">
@@ -331,7 +357,13 @@ export function Settings() {
   );
 }
 
-function AllowedPathsRow({ field, onSaved }: { field: SettingField; onSaved: (message: string) => void }) {
+function AllowedPathsRow({
+  field,
+  onSaved,
+}: {
+  field: SettingField;
+  onSaved: (message: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [paths, setPaths] = useState<string[]>([]);
   const [next, setNext] = useState('');
@@ -417,7 +449,9 @@ function DictationRow() {
   return (
     <div class="settings-row readonly">
       <span class="settings-label">Dictation</span>
-      <span class={voice.state === 'ready' ? 'settings-value good' : 'settings-value'}>{voice.detail}</span>
+      <span class={voice.state === 'ready' ? 'settings-value good' : 'settings-value'}>
+        {voice.detail}
+      </span>
       {voice.state === 'installable' && (
         <button type="button" onClick={() => setSetup(voice)}>
           Set up ({voice.install.size_mb} MB)

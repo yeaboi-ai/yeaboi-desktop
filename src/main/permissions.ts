@@ -39,7 +39,11 @@ export function navigationAllowed(url: string, devServerUrl?: string): boolean {
   } catch {
     return false;
   }
-  if (target.protocol === 'http:' && (target.hostname === '127.0.0.1' || target.hostname === 'localhost')) return true;
+  if (
+    target.protocol === 'http:' &&
+    (target.hostname === '127.0.0.1' || target.hostname === 'localhost')
+  )
+    return true;
   if (!devServerUrl) return false;
   try {
     // The dev server's own hash routes are the app navigating within itself.
@@ -52,9 +56,15 @@ export function navigationAllowed(url: string, devServerUrl?: string): boolean {
 /** The slice of a session this module touches. */
 export interface PermissionSession {
   setPermissionRequestHandler(
-    handler: (contents: WebContents | null, permission: string, callback: (allowed: boolean) => void) => void,
+    handler: (
+      contents: WebContents | null,
+      permission: string,
+      callback: (allowed: boolean) => void,
+    ) => void,
   ): void;
-  setPermissionCheckHandler(handler: (contents: WebContents | null, permission: string) => boolean): void;
+  setPermissionCheckHandler(
+    handler: (contents: WebContents | null, permission: string) => boolean,
+  ): void;
 }
 
 /**
@@ -78,7 +88,9 @@ export function installPermissionHandlers(
     });
     // The synchronous half — getUserMedia consults this before it prompts, and
     // it is what decides whether device labels are visible at all.
-    target.setPermissionCheckHandler((contents, permission) => permitted(permission, isAppWindow(contents)));
+    target.setPermissionCheckHandler((contents, permission) =>
+      permitted(permission, isAppWindow(contents)),
+    );
   };
   onSessionCreated(apply);
   apply(defaultSession);

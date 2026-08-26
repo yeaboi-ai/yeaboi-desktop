@@ -94,7 +94,9 @@ export function MicTest({ value, onSave }: MicTestProps) {
           {'▇'.repeat(cells) + '▁'.repeat(8 - cells)}
         </span>
       )}
-      {testing && cells === 0 && <span class="mic-status">say something — nothing is reaching this mic</span>}
+      {testing && cells === 0 && (
+        <span class="mic-status">say something — nothing is reaching this mic</span>
+      )}
       {note && <span class="mic-status error">{note}</span>}
     </div>
   );

@@ -3,3 +3,8 @@ out/
 dist/
 resources/py/
 .python-cache/
+
+# The shared tooling checkout, pinned by .tooling-rev — cloned, never committed.
+.tooling/
+.claude/worktrees/
+__pycache__/

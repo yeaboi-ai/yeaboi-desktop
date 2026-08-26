@@ -71,7 +71,8 @@ export function Screensaver({ idleSeconds, forced, onDismiss }: ScreensaverProps
       onDismiss();
     };
     const events = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart'] as const;
-    for (const name of events) window.addEventListener(name, dismiss, { once: true, passive: true });
+    for (const name of events)
+      window.addEventListener(name, dismiss, { once: true, passive: true });
     return () => {
       for (const name of events) window.removeEventListener(name, dismiss);
     };

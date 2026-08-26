@@ -58,10 +58,17 @@ export function PokerBoard() {
 
       {state.notice && <NoticeBlock title="Table" items={[state.notice]} />}
 
-      <Card title={state.ticket ? `${state.ticket.key ?? ''} ${state.ticket.summary ?? ''}` : 'No ticket'}>
+      <Card
+        title={
+          state.ticket ? `${state.ticket.key ?? ''} ${state.ticket.summary ?? ''}` : 'No ticket'
+        }
+      >
         <StatGrid>
           <StatTile label="Ticket" value={`${state.ticket_index + 1} / ${state.ticket_count}`} />
-          <StatTile label="Estimated" value={`${state.progress.estimated} / ${state.progress.total}`} />
+          <StatTile
+            label="Estimated"
+            value={`${state.progress.estimated} / ${state.progress.total}`}
+          />
           <StatTile label="At the table" value={String(state.presence.length)} />
           <StatTile label="Phase" value={voting ? 'voting' : 'revealed'} />
         </StatGrid>
@@ -75,7 +82,10 @@ export function PokerBoard() {
             <li key={vote.name}>
               {vote.name}
               {/* While voting, the board sends who has voted and nothing more. */}
-              <span class="dash-note"> — {voting ? (vote.voted ? 'voted' : 'thinking…') : (vote.value ?? '—')}</span>
+              <span class="dash-note">
+                {' '}
+                — {voting ? (vote.voted ? 'voted' : 'thinking…') : (vote.value ?? '—')}
+              </span>
             </li>
           ))}
         </ul>

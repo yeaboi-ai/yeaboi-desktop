@@ -36,7 +36,12 @@ describe('reduceAnon', () => {
   it('done carries the map, the note and the warnings', () => {
     const state = fold([
       { type: 'op', op_id: 'abc' },
-      { type: 'done', note: '2 masked', replacements: [['Acme', 'Company A']], warnings: ['no model'] },
+      {
+        type: 'done',
+        note: '2 masked',
+        replacements: [['Acme', 'Company A']],
+        warnings: ['no model'],
+      },
     ]);
     expect(state.replacements).toEqual([['Acme', 'Company A']]);
     expect(state.note).toBe('2 masked');
@@ -83,7 +88,7 @@ describe('maskText', () => {
     expect(maskText('Ada', [['', 'X']])).toBe('Ada');
   });
 
-  it('does not mutate the caller\'s replacement list', () => {
+  it("does not mutate the caller's replacement list", () => {
     const replacements: [string, string][] = [
       ['Acme', 'Company A'],
       ['Acme Payments', 'Product B'],

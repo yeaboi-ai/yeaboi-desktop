@@ -173,7 +173,11 @@ export function ReportingSetup() {
           <div class="chip-row">
             {sprints.sprints.map((sprint, index) => (
               <label key={sprint.name} class="check-row">
-                <input type="checkbox" checked={checked.includes(index)} onChange={() => toggleSprint(index)} />
+                <input
+                  type="checkbox"
+                  checked={checked.includes(index)}
+                  onChange={() => toggleSprint(index)}
+                />
                 <span>
                   <strong>{sprint.name}</strong>
                   <span class="dash-note">
@@ -235,7 +239,12 @@ export function ReportingSetup() {
       </Card>
 
       <div class="dash-actions">
-        <button type="button" class="primary" disabled={busy || !canRun} onClick={() => void start()}>
+        <button
+          type="button"
+          class="primary"
+          disabled={busy || !canRun}
+          onClick={() => void start()}
+        >
           {busy ? 'Generating…' : 'Generate report'}
         </button>
         {busy && run.opId && (

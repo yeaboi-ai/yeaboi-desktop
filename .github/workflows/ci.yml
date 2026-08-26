@@ -1,0 +1,85 @@
+# CI for yeaboi-desktop — the Electron shell over the `yeaboi app` loopback
+# backend.
+#
+# Job names become the required-check strings `ci / <job name>` — keep them
+# stable and identical across the yeaboi repos so one ruleset is copy-paste.
+#
+# Nothing here launches Electron, so nothing here downloads it: the binary is a
+# ~100MB fetch and typecheck, vitest and the manifest gate all run without it.
+# The signed three-OS pack belongs to release.yml, not to PR CI.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+jobs:
+  gate:
+    name: Lint, typecheck and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: make install
+      # `lint` is `typecheck`. There is no ESLint in this tree and never was;
+      # with strict TypeScript on, `tsc --noEmit` is what actually rejects code.
+      - run: make lint
+      - run: make format-check
+      - run: make test-fast
+
+  manifest:
+    name: Renderer routes match the manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: make install
+      # The parity seam, and the only check in this repo that fails for a reason
+      # in ANOTHER one. `contracts/v1/routes_manifest.json` is vendored from
+      # yeaboi at the sha in `.contracts-rev`, and yeaboi's surface-parity suite
+      # reads it there to decide whether a capability reached the desktop. This
+      # regenerates it from src/renderer/routes.json + actions.ts and fails on a
+      # difference — so adding a route here without landing the manifest in
+      # yeaboi is red on this side, and removing a capability there without
+      # removing the route is red on that one.
+      - run: make check-manifest
+
+  contracts:
+    name: Vendored contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Asserts contracts/v1/ still matches the yeaboi sha in .contracts-rev,
+      # and notes when that pin has fallen behind upstream.
+      - run: make contracts-check
+
+  tooling:
+    name: Shared tooling contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Asserts the `.tooling` pin is honoured and that this repo defines every
+      # target the devkit's commands and hooks call on it. Without it, a renamed
+      # or deleted target is silent until somebody's Stop hook quietly stops
+      # verifying anything.
+      - run: make tooling-check

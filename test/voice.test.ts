@@ -96,13 +96,15 @@ describe('stageLine', () => {
     expect(stageLine({ type: 'stage', stage: 'install', detail: 'resolving faster-whisper' })).toBe(
       'Installing dictation — resolving faster-whisper',
     );
-    expect(stageLine({ type: 'stage', stage: 'install', detail: '' })).toBe('Installing dictation…');
+    expect(stageLine({ type: 'stage', stage: 'install', detail: '' })).toBe(
+      'Installing dictation…',
+    );
   });
 
   it('reports a real percentage once there is one', () => {
-    expect(stageLine({ type: 'stage', stage: 'download', fraction: 0.5, detail: '70/145 MB' })).toBe(
-      'Speech model 50% · 70/145 MB',
-    );
+    expect(
+      stageLine({ type: 'stage', stage: 'download', fraction: 0.5, detail: '70/145 MB' }),
+    ).toBe('Speech model 50% · 70/145 MB');
   });
 
   it('does not invent a percentage before the total is known', () => {

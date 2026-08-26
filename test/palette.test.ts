@@ -90,7 +90,9 @@ describe('isTyping', () => {
   it('says yes for the fields a bare "?" must reach', () => {
     expect(isTyping({ tagName: 'TEXTAREA' } as unknown as EventTarget)).toBe(true);
     expect(isTyping({ tagName: 'INPUT' } as unknown as EventTarget)).toBe(true);
-    expect(isTyping({ tagName: 'DIV', isContentEditable: true } as unknown as EventTarget)).toBe(true);
+    expect(isTyping({ tagName: 'DIV', isContentEditable: true } as unknown as EventTarget)).toBe(
+      true,
+    );
   });
 
   it('says no for the page itself', () => {

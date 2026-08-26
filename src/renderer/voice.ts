@@ -144,7 +144,8 @@ export function clock(seconds: number): string {
  * terminal should recognise it here.
  */
 export function stageLine(line: VoiceStageLine): string {
-  if (line.stage === 'install') return line.detail ? `Installing dictation — ${line.detail}` : 'Installing dictation…';
+  if (line.stage === 'install')
+    return line.detail ? `Installing dictation — ${line.detail}` : 'Installing dictation…';
   if (line.stage === 'download') {
     if (line.fraction === null || line.fraction === undefined) {
       return `Speech model — ${line.detail || 'connecting'}…`;
@@ -158,7 +159,9 @@ export function stageLine(line: VoiceStageLine): string {
 
 /** What to say while a transcript is being made. */
 export function transcribingLine(modelCached: boolean): string {
-  return modelCached ? 'Transcribing your speech…' : 'Preparing the speech model (first run downloads it)…';
+  return modelCached
+    ? 'Transcribing your speech…'
+    : 'Preparing the speech model (first run downloads it)…';
 }
 
 // ── the microphone ───────────────────────────────────────────────────────────
@@ -204,7 +207,14 @@ export class MicSession {
         audioBitsPerSecond: AUDIO_BITRATE,
       });
     }
-    const session = new MicSession(stream, context, analyser, recorder, mime || 'audio/webm', label);
+    const session = new MicSession(
+      stream,
+      context,
+      analyser,
+      recorder,
+      mime || 'audio/webm',
+      label,
+    );
     if (recorder) {
       recorder.ondataavailable = (event) => {
         if (event.data.size) session.chunks.push(event.data);

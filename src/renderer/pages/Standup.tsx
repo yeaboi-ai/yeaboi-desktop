@@ -100,7 +100,12 @@ export function Standup() {
           </p>
         </div>
         <div class="dash-actions">
-          <button type="button" class="primary" disabled={busy || !data.session_id} onClick={() => void generate(false)}>
+          <button
+            type="button"
+            class="primary"
+            disabled={busy || !data.session_id}
+            onClick={() => void generate(false)}
+          >
             {busy ? 'Generating…' : 'Generate'}
           </button>
           <button type="button" disabled={busy || !report} onClick={() => void generate(true)}>
@@ -145,7 +150,13 @@ export function Standup() {
           <ul class="member-list">
             {data.history.map((entry) => (
               <li key={entry.id}>
-                <span class={entry.id === runId || (!runId && entry === data.history[0]) ? 'dot active' : 'dot'} />
+                <span
+                  class={
+                    entry.id === runId || (!runId && entry === data.history[0])
+                      ? 'dot active'
+                      : 'dot'
+                  }
+                />
                 <button type="button" class="rail-tab" onClick={() => setRunId(entry.id)}>
                   {entry.standup_date} · day {entry.sprint_day} · {entry.confidence_pct}%
                 </button>
@@ -179,7 +190,8 @@ export function Standup() {
             {!run.phases.length && <li>Starting…</li>}
           </ol>
           <p class="dash-note">
-            <Duck state="idle" size={20} /> A standup run cannot be stopped part-way — it finishes or it fails.
+            <Duck state="idle" size={20} /> A standup run cannot be stopped part-way — it finishes
+            or it fails.
           </p>
         </Card>
       )}
@@ -191,7 +203,9 @@ export function Standup() {
           <StatTile label="Sprint" value={report.sprint_name || '—'} />
           <StatTile
             label="Sprint day"
-            value={report.sprint_total_days ? `${report.sprint_day} of ${report.sprint_total_days}` : '—'}
+            value={
+              report.sprint_total_days ? `${report.sprint_day} of ${report.sprint_total_days}` : '—'
+            }
           />
           <StatTile label="Confidence" value={report.confidence_label || '—'} />
           <StatTile label="Updates" value={String(report.member_updates.length)} />
@@ -321,8 +335,9 @@ function CardBody({
         <Card title="Transcript Review" actions={<a href="#/humans/standup/review">Open</a>}>
           {data.nudge?.missed_dates.length ? (
             <p>
-              {data.nudge.missed_dates.length} standup{data.nudge.missed_dates.length === 1 ? '' : 's'} went unchecked
-              — oldest {data.nudge.missed_dates[data.nudge.missed_dates.length - 1]}.
+              {data.nudge.missed_dates.length} standup
+              {data.nudge.missed_dates.length === 1 ? '' : 's'} went unchecked — oldest{' '}
+              {data.nudge.missed_dates[data.nudge.missed_dates.length - 1]}.
             </p>
           ) : null}
           {data.review ? (
@@ -342,7 +357,9 @@ function CardBody({
           {data.config ? (
             <p>
               {config.enabled ? 'Enabled' : 'Off'} · {config.time ?? '—'} · {config.weekdays ?? '—'}
-              {data.schedule.installed ? ` · installed (${data.schedule.platform ?? 'os'})` : ' · no OS job'}
+              {data.schedule.installed
+                ? ` · installed (${data.schedule.platform ?? 'os'})`
+                : ' · no OS job'}
             </p>
           ) : (
             <p>Not configured.</p>
@@ -385,7 +402,11 @@ function MemberCard({
   return (
     <Card
       title={maskText(member.name, mask)}
-      actions={<Lozenge category={active ? 'done' : 'todo'} small>{active ? 'active' : 'quiet'}</Lozenge>}
+      actions={
+        <Lozenge category={active ? 'done' : 'todo'} small>
+          {active ? 'active' : 'quiet'}
+        </Lozenge>
+      }
     >
       <p>{maskText(member.summary, mask) || 'No activity detected.'}</p>
       {member.blockers && <NoticeBlock title="Blocked" items={[maskText(member.blockers, mask)]} />}

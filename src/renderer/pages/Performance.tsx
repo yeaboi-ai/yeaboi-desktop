@@ -22,7 +22,8 @@ export function Performance() {
         <div>
           <h1 class="page-title">Performance</h1>
           <p class="dash-sub">
-            1:1 prep, completion and the 6-month review — for the people who did the work on the board.
+            1:1 prep, completion and the 6-month review — for the people who did the work on the
+            board.
           </p>
         </div>
       </header>

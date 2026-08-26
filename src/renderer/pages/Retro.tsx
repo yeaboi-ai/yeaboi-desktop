@@ -6,7 +6,13 @@
 import { Card, NoticeBlock, StatGrid, StatTile } from '@design/primitives';
 import { Duck } from '@design/primitives/Duck';
 import { useEffect, useState } from 'react';
-import { type BoardSnapshot, type RetroRun, loadBoards, retroHistory, startRetroBoard } from '../boards';
+import {
+  type BoardSnapshot,
+  type RetroRun,
+  loadBoards,
+  retroHistory,
+  startRetroBoard,
+} from '../boards';
 import { ResultActions } from '../components/ResultActions';
 
 export function Retro() {
@@ -51,11 +57,16 @@ export function Retro() {
       <header class="dash-head">
         <div>
           <h1 class="page-title">Retro</h1>
-          <p class="dash-sub">A live board your team fills in from their browsers, and every retro before it.</p>
+          <p class="dash-sub">
+            A live board your team fills in from their browsers, and every retro before it.
+          </p>
         </div>
         <div class="dash-actions">
           {live ? (
-            <a class="button primary" href={`#/humans/retro/board?id=${encodeURIComponent(live.board_id)}`}>
+            <a
+              class="button primary"
+              href={`#/humans/retro/board?id=${encodeURIComponent(live.board_id)}`}
+            >
               Rejoin the live board
             </a>
           ) : (
@@ -78,7 +89,10 @@ export function Retro() {
                 <StatTile label="Cards" value={String(run.card_count ?? 0)} />
                 <StatTile label="Actions" value={String(run.action_count ?? 0)} />
               </StatGrid>
-              <ResultActions refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }} mode="retro" />
+              <ResultActions
+                refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
+                mode="retro"
+              />
             </Card>
           ))}
         </div>
@@ -87,8 +101,8 @@ export function Retro() {
       {runs && runs.length === 0 && (
         <Card title="No retros yet">
           <p>
-            <Duck state="idle" size={28} /> Start a board and send the invite — everyone adds cards from their own
-            browser, and yeaboi drafts the action items when you are done.
+            <Duck state="idle" size={28} /> Start a board and send the invite — everyone adds cards
+            from their own browser, and yeaboi drafts the action items when you are done.
           </p>
         </Card>
       )}

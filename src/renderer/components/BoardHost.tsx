@@ -13,7 +13,14 @@
 import { NoticeBlock } from '@design/primitives';
 import { useEffect, useState } from 'react';
 import { quip } from '../ambience';
-import { type BoardSnapshot, boardInvite, closeBoard, loadBoard, openBoardWindow, retryLink } from '../boards';
+import {
+  type BoardSnapshot,
+  boardInvite,
+  closeBoard,
+  loadBoard,
+  openBoardWindow,
+  retryLink,
+} from '../boards';
 
 /** How often a live board is re-read. The board itself pushes to the browsers
  *  that joined it; this is the host's own view catching up. */
@@ -37,7 +44,13 @@ export function useBoard(boardId: string): [BoardSnapshot | null, string, () => 
   return [board, error, refresh];
 }
 
-export function BoardHost({ board, onClosed }: { board: BoardSnapshot; onClosed: (runId: number) => void }) {
+export function BoardHost({
+  board,
+  onClosed,
+}: {
+  board: BoardSnapshot;
+  onClosed: (runId: number) => void;
+}) {
   const [invite, setInvite] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,7 +60,10 @@ export function BoardHost({ board, onClosed }: { board: BoardSnapshot; onClosed:
       setInvite('');
       return;
     }
-    boardInvite(board.board_id).then((body) => setInvite(body.invite), () => undefined);
+    boardInvite(board.board_id).then(
+      (body) => setInvite(body.invite),
+      () => undefined,
+    );
   }, [board.board_id, board.link.state]);
 
   async function copyInvite() {

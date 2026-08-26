@@ -36,7 +36,10 @@ export function parseDockRect(stdout: string): DockRect | null {
 
 /** The dock's geometry in window-local coordinates, as the pet renderer wants
  *  it — or `{present: false}`, which it draws as a plain floor. */
-export function dockConfig(rect: DockRect | null, origin: { x: number; y: number }): Record<string, unknown> {
+export function dockConfig(
+  rect: DockRect | null,
+  origin: { x: number; y: number },
+): Record<string, unknown> {
   if (!rect) return { present: false };
   return { x: rect.x - origin.x, top: rect.y - origin.y, w: rect.w, h: rect.h, present: true };
 }

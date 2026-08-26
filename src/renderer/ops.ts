@@ -79,7 +79,10 @@ export const loadCeremonies = (): Promise<CeremoniesPage> => apiGet('/api/ceremo
 export const declareCeremony = (body: Record<string, unknown>): Promise<DeclaredCeremony> =>
   apiPost('/api/ceremonies', body);
 
-export const setCeremonyEnabled = (name: string, enabled: boolean): Promise<{ scheduler: string }> =>
+export const setCeremonyEnabled = (
+  name: string,
+  enabled: boolean,
+): Promise<{ scheduler: string }> =>
   apiPost(`/api/ceremonies/${encodeURIComponent(name)}/enabled`, { enabled });
 
 export const removeCeremony = (name: string): Promise<{ removed: boolean; scheduler: string }> =>
@@ -192,7 +195,11 @@ export function reduceAgentRun(state: AgentRunState, line: unknown): AgentRunSta
     case 'progress':
       return { ...state, phases: [...state.phases, String(row.phase ?? '')] };
     case 'done':
-      return { ...state, report: (row.report ?? null) as Record<string, unknown> | null, finished: true };
+      return {
+        ...state,
+        report: (row.report ?? null) as Record<string, unknown> | null,
+        finished: true,
+      };
     case 'error':
       return { ...state, error: String(row.message ?? 'The pass stopped.'), finished: true };
     default:

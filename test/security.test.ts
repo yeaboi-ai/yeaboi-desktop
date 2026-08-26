@@ -32,8 +32,12 @@ describe('navigationAllowed', () => {
   });
 
   it('allows the dev server it was given, by origin', () => {
-    expect(navigationAllowed('http://dev.internal:5399/#/home', 'http://dev.internal:5399/')).toBe(true);
-    expect(navigationAllowed('http://other.internal:5399/', 'http://dev.internal:5399/')).toBe(false);
+    expect(navigationAllowed('http://dev.internal:5399/#/home', 'http://dev.internal:5399/')).toBe(
+      true,
+    );
+    expect(navigationAllowed('http://other.internal:5399/', 'http://dev.internal:5399/')).toBe(
+      false,
+    );
   });
 
   it('refuses everything else when no dev server is running', () => {

@@ -31,7 +31,8 @@ export function ReportingStyle() {
     );
   }, []);
 
-  if (error && !options) return <NoticeBlock title="Could not open the deck style" items={[error]} />;
+  if (error && !options)
+    return <NoticeBlock title="Could not open the deck style" items={[error]} />;
   if (!options || !style) return <p>Loading…</p>;
 
   const set = (key: string, value: string | number | boolean) => {
@@ -50,7 +51,9 @@ export function ReportingStyle() {
   };
 
   const label = (key: string, value: string | number): string =>
-    key === 'content_fit' ? (options.style_choices.content_fit_labels[String(value)] ?? String(value)) : String(value);
+    key === 'content_fit'
+      ? (options.style_choices.content_fit_labels[String(value)] ?? String(value))
+      : String(value);
 
   async function save() {
     try {
@@ -133,7 +136,9 @@ function StyleInput({
 }) {
   const id = `style-${field.key}`;
   if (field.kind === 'bool') {
-    return <input id={id} type="checkbox" checked={Boolean(value)} onChange={() => onChange(!value)} />;
+    return (
+      <input id={id} type="checkbox" checked={Boolean(value)} onChange={() => onChange(!value)} />
+    );
   }
   if (field.kind === 'color') {
     // A palette role or a literal hex — the backend resolves either, so the

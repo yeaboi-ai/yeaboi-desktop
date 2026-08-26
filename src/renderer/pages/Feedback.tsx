@@ -46,13 +46,16 @@ export function Feedback() {
     setBusy('polish');
     setStatus('');
     polishFeedback(draft)
-      .then((answer) => {
-        if (answer.polished) {
-          setTitle(answer.polished.title);
-          setDescription(answer.polished.description);
-        }
-        setStatus(answer.status);
-      }, (e: Error) => setStatus(e.message))
+      .then(
+        (answer) => {
+          if (answer.polished) {
+            setTitle(answer.polished.title);
+            setDescription(answer.polished.description);
+          }
+          setStatus(answer.status);
+        },
+        (e: Error) => setStatus(e.message),
+      )
       .finally(() => setBusy(''));
   }
 
@@ -60,10 +63,13 @@ export function Feedback() {
     setBusy('submit');
     setStatus('');
     submitFeedback(draft)
-      .then((answer) => {
-        setResult(answer);
-        if (answer.ok) duckVoice().say('Sent it!');
-      }, (e: Error) => setStatus(e.message))
+      .then(
+        (answer) => {
+          setResult(answer);
+          if (answer.ok) duckVoice().say('Sent it!');
+        },
+        (e: Error) => setStatus(e.message),
+      )
       .finally(() => setBusy(''));
   }
 
@@ -128,7 +134,10 @@ export function Feedback() {
         </div>
         <div class="settings-row">
           <span class="settings-label">Area</span>
-          <select value={area} onChange={(event) => setArea((event.target as HTMLSelectElement).value)}>
+          <select
+            value={area}
+            onChange={(event) => setArea((event.target as HTMLSelectElement).value)}
+          >
             {options.areas.map((option) => (
               <option key={option} value={option}>
                 {option}

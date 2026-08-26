@@ -144,7 +144,8 @@ if (!gotLock) {
     ipcMain.handle('update:install', () => updater.install());
     updater.onState((state) => {
       tray?.setUpdateState(state);
-      for (const window of BrowserWindow.getAllWindows()) window.webContents.send('update:state', state);
+      for (const window of BrowserWindow.getAllWindows())
+        window.webContents.send('update:state', state);
     });
     sidecar.onState((state) => {
       console.log(`[backend] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}`);

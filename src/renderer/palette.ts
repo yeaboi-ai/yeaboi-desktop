@@ -56,7 +56,13 @@ export function matchEntries(entries: PaletteEntry[], query: string): PaletteEnt
   const scored = entries
     .map((entry, index) => {
       const title = entry.title.toLowerCase();
-      const rank = title.startsWith(needle) ? 0 : title.includes(needle) ? 1 : entry.path.includes(needle) ? 2 : -1;
+      const rank = title.startsWith(needle)
+        ? 0
+        : title.includes(needle)
+          ? 1
+          : entry.path.includes(needle)
+            ? 2
+            : -1;
       return { entry, rank, index };
     })
     .filter((row) => row.rank >= 0);
@@ -87,7 +93,9 @@ export function isTyping(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null;
   if (!element) return false;
   const tag = element.tagName?.toLowerCase();
-  return tag === 'input' || tag === 'textarea' || tag === 'select' || element.isContentEditable === true;
+  return (
+    tag === 'input' || tag === 'textarea' || tag === 'select' || element.isContentEditable === true
+  );
 }
 
 export interface Shortcut {

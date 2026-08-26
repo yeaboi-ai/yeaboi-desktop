@@ -124,7 +124,8 @@ export interface ReportRun {
   item_count: number;
 }
 
-export const loadReportingOptions = (): Promise<ReportingOptions> => apiGet('/api/reporting/options');
+export const loadReportingOptions = (): Promise<ReportingOptions> =>
+  apiGet('/api/reporting/options');
 
 export const loadSprints = (sessionId: string): Promise<SprintList> =>
   apiGet(`/api/reporting/sprints?session_id=${encodeURIComponent(sessionId)}`);
@@ -132,7 +133,9 @@ export const loadSprints = (sessionId: string): Promise<SprintList> =>
 export const resolveWindow = (sprints: SprintRow[], checked: number[]): Promise<ReportWindow> =>
   apiPost('/api/reporting/window', { sprints, checked });
 
-export const saveDeckStyle = (style: DeckStyle): Promise<{ style: DeckStyle; style_summary: string }> =>
+export const saveDeckStyle = (
+  style: DeckStyle,
+): Promise<{ style: DeckStyle; style_summary: string }> =>
   apiPost('/api/reporting/style', { style });
 
 export const resetDeckStyle = (): Promise<{ style: DeckStyle; style_summary: string }> =>
@@ -141,15 +144,20 @@ export const resetDeckStyle = (): Promise<{ style: DeckStyle; style_summary: str
 export const askFit = (
   ref: { session_id: string; run_id: number },
   style: DeckStyle,
-): Promise<{ extra_slides: number; style: DeckStyle }> => apiPost('/api/reporting/fit', { ...ref, style });
+): Promise<{ extra_slides: number; style: DeckStyle }> =>
+  apiPost('/api/reporting/fit', { ...ref, style });
 
-export const exportDeck = (body: Record<string, unknown>): Promise<{ paths: Record<string, string> }> =>
-  apiPost('/api/reporting/export', body);
+export const exportDeck = (
+  body: Record<string, unknown>,
+): Promise<{ paths: Record<string, string> }> => apiPost('/api/reporting/export', body);
 
-export const runReport = (body: Record<string, unknown>, onLine: (line: unknown) => void): Promise<void> =>
-  apiStream('/api/reporting/run', body, onLine);
+export const runReport = (
+  body: Record<string, unknown>,
+  onLine: (line: unknown) => void,
+): Promise<void> => apiStream('/api/reporting/run', body, onLine);
 
-export const reportingHistory = (): Promise<Envelope<{ history: ReportRun[] }>> => callTool('reporting_history', {});
+export const reportingHistory = (): Promise<Envelope<{ history: ReportRun[] }>> =>
+  callTool('reporting_history', {});
 
 // ── Performance ────────────────────────────────────────────────────────────
 
@@ -177,12 +185,16 @@ export interface EngineerFile {
   latest: { title: string; artifact_kind: string; artifact: Record<string, unknown> } | null;
 }
 
-export const loadPerformanceRoster = (): Promise<PerformanceRoster> => apiGet('/api/performance/roster');
+export const loadPerformanceRoster = (): Promise<PerformanceRoster> =>
+  apiGet('/api/performance/roster');
 
 export const loadEngineer = (name: string): Promise<EngineerFile> =>
   apiGet(`/api/performance/engineer/${encodeURIComponent(name)}`);
 
-export const runPrep = (engineer: string, sessionId: string): Promise<Envelope<Record<string, unknown>>> =>
+export const runPrep = (
+  engineer: string,
+  sessionId: string,
+): Promise<Envelope<Record<string, unknown>>> =>
   callTool('perf_one_on_one_prep', { engineer, session_id: sessionId });
 
 export const completeOneOnOne = (
@@ -192,10 +204,16 @@ export const completeOneOnOne = (
 ): Promise<Envelope<Record<string, unknown>>> =>
   callTool('perf_one_on_one_complete', { engineer, transcript, session_id: sessionId });
 
-export const runReview = (engineer: string, sessionId: string): Promise<Envelope<Record<string, unknown>>> =>
+export const runReview = (
+  engineer: string,
+  sessionId: string,
+): Promise<Envelope<Record<string, unknown>>> =>
   callTool('perf_six_month_review', { engineer, session_id: sessionId });
 
-export const addNote = (engineer: string, note: string): Promise<Envelope<Record<string, unknown>>> =>
+export const addNote = (
+  engineer: string,
+  note: string,
+): Promise<Envelope<Record<string, unknown>>> =>
   callTool('perf_note_add', { engineer, note_text: note });
 
 // ── Roadmap ────────────────────────────────────────────────────────────────
@@ -232,9 +250,11 @@ export interface SavedRoadmap {
   project_count: number;
 }
 
-export const loadRoadmapOptions = (): Promise<{ sources: RoadmapSourceOption[] }> => apiGet('/api/roadmap/options');
+export const loadRoadmapOptions = (): Promise<{ sources: RoadmapSourceOption[] }> =>
+  apiGet('/api/roadmap/options');
 
-export const loadSavedRoadmaps = (): Promise<{ roadmaps: SavedRoadmap[] }> => apiGet('/api/roadmap/saved');
+export const loadSavedRoadmaps = (): Promise<{ roadmaps: SavedRoadmap[] }> =>
+  apiGet('/api/roadmap/saved');
 
 export const loadRoadmap = (id: number): Promise<{ roadmap: Record<string, unknown> }> =>
   apiGet(`/api/roadmap/saved/${id}`);
@@ -247,7 +267,8 @@ export const analyzeRoadmap = (
 export const planProject = (
   roadmapId: number,
   index: number,
-): Promise<{ intake_mode: string; description: string }> => apiPost('/api/roadmap/plan', { roadmap_id: roadmapId, index });
+): Promise<{ intake_mode: string; description: string }> =>
+  apiPost('/api/roadmap/plan', { roadmap_id: roadmapId, index });
 
 // ── Ship ───────────────────────────────────────────────────────────────────
 
@@ -310,14 +331,16 @@ export interface ShipSnapshot {
 
 export const loadStories = (): Promise<ShipStories> => apiGet('/api/ship/stories');
 
-export const resolveRepo = (repo: string): Promise<ShipTarget> => apiPost('/api/ship/target', { repo });
+export const resolveRepo = (repo: string): Promise<ShipTarget> =>
+  apiPost('/api/ship/target', { repo });
 
 export const loadShipRuns = (): Promise<{ runs: ShipSnapshot[] }> => apiGet('/api/ship/runs');
 
 export const loadShipRun = (key: string): Promise<ShipSnapshot> =>
   apiGet(`/api/ship/runs/${encodeURIComponent(key)}`);
 
-export const launchShip = (body: Record<string, unknown>): Promise<ShipSnapshot> => apiPost('/api/ship/runs', body);
+export const launchShip = (body: Record<string, unknown>): Promise<ShipSnapshot> =>
+  apiPost('/api/ship/runs', body);
 
 export const answerGate = (
   key: string,

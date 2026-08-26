@@ -124,7 +124,11 @@ export function attachImage(
   mime: string,
   index: number,
 ): Promise<{ path: string; chip: string }> {
-  return apiPost(`/api/chat/sessions/${encodeURIComponent(projectId)}/attachments`, { image, mime, index });
+  return apiPost(`/api/chat/sessions/${encodeURIComponent(projectId)}/attachments`, {
+    image,
+    mime,
+    index,
+  });
 }
 
 /** The transcript a session view draws as, ignoring line types a card owns. */

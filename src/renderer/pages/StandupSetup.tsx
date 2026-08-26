@@ -48,7 +48,9 @@ export function StandupSetup() {
   const [sessionId, setSessionId] = useState('');
   const [config, setConfig] = useState<Config | null>(null);
   const [candidates, setCandidates] = useState<string[] | null>(null);
-  const [owners, setOwners] = useState<{ github_owners: string[]; azdo_projects: string[] } | null>(null);
+  const [owners, setOwners] = useState<{ github_owners: string[]; azdo_projects: string[] } | null>(
+    null,
+  );
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
@@ -68,25 +70,36 @@ export function StandupSetup() {
 
   async function discoverTeam() {
     setBusy('team');
-    const envelope = await callTool<{ members: { name?: string }[] | string[] }>('standup_members', {
-      session_id: sessionId,
-      tracker_sources: config?.tracker_sources.length ? config.tracker_sources : null,
-    });
+    const envelope = await callTool<{ members: { name?: string }[] | string[] }>(
+      'standup_members',
+      {
+        session_id: sessionId,
+        tracker_sources: config?.tracker_sources.length ? config.tracker_sources : null,
+      },
+    );
     setBusy('');
     if (!envelope.ok) return setError(envelope.error?.message ?? 'standup_members failed');
     setCandidates(
-      (envelope.data.members as (string | { name?: string })[]).map((m) => (typeof m === 'string' ? m : (m.name ?? ''))),
+      (envelope.data.members as (string | { name?: string })[]).map((m) =>
+        typeof m === 'string' ? m : (m.name ?? ''),
+      ),
     );
   }
 
   async function discoverRepos() {
     setBusy('repos');
-    const envelope = await callTool<{ github_owners: string[]; azdo_projects: string[] }>('standup_repositories', {
-      code_sources: config?.code_sources.length ? config.code_sources : null,
-    });
+    const envelope = await callTool<{ github_owners: string[]; azdo_projects: string[] }>(
+      'standup_repositories',
+      {
+        code_sources: config?.code_sources.length ? config.code_sources : null,
+      },
+    );
     setBusy('');
     if (!envelope.ok) return setError(envelope.error?.message ?? 'standup_repositories failed');
-    setOwners({ github_owners: envelope.data.github_owners, azdo_projects: envelope.data.azdo_projects });
+    setOwners({
+      github_owners: envelope.data.github_owners,
+      azdo_projects: envelope.data.azdo_projects,
+    });
   }
 
   async function save() {
@@ -112,9 +125,14 @@ export function StandupSetup() {
       <h1 class="page-title">Standup setup</h1>
       <p class="dash-sub">What the standup reads, and who it reads it for.</p>
 
-      <Card title="Team" actions={<button type="button" disabled={!!busy} onClick={() => void discoverTeam()}>
-        {busy === 'team' ? 'Looking…' : 'Find people'}
-      </button>}>
+      <Card
+        title="Team"
+        actions={
+          <button type="button" disabled={!!busy} onClick={() => void discoverTeam()}>
+            {busy === 'team' ? 'Looking…' : 'Find people'}
+          </button>
+        }
+      >
         <div class="chip-row">
           {TRACKERS.map((source) => (
             <label key={source} class="check-row">
@@ -139,7 +157,9 @@ export function StandupSetup() {
                 <span>{name}</span>
               </label>
             ))}
-            {!candidates.length && <p>No candidates came back — check the tracker credentials in Settings.</p>}
+            {!candidates.length && (
+              <p>No candidates came back — check the tracker credentials in Settings.</p>
+            )}
           </div>
         ) : (
           <p class="dash-note">
@@ -150,9 +170,14 @@ export function StandupSetup() {
         )}
       </Card>
 
-      <Card title="Code" actions={<button type="button" disabled={!!busy} onClick={() => void discoverRepos()}>
-        {busy === 'repos' ? 'Looking…' : 'Find repositories'}
-      </button>}>
+      <Card
+        title="Code"
+        actions={
+          <button type="button" disabled={!!busy} onClick={() => void discoverRepos()}>
+            {busy === 'repos' ? 'Looking…' : 'Find repositories'}
+          </button>
+        }
+      >
         <div class="chip-row">
           {CODE_SOURCES.map((source) => (
             <label key={source} class="check-row">
@@ -211,13 +236,17 @@ export function StandupSetup() {
               <input
                 type="checkbox"
                 checked={config.documentation_sources.includes(source)}
-                onChange={() => set({ documentation_sources: toggle(config.documentation_sources, source) })}
+                onChange={() =>
+                  set({ documentation_sources: toggle(config.documentation_sources, source) })
+                }
               />
               <span>{source}</span>
             </label>
           ))}
         </div>
-        <p class="dash-note">Repository documentation follows the code repositories selected above.</p>
+        <p class="dash-note">
+          Repository documentation follows the code repositories selected above.
+        </p>
       </Card>
 
       <Card title="You">
@@ -241,7 +270,9 @@ export function StandupSetup() {
             onInput={(e) => set({ my_aliases: (e.target as HTMLInputElement).value })}
           />
         </div>
-        <p class="dash-note">Commit authors and tracker names that are also you, so your activity lands on your card.</p>
+        <p class="dash-note">
+          Commit authors and tracker names that are also you, so your activity lands on your card.
+        </p>
         <div class="field-row">
           <label for="standup-transcripts">Transcript folder</label>
           <input

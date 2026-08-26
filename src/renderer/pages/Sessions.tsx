@@ -35,7 +35,9 @@ export function Sessions() {
     return (
       <div>
         <h1 class="page-title">Saved plans</h1>
-        <p>Nothing yet. <a href="#/humans/planning">Start a plan</a> and it will show up here.</p>
+        <p>
+          Nothing yet. <a href="#/humans/planning">Start a plan</a> and it will show up here.
+        </p>
       </div>
     );
 

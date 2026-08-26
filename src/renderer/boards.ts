@@ -74,15 +74,23 @@ export function retryLink(boardId: string): Promise<{ link: LinkState }> {
 }
 
 export function boardInvite(boardId: string): Promise<{ invite: string; display_code: string }> {
-  return apiGet<{ invite: string; display_code: string }>(`/api/boards/${encodeURIComponent(boardId)}/invite`);
+  return apiGet<{ invite: string; display_code: string }>(
+    `/api/boards/${encodeURIComponent(boardId)}/invite`,
+  );
 }
 
-export function generateActionItems(boardId: string): Promise<{ message: string; state: RetroBoardState }> {
-  return apiPost<{ message: string; state: RetroBoardState }>(`/api/boards/${encodeURIComponent(boardId)}/actions`);
+export function generateActionItems(
+  boardId: string,
+): Promise<{ message: string; state: RetroBoardState }> {
+  return apiPost<{ message: string; state: RetroBoardState }>(
+    `/api/boards/${encodeURIComponent(boardId)}/actions`,
+  );
 }
 
 export function closeBoard(boardId: string): Promise<{ closed: boolean; run_id: number }> {
-  return apiPost<{ closed: boolean; run_id: number }>(`/api/boards/${encodeURIComponent(boardId)}/close`);
+  return apiPost<{ closed: boolean; run_id: number }>(
+    `/api/boards/${encodeURIComponent(boardId)}/close`,
+  );
 }
 
 export interface RetroRun {
@@ -194,7 +202,10 @@ export interface ExportResult {
   paths?: Record<string, string>;
 }
 
-export function loadDestinations(mode: string, extras: string[] = []): Promise<{ destinations: Destination[] }> {
+export function loadDestinations(
+  mode: string,
+  extras: string[] = [],
+): Promise<{ destinations: Destination[] }> {
   const query = new URLSearchParams({ mode });
   if (extras.length) query.set('extras', extras.join(','));
   return apiGet<{ destinations: Destination[] }>(`/api/export/destinations?${query}`);
@@ -285,12 +296,26 @@ export interface ArtifactFieldSpec {
 export interface ArtifactEdits {
   kind: string;
   ops: string[];
-  artifact: { label: string; note: string; fields: ArtifactFieldSpec[]; headless: boolean; shared: boolean };
+  artifact: {
+    label: string;
+    note: string;
+    fields: ArtifactFieldSpec[];
+    headless: boolean;
+    shared: boolean;
+  };
   count: number;
   editors: string[];
   /** Always "self-declared": whoever held the link typed the name. */
   attribution: string;
-  edits: { id: string; seq: number; op: string; path: string; value: string; author: string; at: string }[];
+  edits: {
+    id: string;
+    seq: number;
+    op: string;
+    path: string;
+    value: string;
+    author: string;
+    at: string;
+  }[];
 }
 
 export function loadArtifactEdits(ref: ArtifactRef): Promise<ArtifactEdits> {
@@ -323,7 +348,15 @@ export interface AnonState {
 }
 
 export function emptyAnon(): AnonState {
-  return { opId: '', phases: [], note: '', replacements: [], warnings: [], error: '', finished: false };
+  return {
+    opId: '',
+    phases: [],
+    note: '',
+    replacements: [],
+    warnings: [],
+    error: '',
+    finished: false,
+  };
 }
 
 /** Fold one NDJSON line into the anonymize pass's state. Returns a new object. */
@@ -388,7 +421,9 @@ export function maskText(text: string, replacements: [string, string][]): string
  * renderer navigating to it.
  */
 export function openBoardWindow(boardId: string): Promise<unknown> {
-  const bridge = (window as unknown as { yeaboi?: { openBoard?: (id: string) => Promise<unknown> } }).yeaboi;
+  const bridge = (
+    window as unknown as { yeaboi?: { openBoard?: (id: string) => Promise<unknown> } }
+  ).yeaboi;
   if (!bridge?.openBoard) return Promise.reject(new Error('board windows need the desktop shell'));
   return bridge.openBoard(boardId);
 }

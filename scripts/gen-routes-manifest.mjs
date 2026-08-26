@@ -10,7 +10,7 @@ import { exit } from 'node:process';
 
 const here = import.meta.dirname;
 const source = resolve(here, '../src/renderer/routes.json');
-const target = resolve(here, '../../contracts/v1/routes_manifest.json');
+const target = resolve(here, '../contracts/v1/routes_manifest.json');
 
 const registry = JSON.parse(readFileSync(source, 'utf-8'));
 const rendered = `${JSON.stringify(registry, null, 2)}\n`;
@@ -18,7 +18,9 @@ const rendered = `${JSON.stringify(registry, null, 2)}\n`;
 if (process.argv.includes('--check')) {
   const committed = readFileSync(target, 'utf-8');
   if (committed !== rendered) {
-    console.error(`stale manifest: ${target}\nrun \`npm run gen-manifest\` (in desktop/) and commit the result`);
+    console.error(
+      `stale manifest: ${target}\nrun \`npm run gen-manifest\` (in desktop/) and commit the result`,
+    );
     exit(1);
   }
   console.log('routes manifest is current');
