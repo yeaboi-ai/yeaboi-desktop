@@ -64,6 +64,23 @@ jobs:
       # removing the route is red on that one.
       - run: make check-manifest
 
+  build:
+    name: The renderer builds clean
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: make install
+      # Nothing else here builds, which is how `@yeaboi-ai/design` shipping a
+      # stylesheet without its fonts reached this app: the build warned, exited
+      # 0, and the renderer fell back to the system font stack. `build-check`
+      # turns an unresolved reference into a red job.
+      - run: make build-check
+
   contracts:
     name: Vendored contracts
     runs-on: ubuntu-latest

@@ -2,7 +2,7 @@
   "name": "yeaboi-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "yeaboi desktop — Electron shell over the yeaboi app backend",
+  "description": "yeaboi desktop \u2014 Electron shell over the yeaboi app backend",
   "type": "module",
   "main": "out/main/index.js",
   "homepage": "https://yeaboi.ai",
@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "build:check": "node scripts/check-build.mjs",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "npm run typecheck",

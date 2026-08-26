@@ -23,7 +23,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 ## Gate
 
 `make ship-gate` = `lint` → `format-check` → `test` → `build` → `contracts-check` → `tooling-check`
-→ `check-manifest`.
+→ `check-manifest` → `build-check`.
 
 - **`lint` is `typecheck`.** No ESLint in this tree, and never was. With strict TypeScript on,
   `tsc --noEmit` is what actually rejects code, so that is what the target honestly runs.
@@ -31,6 +31,10 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
   the route manifest under it is generated, so reformatting either makes a `--check` unsatisfiable.
 - **Electron is never downloaded.** `ELECTRON_SKIP_BINARY_DOWNLOAD=1` in CI and in
   `scripts/provision.sh`; nothing in the ordinary loop launches it. `make pack` fetches it.
+- **`build-check` exists because a bundler warning here is a hole in the app.** `npm run build`
+  exits 0 on a `url()` it could not resolve — the asset is "resolved at runtime", where nothing
+  resolves it. `@yeaboi-ai/design@1.0.0` shipped `fonts.css` without its three faces exactly that
+  way, and the renderer fell back to the system font stack with every check green.
 
 ## Two contracts come from `yeaboi`
 

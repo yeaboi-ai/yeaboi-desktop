@@ -42,7 +42,7 @@ CONTRACTS_REPO  := https://github.com/yeaboi-ai/yeaboi.ai.git
 CONTRACTS_DIR   := .
 CONTRACTS_PATHS := contracts/v1
 
-.PHONY: help check-manifest gen-manifest icons bundle pack dist clean
+.PHONY: help check-manifest gen-manifest icons build-check bundle pack dist clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -101,10 +101,16 @@ dist: ## Signed installers into dist/ — needs the signing env vars (release.ym
 	$(MAKE) build
 	npx electron-builder --publish never
 
+# `npm run build` exits 0 on an unresolved `url()` — the asset is left to be
+# "resolved at runtime", where nothing resolves it. That is how a design package
+# missing its fonts reached this app as a silent fallback to the system stack.
+build-check: ## Build, and fail on the warnings a build is allowed to survive
+	$(NPM) run build:check
+
 clean: ## Remove build output and the staged runtime
 	rm -rf out dist resources/py
 
 # node.mk already makes this `lint format-check test build`. Adding prerequisites
 # WITHOUT a recipe extends that list rather than replacing it — an override of a
 # target that already has a recipe makes `make` warn, and the warning is right.
-ship-gate: contracts-check tooling-check check-manifest
+ship-gate: contracts-check tooling-check check-manifest build-check

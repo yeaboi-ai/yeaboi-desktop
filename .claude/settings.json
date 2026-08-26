@@ -22,6 +22,7 @@
       "Bash(make build)",
       "Bash(make check-manifest)",
       "Bash(make gen-manifest)",
+      "Bash(make build-check)",
       "Bash(make tooling-check)",
       "Bash(make contracts-check)",
       "Bash(make wt-list)",
