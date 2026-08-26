@@ -35,6 +35,16 @@ export default defineConfig({
     },
   },
   renderer: {
+    // @yeaboi-ai/design ships SOURCE .tsx, and esbuild does not apply this
+    // project's tsconfig jsx settings to files under node_modules — it fell
+    // back to the classic transform, emitting React.createElement into a
+    // bundle that imports no React. The window came up blank on
+    // "React is not defined". Set it here, where it covers every file Vite
+    // transforms rather than only the ones tsconfig reaches.
+    esbuild: {
+      jsx: 'automatic',
+      jsxImportSource: 'preact',
+    },
     resolve: {
       alias: rendererAliases,
       dedupe: ['preact'],
