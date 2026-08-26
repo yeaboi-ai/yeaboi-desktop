@@ -122,3 +122,27 @@ describe('updateLabel', () => {
     expect(updateLabel({ kind: 'error', message: 'nope' })).toContain('failed');
   });
 });
+
+describe('the update affordance the route registry declares', () => {
+  // yeaboi's TERMINAL_ONLY says the terminal's Ctrl-U pip-and-relaunch is absent
+  // here because "the desktop updates through electron-updater". That claim used
+  // to be checked by a Python test reading this tree; across two repos it travels
+  // as `action:check-for-updates` in the manifest, and this is the half that
+  // asserts the entry is backed by something real.
+  it('is backed by electron-updater, not merely listed', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const root = resolve(import.meta.dirname, '..');
+    const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
+
+    const routes = JSON.parse(read('src/renderer/routes.json'));
+    expect(routes.routes.map((r: { path: string }) => r.path)).toContain(
+      'action:check-for-updates',
+    );
+
+    expect(read('src/main/updater.ts')).toContain('electron-updater');
+    expect(read('package.json')).toContain('electron-updater');
+    // The panel that offers it, and the call it makes.
+    expect(read('src/renderer/components/AboutPanel.tsx')).toContain('checkForUpdate');
+  });
+});

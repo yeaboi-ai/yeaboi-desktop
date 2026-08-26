@@ -197,6 +197,11 @@
       "title": "Setup"
     },
     {
+      "path": "action:check-for-updates",
+      "capability": null,
+      "title": "Check for updates"
+    },
+    {
       "path": "dialog:export",
       "capability": "output-sharing",
       "title": "Export"
@@ -221,17 +226,31 @@
     {
       "route": "/settings/credentials",
       "title": "Credentials",
-      "sections": ["provider", "jira", "azure", "github", "notion", "slack"]
+      "sections": [
+        "provider",
+        "jira",
+        "azure",
+        "github",
+        "notion",
+        "slack"
+      ]
     },
     {
       "route": "/settings/sharing",
       "title": "Sharing",
-      "sections": ["sharing"]
+      "sections": [
+        "sharing"
+      ]
     },
     {
       "route": "/settings/system",
       "title": "System",
-      "sections": ["storage", "standup", "voice", "advanced"]
+      "sections": [
+        "storage",
+        "standup",
+        "voice",
+        "advanced"
+      ]
     }
   ],
   "commands": [
