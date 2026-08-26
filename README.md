@@ -1,7 +1,36 @@
-# yeaboi-desktop
+<div align="center">
 
-The desktop app for [yeaboi](https://yeaboi.ai) — an Electron shell over `yeaboi app`, the loopback
-HTTP backend that ships inside the `yeaboi` Python package.
+<img src="https://yeaboi.ai/banner.jpg" alt="yeaboi.ai" width="800"/>
+
+# 🤙 yeaboi-desktop
+
+**yeaboi as a desktop app — an Electron shell over `yeaboi app`, the loopback HTTP backend that ships inside the Python package.**
+
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/yeaboi-ai/yeaboi-desktop?style=for-the-badge&logo=github&label=Release)](https://github.com/yeaboi-ai/yeaboi-desktop/releases)
+[![Part of yeaboi](https://img.shields.io/badge/part%20of-yeaboi-ff6600?style=for-the-badge)](https://github.com/yeaboi-ai/yeaboi.ai)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/yeaboi-ai/yeaboi-desktop/ci.yml?style=for-the-badge&label=CI&logo=github)](https://github.com/yeaboi-ai/yeaboi-desktop/actions)
+
+</div>
+
+---
+
+<div align="center">
+<img src="https://yeaboi.ai/demo-desktop.gif" alt="The yeaboi desktop app — the home grid of Humans and Agents modes, then Agent Usage, Planning and Standup" width="800"/>
+
+*The window, across a few of its routes. `make demo` re-records this from `demo_spec.py`.*
+</div>
+
+---
+
+## What this is
+
+The sixth surface, and one of **five repos that make one product**:
+[yeaboi](https://github.com/yeaboi-ai/yeaboi.ai) (the Python — engines, TUI, CLI, MCP),
+[yeaboi-frontend](https://github.com/yeaboi-ai/yeaboi-frontend), this one,
+[yeaboi-site](https://github.com/yeaboi-ai/yeaboi-site) and
+[yeaboi-tooling](https://github.com/yeaboi-ai/yeaboi-tooling).
 
 The renderer is an ordinary Vite/Preact ESM app. It is deliberately **not** one of the front end's
 IIFE bundles: that constraint exists for `file://` exports and tunnel CSPs, and neither applies to a
@@ -43,3 +72,7 @@ manifest, then `make contracts-sync` here.
 `.github/workflows/release.yml`, on a `v*` tag or a dispatch. It refuses a version that is not a
 final `X.Y.Z` already on PyPI, builds and signs on four runners, asks Gatekeeper what it thinks of
 the mac build, and publishes a draft GitHub release that `electron-updater` polls.
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.
