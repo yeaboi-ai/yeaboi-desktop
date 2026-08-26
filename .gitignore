@@ -8,3 +8,6 @@ resources/py/
 .tooling/
 .claude/worktrees/
 __pycache__/
+
+# Feature clips render here; only the spec in .demo/clips/ is committed.
+.demo/out/
