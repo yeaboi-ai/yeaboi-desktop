@@ -109,10 +109,28 @@ export class LivekitSidecar {
     this.setState({ kind: 'starting' });
     const url = `ws://127.0.0.1:${PORT}`;
 
-    if (!(await portFree(PORT))) {
-      // Someone already serves 7880 — the dev docker stack, or an earlier
-      // instance. Adopt it: spawning a second server would just crash.
+    // Adopt an already-answering server first (the dev docker stack, or an
+    // earlier instance). An HTTP answer is the reliable signal — on macOS,
+    // Docker's 0.0.0.0 port proxy lets a second 127.0.0.1 bind "succeed", so
+    // a bind probe alone lies.
+    const answering = await fetch(`http://127.0.0.1:${PORT}`, {
+      signal: AbortSignal.timeout(1_000),
+    }).then(
+      () => true,
+      () => false,
+    );
+    if (answering || !(await portFree(PORT))) {
       this.setState({ kind: 'ready', url, external: true });
+      return;
+    }
+    if (!(await portFree(7881))) {
+      // 7880 free but the RTC port taken — a half-visible LiveKit (a docker
+      // container publishing only 7881/7882, say). Spawning would bind 7880
+      // and then die on 7881; saying why beats a cryptic exit code 0.
+      this.setState({
+        kind: 'down',
+        reason: 'port 7881 is in use by another LiveKit — stop it (e.g. the docker stack) to use the bundled server',
+      });
       return;
     }
 
