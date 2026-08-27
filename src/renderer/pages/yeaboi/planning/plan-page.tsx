@@ -25,6 +25,7 @@ import {
   syncPlan,
 } from '@/lib/yeaboi/plan';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { PlanImportDialog } from '@/components/yeaboi/plan-import-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -46,6 +47,7 @@ function PlanBody({ sessionId }: { sessionId: string }) {
   const [message, setMessage] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
   const [confirm, setConfirm] = useState<Pending>(null);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     loadPlan(sessionId).then(
@@ -168,7 +170,17 @@ function PlanBody({ sessionId }: { sessionId: string }) {
         </div>
       </Section>
 
-      <Section title="Push it to your board">
+      <Section title="Put it on the board">
+        <p className="text-[12px] text-muted-foreground mb-3">
+          Stories become cards on a project&apos;s kanban board here in the app — sprints as waves,
+          epics as labels. Ship can pick them up from there.
+        </p>
+        <Button size="sm" disabled={isEmptyPlan(plan)} onClick={() => setImporting(true)}>
+          Send to board
+        </Button>
+      </Section>
+
+      <Section title="Push it to an external tracker">
         <div className="flex flex-wrap gap-2">
           {PLAN_TRACKERS.map((tracker) => (
             <Button
@@ -202,6 +214,8 @@ function PlanBody({ sessionId }: { sessionId: string }) {
           </ul>
         </Section>
       )}
+
+      {importing && <PlanImportDialog plan={plan} onClose={() => setImporting(false)} />}
 
       {confirm && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-background/60 backdrop-blur-sm">

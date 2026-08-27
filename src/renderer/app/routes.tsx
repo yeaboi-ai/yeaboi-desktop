@@ -15,6 +15,8 @@ import PlanPage from '@/pages/yeaboi/planning/plan-page';
 import PlanningPage from '@/pages/yeaboi/planning/planning-page';
 import RoadmapPage from '@/pages/yeaboi/planning/roadmap-page';
 import PlanningSessionsPage from '@/pages/yeaboi/planning/sessions-page';
+import ShipPage from '@/pages/yeaboi/ship/ship-page';
+import ShipRunPage from '@/pages/yeaboi/ship/ship-run-page';
 import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
@@ -80,6 +82,8 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/humans/planning/plan': <PlanPage />,
   '/humans/planning/sessions': <PlanningSessionsPage />,
   '/humans/planning/roadmap': <RoadmapPage />,
+  '/humans/ship': <ShipPage />,
+  '/humans/ship/run': <ShipRunPage />,
 };
 
 // Registry paths the planning routes below already serve, and the non-route
