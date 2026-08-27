@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useEffect, useState } from 'react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface BlueprintGap {
   section: string;
@@ -10,9 +10,9 @@ export interface BlueprintGap {
 }
 
 export interface ParsedBullet {
-  id: string;       // stable normalized form used as the bullet id
-  text: string;     // human-readable bullet text
-  section: string;  // owning section slug
+  id: string; // stable normalized form used as the bullet id
+  text: string; // human-readable bullet text
+  section: string; // owning section slug
 }
 
 export interface BlueprintGapsResult {
@@ -36,26 +36,26 @@ export interface BlueprintGapsResult {
 }
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI / UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI / UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 const BULLET_PREFIX_RE = /^\s*[-*•]\s*/;
 const WHITESPACE_RE = /\s+/g;
 
 function normalizeBullet(line: string): string {
-  return line.replace(BULLET_PREFIX_RE, "").trim().replace(WHITESPACE_RE, " ").toLowerCase();
+  return line.replace(BULLET_PREFIX_RE, '').trim().replace(WHITESPACE_RE, ' ').toLowerCase();
 }
 
 function splitBullets(text: string): Array<{ raw: string; norm: string }> {
@@ -66,7 +66,7 @@ function splitBullets(text: string): Array<{ raw: string; norm: string }> {
     const norm = normalizeBullet(rawLine);
     if (!norm || seen.has(norm)) continue;
     seen.add(norm);
-    out.push({ raw: rawLine.replace(BULLET_PREFIX_RE, "").trimEnd(), norm });
+    out.push({ raw: rawLine.replace(BULLET_PREFIX_RE, '').trimEnd(), norm });
   }
   return out;
 }
@@ -109,14 +109,14 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
         // Bullets — flatten across all sections, keep section provenance.
         const bullets: ParsedBullet[] = [];
         for (const [section, body] of Object.entries(content)) {
-          for (const b of splitBullets(body || "")) {
+          for (const b of splitBullets(body || '')) {
             bullets.push({ id: b.norm, text: b.raw, section });
           }
         }
 
         // Open questions land as their own list so the launcher can show
         // them directly under "Resume last session".
-        const openQuestions = splitBullets(content.open_questions || "").map((b) => b.raw);
+        const openQuestions = splitBullets(content.open_questions || '').map((b) => b.raw);
 
         const gaps: BlueprintGap[] = Object.entries(scores)
           .filter(([, v]) => v < gapThreshold)
@@ -131,7 +131,7 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
         const sorted = [...sessions].sort((a, b) =>
           a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
         );
-        const prior = sorted.find((s) => s.status !== "live" && s.status !== "lobby") ?? null;
+        const prior = sorted.find((s) => s.status !== 'live' && s.status !== 'lobby') ?? null;
         let previousSessionPendingCount = 0;
         if (prior) {
           const sgResp = await authFetch(

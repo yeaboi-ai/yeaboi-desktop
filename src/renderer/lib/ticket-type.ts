@@ -3,22 +3,22 @@
 // composer into task_generator. Returned slug matches the system templates so
 // TemplateBadge can render a real coloured pill instead of the neutral fallback.
 
-import type { Card } from "@/hooks/use-board";
+import type { Card } from '@/hooks/use-board';
 
 const PATTERNS: Array<[string[], string]> = [
   // Order matters: more specific markers first.
-  [["bug", "defect", "regression", "incident"], "bug"],
-  [["spike", "research", "investigation", "rfc", "discovery"], "spike"],
-  [["tech-debt", "tech_debt", "techdebt", "refactor", "cleanup", "debt"], "tech_debt"],
-  [["chore", "ci", "tooling", "lint", "format"], "chore"],
+  [['bug', 'defect', 'regression', 'incident'], 'bug'],
+  [['spike', 'research', 'investigation', 'rfc', 'discovery'], 'spike'],
+  [['tech-debt', 'tech_debt', 'techdebt', 'refactor', 'cleanup', 'debt'], 'tech_debt'],
+  [['chore', 'ci', 'tooling', 'lint', 'format'], 'chore'],
 ];
 
 const SYSTEM_NAMES: Record<string, string> = {
-  feature: "Feature",
-  bug: "Bug",
-  chore: "Chore",
-  spike: "Spike",
-  tech_debt: "Tech debt",
+  feature: 'Feature',
+  bug: 'Bug',
+  chore: 'Chore',
+  spike: 'Spike',
+  tech_debt: 'Tech debt',
 };
 
 export function inferTypeFromLabels(labels: string[] | null | undefined): string | null {
@@ -55,5 +55,5 @@ export function resolveTicketType(
     return { slug: inferred, name: SYSTEM_NAMES[inferred] ?? inferred, inferred: true };
   }
   // Sensible default for AI-generated tickets with no signals.
-  return { slug: "feature", name: SYSTEM_NAMES.feature, inferred: true };
+  return { slug: 'feature', name: SYSTEM_NAMES.feature, inferred: true };
 }

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { ArrowUp, Square } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRef, useState } from 'react';
+import { ArrowUp, Square } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface NikoInputProps {
   onSend: (message: string) => void;
@@ -11,13 +11,8 @@ interface NikoInputProps {
   disabled?: boolean;
 }
 
-export function NikoInput({
-  onSend,
-  onStop,
-  isStreaming,
-  disabled,
-}: NikoInputProps) {
-  const [value, setValue] = useState("");
+export function NikoInput({ onSend, onStop, isStreaming, disabled }: NikoInputProps) {
+  const [value, setValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
@@ -27,15 +22,15 @@ export function NikoInput({
     }
     if (!value.trim() || disabled) return;
     onSend(value.trim());
-    setValue("");
+    setValue('');
     // Reset height
     if (inputRef.current) {
-      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = 'auto';
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -43,7 +38,7 @@ export function NikoInput({
 
   const handleInput = () => {
     if (inputRef.current) {
-      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = 'auto';
       inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
     }
   };
@@ -63,15 +58,11 @@ export function NikoInput({
       />
       <Button
         size="icon-xs"
-        variant={isStreaming ? "destructive" : "default"}
+        variant={isStreaming ? 'destructive' : 'default'}
         onClick={handleSubmit}
         disabled={disabled || (!isStreaming && !value.trim())}
       >
-        {isStreaming ? (
-          <Square className="size-3" />
-        ) : (
-          <ArrowUp className="size-3" />
-        )}
+        {isStreaming ? <Square className="size-3" /> : <ArrowUp className="size-3" />}
       </Button>
     </div>
   );

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 export interface BoardShortcutHandlers {
   onCreate?: () => void;
@@ -20,14 +20,14 @@ export function useBoardShortcuts(handlers: BoardShortcutHandlers) {
     const isEditable = (el: EventTarget | null): boolean => {
       if (!(el instanceof HTMLElement)) return false;
       const tag = el.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
       if (el.isContentEditable) return true;
       return false;
     };
 
     const handler = (e: KeyboardEvent) => {
       // Always allow Escape, even from inputs (closes panels / clears selection).
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         handlers.onEscape?.();
         return;
       }
@@ -35,37 +35,37 @@ export function useBoardShortcuts(handlers: BoardShortcutHandlers) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       switch (e.key) {
-        case "c":
+        case 'c':
           e.preventDefault();
           handlers.onCreate?.();
           break;
-        case "/":
+        case '/':
           e.preventDefault();
           handlers.onFocusSearch?.();
           break;
-        case "?":
+        case '?':
           e.preventDefault();
           handlers.onShowHelp?.();
           break;
-        case "e":
+        case 'e':
           e.preventDefault();
           handlers.onOpenSelected?.();
           break;
-        case "j":
+        case 'j':
           e.preventDefault();
           handlers.onNext?.();
           break;
-        case "k":
+        case 'k':
           e.preventDefault();
           handlers.onPrev?.();
           break;
-        case "x":
+        case 'x':
           e.preventDefault();
           handlers.onToggleSelect?.();
           break;
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [handlers]);
 }

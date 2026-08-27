@@ -12,11 +12,11 @@ const DISCOURSE_PREFIX_RE =
 const LIKE_INTERJECTION_RE = /^like\s*[,!.]\s*/i;
 
 function lastQuestionSentence(text: string): string | null {
-  const lastQMark = text.lastIndexOf("?");
+  const lastQMark = text.lastIndexOf('?');
   if (lastQMark === -1) return null;
   let qStart = 0;
   for (let i = lastQMark - 1; i >= 0; i--) {
-    if (text[i] === "." || text[i] === "!" || text[i] === "?") {
+    if (text[i] === '.' || text[i] === '!' || text[i] === '?') {
       if (i + 1 < text.length && /\s/.test(text[i + 1])) {
         qStart = i + 1;
         break;
@@ -33,14 +33,14 @@ function isOptionShaped(s: string): boolean {
 }
 
 export function extractQuickReplies(messageText: string): string[] {
-  if (!messageText || !messageText.includes("?")) return [];
+  if (!messageText || !messageText.includes('?')) return [];
 
   // 1. Consecutive short questions: "X? Y? Z?"
   const consecutiveQs = messageText.match(/(?:[A-Z][A-Za-z0-9 /\-+.&'()]{2,40}\?\s*){2,}/g);
   if (consecutiveQs) {
     const best = consecutiveQs[consecutiveQs.length - 1];
     const options = best
-      .split("?")
+      .split('?')
       .map((s) => s.trim())
       .filter((s) => s.length > 1 && s.length < 45);
     if (options.length >= 2) return options.slice(0, 5);
@@ -55,20 +55,20 @@ export function extractQuickReplies(messageText: string): string[] {
     // this, "What matters most here — portfolio credibility, …, or X?" keeps
     // "What matters most here — portfolio credibility" as the first option,
     // which then trips the all-or-nothing length filter.
-    const afterColon = lastQuestion.replace(/^[^:—–]*[:—–]\s*/, "");
+    const afterColon = lastQuestion.replace(/^[^:—–]*[:—–]\s*/, '');
     const cleaned = afterColon
-      .replace(DISCOURSE_PREFIX_RE, "")
-      .replace(LIKE_INTERJECTION_RE, "")
-      .replace(/\?$/, "");
+      .replace(DISCOURSE_PREFIX_RE, '')
+      .replace(LIKE_INTERJECTION_RE, '')
+      .replace(/\?$/, '');
 
     // The tail after the LAST "or" must look like a short option, not a
     // long descriptive clause. "broken or missing right now that prompted
     // this idea" has "or" joining adjectives, not enumerating choices.
-    const lastOrTail = cleaned.match(/\bor\s+([^?]+)$/i)?.[1]?.trim() ?? "";
+    const lastOrTail = cleaned.match(/\bor\s+([^?]+)$/i)?.[1]?.trim() ?? '';
     if (lastOrTail && isOptionShaped(lastOrTail)) {
       const parts = cleaned
         .split(/,\s*(?:or\s+)?|\s+or\s+/i)
-        .map((s) => s.trim().replace(/^[(\[]+|[)\]]+$/g, ""));
+        .map((s) => s.trim().replace(/^[(\[]+|[)\]]+$/g, ''));
 
       // All-or-nothing: if even one candidate fails the option-shape test,
       // the question wasn't really an enumeration — surfacing the survivors
@@ -89,7 +89,7 @@ export function extractQuickReplies(messageText: string): string[] {
     if (a.split(/\s+/).length <= 5 && b.split(/\s+/).length <= 5) {
       return [a, b];
     }
-    return ["Yes", "No"];
+    return ['Yes', 'No'];
   }
 
   // 4. Yes/no confirmation questions.

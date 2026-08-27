@@ -1,34 +1,34 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { Link2, Loader2, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useCardLinks, useCardSearch, type CardSearchHit } from "@/hooks/use-card-links";
-import type { TicketLink } from "@/hooks/use-ticket";
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { Link2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useCardLinks, useCardSearch, type CardSearchHit } from '@/hooks/use-card-links';
+import type { TicketLink } from '@/hooks/use-ticket';
 
 const LINK_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: "blocks", label: "Blocks" },
-  { value: "blocked_by", label: "Blocked by" },
-  { value: "relates_to", label: "Relates to" },
-  { value: "duplicates", label: "Duplicates" },
-  { value: "duplicate_of", label: "Duplicate of" },
-  { value: "parent_of", label: "Parent of" },
-  { value: "child_of", label: "Child of" },
+  { value: 'blocks', label: 'Blocks' },
+  { value: 'blocked_by', label: 'Blocked by' },
+  { value: 'relates_to', label: 'Relates to' },
+  { value: 'duplicates', label: 'Duplicates' },
+  { value: 'duplicate_of', label: 'Duplicate of' },
+  { value: 'parent_of', label: 'Parent of' },
+  { value: 'child_of', label: 'Child of' },
 ];
 
 const LINK_GROUP_LABEL: Record<string, { outbound: string; inbound: string }> = {
-  blocks: { outbound: "Blocks", inbound: "Blocked by" },
-  relates_to: { outbound: "Relates to", inbound: "Relates to" },
-  duplicates: { outbound: "Duplicates", inbound: "Duplicate of" },
-  parent_of: { outbound: "Parent of", inbound: "Child of" },
+  blocks: { outbound: 'Blocks', inbound: 'Blocked by' },
+  relates_to: { outbound: 'Relates to', inbound: 'Relates to' },
+  duplicates: { outbound: 'Duplicates', inbound: 'Duplicate of' },
+  parent_of: { outbound: 'Parent of', inbound: 'Child of' },
 };
 
 function groupLabel(link: TicketLink): string {
   const m = LINK_GROUP_LABEL[link.link_type];
   if (!m) return link.link_type;
-  return link.direction === "outbound" ? m.outbound : m.inbound;
+  return link.direction === 'outbound' ? m.outbound : m.inbound;
 }
 
 interface Props {
@@ -110,8 +110,8 @@ interface PickerProps {
 }
 
 function LinkPicker({ onCreate, busy, error }: PickerProps) {
-  const [linkType, setLinkType] = useState("blocks");
-  const [query, setQuery] = useState("");
+  const [linkType, setLinkType] = useState('blocks');
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<CardSearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
@@ -123,8 +123,8 @@ function LinkPicker({ onCreate, busy, error }: PickerProps) {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   // Clear stale results synchronously during render whenever the query empties
@@ -167,7 +167,7 @@ function LinkPicker({ onCreate, busy, error }: PickerProps) {
   const submit = async (target: string) => {
     const ok = await onCreate(target, linkType);
     if (ok) {
-      setQuery("");
+      setQuery('');
       setResults([]);
       setOpen(false);
     }
@@ -229,7 +229,11 @@ function LinkPicker({ onCreate, busy, error }: PickerProps) {
           onClick={() => submit(query.trim())}
           aria-label="Add link"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
         </Button>
       </div>
       {error && (

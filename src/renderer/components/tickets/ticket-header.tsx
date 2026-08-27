@@ -1,14 +1,22 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Check, Copy, Loader2, PanelRightClose, PanelRightOpen, Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { Card } from "@/hooks/use-board";
-import { useTicketTemplates } from "@/hooks/use-ticket-templates";
-import { formatExecLabel, formatTicketKey } from "@/lib/ticket-id";
-import { resolveTicketType } from "@/lib/ticket-type";
-import { TemplateBadge } from "./template-badge";
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Loader2,
+  PanelRightClose,
+  PanelRightOpen,
+  Settings2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { Card } from '@/hooks/use-board';
+import { useTicketTemplates } from '@/hooks/use-ticket-templates';
+import { formatExecLabel, formatTicketKey } from '@/lib/ticket-id';
+import { resolveTicketType } from '@/lib/ticket-type';
+import { TemplateBadge } from './template-badge';
 
 interface Props {
   card: Card;
@@ -51,10 +59,7 @@ export function TicketHeader({
     card.id.slice(0, 8);
 
   const templates = useTicketTemplates();
-  const templateInfo = useMemo(
-    () => resolveTicketType(card, templates),
-    [card, templates],
-  );
+  const templateInfo = useMemo(() => resolveTicketType(card, templates), [card, templates]);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(card.title);
@@ -143,15 +148,15 @@ export function TicketHeader({
           </span>
           {onToggleLayoutEditing && (
             <Button
-              variant={layoutEditing ? "default" : "ghost"}
+              variant={layoutEditing ? 'default' : 'ghost'}
               size="sm"
               onClick={onToggleLayoutEditing}
               aria-pressed={layoutEditing ?? false}
               aria-label="Edit ticket layout"
               title={
                 layoutEditing
-                  ? "Done editing layout"
-                  : "Edit layout — drag, rename, add or hide fields on this ticket type"
+                  ? 'Done editing layout'
+                  : 'Edit layout — drag, rename, add or hide fields on this ticket type'
               }
             >
               <Settings2 className="h-4 w-4" />
@@ -163,12 +168,12 @@ export function TicketHeader({
           </Button>
           {onToggleDetails && (
             <Button
-              variant={detailsOpen ? "default" : "ghost"}
+              variant={detailsOpen ? 'default' : 'ghost'}
               size="sm"
               onClick={onToggleDetails}
               aria-pressed={detailsOpen ?? false}
-              aria-label={detailsOpen ? "Hide details" : "Show details"}
-              title={detailsOpen ? "Hide details panel" : "Show details panel"}
+              aria-label={detailsOpen ? 'Hide details' : 'Show details'}
+              title={detailsOpen ? 'Hide details panel' : 'Show details panel'}
             >
               {detailsOpen ? (
                 <PanelRightClose className="h-4 w-4" />
@@ -189,11 +194,11 @@ export function TicketHeader({
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 commit();
               }
-              if (e.key === "Escape") {
+              if (e.key === 'Escape') {
                 setDraft(card.title);
                 setEditing(false);
               }

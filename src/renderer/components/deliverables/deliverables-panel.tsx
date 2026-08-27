@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { DeliverableCard } from "./deliverable-card";
-import { OUTPUT_TYPE_ORDER } from "./output-types";
-import { useProjectOutputs } from "@/hooks/use-project-outputs";
+import { DeliverableCard } from './deliverable-card';
+import { OUTPUT_TYPE_ORDER } from './output-types';
+import { useProjectOutputs } from '@/hooks/use-project-outputs';
 
 interface DeliverablesPanelProps {
   projectId: string;
@@ -14,9 +14,7 @@ export function DeliverablesPanel({ projectId }: DeliverablesPanelProps) {
   if (loading) {
     return (
       <section className="rounded-2xl border border-white/5 bg-white/[0.01] p-4">
-        <div className="text-[11px] uppercase tracking-wide text-white/40">
-          Deliverables
-        </div>
+        <div className="text-[11px] uppercase tracking-wide text-white/40">Deliverables</div>
         <div className="mt-3 text-sm text-white/50">Loading…</div>
       </section>
     );
@@ -24,12 +22,8 @@ export function DeliverablesPanel({ projectId }: DeliverablesPanelProps) {
   if (error || !outputs) {
     return (
       <section className="rounded-2xl border border-white/5 bg-white/[0.01] p-4">
-        <div className="text-[11px] uppercase tracking-wide text-white/40">
-          Deliverables
-        </div>
-        <div className="mt-3 text-sm text-red-400/80">
-          {error ?? "No deliverables available."}
-        </div>
+        <div className="text-[11px] uppercase tracking-wide text-white/40">Deliverables</div>
+        <div className="mt-3 text-sm text-red-400/80">{error ?? 'No deliverables available.'}</div>
       </section>
     );
   }
@@ -43,9 +37,7 @@ export function DeliverablesPanel({ projectId }: DeliverablesPanelProps) {
     <section className="rounded-2xl border border-white/5 bg-white/[0.01] p-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[11px] uppercase tracking-wide text-white/40">
-            Deliverables
-          </div>
+          <div className="text-[11px] uppercase tracking-wide text-white/40">Deliverables</div>
           <div className="text-xs text-white/50">
             Generate artifacts from this project&rsquo;s blueprint.
           </div>
@@ -53,11 +45,7 @@ export function DeliverablesPanel({ projectId }: DeliverablesPanelProps) {
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {ordered.map((entry) => (
-          <DeliverableCard
-            key={entry.output_type}
-            entry={entry}
-            onGenerate={generate}
-          />
+          <DeliverableCard key={entry.output_type} entry={entry} onGenerate={generate} />
         ))}
       </div>
     </section>

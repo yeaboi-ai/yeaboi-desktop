@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { Check, ChevronDown, ChevronRight, Pencil, Sparkles, X } from "lucide-react";
-import type { Suggestion } from "@/hooks/use-suggestions";
+import { useMemo, useState } from 'react';
+import { Check, ChevronDown, ChevronRight, Pencil, Sparkles, X } from 'lucide-react';
+import type { Suggestion } from '@/hooks/use-suggestions';
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI/UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI/UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 interface SuggestionsListProps {
@@ -77,7 +77,8 @@ export function SuggestionsList({
       <div className="flex flex-col items-center justify-center text-center py-6 px-4 rounded-xl border border-dashed border-border/60">
         <Sparkles className="h-5 w-5 text-muted-foreground/30 mb-2" />
         <p className="text-[12px] text-muted-foreground max-w-[280px] leading-relaxed">
-          No suggestions yet — anything the AI listener captures will appear here for review before it lands in the blueprint.
+          No suggestions yet — anything the AI listener captures will appear here for review before
+          it lands in the blueprint.
         </p>
       </div>
     );
@@ -184,7 +185,7 @@ function SuggestionRow({
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          rows={Math.min(6, Math.max(2, draft.split("\n").length))}
+          rows={Math.min(6, Math.max(2, draft.split('\n').length))}
           className="w-full resize-y bg-foreground/[0.05] border border-border/70 rounded-md px-2 py-1.5 text-[12.5px] text-foreground leading-relaxed focus:outline-none focus:border-border"
           autoFocus
         />
@@ -210,10 +211,14 @@ function SuggestionRow({
               type="button"
               onClick={() => onAccept(suggestion.id, draft, hasConflict)}
               className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-success hover:text-success rounded-md hover:bg-success/10"
-              title={hasConflict ? "Save edited bullet and replace the conflicting one" : "Save edited bullet and accept"}
+              title={
+                hasConflict
+                  ? 'Save edited bullet and replace the conflicting one'
+                  : 'Save edited bullet and accept'
+              }
             >
               <Check className="h-3 w-3" />
-              {hasConflict ? "Save & Replace" : "Save & Accept"}
+              {hasConflict ? 'Save & Replace' : 'Save & Accept'}
             </button>
           </>
         ) : (

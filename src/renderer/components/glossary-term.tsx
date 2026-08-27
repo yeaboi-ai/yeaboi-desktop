@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { ExternalLink, Sparkles } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { GlossaryEntry } from "@/lib/glossary";
-import { recordDismissal } from "@/lib/term-learning-state";
+import { createContext, useContext, useState, type ReactNode } from 'react';
+import { ExternalLink, Sparkles } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { GlossaryEntry } from '@/lib/glossary';
+import { recordDismissal } from '@/lib/term-learning-state';
 
 /**
  * Context that lets a glossary popover hand off to the surrounding chat —
@@ -22,14 +22,10 @@ export function GlossaryProvider({
   onAskAi,
   children,
 }: {
-  onAskAi: GlossaryContextValue["onAskAi"];
+  onAskAi: GlossaryContextValue['onAskAi'];
   children: ReactNode;
 }) {
-  return (
-    <GlossaryContext.Provider value={{ onAskAi }}>
-      {children}
-    </GlossaryContext.Provider>
-  );
+  return <GlossaryContext.Provider value={{ onAskAi }}>{children}</GlossaryContext.Provider>;
 }
 
 interface GlossaryTermProps {
@@ -52,7 +48,12 @@ interface GlossaryTermProps {
  * dotted-underline button; clicking opens a Popover with the term's
  * definition, contextual hint, examples, and learn-more links.
  */
-export function GlossaryTerm({ matchedText, entry, contextOverride, onDismiss }: GlossaryTermProps) {
+export function GlossaryTerm({
+  matchedText,
+  entry,
+  contextOverride,
+  onDismiss,
+}: GlossaryTermProps) {
   const [open, setOpen] = useState(false);
   // Drives the .is-bursting CSS state on the "Got it" host. Set true on click,
   // cleared after the popover closes so the burst replays cleanly next time.
@@ -120,7 +121,9 @@ export function GlossaryTerm({ matchedText, entry, contextOverride, onDismiss }:
       >
         <div className="flex items-baseline justify-between gap-2">
           <span className="font-semibold text-foreground">{entry.term}</span>
-          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">term</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60">
+            term
+          </span>
         </div>
         <p className="text-foreground/90 leading-relaxed">{entry.definition}</p>
         {hint && (
@@ -183,7 +186,7 @@ export function GlossaryTerm({ matchedText, entry, contextOverride, onDismiss }:
           </button>
         )}
         <div className="pt-1 flex justify-end">
-          <span className={`glossary-confetti-host${bursting ? " is-bursting" : ""}`}>
+          <span className={`glossary-confetti-host${bursting ? ' is-bursting' : ''}`}>
             <span className="glossary-confetti-piece" aria-hidden="true" />
             <span className="glossary-confetti-piece" aria-hidden="true" />
             <span className="glossary-confetti-piece" aria-hidden="true" />

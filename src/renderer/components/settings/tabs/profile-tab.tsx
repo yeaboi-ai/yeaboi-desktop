@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api-base";
-import { Lock } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '@/lib/api-base';
+import { Lock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 import {
   SettingsCard,
   SettingsSectionHeader,
   SettingsFormField,
   SettingsSaveBar,
   SettingsInlineError,
-} from "@/components/settings/primitives";
-import type { MeProfile } from "@/components/settings/types";
-import { AvatarEditor } from "./profile/avatar-editor";
+} from '@/components/settings/primitives';
+import type { MeProfile } from '@/components/settings/types';
+import { AvatarEditor } from './profile/avatar-editor';
 
 const BIO_MAX = 280;
 
@@ -29,18 +29,25 @@ type Draft = {
 
 function profileToDraft(profile: MeProfile | null): Draft {
   return {
-    display_name: profile?.display_name ?? "",
-    pronouns: profile?.pronouns ?? "",
-    job_title: profile?.job_title ?? "",
-    bio: profile?.bio ?? "",
-    timezone: profile?.timezone ?? "",
+    display_name: profile?.display_name ?? '',
+    pronouns: profile?.pronouns ?? '',
+    job_title: profile?.job_title ?? '',
+    bio: profile?.bio ?? '',
+    timezone: profile?.timezone ?? '',
   };
 }
 
 function timezoneOptions(): string[] {
   const fn = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
-  if (typeof fn === "function") return fn("timeZone");
-  return ["UTC", "America/New_York", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Asia/Tokyo"];
+  if (typeof fn === 'function') return fn('timeZone');
+  return [
+    'UTC',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Europe/London',
+    'Europe/Berlin',
+    'Asia/Tokyo',
+  ];
 }
 
 export function ProfileTab() {
@@ -54,7 +61,7 @@ export function ProfileTab() {
 
   useEffect(() => {
     if (!ready) return;
-    apiFetch("/api/me", { cache: "no-store" })
+    apiFetch('/api/me', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: MeProfile | null) => {
         if (data) {
@@ -62,7 +69,7 @@ export function ProfileTab() {
           setDraft(profileToDraft(data));
         }
       })
-      .catch(() => logger.warn("Failed to fetch user profile"))
+      .catch(() => logger.warn('Failed to fetch user profile'))
       .finally(() => setLoading(false));
   }, [ready]);
 
@@ -87,9 +94,9 @@ export function ProfileTab() {
     setSaveError(null);
     setSaved(false);
     try {
-      const r = await apiFetch("/api/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const r = await apiFetch('/api/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(changed),
       });
       if (!r.ok) {
@@ -102,7 +109,7 @@ export function ProfileTab() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
+      setSaveError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
     }
@@ -122,11 +129,13 @@ export function ProfileTab() {
   }
 
   const detectedTz =
-    typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
-  const initial = (draft.display_name || profile?.email || "?").charAt(0).toUpperCase();
-  const previewName = draft.display_name.trim() || profile?.name?.trim() || "Your name";
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+  const initial = (draft.display_name || profile?.email || '?').charAt(0).toUpperCase();
+  const previewName = draft.display_name.trim() || profile?.name?.trim() || 'Your name';
   const previewSubline =
-    [draft.job_title.trim(), draft.pronouns.trim()].filter(Boolean).join(" · ") || profile?.email || null;
+    [draft.job_title.trim(), draft.pronouns.trim()].filter(Boolean).join(' · ') ||
+    profile?.email ||
+    null;
 
   return (
     <div className="space-y-4">
@@ -178,13 +187,13 @@ export function ProfileTab() {
             id="bio"
             label="Bio"
             help={
-              <span className={bioOverflow ? "text-destructive" : undefined}>
+              <span className={bioOverflow ? 'text-destructive' : undefined}>
                 {draft.bio.length} / {BIO_MAX}
               </span>
             }
             error={
               bioOverflow
-                ? `Bio is ${draft.bio.length - BIO_MAX} character${draft.bio.length - BIO_MAX === 1 ? "" : "s"} too long`
+                ? `Bio is ${draft.bio.length - BIO_MAX} character${draft.bio.length - BIO_MAX === 1 ? '' : 's'} too long`
                 : undefined
             }
           >
@@ -200,8 +209,12 @@ export function ProfileTab() {
 
         <div className="border-t border-border/50 px-5 py-5 space-y-5">
           <div>
-            <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">Preferences</h3>
-            <p className="text-[11px] text-muted-foreground font-body mt-0.5">Account-level settings</p>
+            <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">
+              Preferences
+            </h3>
+            <p className="text-[11px] text-muted-foreground font-body mt-0.5">
+              Account-level settings
+            </p>
           </div>
 
           <SettingsFormField
@@ -210,7 +223,7 @@ export function ProfileTab() {
             help={
               detectedTz && draft.timezone !== detectedTz
                 ? `Detected: ${detectedTz}`
-                : "Affects voice-session timing and notifications"
+                : 'Affects voice-session timing and notifications'
             }
           >
             <select
@@ -238,7 +251,7 @@ export function ProfileTab() {
             }
           >
             <Input
-              value={profile?.email ?? ""}
+              value={profile?.email ?? ''}
               readOnly
               disabled
               aria-readonly="true"
@@ -256,7 +269,7 @@ export function ProfileTab() {
         saved={saved}
         onSave={handleSave}
         onCancel={dirty ? handleCancel : undefined}
-        saveLabel={bioOverflow ? "Fix errors" : "Save"}
+        saveLabel={bioOverflow ? 'Fix errors' : 'Save'}
       />
     </div>
   );

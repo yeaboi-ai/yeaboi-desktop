@@ -1,48 +1,48 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { requestProviderHealthRefresh } from "@/components/providers/provider-health-provider";
-import { apiFetch, getAuth } from "@/lib/api-base";
-import { logger } from "@/lib/logger";
+import { useCallback, useEffect, useState } from 'react';
+import { requestProviderHealthRefresh } from '@/components/providers/provider-health-provider';
+import { apiFetch, getAuth } from '@/lib/api-base';
+import { logger } from '@/lib/logger';
 
 // ---------------------------------------------------------------------------
 // Org / Team context helpers (module-level, safe to import outside the hook)
 // ---------------------------------------------------------------------------
 
 export function getStoredOrgId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("current_org_id");
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('current_org_id');
 }
 
 export function clearStoredOrgId() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("current_org_id");
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('current_org_id');
 }
 
 export function clearStoredTeamId() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("current_team_id");
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('current_team_id');
 }
 
 export function setStoredOrgId(id: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("current_org_id", id);
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('current_org_id', id);
 }
 
 export function getStoredTeamId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("current_team_id");
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('current_team_id');
 }
 
 export function setStoredTeamId(id: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("current_team_id", id);
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('current_team_id', id);
 }
 
 /** Dispatch when team or org changes so page components re-fetch. */
 export function dispatchTeamChange() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event("team-change"));
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event('team-change'));
 }
 
 /**
@@ -61,23 +61,23 @@ export function useAuthFetch() {
   useEffect(() => {
     getAuth()
       .then((auth) => setReady(auth !== null))
-      .catch(() => logger.warn("Failed to fetch auth token"));
+      .catch(() => logger.warn('Failed to fetch auth token'));
   }, []);
 
   // Listen for team-change events
   useEffect(() => {
     const handler = () => setTeamVersion((v) => v + 1);
-    window.addEventListener("team-change", handler);
-    return () => window.removeEventListener("team-change", handler);
+    window.addEventListener('team-change', handler);
+    return () => window.removeEventListener('team-change', handler);
   }, []);
 
   const authFetch = useCallback(
     async (url: string, options: RequestInit = {}): Promise<Response> => {
-      const traceId = crypto.randomUUID().replace(/-/g, "");
-      const spanId = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      const traceId = crypto.randomUUID().replace(/-/g, '');
+      const spanId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
       const traceHeaders: Record<string, string> = {
         traceparent: `00-${traceId}-${spanId}-01`,
-        "X-Request-Id": traceId.slice(0, 32),
+        'X-Request-Id': traceId.slice(0, 32),
       };
 
       const orgId = getStoredOrgId();
@@ -100,10 +100,11 @@ export function useAuthFetch() {
         if (orgId) clearStoredOrgId();
         if (teamId) clearStoredTeamId();
         dispatchTeamChange();
-        logger.warn(
-          "authFetch: 403 with org/team headers — clearing stale identity and retrying",
-          { url, hadOrgId: !!orgId, hadTeamId: !!teamId },
-        );
+        logger.warn('authFetch: 403 with org/team headers — clearing stale identity and retrying', {
+          url,
+          hadOrgId: !!orgId,
+          hadTeamId: !!teamId,
+        });
         // Retried without the (now cleared) org/team localStorage keys.
         response = await apiFetch(url, {
           ...options,

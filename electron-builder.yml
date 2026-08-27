@@ -1,15 +1,6 @@
-# How the shell becomes an installable, signed application.
-#
-# Three things are load-bearing and easy to break silently:
-#
-#   * `resources/py` is staged by scripts/fetch-python.mjs and shipped as an
-#     extraResource, NOT inside the asar — sidecar.ts spawns a real interpreter
-#     at Resources/py, and a binary inside an asar cannot be executed. The
-#     `files` exclusion below is what keeps it from being packed twice.
-#   * every Mach-O in that Python tree is signed and notarized on macOS, which
-#     is why the staging step prunes __pycache__ and test trees.
-#   * the version comes from package.json, and the Python it bundles comes from
-#     PyPI — the release workflow sets both from one input.
+# How the shell becomes an installable, signed application. There is no
+# bundled backend any more — the app is a pure client of the planning
+# platform's FastAPI (localhost in dev; packaging a backend is future work).
 
 appId: ai.yeaboi.desktop
 productName: yeaboi
@@ -22,12 +13,7 @@ directories:
 files:
   - out/**
   - resources/**
-  - '!resources/py/**'
   - package.json
-
-extraResources:
-  - from: resources/py
-    to: py
 
 # No native modules — skipping the rebuild saves a toolchain on every runner.
 npmRebuild: false
@@ -59,9 +45,6 @@ mac:
   entitlementsInherit: build/entitlements.mac.inherit.plist
   notarize: true
   extendInfo:
-    # Dictation records through the renderer (M11), so the mic prompt is real
-    # and needs a sentence a person can act on.
-    NSMicrophoneUsageDescription: yeaboi uses the microphone only while you hold the dictation button, to turn speech into text on this machine.
     # The duck climbs the Dock by asking the Dock where its icons are.
     NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it.
 

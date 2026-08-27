@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Lock } from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { BlueprintDocument } from "@/components/blueprint/blueprint-document";
-import { BlueprintExportMenu } from "@/components/blueprint/blueprint-export-menu";
-import type { BulletSource } from "@/components/blueprint/bullet-source-chip";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, Lock } from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { BlueprintDocument } from '@/components/blueprint/blueprint-document';
+import { BlueprintExportMenu } from '@/components/blueprint/blueprint-export-menu';
+import type { BulletSource } from '@/components/blueprint/bullet-source-chip';
 
 interface Iteration {
   id: string;
@@ -39,7 +39,7 @@ export default function BlueprintPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const { authFetch, ready } = useAuthFetch();
 
-  const [projectName, setProjectName] = useState<string>("");
+  const [projectName, setProjectName] = useState<string>('');
   const [iterations, setIterations] = useState<Iteration[]>([]);
   const [activeIterationId, setActiveIterationId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<SnapshotDetail | null>(null);
@@ -61,7 +61,7 @@ export default function BlueprintPage() {
         if (cancelled) return;
         if (projResp.ok) {
           const proj = await projResp.json();
-          setProjectName(proj.name ?? "");
+          setProjectName(proj.name ?? '');
         }
         if (itersResp.ok) {
           const iters: Iteration[] = await itersResp.json();
@@ -71,7 +71,7 @@ export default function BlueprintPage() {
           if (latest) setActiveIterationId(latest.id);
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load');
       }
     })();
     return () => {
@@ -88,9 +88,7 @@ export default function BlueprintPage() {
     setLoading(true);
     try {
       const [snapResp, covResp] = await Promise.all([
-        authFetch(
-          `/api/projects/${projectId}/blueprint?iteration_id=${activeIterationId}`,
-        ),
+        authFetch(`/api/projects/${projectId}/blueprint?iteration_id=${activeIterationId}`),
         authFetch(
           `/api/projects/${projectId}/blueprint/coverage?iteration_id=${activeIterationId}`,
         ),
@@ -112,7 +110,7 @@ export default function BlueprintPage() {
             iteration_id: activeIterationId,
             content: bp.content || {},
             created_by: bp.created_by,
-            created_by_label: bp.created_by_label || "",
+            created_by_label: bp.created_by_label || '',
             section_sources: null,
             bullet_sources: null,
             created_at: bp.created_at,
@@ -157,7 +155,7 @@ export default function BlueprintPage() {
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            {projectName || "Project"}
+            {projectName || 'Project'}
           </Link>
           {iterations.length > 1 && (
             <div className="ml-auto flex items-center gap-1">
@@ -169,12 +167,12 @@ export default function BlueprintPage() {
                     onClick={() => setActiveIterationId(iter.id)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                       active
-                        ? "bg-foreground/[0.10] text-foreground border border-border"
-                        : "text-muted-foreground/70 hover:text-muted-foreground hover:bg-foreground/[0.05]"
+                        ? 'bg-foreground/[0.10] text-foreground border border-border'
+                        : 'text-muted-foreground/70 hover:text-muted-foreground hover:bg-foreground/[0.05]'
                     }`}
                   >
                     {iter.label}
-                    {iter.status === "locked" && (
+                    {iter.status === 'locked' && (
                       <Lock className="h-2.5 w-2.5 text-muted-foreground/50" />
                     )}
                   </button>
@@ -185,11 +183,7 @@ export default function BlueprintPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="max-w-4xl mx-auto px-6 py-4 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <div className="max-w-4xl mx-auto px-6 py-4 text-sm text-destructive">{error}</div>}
 
       {loading && !snapshot ? (
         <div className="max-w-4xl mx-auto px-6 py-20 text-center text-muted-foreground">

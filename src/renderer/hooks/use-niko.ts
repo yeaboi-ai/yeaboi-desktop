@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useAuthFetch } from "./use-auth-fetch";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useAuthFetch } from './use-auth-fetch';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface NikoMessage {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; input: Record<string, unknown> }>;
   toolResults?: Array<{
@@ -46,7 +46,7 @@ function extractContextFromPath(pathname: string): NikoContextPayload {
 
   // /projects/[id]/sessions/[sessionId]
   const sessionMatch = pathname.match(/\/sessions\/([^/]+)/);
-  if (sessionMatch && sessionMatch[1] !== "new") {
+  if (sessionMatch && sessionMatch[1] !== 'new') {
     ctx.session_id = sessionMatch[1];
   }
 
@@ -62,15 +62,15 @@ interface SSEEvent {
 
 function parseSSEChunk(chunk: string): SSEEvent[] {
   const events: SSEEvent[] = [];
-  const blocks = chunk.split("\n\n").filter(Boolean);
+  const blocks = chunk.split('\n\n').filter(Boolean);
   for (const block of blocks) {
-    const lines = block.split("\n");
-    let event = "message";
-    let data = "";
+    const lines = block.split('\n');
+    let event = 'message';
+    let data = '';
     for (const line of lines) {
-      if (line.startsWith("event: ")) {
+      if (line.startsWith('event: ')) {
         event = line.slice(7);
-      } else if (line.startsWith("data: ")) {
+      } else if (line.startsWith('data: ')) {
         data = line.slice(6);
       }
     }
@@ -87,8 +87,8 @@ export function useNiko() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<NikoMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("niko_conversation_id");
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('niko_conversation_id');
   });
   const [isStreaming, setIsStreaming] = useState(false);
   const [magicPrompts, setMagicPrompts] = useState<NikoMagicPrompt[]>([]);
@@ -100,7 +100,7 @@ export function useNiko() {
   // Persist conversation ID
   useEffect(() => {
     if (conversationId) {
-      localStorage.setItem("niko_conversation_id", conversationId);
+      localStorage.setItem('niko_conversation_id', conversationId);
     }
   }, [conversationId]);
 
@@ -109,7 +109,7 @@ export function useNiko() {
     if (!ready || !pathname) return;
     const ctx = extractContextFromPath(pathname);
     const params = new URLSearchParams({ page: ctx.page });
-    if (ctx.project_id) params.set("project_id", ctx.project_id);
+    if (ctx.project_id) params.set('project_id', ctx.project_id);
 
     authFetch(`/api/niko/magic-prompts?${params}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -125,7 +125,7 @@ export function useNiko() {
         if (!r.ok) {
           // Conversation not found, start fresh
           setConversationId(null);
-          localStorage.removeItem("niko_conversation_id");
+          localStorage.removeItem('niko_conversation_id');
           return null;
         }
         return r.json();
@@ -135,12 +135,12 @@ export function useNiko() {
           setMessages(
             data.messages.map((m: Record<string, unknown>) => ({
               id: m.id as string,
-              role: m.role as "user" | "assistant",
-              content: (m.content as string) || "",
-              toolCalls: m.tool_calls as NikoMessage["toolCalls"],
-              toolResults: m.tool_results as NikoMessage["toolResults"],
+              role: m.role as 'user' | 'assistant',
+              content: (m.content as string) || '',
+              toolCalls: m.tool_calls as NikoMessage['toolCalls'],
+              toolResults: m.tool_results as NikoMessage['toolResults'],
               createdAt: m.created_at as string,
-            }))
+            })),
           );
         }
       })
@@ -151,12 +151,12 @@ export function useNiko() {
     async (content: string) => {
       if (!ready || isStreaming || !content.trim()) return;
 
-      const context = extractContextFromPath(pathname || "/");
+      const context = extractContextFromPath(pathname || '/');
 
       // Add user message optimistically
       const userMsg: NikoMessage = {
         id: crypto.randomUUID(),
-        role: "user",
+        role: 'user',
         content: content.trim(),
       };
       setMessages((prev) => [...prev, userMsg]);
@@ -164,8 +164,8 @@ export function useNiko() {
       // Prepare assistant message placeholder
       const assistantMsg: NikoMessage = {
         id: crypto.randomUUID(),
-        role: "assistant",
-        content: "",
+        role: 'assistant',
+        content: '',
         toolCalls: [],
         toolResults: [],
       };
@@ -176,8 +176,8 @@ export function useNiko() {
       abortRef.current = abort;
 
       try {
-        const resp = await authFetch("/api/niko/chat", {
-          method: "POST",
+        const resp = await authFetch('/api/niko/chat', {
+          method: 'POST',
           body: JSON.stringify({
             conversation_id: conversationId,
             message: content.trim(),
@@ -187,13 +187,11 @@ export function useNiko() {
         });
 
         if (!resp.ok) {
-          const errText = await resp.text().catch(() => "Unknown error");
+          const errText = await resp.text().catch(() => 'Unknown error');
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantMsg.id
-                ? { ...m, content: `Error: ${errText}` }
-                : m
-            )
+              m.id === assistantMsg.id ? { ...m, content: `Error: ${errText}` } : m,
+            ),
           );
           setIsStreaming(false);
           return;
@@ -202,7 +200,7 @@ export function useNiko() {
         // Read SSE stream
         const reader = resp.body?.getReader();
         const decoder = new TextDecoder();
-        let buffer = "";
+        let buffer = '';
 
         if (reader) {
           while (true) {
@@ -213,7 +211,7 @@ export function useNiko() {
             const events = parseSSEChunk(buffer);
 
             // Keep unprocessed partial data
-            const lastNewline = buffer.lastIndexOf("\n\n");
+            const lastNewline = buffer.lastIndexOf('\n\n');
             if (lastNewline >= 0) {
               buffer = buffer.slice(lastNewline + 2);
             }
@@ -222,15 +220,15 @@ export function useNiko() {
               try {
                 const data = JSON.parse(evt.data);
 
-                if (evt.event === "text") {
+                if (evt.event === 'text') {
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantMsg.id
-                        ? { ...m, content: m.content + (data.delta || "") }
-                        : m
-                    )
+                        ? { ...m, content: m.content + (data.delta || '') }
+                        : m,
+                    ),
                   );
-                } else if (evt.event === "tool_call") {
+                } else if (evt.event === 'tool_call') {
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantMsg.id
@@ -244,10 +242,10 @@ export function useNiko() {
                               },
                             ],
                           }
-                        : m
-                    )
+                        : m,
+                    ),
                   );
-                } else if (evt.event === "tool_result") {
+                } else if (evt.event === 'tool_result') {
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantMsg.id
@@ -263,25 +261,23 @@ export function useNiko() {
                               },
                             ],
                           }
-                        : m
-                    )
+                        : m,
+                    ),
                   );
-                } else if (evt.event === "done") {
+                } else if (evt.event === 'done') {
                   if (data.conversation_id) {
                     setConversationId(data.conversation_id);
                   }
-                } else if (evt.event === "error") {
+                } else if (evt.event === 'error') {
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantMsg.id
                         ? {
                             ...m,
-                            content:
-                              m.content +
-                              `\n\nError: ${data.error || "Unknown error"}`,
+                            content: m.content + `\n\nError: ${data.error || 'Unknown error'}`,
                           }
-                        : m
-                    )
+                        : m,
+                    ),
                   );
                 }
               } catch {
@@ -291,13 +287,13 @@ export function useNiko() {
           }
         }
       } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+        if ((err as Error).name !== 'AbortError') {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantMsg.id
-                ? { ...m, content: m.content || "Failed to connect to Niko." }
-                : m
-            )
+                ? { ...m, content: m.content || 'Failed to connect to Niko.' }
+                : m,
+            ),
           );
         }
       } finally {
@@ -305,7 +301,7 @@ export function useNiko() {
         abortRef.current = null;
       }
     },
-    [ready, isStreaming, pathname, conversationId, authFetch]
+    [ready, isStreaming, pathname, conversationId, authFetch],
   );
 
   const togglePanel = useCallback(() => {
@@ -315,7 +311,7 @@ export function useNiko() {
   const startNewConversation = useCallback(() => {
     setMessages([]);
     setConversationId(null);
-    localStorage.removeItem("niko_conversation_id");
+    localStorage.removeItem('niko_conversation_id');
   }, []);
 
   const stopStreaming = useCallback(() => {

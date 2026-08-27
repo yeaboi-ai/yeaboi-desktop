@@ -1,4 +1,4 @@
-export type ColorScheme = "light" | "dark";
+export type ColorScheme = 'light' | 'dark';
 
 export type TokenMap = Record<string, string>;
 
@@ -17,20 +17,20 @@ export interface AutoLightDark {
 }
 
 export type BuiltInPresetId =
-  | "preset:light"
-  | "preset:dark"
-  | "preset:midnight"
-  | "preset:high-contrast"
-  | "preset:sepia"
-  | "preset:ember"
-  | "preset:ocean"
-  | "preset:rose"
-  | "preset:sunshine"
-  | "preset:forest";
+  | 'preset:light'
+  | 'preset:dark'
+  | 'preset:midnight'
+  | 'preset:high-contrast'
+  | 'preset:sepia'
+  | 'preset:ember'
+  | 'preset:ocean'
+  | 'preset:rose'
+  | 'preset:sunshine'
+  | 'preset:forest';
 
 export type ThemeId = BuiltInPresetId | `custom:${string}`;
 
-export type PreferenceMode = "explicit" | "org_default" | "system";
+export type PreferenceMode = 'explicit' | 'org_default' | 'system';
 
 export interface ThemePreference {
   mode: PreferenceMode;
@@ -44,54 +44,54 @@ export interface ResolvedTheme {
   light?: ThemeDoc;
   dark?: ThemeDoc;
   preference: ThemePreference;
-  source: "explicit" | "system" | "org_default" | "fallback";
+  source: 'explicit' | 'system' | 'org_default' | 'fallback';
 }
 
 export const TOKEN_KEYS = [
-  "background",
-  "foreground",
-  "card",
-  "card-foreground",
-  "popover",
-  "popover-foreground",
-  "primary",
-  "primary-foreground",
-  "secondary",
-  "secondary-foreground",
-  "muted",
-  "muted-foreground",
-  "accent",
-  "accent-foreground",
-  "destructive",
-  "destructive-foreground",
-  "success",
-  "success-foreground",
-  "warning",
-  "warning-foreground",
-  "info",
-  "info-foreground",
-  "border",
-  "input",
-  "ring",
-  "chart-1",
-  "chart-2",
-  "chart-3",
-  "chart-4",
-  "chart-5",
-  "chart-6",
-  "chart-7",
-  "chart-8",
-  "chart-grid",
-  "chart-axis",
-  "chart-tooltip-bg",
-  "chart-tooltip-fg",
-  "selection-bg",
-  "selection-fg",
-  "scrollbar-thumb",
-  "scrollbar-thumb-hover",
-  "grid-placeholder-bg",
-  "grid-placeholder-border",
-  "glow-primary-shadow",
+  'background',
+  'foreground',
+  'card',
+  'card-foreground',
+  'popover',
+  'popover-foreground',
+  'primary',
+  'primary-foreground',
+  'secondary',
+  'secondary-foreground',
+  'muted',
+  'muted-foreground',
+  'accent',
+  'accent-foreground',
+  'destructive',
+  'destructive-foreground',
+  'success',
+  'success-foreground',
+  'warning',
+  'warning-foreground',
+  'info',
+  'info-foreground',
+  'border',
+  'input',
+  'ring',
+  'chart-1',
+  'chart-2',
+  'chart-3',
+  'chart-4',
+  'chart-5',
+  'chart-6',
+  'chart-7',
+  'chart-8',
+  'chart-grid',
+  'chart-axis',
+  'chart-tooltip-bg',
+  'chart-tooltip-fg',
+  'selection-bg',
+  'selection-fg',
+  'scrollbar-thumb',
+  'scrollbar-thumb-hover',
+  'grid-placeholder-bg',
+  'grid-placeholder-border',
+  'glow-primary-shadow',
 ] as const;
 
 export type TokenKey = (typeof TOKEN_KEYS)[number];

@@ -1,4 +1,4 @@
-import type { WizardTask } from "./completion-wizard";
+import type { WizardTask } from './completion-wizard';
 
 export type GroupedWave = [number, Array<{ task: WizardTask; idx: number }>];
 
@@ -11,16 +11,14 @@ export type GroupedWave = [number, Array<{ task: WizardTask; idx: number }>];
  * - Wave N>0: "N task(s) that wait on wave N-1"
  */
 export function formatWaveHeader(waveIndex: number, taskCount: number): string {
-  const tasks = `${taskCount} ${taskCount === 1 ? "task" : "tasks"}`;
+  const tasks = `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}`;
   if (waveIndex <= 0) return `Can start in parallel · ${tasks}`;
   return `${tasks} that wait on wave ${waveIndex - 1}`;
 }
 
 /** Group live (non-removed) tasks by wave, sort within wave by sequence. */
 export function groupTasksByWave(tasks: WizardTask[], removed: Set<number>): GroupedWave[] {
-  const live = tasks
-    .map((t, idx) => ({ task: t, idx }))
-    .filter(({ idx }) => !removed.has(idx));
+  const live = tasks.map((t, idx) => ({ task: t, idx })).filter(({ idx }) => !removed.has(idx));
   const buckets = new Map<number, Array<{ task: WizardTask; idx: number }>>();
   for (const entry of live) {
     const w = entry.task.wave ?? 0;
@@ -77,7 +75,7 @@ type StoredEnvelope = {
 /** Read the cached preview for a session. Returns null on miss, version
  * mismatch, or any parse error — caller should re-fetch in that case. */
 export function readCachedStories(sessionId: string): CachedStoriesPayload | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(storiesCacheKey(sessionId));
     if (!raw) return null;
@@ -97,20 +95,20 @@ export function readCachedStories(sessionId: string): CachedStoriesPayload | nul
 /** Write the cached preview for a session. Best-effort — silently swallows
  * QuotaExceededError so a full localStorage doesn't break the wizard. */
 export function writeCachedStories(sessionId: string, payload: CachedStoriesPayload): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     const envelope: StoredEnvelope = { v: STORIES_CACHE_VERSION, ...payload };
     window.localStorage.setItem(storiesCacheKey(sessionId), JSON.stringify(envelope));
   } catch (err) {
     // Quota / disabled storage / serialization. Not worth interrupting flow.
-    console.warn("writeCachedStories failed:", err);
+    console.warn('writeCachedStories failed:', err);
   }
 }
 
 /** Clear the cached preview. Called after a successful commit (cards are
  * persisted server-side now) or when the user clicks Regenerate. */
 export function clearCachedStories(sessionId: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     window.localStorage.removeItem(storiesCacheKey(sessionId));
   } catch {

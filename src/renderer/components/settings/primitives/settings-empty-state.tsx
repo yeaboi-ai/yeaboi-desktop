@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 type SettingsEmptyStateProps = {
   icon?: React.ReactNode;
@@ -9,11 +9,17 @@ type SettingsEmptyStateProps = {
   className?: string;
 };
 
-export function SettingsEmptyState({ icon, title, description, action, className }: SettingsEmptyStateProps) {
+export function SettingsEmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className,
+}: SettingsEmptyStateProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center px-6 py-10 gap-2",
+        'flex flex-col items-center justify-center text-center px-6 py-10 gap-2',
         className,
       )}
     >

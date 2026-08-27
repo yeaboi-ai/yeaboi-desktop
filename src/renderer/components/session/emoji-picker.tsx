@@ -1,64 +1,160 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
   {
-    label: "Smileys",
+    label: 'Smileys',
     emojis: [
-      "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂",
-      "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩",
-      "😘", "😗", "😚", "😙", "😋", "😛", "😜", "🤪",
-      "🤨", "🧐", "🤓", "😎", "🥸", "😏", "😒", "😞",
-      "😔", "😟", "😕", "🙁", "😣", "😖", "😫", "😩",
-      "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯",
+      '😀',
+      '😃',
+      '😄',
+      '😁',
+      '😆',
+      '😅',
+      '🤣',
+      '😂',
+      '🙂',
+      '🙃',
+      '😉',
+      '😊',
+      '😇',
+      '🥰',
+      '😍',
+      '🤩',
+      '😘',
+      '😗',
+      '😚',
+      '😙',
+      '😋',
+      '😛',
+      '😜',
+      '🤪',
+      '🤨',
+      '🧐',
+      '🤓',
+      '😎',
+      '🥸',
+      '😏',
+      '😒',
+      '😞',
+      '😔',
+      '😟',
+      '😕',
+      '🙁',
+      '😣',
+      '😖',
+      '😫',
+      '😩',
+      '🥺',
+      '😢',
+      '😭',
+      '😤',
+      '😠',
+      '😡',
+      '🤬',
+      '🤯',
     ],
   },
   {
-    label: "Reactions",
+    label: 'Reactions',
     emojis: [
-      "👍", "👎", "👏", "🙌", "🙏", "💪", "🤝", "👀",
-      "🔥", "✨", "💯", "🎉", "🎊", "🏆", "⭐", "💖",
-      "❤️", "🧡", "💛", "💚", "💙", "💜", "🤍", "🖤",
-      "💔", "💢", "💥", "💫", "💬", "👋", "🫡", "🤔",
+      '👍',
+      '👎',
+      '👏',
+      '🙌',
+      '🙏',
+      '💪',
+      '🤝',
+      '👀',
+      '🔥',
+      '✨',
+      '💯',
+      '🎉',
+      '🎊',
+      '🏆',
+      '⭐',
+      '💖',
+      '❤️',
+      '🧡',
+      '💛',
+      '💚',
+      '💙',
+      '💜',
+      '🤍',
+      '🖤',
+      '💔',
+      '💢',
+      '💥',
+      '💫',
+      '💬',
+      '👋',
+      '🫡',
+      '🤔',
     ],
   },
   {
-    label: "Objects & Symbols",
+    label: 'Objects & Symbols',
     emojis: [
-      "💡", "📌", "📎", "🔗", "📝", "📄", "📊", "📈",
-      "✅", "❌", "⚠️", "🚀", "🛠️", "🐛", "💻", "📱",
-      "☕", "🍕", "🍔", "🍿", "🎯", "🧠", "👨‍💻", "👩‍💻",
+      '💡',
+      '📌',
+      '📎',
+      '🔗',
+      '📝',
+      '📄',
+      '📊',
+      '📈',
+      '✅',
+      '❌',
+      '⚠️',
+      '🚀',
+      '🛠️',
+      '🐛',
+      '💻',
+      '📱',
+      '☕',
+      '🍕',
+      '🍔',
+      '🍿',
+      '🎯',
+      '🧠',
+      '👨‍💻',
+      '👩‍💻',
     ],
   },
 ];
 
-export const QUICK_REACTIONS = ["👍", "❤️", "😂", "🎉", "🔥", "🤔"];
+export const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥', '🤔'];
 
 interface EmojiPickerProps {
   onPick: (emoji: string) => void;
   onClose: () => void;
-  align?: "left" | "right";
+  align?: 'left' | 'right';
   /** Show only the quick-reactions strip (used for picking a reaction). */
   compact?: boolean;
 }
 
-export function EmojiPicker({ onPick, onClose, align = "left", compact = false }: EmojiPickerProps) {
+export function EmojiPicker({
+  onPick,
+  onClose,
+  align = 'left',
+  compact = false,
+}: EmojiPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     };
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("keydown", esc);
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('keydown', esc);
     return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("keydown", esc);
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', esc);
     };
   }, [onClose]);
 
@@ -66,7 +162,7 @@ export function EmojiPicker({ onPick, onClose, align = "left", compact = false }
     return (
       <div
         ref={ref}
-        className={`absolute bottom-full mb-1 ${align === "right" ? "right-0" : "left-0"} flex items-center gap-1 px-1.5 py-1 rounded-full bg-secondary border border-border shadow-2xl z-50`}
+        className={`absolute bottom-full mb-1 ${align === 'right' ? 'right-0' : 'left-0'} flex items-center gap-1 px-1.5 py-1 rounded-full bg-secondary border border-border shadow-2xl z-50`}
       >
         {QUICK_REACTIONS.map((e) => (
           <button
@@ -87,15 +183,16 @@ export function EmojiPicker({ onPick, onClose, align = "left", compact = false }
   }
 
   const filteredGroups = filter
-    ? EMOJI_GROUPS.map((g) => ({ ...g, emojis: g.emojis.filter((e) => e.includes(filter)) })).filter(
-        (g) => g.emojis.length,
-      )
+    ? EMOJI_GROUPS.map((g) => ({
+        ...g,
+        emojis: g.emojis.filter((e) => e.includes(filter)),
+      })).filter((g) => g.emojis.length)
     : EMOJI_GROUPS;
 
   return (
     <div
       ref={ref}
-      className={`absolute bottom-full mb-2 ${align === "right" ? "right-0" : "left-0"} w-[280px] max-h-[320px] flex flex-col bg-secondary border border-border rounded-xl shadow-2xl z-50 overflow-hidden`}
+      className={`absolute bottom-full mb-2 ${align === 'right' ? 'right-0' : 'left-0'} w-[280px] max-h-[320px] flex flex-col bg-secondary border border-border rounded-xl shadow-2xl z-50 overflow-hidden`}
     >
       <div className="px-2 py-1.5 border-b border-border/60">
         <input

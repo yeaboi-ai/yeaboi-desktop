@@ -1,8 +1,8 @@
-import { BUILTIN_PRESETS, DEFAULT_THEME_ID, isBuiltInPresetId } from "./presets";
-import { tokensToInlineStyleString } from "./apply";
-import type { ColorScheme, ThemeDoc, ThemeId, TokenMap } from "./types";
+import { BUILTIN_PRESETS, DEFAULT_THEME_ID, isBuiltInPresetId } from './presets';
+import { tokensToInlineStyleString } from './apply';
+import type { ColorScheme, ThemeDoc, ThemeId, TokenMap } from './types';
 
-export const THEME_COOKIE_NAME = "theme";
+export const THEME_COOKIE_NAME = 'theme';
 
 export interface ThemeCookiePayload {
   id: ThemeId;
@@ -14,7 +14,7 @@ export interface BootedTheme {
   id: ThemeId;
   color_scheme: ColorScheme;
   tokens: TokenMap;
-  source: "cookie" | "fallback";
+  source: 'cookie' | 'fallback';
 }
 
 export function parseThemeCookie(value: string | undefined | null): ThemeCookiePayload | null {
@@ -22,8 +22,11 @@ export function parseThemeCookie(value: string | undefined | null): ThemeCookieP
   try {
     const decoded = decodeURIComponent(value);
     const parsed = JSON.parse(decoded);
-    if (typeof parsed !== "object" || !parsed) return null;
-    if (typeof parsed.id !== "string" || (parsed.color_scheme !== "light" && parsed.color_scheme !== "dark")) {
+    if (typeof parsed !== 'object' || !parsed) return null;
+    if (
+      typeof parsed.id !== 'string' ||
+      (parsed.color_scheme !== 'light' && parsed.color_scheme !== 'dark')
+    ) {
       return null;
     }
     return parsed as ThemeCookiePayload;
@@ -37,14 +40,19 @@ export function bootThemeFromCookie(cookieValue: string | undefined | null): Boo
   if (parsed) {
     if (isBuiltInPresetId(parsed.id)) {
       const preset = BUILTIN_PRESETS[parsed.id];
-      return { id: parsed.id, color_scheme: preset.color_scheme, tokens: preset.tokens, source: "cookie" };
+      return {
+        id: parsed.id,
+        color_scheme: preset.color_scheme,
+        tokens: preset.tokens,
+        source: 'cookie',
+      };
     }
     if (parsed.tokens) {
       return {
         id: parsed.id,
         color_scheme: parsed.color_scheme,
         tokens: parsed.tokens,
-        source: "cookie",
+        source: 'cookie',
       };
     }
   }
@@ -53,7 +61,7 @@ export function bootThemeFromCookie(cookieValue: string | undefined | null): Boo
     id: DEFAULT_THEME_ID,
     color_scheme: fallback.color_scheme,
     tokens: fallback.tokens,
-    source: "fallback",
+    source: 'fallback',
   };
 }
 
@@ -65,12 +73,16 @@ export function buildThemeCookieValue(payload: ThemeCookiePayload): string {
   return encodeURIComponent(JSON.stringify(payload));
 }
 
-export function themeFromId(id: ThemeId, customTokens?: TokenMap, customColorScheme?: ColorScheme): ThemeDoc | null {
+export function themeFromId(
+  id: ThemeId,
+  customTokens?: TokenMap,
+  customColorScheme?: ColorScheme,
+): ThemeDoc | null {
   if (isBuiltInPresetId(id)) return BUILTIN_PRESETS[id];
   if (customTokens && customColorScheme) {
     return {
       version: 1,
-      name: "Custom",
+      name: 'Custom',
       base_preset: null,
       color_scheme: customColorScheme,
       tokens: customTokens,

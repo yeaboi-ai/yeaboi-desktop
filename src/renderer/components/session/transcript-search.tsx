@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { Search, X, Mic, Type } from "lucide-react";
+import { useMemo } from 'react';
+import { Search, X, Mic, Type } from 'lucide-react';
 
-import { mediumOf, type TranscriptMedium } from "./transcript-medium";
+import { mediumOf, type TranscriptMedium } from './transcript-medium';
 
 interface Entry {
   speaker_name: string | null;
@@ -72,7 +72,7 @@ export function TranscriptSearch({
         {query && (
           <button
             type="button"
-            onClick={() => onQueryChange("")}
+            onClick={() => onQueryChange('')}
             aria-label="Clear search"
             className="p-0.5 rounded text-muted-foreground/50 hover:text-foreground/80 hover:bg-foreground/[0.05] transition-colors"
           >
@@ -80,74 +80,77 @@ export function TranscriptSearch({
           </button>
         )}
       </div>
-      {showMediumChips && (() => {
-        // Compute which "slot" is active. selectedMediums of size 0 OR size 2
-        // both mean "show everything" — collapse to the All slot.
-        const activeSlot: "all" | TranscriptMedium =
-          !selectedMediums || selectedMediums.size === 0 || selectedMediums.size === 2
-            ? "all"
-            : (Array.from(selectedMediums)[0] as TranscriptMedium);
-        const selectSlot = (slot: "all" | TranscriptMedium) => {
-          if (!onToggleMedium) return;
-          // Toggle the medium filter to land on the requested slot.
-          if (slot === "all") {
-            // Clear: deselect any currently selected medium.
-            if (selectedMediums?.has("spoken")) onToggleMedium("spoken");
-            if (selectedMediums?.has("typed")) onToggleMedium("typed");
-            return;
-          }
-          // Solo-select the requested medium: turn off the other if on,
-          // turn on this one if not.
-          const other: TranscriptMedium = slot === "spoken" ? "typed" : "spoken";
-          if (selectedMediums?.has(other)) onToggleMedium(other);
-          if (!selectedMediums?.has(slot)) onToggleMedium(slot);
-        };
-        const slots: Array<{
-          key: "all" | TranscriptMedium;
-          label: string;
-          Icon: typeof Mic | null;
-        }> = [
-          { key: "all", label: "All", Icon: null },
-          { key: "spoken", label: "Spoken", Icon: Mic },
-          { key: "typed", label: "Typed", Icon: Type },
-        ];
-        return (
-          <div className="flex items-center justify-between gap-3 mt-3">
-            <span className="text-[11px] uppercase tracking-[0.10em] text-muted-foreground/70 font-semibold">
-              Medium
-            </span>
-            <div
-              role="tablist"
-              aria-label="Filter by medium"
-              className="flex items-center rounded-md bg-foreground/[0.04] p-0.5 ring-1 ring-border/40"
-            >
-              {slots.map((s) => {
-                const active = activeSlot === s.key;
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => selectSlot(s.key)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-[12px] font-medium transition-colors ${
-                      active
-                        ? "bg-foreground/[0.10] text-foreground/95"
-                        : "text-muted-foreground/75 hover:text-foreground/90"
-                    }`}
-                  >
-                    {s.Icon && <s.Icon className="h-3 w-3" />}
-                    {s.label}
-                  </button>
-                );
-              })}
+      {showMediumChips &&
+        (() => {
+          // Compute which "slot" is active. selectedMediums of size 0 OR size 2
+          // both mean "show everything" — collapse to the All slot.
+          const activeSlot: 'all' | TranscriptMedium =
+            !selectedMediums || selectedMediums.size === 0 || selectedMediums.size === 2
+              ? 'all'
+              : (Array.from(selectedMediums)[0] as TranscriptMedium);
+          const selectSlot = (slot: 'all' | TranscriptMedium) => {
+            if (!onToggleMedium) return;
+            // Toggle the medium filter to land on the requested slot.
+            if (slot === 'all') {
+              // Clear: deselect any currently selected medium.
+              if (selectedMediums?.has('spoken')) onToggleMedium('spoken');
+              if (selectedMediums?.has('typed')) onToggleMedium('typed');
+              return;
+            }
+            // Solo-select the requested medium: turn off the other if on,
+            // turn on this one if not.
+            const other: TranscriptMedium = slot === 'spoken' ? 'typed' : 'spoken';
+            if (selectedMediums?.has(other)) onToggleMedium(other);
+            if (!selectedMediums?.has(slot)) onToggleMedium(slot);
+          };
+          const slots: Array<{
+            key: 'all' | TranscriptMedium;
+            label: string;
+            Icon: typeof Mic | null;
+          }> = [
+            { key: 'all', label: 'All', Icon: null },
+            { key: 'spoken', label: 'Spoken', Icon: Mic },
+            { key: 'typed', label: 'Typed', Icon: Type },
+          ];
+          return (
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <span className="text-[11px] uppercase tracking-[0.10em] text-muted-foreground/70 font-semibold">
+                Medium
+              </span>
+              <div
+                role="tablist"
+                aria-label="Filter by medium"
+                className="flex items-center rounded-md bg-foreground/[0.04] p-0.5 ring-1 ring-border/40"
+              >
+                {slots.map((s) => {
+                  const active = activeSlot === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => selectSlot(s.key)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-[12px] font-medium transition-colors ${
+                        active
+                          ? 'bg-foreground/[0.10] text-foreground/95'
+                          : 'text-muted-foreground/75 hover:text-foreground/90'
+                      }`}
+                    >
+                      {s.Icon && <s.Icon className="h-3 w-3" />}
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
       {speakers.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 mt-3">
-          <span className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 mr-1">Speakers</span>
+          <span className="text-[9px] uppercase tracking-[0.06em] text-muted-foreground/50 mr-1">
+            Speakers
+          </span>
           {speakers.map((s) => {
             const active = selectedSpeakers.has(s);
             return (
@@ -158,8 +161,8 @@ export function TranscriptSearch({
                 aria-pressed={active}
                 className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
                   active
-                    ? "bg-success/20 text-success ring-1 ring-success/30"
-                    : "bg-foreground/[0.05] text-muted-foreground hover:text-foreground/95 ring-1 ring-border/60"
+                    ? 'bg-success/20 text-success ring-1 ring-success/30'
+                    : 'bg-foreground/[0.05] text-muted-foreground hover:text-foreground/95 ring-1 ring-border/60'
                 }`}
               >
                 {s}

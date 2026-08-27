@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ArrowLeft, ChevronDown, Layers, Loader2 } from "lucide-react";
-import { use, useEffect, useState } from "react";
+import Link from 'next/link';
+import { ArrowLeft, ChevronDown, Layers, Loader2 } from 'lucide-react';
+import { use, useEffect, useState } from 'react';
 
-import { BoardSettingsContent } from "@/components/kanban/board-settings-content";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { useBoard } from "@/hooks/use-board";
+import { BoardSettingsContent } from '@/components/kanban/board-settings-content';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useBoard } from '@/hooks/use-board';
 import {
   BUILTIN_PRESETS,
   fetchOrgPresets,
   ICON_BY_NAME,
   type PresetDTO,
-} from "@/lib/api/generation-presets";
+} from '@/lib/api/generation-presets';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,12 +21,12 @@ interface PageProps {
 // Keep slugs in sync with backend/src/app/services/generation_styles.py.
 // Duplicated rather than imported because the wizard constants are internal.
 const GRANULARITY_OPTIONS: ReadonlyArray<{ slug: string; label: string; blurb: string }> = [
-  { slug: "balanced", label: "Balanced", blurb: "8–20 tickets, 1–3 days each." },
-  { slug: "minimal", label: "Minimal", blurb: "3–6 larger tickets." },
-  { slug: "many_small", label: "Many small", blurb: "20–40 tiny tickets, ≤1 day each." },
+  { slug: 'balanced', label: 'Balanced', blurb: '8–20 tickets, 1–3 days each.' },
+  { slug: 'minimal', label: 'Minimal', blurb: '3–6 larger tickets.' },
+  { slug: 'many_small', label: 'Many small', blurb: '20–40 tiny tickets, ≤1 day each.' },
 ];
 
-type ModifierCategory = "shape" | "quality" | "risk" | "methodology";
+type ModifierCategory = 'shape' | 'quality' | 'risk' | 'methodology';
 
 const MODIFIER_OPTIONS: ReadonlyArray<{
   slug: string;
@@ -36,32 +36,113 @@ const MODIFIER_OPTIONS: ReadonlyArray<{
   requiresRepo?: boolean;
 }> = [
   // shape
-  { slug: "vertical_slices", category: "shape", label: "Vertical slices", blurb: "End-to-end value per ticket." },
-  { slug: "story_driven", category: "shape", label: "User stories", blurb: '"As a … I want …" titles.' },
-  { slug: "spike_first", category: "shape", label: "Spike-first", blurb: "Investigation tickets before unknowns." },
-  { slug: "wave_optimised", category: "shape", label: "Wave-optimised", blurb: "Maximise wave-0 parallelism." },
-  { slug: "follow_practices", category: "shape", label: "Follow your practices", blurb: "Mirror your linked repo.", requiresRepo: true },
+  {
+    slug: 'vertical_slices',
+    category: 'shape',
+    label: 'Vertical slices',
+    blurb: 'End-to-end value per ticket.',
+  },
+  {
+    slug: 'story_driven',
+    category: 'shape',
+    label: 'User stories',
+    blurb: '"As a … I want …" titles.',
+  },
+  {
+    slug: 'spike_first',
+    category: 'shape',
+    label: 'Spike-first',
+    blurb: 'Investigation tickets before unknowns.',
+  },
+  {
+    slug: 'wave_optimised',
+    category: 'shape',
+    label: 'Wave-optimised',
+    blurb: 'Maximise wave-0 parallelism.',
+  },
+  {
+    slug: 'follow_practices',
+    category: 'shape',
+    label: 'Follow your practices',
+    blurb: 'Mirror your linked repo.',
+    requiresRepo: true,
+  },
   // quality
-  { slug: "test_driven", category: "quality", label: "Test-driven", blurb: "Test AC on every ticket; paired test tickets." },
-  { slug: "docs_bundled", category: "quality", label: "Docs bundled", blurb: "Docs updates land with user-facing changes." },
-  { slug: "observability_first", category: "quality", label: "Observability-first", blurb: "Logging/metrics AC on every ticket." },
-  { slug: "release_ready", category: "quality", label: "Release-ready", blurb: "Final wave covers deploy + flag + rollback." },
+  {
+    slug: 'test_driven',
+    category: 'quality',
+    label: 'Test-driven',
+    blurb: 'Test AC on every ticket; paired test tickets.',
+  },
+  {
+    slug: 'docs_bundled',
+    category: 'quality',
+    label: 'Docs bundled',
+    blurb: 'Docs updates land with user-facing changes.',
+  },
+  {
+    slug: 'observability_first',
+    category: 'quality',
+    label: 'Observability-first',
+    blurb: 'Logging/metrics AC on every ticket.',
+  },
+  {
+    slug: 'release_ready',
+    category: 'quality',
+    label: 'Release-ready',
+    blurb: 'Final wave covers deploy + flag + rollback.',
+  },
   // risk
-  { slug: "risk_mitigated", category: "risk", label: "Risk-mitigated", blurb: "Mitigation tickets for known risks." },
-  { slug: "compliance_aware", category: "risk", label: "Compliance-aware", blurb: "Audit, encryption, access-control tickets." },
-  { slug: "accessibility", category: "risk", label: "Accessibility", blurb: "a11y AC on UI tickets; audit per surface." },
+  {
+    slug: 'risk_mitigated',
+    category: 'risk',
+    label: 'Risk-mitigated',
+    blurb: 'Mitigation tickets for known risks.',
+  },
+  {
+    slug: 'compliance_aware',
+    category: 'risk',
+    label: 'Compliance-aware',
+    blurb: 'Audit, encryption, access-control tickets.',
+  },
+  {
+    slug: 'accessibility',
+    category: 'risk',
+    label: 'Accessibility',
+    blurb: 'a11y AC on UI tickets; audit per surface.',
+  },
   // methodology
-  { slug: "mvp_first", category: "methodology", label: "MVP-first", blurb: "Waves 0-1 ship a deployable v0." },
-  { slug: "gherkin_ac", category: "methodology", label: "Gherkin AC", blurb: "Given/When/Then acceptance criteria." },
-  { slug: "api_contract_first", category: "methodology", label: "API-contract-first", blurb: "Schema tickets before implementation." },
-  { slug: "demo_waves", category: "methodology", label: "Demo-able waves", blurb: "Each wave produces a demoable artifact." },
+  {
+    slug: 'mvp_first',
+    category: 'methodology',
+    label: 'MVP-first',
+    blurb: 'Waves 0-1 ship a deployable v0.',
+  },
+  {
+    slug: 'gherkin_ac',
+    category: 'methodology',
+    label: 'Gherkin AC',
+    blurb: 'Given/When/Then acceptance criteria.',
+  },
+  {
+    slug: 'api_contract_first',
+    category: 'methodology',
+    label: 'API-contract-first',
+    blurb: 'Schema tickets before implementation.',
+  },
+  {
+    slug: 'demo_waves',
+    category: 'methodology',
+    label: 'Demo-able waves',
+    blurb: 'Each wave produces a demoable artifact.',
+  },
 ];
 
 const MODIFIER_CATEGORIES: ReadonlyArray<{ key: ModifierCategory; label: string }> = [
-  { key: "shape", label: "Shape" },
-  { key: "quality", label: "Production readiness" },
-  { key: "risk", label: "Risk & compliance" },
-  { key: "methodology", label: "Methodology" },
+  { key: 'shape', label: 'Shape' },
+  { key: 'quality', label: 'Production readiness' },
+  { key: 'risk', label: 'Risk & compliance' },
+  { key: 'methodology', label: 'Methodology' },
 ];
 
 /** Render a lucide icon by name via static map property access (avoids the
@@ -92,15 +173,8 @@ function detectActivePreset(
 export default function BoardSettingsPage({ params }: PageProps) {
   const { id: projectId } = use(params);
   const { authFetch } = useAuthFetch();
-  const {
-    board,
-    loading,
-    error,
-    createColumn,
-    updateColumn,
-    deleteColumn,
-    reorderColumns,
-  } = useBoard(projectId, authFetch);
+  const { board, loading, error, createColumn, updateColumn, deleteColumn, reorderColumns } =
+    useBoard(projectId, authFetch);
 
   const [projectName, setProjectName] = useState<string | null>(null);
   const [projectRepoUrl, setProjectRepoUrl] = useState<string | null>(null);
@@ -162,15 +236,16 @@ export default function BoardSettingsPage({ params }: PageProps) {
     };
   }, [authFetch, projectId]);
 
-  async function patchDefaults(
-    partial: { default_generation_style?: string | null; default_modifiers?: string[] },
-  ) {
+  async function patchDefaults(partial: {
+    default_generation_style?: string | null;
+    default_modifiers?: string[];
+  }) {
     setSavingStyle(true);
     setStyleError(null);
     try {
       const resp = await authFetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(partial),
       });
       if (!resp.ok) {
@@ -232,7 +307,8 @@ export default function BoardSettingsPage({ params }: PageProps) {
               )}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Customize columns, WIP limits, and lifecycle roles. Changes broadcast to other viewers in real time.
+              Customize columns, WIP limits, and lifecycle roles. Changes broadcast to other viewers
+              in real time.
             </p>
           </div>
         </div>
@@ -266,10 +342,12 @@ export default function BoardSettingsPage({ params }: PageProps) {
             behind a Customize expander. Mirrors the wizard's PresetPickerGate. */}
         <section className="mt-10 rounded-lg border border-border/60 bg-card/40 p-6 space-y-5">
           <div>
-            <h2 className="text-base font-semibold text-foreground/90">Ticket generation defaults</h2>
+            <h2 className="text-base font-semibold text-foreground/90">
+              Ticket generation defaults
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pre-select what the Completion Wizard starts with on this project. Users can
-              still override per generation.
+              Pre-select what the Completion Wizard starts with on this project. Users can still
+              override per generation.
             </p>
           </div>
 
@@ -287,35 +365,38 @@ export default function BoardSettingsPage({ params }: PageProps) {
                     aria-pressed={isSelected}
                     className={`group text-left rounded-lg border p-3.5 transition-colors flex flex-col gap-2 ${
                       isSelected
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                        : "border-border bg-card/40 hover:border-border/80 hover:bg-card/60"
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+                        : 'border-border bg-card/40 hover:border-border/80 hover:bg-card/60'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <div className="flex items-start gap-2">
                       <NamedIcon
                         name={preset.icon}
                         className={`h-4 w-4 shrink-0 mt-0.5 ${
-                          isSelected ? "text-primary" : "text-foreground/60"
+                          isSelected ? 'text-primary' : 'text-foreground/60'
                         }`}
                       />
                       <div className="flex-1 min-w-0">
                         <div
                           className={`text-sm font-medium ${
-                            isSelected ? "text-primary" : "text-foreground/90"
+                            isSelected ? 'text-primary' : 'text-foreground/90'
                           }`}
                         >
                           {preset.label}
                         </div>
                         <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 mt-0.5">
-                          {GRANULARITY_OPTIONS.find((g) => g.slug === preset.granularity)?.label ?? preset.granularity}
+                          {GRANULARITY_OPTIONS.find((g) => g.slug === preset.granularity)?.label ??
+                            preset.granularity}
                           {preset.modifiers.length > 0
-                            ? ` · ${preset.modifiers.length} modifier${preset.modifiers.length === 1 ? "" : "s"}`
-                            : " · no modifiers"}
+                            ? ` · ${preset.modifiers.length} modifier${preset.modifiers.length === 1 ? '' : 's'}`
+                            : ' · no modifiers'}
                         </div>
                       </div>
                     </div>
                     {preset.blurb && (
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">{preset.blurb}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {preset.blurb}
+                      </p>
                     )}
                   </button>
                 );
@@ -347,9 +428,9 @@ export default function BoardSettingsPage({ params }: PageProps) {
               className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronDown
-                className={`h-3 w-3 transition-transform ${showCustomize ? "rotate-0" : "-rotate-90"}`}
+                className={`h-3 w-3 transition-transform ${showCustomize ? 'rotate-0' : '-rotate-90'}`}
               />
-              {showCustomize ? "Hide customisation" : "Customize…"}
+              {showCustomize ? 'Hide customisation' : 'Customize…'}
             </button>
             {showCustomize && (
               <div className="mt-4 space-y-5">
@@ -366,8 +447,8 @@ export default function BoardSettingsPage({ params }: PageProps) {
                       aria-pressed={defaultGranularity === null}
                       className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
                         defaultGranularity === null
-                          ? "bg-primary/15 text-primary border-primary/40"
-                          : "bg-background/60 text-foreground/70 border-border hover:text-foreground"
+                          ? 'bg-primary/15 text-primary border-primary/40'
+                          : 'bg-background/60 text-foreground/70 border-border hover:text-foreground'
                       } disabled:opacity-40 disabled:cursor-not-allowed`}
                     >
                       No default
@@ -384,8 +465,8 @@ export default function BoardSettingsPage({ params }: PageProps) {
                           aria-pressed={selected}
                           className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
                             selected
-                              ? "bg-primary/15 text-primary border-primary/40"
-                              : "bg-background/60 text-foreground/70 border-border hover:text-foreground"
+                              ? 'bg-primary/15 text-primary border-primary/40'
+                              : 'bg-background/60 text-foreground/70 border-border hover:text-foreground'
                           } disabled:opacity-40 disabled:cursor-not-allowed`}
                         >
                           {opt.label}
@@ -398,7 +479,10 @@ export default function BoardSettingsPage({ params }: PageProps) {
                 {/* Modifiers, grouped by category */}
                 <div className="space-y-4">
                   <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Approach <span className="font-normal lowercase text-muted-foreground/70">(toggle any)</span>
+                    Approach{' '}
+                    <span className="font-normal lowercase text-muted-foreground/70">
+                      (toggle any)
+                    </span>
                   </div>
                   {MODIFIER_CATEGORIES.map((cat) => {
                     const catOpts = MODIFIER_OPTIONS.filter((o) => o.category === cat.key);
@@ -419,12 +503,16 @@ export default function BoardSettingsPage({ params }: PageProps) {
                                 type="button"
                                 onClick={() => !isDisabled && toggleModifier(opt.slug)}
                                 disabled={isDisabled}
-                                title={repoMissing ? "Link a GitHub repo on the project to use this." : opt.blurb}
+                                title={
+                                  repoMissing
+                                    ? 'Link a GitHub repo on the project to use this.'
+                                    : opt.blurb
+                                }
                                 aria-pressed={selected}
                                 className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
                                   selected
-                                    ? "bg-primary/15 text-primary border-primary/40"
-                                    : "bg-background/60 text-foreground/70 border-border hover:text-foreground"
+                                    ? 'bg-primary/15 text-primary border-primary/40'
+                                    : 'bg-background/60 text-foreground/70 border-border hover:text-foreground'
                                 } disabled:opacity-40 disabled:cursor-not-allowed`}
                               >
                                 {opt.label}

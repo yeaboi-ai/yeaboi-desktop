@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
+import { useCallback, useState } from 'react';
 
 // Tracks the set of selected card ids on the board, plus the last-clicked id so
 // shift-click can extend the selection across a contiguous range. The order

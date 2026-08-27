@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { AcceptanceCriterion } from "@/hooks/use-board";
-import { AcceptanceCriteria } from "./acceptance-criteria";
-import { RichTextEditor } from "./rich-text-editor";
+import type { AcceptanceCriterion } from '@/hooks/use-board';
+import { AcceptanceCriteria } from './acceptance-criteria';
+import { RichTextEditor } from './rich-text-editor';
 
 interface Props {
   description: string | null;
@@ -31,7 +31,7 @@ export function TicketDescription({
   onAcceptanceCriteriaChange,
   onEditingStart,
   onEditingStop,
-  label = "Description",
+  label = 'Description',
   showAcceptanceCriteria = true,
   showHeading = true,
   cardId,
@@ -55,10 +55,7 @@ export function TicketDescription({
       </div>
 
       {showAcceptanceCriteria && (
-        <AcceptanceCriteria
-          criteria={acceptanceCriteria}
-          onChange={onAcceptanceCriteriaChange}
-        />
+        <AcceptanceCriteria criteria={acceptanceCriteria} onChange={onAcceptanceCriteriaChange} />
       )}
     </section>
   );

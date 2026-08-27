@@ -1,7 +1,7 @@
-import type { Board, Card } from "@/hooks/use-board";
-import type { BoardGroupBy } from "@/lib/preferences";
-import { formatWaveHeader } from "@/components/session/completion-wizard-helpers";
-import { Layers, Rocket, type LucideIcon } from "lucide-react";
+import type { Board, Card } from '@/hooks/use-board';
+import type { BoardGroupBy } from '@/lib/preferences';
+import { formatWaveHeader } from '@/components/session/completion-wizard-helpers';
+import { Layers, Rocket, type LucideIcon } from 'lucide-react';
 
 /**
  * A horizontal swim lane in the board view. Lanes are derived client-side
@@ -25,12 +25,12 @@ export interface Lane {
   cardIds: Set<string>;
 }
 
-const PRIORITY_ORDER = ["critical", "high", "medium", "low"] as const;
+const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'] as const;
 const PRIORITY_SWATCH: Record<string, string> = {
-  critical: "bg-red-500",
-  high: "bg-orange-500",
-  medium: "bg-yellow-500",
-  low: "bg-blue-500",
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-blue-500',
 };
 
 interface AssigneeInfo {
@@ -51,34 +51,34 @@ interface AssigneeInfo {
 export function deriveLanes(board: Board, groupBy: BoardGroupBy): Lane[] {
   const allCards: Card[] = board.columns.flatMap((c) => c.cards);
 
-  if (groupBy === "off" || allCards.length === 0) {
+  if (groupBy === 'off' || allCards.length === 0) {
     return [
       {
-        key: "all",
-        label: "",
+        key: 'all',
+        label: '',
         cardIds: new Set(allCards.map((c) => c.id)),
       },
     ];
   }
 
   switch (groupBy) {
-    case "wave":
+    case 'wave':
       return buildWaveLanes(allCards);
-    case "assignee":
+    case 'assignee':
       return buildAssigneeLanes(allCards);
-    case "priority":
+    case 'priority':
       return buildPriorityLanes(allCards);
-    case "project":
+    case 'project':
       return buildProjectLanes(allCards);
-    case "label":
+    case 'label':
       return buildLabelLanes(allCards);
-    case "parent":
+    case 'parent':
       return buildParentLanes(allCards);
     default:
       return [
         {
-          key: "all",
-          label: "",
+          key: 'all',
+          label: '',
           cardIds: new Set(allCards.map((c) => c.id)),
         },
       ];
@@ -92,19 +92,19 @@ export function deriveLanes(board: Board, groupBy: BoardGroupBy): Lane[] {
  * "main" lane regardless of how many waves a project ends up with.
  */
 const WAVE_PALETTE: Array<{ badgeClass: string; swatchClass: string }> = [
-  { badgeClass: "bg-primary/15 text-primary", swatchClass: "bg-primary" },
-  { badgeClass: "bg-violet-500/15 text-violet-300", swatchClass: "bg-violet-500" },
-  { badgeClass: "bg-amber-500/15 text-amber-300", swatchClass: "bg-amber-500" },
-  { badgeClass: "bg-emerald-500/15 text-emerald-300", swatchClass: "bg-emerald-500" },
-  { badgeClass: "bg-pink-500/15 text-pink-300", swatchClass: "bg-pink-500" },
-  { badgeClass: "bg-sky-500/15 text-sky-300", swatchClass: "bg-sky-500" },
+  { badgeClass: 'bg-primary/15 text-primary', swatchClass: 'bg-primary' },
+  { badgeClass: 'bg-violet-500/15 text-violet-300', swatchClass: 'bg-violet-500' },
+  { badgeClass: 'bg-amber-500/15 text-amber-300', swatchClass: 'bg-amber-500' },
+  { badgeClass: 'bg-emerald-500/15 text-emerald-300', swatchClass: 'bg-emerald-500' },
+  { badgeClass: 'bg-pink-500/15 text-pink-300', swatchClass: 'bg-pink-500' },
+  { badgeClass: 'bg-sky-500/15 text-sky-300', swatchClass: 'bg-sky-500' },
 ];
 
 function buildWaveLanes(cards: Card[]): Lane[] {
   const waves = new Map<number, string[]>();
   const unwaved: string[] = [];
   for (const card of cards) {
-    if (typeof card.wave === "number") {
+    if (typeof card.wave === 'number') {
       const list = waves.get(card.wave) ?? [];
       list.push(card.id);
       waves.set(card.wave, list);
@@ -134,10 +134,10 @@ function buildWaveLanes(cards: Card[]): Lane[] {
 
   if (unwaved.length > 0) {
     lanes.push({
-      key: "wave:unwaved",
-      label: "Unwaved",
-      subLabel: `${unwaved.length} ${unwaved.length === 1 ? "card" : "cards"} without a wave`,
-      swatchClass: "bg-white/30",
+      key: 'wave:unwaved',
+      label: 'Unwaved',
+      subLabel: `${unwaved.length} ${unwaved.length === 1 ? 'card' : 'cards'} without a wave`,
+      swatchClass: 'bg-white/30',
       cardIds: new Set(unwaved),
     });
   }
@@ -148,10 +148,10 @@ function buildWaveLanes(cards: Card[]): Lane[] {
 function buildAssigneeLanes(cards: Card[]): Lane[] {
   const buckets = new Map<string, { info: AssigneeInfo; ids: string[] }>();
   for (const card of cards) {
-    const key = card.assignee_id ?? "__unassigned__";
+    const key = card.assignee_id ?? '__unassigned__';
     const name = card.assignee_id
-      ? card.assignee_name || card.assignee_email || "Unknown"
-      : "Unassigned";
+      ? card.assignee_name || card.assignee_email || 'Unknown'
+      : 'Unassigned';
     const bucket = buckets.get(key);
     if (bucket) {
       bucket.ids.push(card.id);
@@ -163,14 +163,14 @@ function buildAssigneeLanes(cards: Card[]): Lane[] {
   return Array.from(buckets.entries())
     .sort(([keyA, a], [keyB, b]) => {
       // Unassigned always last.
-      if (keyA === "__unassigned__") return 1;
-      if (keyB === "__unassigned__") return -1;
+      if (keyA === '__unassigned__') return 1;
+      if (keyB === '__unassigned__') return -1;
       return a.info.name.localeCompare(b.info.name);
     })
     .map(([key, { info, ids }]) => ({
       key: `assignee:${key}`,
       label: info.name,
-      subLabel: `${ids.length} ${ids.length === 1 ? "card" : "cards"}`,
+      subLabel: `${ids.length} ${ids.length === 1 ? 'card' : 'cards'}`,
       cardIds: new Set(ids),
     }));
 }
@@ -178,23 +178,23 @@ function buildAssigneeLanes(cards: Card[]): Lane[] {
 function buildPriorityLanes(cards: Card[]): Lane[] {
   const buckets = new Map<string, string[]>();
   for (const card of cards) {
-    const key = card.priority ?? "__none__";
+    const key = card.priority ?? '__none__';
     const list = buckets.get(key) ?? [];
     list.push(card.id);
     buckets.set(key, list);
   }
 
-  const orderedKeys = [...PRIORITY_ORDER, "__none__"];
+  const orderedKeys = [...PRIORITY_ORDER, '__none__'];
   const lanes: Lane[] = [];
   for (const key of orderedKeys) {
     const ids = buckets.get(key);
     if (!ids || ids.length === 0) continue;
-    const isNone = key === "__none__";
+    const isNone = key === '__none__';
     lanes.push({
       key: `priority:${key}`,
-      label: isNone ? "No priority" : capitalize(key),
-      subLabel: `${ids.length} ${ids.length === 1 ? "card" : "cards"}`,
-      swatchClass: isNone ? "bg-white/20" : PRIORITY_SWATCH[key] ?? "bg-white/30",
+      label: isNone ? 'No priority' : capitalize(key),
+      subLabel: `${ids.length} ${ids.length === 1 ? 'card' : 'cards'}`,
+      swatchClass: isNone ? 'bg-white/20' : (PRIORITY_SWATCH[key] ?? 'bg-white/30'),
       cardIds: new Set(ids),
     });
   }
@@ -204,8 +204,8 @@ function buildPriorityLanes(cards: Card[]): Lane[] {
 function buildProjectLanes(cards: Card[]): Lane[] {
   const buckets = new Map<string, { name: string; ids: string[] }>();
   for (const card of cards) {
-    const id = card.project_id ?? "__noproject__";
-    const name = card.project_name ?? "Unknown project";
+    const id = card.project_id ?? '__noproject__';
+    const name = card.project_name ?? 'Unknown project';
     const bucket = buckets.get(id);
     if (bucket) {
       bucket.ids.push(card.id);
@@ -219,7 +219,7 @@ function buildProjectLanes(cards: Card[]): Lane[] {
     .map(([id, { name, ids }]) => ({
       key: `project:${id}`,
       label: name,
-      subLabel: `${ids.length} ${ids.length === 1 ? "card" : "cards"}`,
+      subLabel: `${ids.length} ${ids.length === 1 ? 'card' : 'cards'}`,
       cardIds: new Set(ids),
     }));
 }
@@ -246,16 +246,16 @@ function buildLabelLanes(cards: Card[]): Lane[] {
     .map(([label, ids]) => ({
       key: `label:${label}`,
       label,
-      subLabel: `${ids.length} ${ids.length === 1 ? "card" : "cards"}`,
+      subLabel: `${ids.length} ${ids.length === 1 ? 'card' : 'cards'}`,
       cardIds: new Set(ids),
     }));
 
   if (unlabeled.length > 0) {
     lanes.push({
-      key: "label:__none__",
-      label: "Unlabeled",
-      subLabel: `${unlabeled.length} ${unlabeled.length === 1 ? "card" : "cards"}`,
-      swatchClass: "bg-white/20",
+      key: 'label:__none__',
+      label: 'Unlabeled',
+      subLabel: `${unlabeled.length} ${unlabeled.length === 1 ? 'card' : 'cards'}`,
+      swatchClass: 'bg-white/20',
       cardIds: new Set(unlabeled),
     });
   }
@@ -269,7 +269,7 @@ function buildParentLanes(cards: Card[]): Lane[] {
   const cardById = new Map(cards.map((c) => [c.id, c] as const));
   const buckets = new Map<string, string[]>();
   for (const card of cards) {
-    const key = card.parent_card_id ?? "__top__";
+    const key = card.parent_card_id ?? '__top__';
     const list = buckets.get(key) ?? [];
     list.push(card.id);
     buckets.set(key, list);
@@ -277,19 +277,19 @@ function buildParentLanes(cards: Card[]): Lane[] {
 
   return Array.from(buckets.entries())
     .sort(([keyA], [keyB]) => {
-      if (keyA === "__top__") return -1;
-      if (keyB === "__top__") return 1;
+      if (keyA === '__top__') return -1;
+      if (keyB === '__top__') return 1;
       const a = cardById.get(keyA);
       const b = cardById.get(keyB);
-      return (a?.title ?? "").localeCompare(b?.title ?? "");
+      return (a?.title ?? '').localeCompare(b?.title ?? '');
     })
     .map(([key, ids]) => {
-      if (key === "__top__") {
+      if (key === '__top__') {
         return {
-          key: "parent:top",
-          label: "Top-level",
-          subLabel: `${ids.length} ${ids.length === 1 ? "card" : "cards"} with no parent`,
-          swatchClass: "bg-white/20",
+          key: 'parent:top',
+          label: 'Top-level',
+          subLabel: `${ids.length} ${ids.length === 1 ? 'card' : 'cards'} with no parent`,
+          swatchClass: 'bg-white/20',
           cardIds: new Set(ids),
         };
       }
@@ -300,7 +300,7 @@ function buildParentLanes(cards: Card[]): Lane[] {
       return {
         key: `parent:${key}`,
         label: parentLabel,
-        subLabel: `${ids.length} ${ids.length === 1 ? "child" : "children"}`,
+        subLabel: `${ids.length} ${ids.length === 1 ? 'child' : 'children'}`,
         cardIds: new Set(ids),
       };
     });
@@ -313,26 +313,26 @@ function capitalize(s: string): string {
 /* ───── Lane summary chips ─────────────────────────────────────────── */
 
 export interface LanePrioritySummary {
-  priority: "critical" | "high" | "medium" | "low" | "none";
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
   swatchClass: string;
   label: string;
   count: number;
 }
 
-const PRIORITY_SUMMARY_ORDER: LanePrioritySummary["priority"][] = [
-  "critical",
-  "high",
-  "medium",
-  "low",
-  "none",
+const PRIORITY_SUMMARY_ORDER: LanePrioritySummary['priority'][] = [
+  'critical',
+  'high',
+  'medium',
+  'low',
+  'none',
 ];
 
-const PRIORITY_LABEL: Record<LanePrioritySummary["priority"], string> = {
-  critical: "Critical",
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-  none: "No priority",
+const PRIORITY_LABEL: Record<LanePrioritySummary['priority'], string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  none: 'No priority',
 };
 
 /**
@@ -340,7 +340,7 @@ const PRIORITY_LABEL: Record<LanePrioritySummary["priority"], string> = {
  * has at least one card, in canonical critical → none order.
  */
 export function summarisePriorities(cards: Card[]): LanePrioritySummary[] {
-  const counts: Record<LanePrioritySummary["priority"], number> = {
+  const counts: Record<LanePrioritySummary['priority'], number> = {
     critical: 0,
     high: 0,
     medium: 0,
@@ -348,14 +348,13 @@ export function summarisePriorities(cards: Card[]): LanePrioritySummary[] {
     none: 0,
   };
   for (const card of cards) {
-    const key =
-      (card.priority as LanePrioritySummary["priority"] | undefined) ?? "none";
+    const key = (card.priority as LanePrioritySummary['priority'] | undefined) ?? 'none';
     if (key in counts) counts[key] += 1;
     else counts.none += 1;
   }
   return PRIORITY_SUMMARY_ORDER.filter((p) => counts[p] > 0).map((p) => ({
     priority: p,
-    swatchClass: p === "none" ? "bg-white/25" : PRIORITY_SWATCH[p] ?? "bg-white/25",
+    swatchClass: p === 'none' ? 'bg-white/25' : (PRIORITY_SWATCH[p] ?? 'bg-white/25'),
     label: PRIORITY_LABEL[p],
     count: counts[p],
   }));

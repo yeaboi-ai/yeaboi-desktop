@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Info } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export interface AIMeta {
   model?: string | null;
@@ -16,8 +16,8 @@ export interface AIMeta {
 export function extractAIMeta(attachments?: Array<Record<string, unknown>> | null): AIMeta | null {
   if (!attachments) return null;
   for (const a of attachments) {
-    const m = a?.["_ai_meta"];
-    if (m && typeof m === "object") {
+    const m = a?.['_ai_meta'];
+    if (m && typeof m === 'object') {
       const meta = m as AIMeta;
       // Treat all-empty as absent
       if (meta.model || meta.latency_ms !== undefined || meta.reason) return meta;
@@ -59,7 +59,7 @@ export function AIReasoningPeek({ meta }: AIReasoningPeekProps) {
               <dd className="text-foreground/90 font-mono truncate">{meta.model}</dd>
             </div>
           )}
-          {typeof meta.latency_ms === "number" && (
+          {typeof meta.latency_ms === 'number' && (
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground/70">Latency</dt>
               <dd className="text-foreground/90 font-mono">{meta.latency_ms}ms</dd>

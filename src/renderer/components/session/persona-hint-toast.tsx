@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { Lightbulb, X } from "lucide-react";
+import { useEffect, useRef } from 'react';
+import { Lightbulb, X } from 'lucide-react';
 
 interface PersonaHintToastProps {
   open: boolean;
@@ -9,11 +9,7 @@ interface PersonaHintToastProps {
   autoDismissMs?: number;
 }
 
-export function PersonaHintToast({
-  open,
-  onDismiss,
-  autoDismissMs = 5000,
-}: PersonaHintToastProps) {
+export function PersonaHintToast({ open, onDismiss, autoDismissMs = 5000 }: PersonaHintToastProps) {
   const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,15 +17,16 @@ export function PersonaHintToast({
     const timer = setTimeout(onDismiss, autoDismissMs);
     const bar = barRef.current;
     let anim: Animation | undefined;
-    if (bar && typeof bar.animate === "function") {
+    if (bar && typeof bar.animate === 'function') {
       const reduced =
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (!reduced) {
-        anim = bar.animate(
-          [{ width: "100%" }, { width: "0%" }],
-          { duration: autoDismissMs, easing: "linear", fill: "forwards" },
-        );
+        anim = bar.animate([{ width: '100%' }, { width: '0%' }], {
+          duration: autoDismissMs,
+          easing: 'linear',
+          fill: 'forwards',
+        });
       }
     }
     return () => {
@@ -55,9 +52,7 @@ export function PersonaHintToast({
             <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground/70 font-medium">
               Suggestion
             </p>
-            <p className="text-[13px] text-foreground/95 leading-snug mt-1">
-              Ask your agent:
-            </p>
+            <p className="text-[13px] text-foreground/95 leading-snug mt-1">Ask your agent:</p>
             <p className="text-[13px] text-foreground font-medium leading-snug mt-0.5">
               &ldquo;Should I switch personas?&rdquo;
             </p>
@@ -74,7 +69,7 @@ export function PersonaHintToast({
         <div
           ref={barRef}
           className="absolute bottom-0 left-0 h-[2px] bg-warning/60 rounded-r-full"
-          style={{ width: "100%" }}
+          style={{ width: '100%' }}
           aria-hidden="true"
         />
       </div>

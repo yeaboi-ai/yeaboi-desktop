@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useSyncExternalStore } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { useState, useSyncExternalStore } from 'react';
+import { ArrowRight, X } from 'lucide-react';
 
 export interface CoachMarkStep {
   title: string;
@@ -16,9 +16,9 @@ export interface CoachMarkStep {
 }
 
 export type CoachMarkGate =
-  | { kind: "localStorage"; storageKey: string }
+  | { kind: 'localStorage'; storageKey: string }
   | {
-      kind: "server";
+      kind: 'server';
       isSeen: boolean;
       onComplete: () => void | Promise<void>;
     };
@@ -30,23 +30,23 @@ interface Props {
 
 function subscribeLocal(storageKey: string, event: string) {
   return (callback: () => void) => {
-    if (typeof window === "undefined") return () => {};
+    if (typeof window === 'undefined') return () => {};
     const handler = (e: StorageEvent | Event) => {
       if (e instanceof StorageEvent && e.key && e.key !== storageKey) return;
       callback();
     };
     window.addEventListener(event, handler);
-    window.addEventListener("storage", handler);
+    window.addEventListener('storage', handler);
     return () => {
       window.removeEventListener(event, handler);
-      window.removeEventListener("storage", handler);
+      window.removeEventListener('storage', handler);
     };
   };
 }
 
 function getLocalSeen(storageKey: string): boolean {
-  if (typeof window === "undefined") return true;
-  return window.localStorage.getItem(storageKey) === "1";
+  if (typeof window === 'undefined') return true;
+  return window.localStorage.getItem(storageKey) === '1';
 }
 
 function getServerSnapshotStub(): boolean {
@@ -65,21 +65,21 @@ export function CoachMarks({ steps, gate }: Props) {
   const [stepIdx, setStepIdx] = useState(0);
 
   const localSeen = useSyncExternalStore(
-    gate.kind === "localStorage"
+    gate.kind === 'localStorage'
       ? subscribeLocal(gate.storageKey, `coach-marks-change:${gate.storageKey}`)
       : () => () => {},
-    gate.kind === "localStorage" ? () => getLocalSeen(gate.storageKey) : getServerSnapshotStub,
+    gate.kind === 'localStorage' ? () => getLocalSeen(gate.storageKey) : getServerSnapshotStub,
     getServerSnapshotStub,
   );
 
-  const seen = gate.kind === "localStorage" ? localSeen : gate.isSeen;
+  const seen = gate.kind === 'localStorage' ? localSeen : gate.isSeen;
   if (seen) return null;
   if (steps.length === 0) return null;
 
   const dismiss = () => {
-    if (gate.kind === "localStorage") {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(gate.storageKey, "1");
+    if (gate.kind === 'localStorage') {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(gate.storageKey, '1');
         window.dispatchEvent(new Event(`coach-marks-change:${gate.storageKey}`));
       }
     } else {
@@ -138,7 +138,7 @@ export function CoachMarks({ steps, gate }: Props) {
                   key={i}
                   aria-hidden
                   className={`h-1 w-4 rounded-full transition-colors ${
-                    i === stepIdx ? "bg-warning/90" : "bg-foreground/[0.15]"
+                    i === stepIdx ? 'bg-warning/90' : 'bg-foreground/[0.15]'
                   }`}
                 />
               ))}
@@ -153,7 +153,7 @@ export function CoachMarks({ steps, gate }: Props) {
                   Next <ArrowRight className="h-3 w-3" />
                 </>
               ) : (
-                "Got it"
+                'Got it'
               )}
             </button>
           </div>

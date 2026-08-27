@@ -6,9 +6,9 @@ export function formatUsd(value: number, opts?: { precise?: boolean }): string {
   const precise = opts?.precise ?? false;
   const minimumFractionDigits = precise ? 4 : 2;
   const maximumFractionDigits = precise ? 4 : 2;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
     minimumFractionDigits,
     maximumFractionDigits,
   }).format(value);
@@ -20,7 +20,7 @@ export function formatPct(value: number, opts?: { fractionDigits?: number }): st
 }
 
 export function formatDurationMinutes(minutes: number | null | undefined): string {
-  if (minutes == null || minutes <= 0) return "—";
+  if (minutes == null || minutes <= 0) return '—';
   if (minutes < 60) return `${minutes.toFixed(0)} min`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes - h * 60);
@@ -28,9 +28,9 @@ export function formatDurationMinutes(minutes: number | null | undefined): strin
 }
 
 export function formatRelative(iso: string | null | undefined): string {
-  if (!iso) return "never";
+  if (!iso) return 'never';
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "never";
+  if (Number.isNaN(then)) return 'never';
   const seconds = Math.floor((Date.now() - then) / 1000);
   if (seconds < 60) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / 60);

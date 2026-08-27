@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   ChevronDown,
@@ -11,22 +11,22 @@ import {
   Send,
   Sparkles,
   X,
-} from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { Card, CardSyncStatus, CardUpdate } from "@/hooks/use-board";
-import type { TicketBoardColumn } from "@/hooks/use-ticket";
-import { useTicketTemplates } from "@/hooks/use-ticket-templates";
-import { TemplateBadge } from "./template-badge";
+} from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import type { Card, CardSyncStatus, CardUpdate } from '@/hooks/use-board';
+import type { TicketBoardColumn } from '@/hooks/use-ticket';
+import { useTicketTemplates } from '@/hooks/use-ticket-templates';
+import { TemplateBadge } from './template-badge';
 
-const PRIORITIES = ["critical", "high", "medium", "low"] as const;
+const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 const PRIORITY_DOT: Record<string, string> = {
-  critical: "bg-red-500",
-  high: "bg-orange-500",
-  medium: "bg-yellow-500",
-  low: "bg-blue-500",
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-blue-500',
 };
 
 const FIBONACCI_POINTS = [1, 2, 3, 5, 8, 13, 21] as const;
@@ -80,10 +80,7 @@ export function TicketSidebar({
       </SidebarSection>
 
       <SidebarSection label="Story points">
-        <FibonacciPoints
-          value={card.story_points}
-          onChange={(v) => onPatch({ story_points: v })}
-        />
+        <FibonacciPoints value={card.story_points} onChange={(v) => onPatch({ story_points: v })} />
       </SidebarSection>
 
       <SidebarSection label="Labels">
@@ -120,8 +117,8 @@ export function PriorityChips({
             onClick={() => onPatch({ priority: active ? null : p })}
             className={`px-2 py-1 rounded-md text-xs capitalize border transition-colors ${
               active
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground hover:text-foreground"
+                ? 'border-primary bg-primary/10 text-foreground'
+                : 'border-border text-muted-foreground hover:text-foreground'
             }`}
           >
             <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${PRIORITY_DOT[p]}`} />
@@ -144,7 +141,7 @@ export function AssigneeSelect({
 }) {
   return (
     <select
-      value={card.assignee_id ?? ""}
+      value={card.assignee_id ?? ''}
       onChange={(e) => onPatch({ assignee_id: e.target.value || null })}
       className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm"
     >
@@ -157,7 +154,6 @@ export function AssigneeSelect({
     </select>
   );
 }
-
 
 // ─── Status: column dropdown ────────────────────────────────────────────────
 
@@ -193,7 +189,13 @@ export function StatusSelect({
 
 // ─── Type: template dropdown ────────────────────────────────────────────────
 
-export function TypeSelect({ card, onPatch }: { card: Card; onPatch: (patch: CardUpdate) => void }) {
+export function TypeSelect({
+  card,
+  onPatch,
+}: {
+  card: Card;
+  onPatch: (patch: CardUpdate) => void;
+}) {
   const templates = useTicketTemplates();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -203,8 +205,8 @@ export function TypeSelect({ card, onPatch }: { card: Card; onPatch: (patch: Car
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const current = useMemo(
@@ -232,7 +234,9 @@ export function TypeSelect({ card, onPatch }: { card: Card; onPatch: (patch: Car
             </>
           )}
         </span>
-        <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-border bg-popover shadow-lg py-1">
@@ -244,7 +248,9 @@ export function TypeSelect({ card, onPatch }: { card: Card; onPatch: (patch: Car
             }}
             className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent/40"
           >
-            <Check className={`h-3.5 w-3.5 ${card.template_id == null ? "opacity-100" : "opacity-0"}`} />
+            <Check
+              className={`h-3.5 w-3.5 ${card.template_id == null ? 'opacity-100' : 'opacity-0'}`}
+            />
             <span className="italic">No type</span>
           </button>
           {templates.map((t) => {
@@ -259,7 +265,7 @@ export function TypeSelect({ card, onPatch }: { card: Card; onPatch: (patch: Car
                 }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/40"
               >
-                <Check className={`h-3.5 w-3.5 ${selected ? "opacity-100" : "opacity-0"}`} />
+                <Check className={`h-3.5 w-3.5 ${selected ? 'opacity-100' : 'opacity-0'}`} />
                 <TemplateBadge slug={t.slug} name={t.name} />
                 <span className="truncate flex-1 text-left">{t.name}</span>
               </button>
@@ -291,17 +297,20 @@ export function FibonacciPoints({
             onClick={() => onChange(active ? null : n)}
             className={`min-w-[28px] h-7 px-1.5 rounded-md text-xs font-mono font-semibold tabular-nums border transition-colors ${
               active
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:text-foreground"
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:text-foreground'
             }`}
-            title={active ? "Click to clear" : `${n} points`}
+            title={active ? 'Click to clear' : `${n} points`}
           >
             {n}
           </button>
         );
       })}
       {value != null && !FIBONACCI_POINTS.includes(value as (typeof FIBONACCI_POINTS)[number]) && (
-        <span className="inline-flex h-7 items-center px-2 rounded-md bg-muted text-xs font-mono text-muted-foreground" title="Non-fibonacci value (legacy)">
+        <span
+          className="inline-flex h-7 items-center px-2 rounded-md bg-muted text-xs font-mono text-muted-foreground"
+          title="Non-fibonacci value (legacy)"
+        >
           {value}
         </span>
       )}
@@ -320,7 +329,7 @@ export function LabelsEditor({
   available: string[];
   onChange: (next: string[]) => void;
 }) {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const remove = (label: string) => onChange(labels.filter((l) => l !== label));
@@ -329,11 +338,11 @@ export function LabelsEditor({
     const trimmed = raw.trim();
     if (!trimmed) return;
     if (labels.includes(trimmed)) {
-      setInput("");
+      setInput('');
       return;
     }
     onChange([...labels, trimmed]);
-    setInput("");
+    setInput('');
   };
 
   const suggestions = useMemo(() => {
@@ -380,11 +389,11 @@ export function LabelsEditor({
             placeholder="Add label…"
             className="h-8 text-xs"
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 add(input);
               }
-              if (e.key === "Backspace" && !input && labels.length > 0) {
+              if (e.key === 'Backspace' && !input && labels.length > 0) {
                 remove(labels[labels.length - 1]);
               }
             }}
@@ -428,7 +437,7 @@ interface IntegrationListItem {
 }
 
 interface SyncProvider {
-  id: "jira" | "azure_devops";
+  id: 'jira' | 'azure_devops';
   label: string;
   /** Single-letter mark used inside the brand square. */
   letter: string;
@@ -437,11 +446,17 @@ interface SyncProvider {
 }
 
 const SYNC_PROVIDERS: SyncProvider[] = [
-  { id: "jira", label: "Jira", letter: "J", bg: "bg-[#2684FF]" },
-  { id: "azure_devops", label: "Azure DevOps", letter: "A", bg: "bg-[#0078D4]" },
+  { id: 'jira', label: 'Jira', letter: 'J', bg: 'bg-[#2684FF]' },
+  { id: 'azure_devops', label: 'Azure DevOps', letter: 'A', bg: 'bg-[#0078D4]' },
 ];
 
-function ProviderMark({ provider, className = "" }: { provider: SyncProvider; className?: string }) {
+function ProviderMark({
+  provider,
+  className = '',
+}: {
+  provider: SyncProvider;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden
@@ -454,7 +469,7 @@ function ProviderMark({ provider, className = "" }: { provider: SyncProvider; cl
 
 export function SyncControls({ card }: { card: Card }) {
   const { authFetch } = useAuthFetch();
-  const [busy, setBusy] = useState<"jira" | "azure_devops" | null>(null);
+  const [busy, setBusy] = useState<'jira' | 'azure_devops' | null>(null);
   const [status, setStatus] = useState<CardSyncStatus | null | undefined>(card.sync_status);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -474,7 +489,7 @@ export function SyncControls({ card }: { card: Card }) {
     let cancelled = false;
     (async () => {
       try {
-        const resp = await authFetch("/api/integrations");
+        const resp = await authFetch('/api/integrations');
         if (!resp.ok || cancelled) return;
         const all = (await resp.json()) as IntegrationListItem[];
         setIntegrations(all);
@@ -493,21 +508,21 @@ export function SyncControls({ card }: { card: Card }) {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const isConfigured = (provider: "jira" | "azure_devops"): boolean =>
-    integrations.some((i) => i.provider === provider && i.status === "active");
+  const isConfigured = (provider: 'jira' | 'azure_devops'): boolean =>
+    integrations.some((i) => i.provider === provider && i.status === 'active');
 
-  const push = async (provider: "jira" | "azure_devops") => {
+  const push = async (provider: 'jira' | 'azure_devops') => {
     setBusy(provider);
     setError(null);
     setOpen(false);
     try {
       const resp = await authFetch(`/api/sync-push-proxy/${card.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider }),
       });
       if (!resp.ok) {
@@ -522,18 +537,19 @@ export function SyncControls({ card }: { card: Card }) {
     }
   };
 
-  const resolve = async (choice: "local" | "remote") => {
+  const resolve = async (choice: 'local' | 'remote') => {
     if (!status?.link_id) return;
     setBusy(status.provider);
     setError(null);
     try {
       const resp = await authFetch(`/api/sync-resolve-proxy/${status.link_id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ choice }),
       });
       if (!resp.ok) {
-        const msg = (await resp.json().catch(() => null))?.error ?? `Resolve failed (${resp.status})`;
+        const msg =
+          (await resp.json().catch(() => null))?.error ?? `Resolve failed (${resp.status})`;
         setError(String(msg));
         return;
       }
@@ -548,14 +564,14 @@ export function SyncControls({ card }: { card: Card }) {
   // single Re-sync button.
   if (status) {
     const provider = SYNC_PROVIDERS.find((p) => p.id === status.provider) ?? SYNC_PROVIDERS[0];
-    const isConflict = status.state === "conflict";
+    const isConflict = status.state === 'conflict';
     const stateColor = isConflict
-      ? "text-orange-500"
-      : status.state === "error"
-      ? "text-destructive"
-      : status.state === "synced"
-      ? "text-emerald-500"
-      : "text-muted-foreground";
+      ? 'text-orange-500'
+      : status.state === 'error'
+        ? 'text-destructive'
+        : status.state === 'synced'
+          ? 'text-emerald-500'
+          : 'text-muted-foreground';
     return (
       <div className="space-y-2 text-xs">
         <div className="flex items-center gap-2">
@@ -577,7 +593,7 @@ export function SyncControls({ card }: { card: Card }) {
               </span>
             )}
             <div className="mt-0.5 flex items-center gap-1">
-              <span className={`h-1.5 w-1.5 rounded-full ${stateColor.replace("text-", "bg-")}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${stateColor.replace('text-', 'bg-')}`} />
               <span className={stateColor}>{status.state}</span>
             </div>
           </div>
@@ -607,7 +623,7 @@ export function SyncControls({ card }: { card: Card }) {
                 size="sm"
                 variant="outline"
                 disabled={busy === status.provider}
-                onClick={() => resolve("local")}
+                onClick={() => resolve('local')}
               >
                 {busy === status.provider ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -620,7 +636,7 @@ export function SyncControls({ card }: { card: Card }) {
                 size="sm"
                 variant="ghost"
                 disabled={busy === status.provider}
-                onClick={() => resolve("remote")}
+                onClick={() => resolve('remote')}
               >
                 Keep remote
               </Button>
@@ -653,7 +669,7 @@ export function SyncControls({ card }: { card: Card }) {
             Push to integration
           </span>
           <ChevronDown
-            className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+            className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
           />
         </button>
         {open && (
@@ -669,14 +685,14 @@ export function SyncControls({ card }: { card: Card }) {
                   key={p.id}
                   role="menuitem"
                   className={`flex items-center gap-2.5 px-2.5 py-2 transition-colors ${
-                    configured ? "hover:bg-accent/40" : "bg-muted/20"
+                    configured ? 'hover:bg-accent/40' : 'bg-muted/20'
                   }`}
                 >
-                  <ProviderMark provider={p} className={configured ? "" : "opacity-50"} />
+                  <ProviderMark provider={p} className={configured ? '' : 'opacity-50'} />
                   <div className="min-w-0 flex-1">
                     <div
                       className={`text-sm font-medium ${
-                        configured ? "text-foreground" : "text-muted-foreground"
+                        configured ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {p.label}

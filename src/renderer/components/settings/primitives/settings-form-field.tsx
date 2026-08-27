@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 type SettingsFormFieldProps = {
   id: string;
@@ -28,23 +28,24 @@ export function SettingsFormField({
   const inputId = htmlFor ?? id;
   const helpId = help ? `${inputId}-help` : undefined;
   const errorId = error ? `${inputId}-error` : undefined;
-  const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
 
   const child = React.cloneElement(children, {
     id: inputId,
-    "aria-invalid": error ? true : undefined,
-    "aria-describedby": describedBy,
+    'aria-invalid': error ? true : undefined,
+    'aria-describedby': describedBy,
     ...(children.props as Record<string, unknown>),
   } as React.HTMLAttributes<HTMLElement>);
 
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label
-        htmlFor={inputId}
-        className="text-xs font-body font-medium text-foreground"
-      >
+    <div className={cn('space-y-1.5', className)}>
+      <Label htmlFor={inputId} className="text-xs font-body font-medium text-foreground">
         {label}
-        {required && <span className="text-destructive ml-0.5" aria-hidden="true">*</span>}
+        {required && (
+          <span className="text-destructive ml-0.5" aria-hidden="true">
+            *
+          </span>
+        )}
       </Label>
       {child}
       {help && !error && (

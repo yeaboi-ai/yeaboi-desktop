@@ -1,48 +1,37 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Check, ExternalLink, Loader2, Sparkles, X } from "lucide-react";
-import type {
-  OutputCatalogueEntry,
-} from "@/hooks/use-project-outputs";
-import { OUTPUT_TYPES, type OutputType } from "./output-types";
+import { useState } from 'react';
+import { Check, ExternalLink, Loader2, Sparkles, X } from 'lucide-react';
+import type { OutputCatalogueEntry } from '@/hooks/use-project-outputs';
+import { OUTPUT_TYPES, type OutputType } from './output-types';
 
 interface DeliverableCardProps {
   entry: OutputCatalogueEntry;
-  onGenerate: (
-    outputType: OutputType,
-    payload?: Record<string, unknown>,
-  ) => Promise<unknown>;
+  onGenerate: (outputType: OutputType, payload?: Record<string, unknown>) => Promise<unknown>;
 }
 
-function statusBadge(status: OutputCatalogueEntry["status"], implemented: boolean) {
+function statusBadge(status: OutputCatalogueEntry['status'], implemented: boolean) {
   if (!implemented) {
-    return (
-      <span className="text-[10px] uppercase tracking-wide text-white/30">
-        coming soon
-      </span>
-    );
+    return <span className="text-[10px] uppercase tracking-wide text-white/30">coming soon</span>;
   }
   switch (status) {
-    case "not_generated":
+    case 'not_generated':
       return (
-        <span className="text-[10px] uppercase tracking-wide text-white/40">
-          not generated
-        </span>
+        <span className="text-[10px] uppercase tracking-wide text-white/40">not generated</span>
       );
-    case "generating":
+    case 'generating':
       return (
         <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-amber-300/90">
           <Loader2 className="h-3 w-3 animate-spin" /> generating
         </span>
       );
-    case "ready":
+    case 'ready':
       return (
         <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-emerald-400/90">
           <Check className="h-3 w-3" /> ready
         </span>
       );
-    case "failed":
+    case 'failed':
       return (
         <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-red-400/90">
           <X className="h-3 w-3" /> failed
@@ -54,8 +43,8 @@ function statusBadge(status: OutputCatalogueEntry["status"], implemented: boolea
 function artifactLink(entry: OutputCatalogueEntry): { href: string; label: string } | null {
   const a = entry.artifacts;
   if (!a) return null;
-  if (typeof a.repo_url === "string" && a.repo_url) {
-    return { href: a.repo_url, label: (a.repo_name as string) || "Repository" };
+  if (typeof a.repo_url === 'string' && a.repo_url) {
+    return { href: a.repo_url, label: (a.repo_name as string) || 'Repository' };
   }
   return null;
 }
@@ -64,15 +53,11 @@ export function DeliverableCard({ entry, onGenerate }: DeliverableCardProps) {
   const meta = OUTPUT_TYPES[entry.output_type];
   const Icon = meta.icon;
   const [submitting, setSubmitting] = useState(false);
-  const disabled = !entry.implemented || submitting || entry.status === "generating";
+  const disabled = !entry.implemented || submitting || entry.status === 'generating';
   const link = artifactLink(entry);
 
   const cta =
-    entry.status === "ready"
-      ? "Regenerate"
-      : entry.status === "failed"
-        ? "Retry"
-        : "Generate";
+    entry.status === 'ready' ? 'Regenerate' : entry.status === 'failed' ? 'Retry' : 'Generate';
 
   const onClick = async () => {
     setSubmitting(true);
@@ -92,9 +77,7 @@ export function DeliverableCard({ entry, onGenerate }: DeliverableCardProps) {
           </span>
           <div>
             <div className="text-sm font-medium text-white/90">{meta.label}</div>
-            <div className="text-[11px] leading-tight text-white/50">
-              {meta.short_description}
-            </div>
+            <div className="text-[11px] leading-tight text-white/50">{meta.short_description}</div>
           </div>
         </div>
         {statusBadge(entry.status, entry.implemented)}

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const STORAGE_KEY = "chat_notifications_enabled";
+const STORAGE_KEY = 'chat_notifications_enabled';
 
 interface NotifiableMessage {
   id: string;
   content: string;
-  message_type: "chat" | "ai" | "system" | "voice_chat" | "voice_ai";
+  message_type: 'chat' | 'ai' | 'system' | 'voice_chat' | 'voice_ai';
   user_id: string | null;
   user_name?: string;
   speaker_name?: string | null;
@@ -20,30 +20,36 @@ interface UseChatNotificationsArgs {
 }
 
 function readEnabled(): boolean {
-  if (typeof window === "undefined") return true;
+  if (typeof window === 'undefined') return true;
   const v = window.localStorage.getItem(STORAGE_KEY);
   // default-on; explicitly "false" disables.
-  return v !== "false";
+  return v !== 'false';
 }
 
 function writeEnabled(v: boolean) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, v ? "true" : "false");
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STORAGE_KEY, v ? 'true' : 'false');
 }
 
 // Soft synthesized "ding" via Web Audio API. Avoids shipping an asset and
 // keeps cross-platform behaviour identical. Two short sine pulses, ~120ms.
 function playChime() {
   try {
-    const Ctx = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
-      || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const Ctx =
+      (
+        window as unknown as {
+          AudioContext?: typeof AudioContext;
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const now = ctx.currentTime;
     const tone = (freq: number, start: number, duration: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
+      osc.type = 'sine';
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0, now + start);
       gain.gain.linearRampToValueAtTime(0.18, now + start + 0.01);
@@ -62,7 +68,7 @@ function playChime() {
 }
 
 function isWindowFocused(): boolean {
-  if (typeof document === "undefined") return true;
+  if (typeof document === 'undefined') return true;
   return !document.hidden && document.hasFocus();
 }
 
@@ -79,7 +85,7 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
 
   // Capture the original tab title once so we can restore / decorate it.
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof document === 'undefined') return;
     if (originalTitleRef.current === null) {
       originalTitleRef.current = document.title;
     }
@@ -87,7 +93,7 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
 
   // Reflect unread count in the document title.
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof document === 'undefined') return;
     const base = originalTitleRef.current ?? document.title;
     document.title = unread > 0 ? `(${unread}) ${base}` : base;
   }, [unread]);
@@ -106,10 +112,10 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
     lastSeenIdRef.current = last.id;
 
     // Don't notify on system messages or on our own outgoing chats.
-    if (last.message_type === "system") return;
+    if (last.message_type === 'system') return;
     if (last.user_id && currentUserId && last.user_id === currentUserId) return;
     // Optimistic local echoes use "self" as the user_id placeholder.
-    if (last.user_id === "self") return;
+    if (last.user_id === 'self') return;
 
     // Always bump the unread badge — Slack/WhatsApp-style. The user clears it
     // by interacting with the chat (markAllRead), not by switching tabs.
@@ -129,17 +135,17 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
     // and most browsers suppress it anyway when the page is focused.
     if (
       !isWindowFocused() &&
-      typeof window !== "undefined" &&
-      "Notification" in window &&
-      Notification.permission === "granted"
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
     ) {
       try {
-        const title = last.speaker_name || last.user_name || "New message";
-        const body = (last.content || "").slice(0, 140);
+        const title = last.speaker_name || last.user_name || 'New message';
+        const body = (last.content || '').slice(0, 140);
         new Notification(title, {
           body,
-          icon: "/favicon.ico",
-          tag: "session-chat",
+          icon: '/favicon.ico',
+          tag: 'session-chat',
           silent: true, // we already play our own chime
         });
       } catch {
@@ -153,7 +159,12 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
       const next = !cur;
       writeEnabled(next);
       // Lazy permission ask the moment the user opts in.
-      if (next && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      if (
+        next &&
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'default'
+      ) {
         Notification.requestPermission().catch(() => {});
       }
       return next;

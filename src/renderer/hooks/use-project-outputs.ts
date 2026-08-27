@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api-base";
-import type { OutputStatus, OutputType } from "@/components/deliverables/output-types";
+import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api-base';
+import type { OutputStatus, OutputType } from '@/components/deliverables/output-types';
 
 export interface OutputCatalogueEntry {
   output_type: OutputType;
@@ -42,7 +42,7 @@ export function useProjectOutputs(projectId: string): UseProjectOutputsResult {
       const data: OutputCatalogueEntry[] = await resp.json();
       setOutputs(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown error");
+      setError(e instanceof Error ? e.message : 'unknown error');
     } finally {
       setLoading(false);
     }
@@ -50,14 +50,11 @@ export function useProjectOutputs(projectId: string): UseProjectOutputsResult {
 
   const generate = useCallback(
     async (outputType: OutputType, payload: Record<string, unknown> = {}) => {
-      const resp = await apiFetch(
-        `/api/outputs-proxy/${projectId}/${outputType}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payload }),
-        },
-      );
+      const resp = await apiFetch(`/api/outputs-proxy/${projectId}/${outputType}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload }),
+      });
       if (!resp.ok) {
         // Refresh the catalogue so the card reflects the DB's failed status
         // rather than being stuck in the optimistic "generating" state.

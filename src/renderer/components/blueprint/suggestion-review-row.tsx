@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Check, Pencil, X } from "lucide-react";
-import type { Suggestion } from "@/hooks/use-suggestions";
+import { useState } from 'react';
+import { Check, Pencil, X } from 'lucide-react';
+import type { Suggestion } from '@/hooks/use-suggestions';
 
 interface SuggestionReviewRowProps {
   suggestion: Suggestion;
@@ -41,9 +41,7 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
     <div className="rounded-lg border border-border/60 bg-card/50 p-3">
       {hasConflict && (
         <div className="mb-2 rounded-md bg-warning/[0.06] border border-warning/20 px-2.5 py-1.5">
-          <div className="text-[10px] uppercase tracking-wide text-warning/80 mb-0.5">
-            Replaces
-          </div>
+          <div className="text-[10px] uppercase tracking-wide text-warning/80 mb-0.5">Replaces</div>
           <div className="text-[12px] text-muted-foreground line-through whitespace-pre-wrap leading-snug">
             {suggestion.supersedes_bullet}
           </div>
@@ -53,7 +51,7 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+          rows={Math.min(8, Math.max(2, draft.split('\n').length))}
           className="w-full resize-y bg-foreground/[0.04] border border-border/70 rounded-md px-2 py-1.5 text-[13px] text-foreground leading-relaxed focus:outline-none focus:border-border"
           autoFocus
         />
@@ -77,14 +75,16 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
             </button>
             <button
               type="button"
-              onClick={() => run(async () => {
-                await onAccept(suggestion.id, draft, hasConflict);
-              })}
+              onClick={() =>
+                run(async () => {
+                  await onAccept(suggestion.id, draft, hasConflict);
+                })
+              }
               disabled={busy}
               className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-success hover:text-success rounded-md bg-success/10 hover:bg-success/15 disabled:opacity-50"
             >
               <Check className="h-3 w-3" />
-              {hasConflict ? "Save & replace" : "Save & accept"}
+              {hasConflict ? 'Save & replace' : 'Save & accept'}
             </button>
           </>
         ) : (
@@ -100,7 +100,11 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
             </button>
             <button
               type="button"
-              onClick={() => run(async () => { await onReject(suggestion.id); })}
+              onClick={() =>
+                run(async () => {
+                  await onReject(suggestion.id);
+                })
+              }
               disabled={busy}
               className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-50"
             >
@@ -111,7 +115,11 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
               <>
                 <button
                   type="button"
-                  onClick={() => run(async () => { await onAccept(suggestion.id, undefined, false); })}
+                  onClick={() =>
+                    run(async () => {
+                      await onAccept(suggestion.id, undefined, false);
+                    })
+                  }
                   disabled={busy}
                   className="px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground rounded-md hover:bg-foreground/[0.05] disabled:opacity-50"
                   title="Add the new bullet alongside the existing one"
@@ -120,7 +128,11 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
                 </button>
                 <button
                   type="button"
-                  onClick={() => run(async () => { await onAccept(suggestion.id, undefined, true); })}
+                  onClick={() =>
+                    run(async () => {
+                      await onAccept(suggestion.id, undefined, true);
+                    })
+                  }
                   disabled={busy}
                   className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-amber-200 hover:text-amber-100 rounded-md bg-warning/15 hover:bg-warning/25 disabled:opacity-50"
                 >
@@ -131,7 +143,11 @@ export function SuggestionReviewRow({ suggestion, onAccept, onReject }: Suggesti
             ) : (
               <button
                 type="button"
-                onClick={() => run(async () => { await onAccept(suggestion.id); })}
+                onClick={() =>
+                  run(async () => {
+                    await onAccept(suggestion.id);
+                  })
+                }
                 disabled={busy}
                 className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-success hover:text-success rounded-md bg-success/10 hover:bg-success/15 disabled:opacity-50"
               >

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useAuthFetch, getStoredOrgId } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useAuthFetch, getStoredOrgId } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 
 interface BrandData {
   org_id: string;
@@ -22,7 +22,7 @@ interface BrandContextValue {
   refresh: () => Promise<void>;
 }
 
-const DEFAULT_APP_NAME = "planr";
+const DEFAULT_APP_NAME = 'planr';
 
 const BrandContext = createContext<BrandContextValue | null>(null);
 
@@ -33,11 +33,11 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   // Track the active org id so brand reloads when the user switches orgs.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     setOrgId(getStoredOrgId());
     const handler = () => setOrgId(getStoredOrgId());
-    window.addEventListener("team-change", handler);
-    return () => window.removeEventListener("team-change", handler);
+    window.addEventListener('team-change', handler);
+    return () => window.removeEventListener('team-change', handler);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -51,7 +51,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       const r = await authFetch(`/api/orgs/${id}/brand`);
       if (r.ok) setBrand((await r.json()) as BrandData);
     } catch (err) {
-      logger.warn("brand-provider: load failed", err);
+      logger.warn('brand-provider: load failed', err);
     }
   }, [authFetch, ready]);
 
@@ -61,10 +61,10 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for explicit refresh signals from the brand settings page.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     const handler = () => void refresh();
-    window.addEventListener("brand-updated", handler);
-    return () => window.removeEventListener("brand-updated", handler);
+    window.addEventListener('brand-updated', handler);
+    return () => window.removeEventListener('brand-updated', handler);
   }, [refresh]);
 
   const appName = brand?.app_name?.trim() || DEFAULT_APP_NAME;
@@ -73,13 +73,14 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   // Update document title and favicon when the brand changes.
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.title = appName === DEFAULT_APP_NAME ? "Planning Platform" : `${appName} · Planning Platform`;
+    if (typeof document === 'undefined') return;
+    document.title =
+      appName === DEFAULT_APP_NAME ? 'Planning Platform' : `${appName} · Planning Platform`;
     if (faviconUrl) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
+        link = document.createElement('link');
+        link.rel = 'icon';
         document.head.appendChild(link);
       }
       link.href = faviconUrl;
@@ -96,6 +97,6 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
 export function useBrand(): BrandContextValue {
   const ctx = useContext(BrandContext);
-  if (!ctx) throw new Error("useBrand must be used inside BrandProvider");
+  if (!ctx) throw new Error('useBrand must be used inside BrandProvider');
   return ctx;
 }

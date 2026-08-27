@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type PersonaThumbnailProps = {
   videoPreviewUrl?: string | null;
@@ -17,7 +17,7 @@ type PersonaThumbnailProps = {
 export function PersonaThumbnail({
   videoPreviewUrl,
   slug,
-  alt = "",
+  alt = '',
   className,
   expandable = false,
 }: PersonaThumbnailProps) {
@@ -36,11 +36,11 @@ export function PersonaThumbnail({
       }
     };
     if (v.readyState >= 1) pin();
-    else v.addEventListener("loadedmetadata", pin, { once: true });
-    return () => v.removeEventListener("loadedmetadata", pin);
+    else v.addEventListener('loadedmetadata', pin, { once: true });
+    return () => v.removeEventListener('loadedmetadata', pin);
   }, [videoPreviewUrl]);
 
-  const fallback = `/personas/${slug || "default"}.svg`;
+  const fallback = `/personas/${slug || 'default'}.svg`;
 
   const handleOpen = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,7 +49,7 @@ export function PersonaThumbnail({
   }, []);
 
   const handleKey = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
       setOpen(true);
@@ -60,9 +60,9 @@ export function PersonaThumbnail({
     ? {
         onClick: handleOpen,
         onKeyDown: handleKey,
-        role: "button" as const,
+        role: 'button' as const,
         tabIndex: 0,
-        "aria-label": alt || "View profile picture",
+        'aria-label': alt || 'View profile picture',
       }
     : {};
 
@@ -78,9 +78,9 @@ export function PersonaThumbnail({
       preload="metadata"
       aria-label={alt}
       style={{
-        objectFit: "cover",
-        objectPosition: "center 18%",
-        cursor: expandable ? "zoom-in" : undefined,
+        objectFit: 'cover',
+        objectPosition: 'center 18%',
+        cursor: expandable ? 'zoom-in' : undefined,
       }}
       {...interactiveProps}
     />
@@ -89,7 +89,7 @@ export function PersonaThumbnail({
       src={fallback}
       alt={alt}
       className={className}
-      style={{ cursor: expandable ? "zoom-in" : undefined }}
+      style={{ cursor: expandable ? 'zoom-in' : undefined }}
       {...interactiveProps}
     />
   );
@@ -124,13 +124,13 @@ function PersonaLightbox({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         e.stopPropagation();
         onClose();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   // Pin the lightbox video to its first frame so it reads as a profile photo,
@@ -147,17 +147,17 @@ function PersonaLightbox({
       }
     };
     if (v.readyState >= 1) pin();
-    else v.addEventListener("loadedmetadata", pin, { once: true });
-    return () => v.removeEventListener("loadedmetadata", pin);
+    else v.addEventListener('loadedmetadata', pin, { once: true });
+    return () => v.removeEventListener('loadedmetadata', pin);
   }, [videoPreviewUrl]);
 
-  if (typeof document === "undefined") return null;
+  if (typeof document === 'undefined') return null;
 
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={alt || "Profile picture"}
+      aria-label={alt || 'Profile picture'}
       onClick={onClose}
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-background/90 backdrop-blur-sm animate-in fade-in duration-150"
     >
@@ -170,7 +170,7 @@ function PersonaLightbox({
             playsInline
             preload="metadata"
             className="w-[min(480px,90vw)] h-[min(480px,90vw)] rounded-2xl shadow-2xl ring-1 ring-white/10"
-            style={{ objectFit: "cover", objectPosition: "center 18%", pointerEvents: "none" }}
+            style={{ objectFit: 'cover', objectPosition: 'center 18%', pointerEvents: 'none' }}
           />
         ) : (
           <img

@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 type SettingsSectionHeaderProps = {
   title: string;
@@ -8,9 +8,19 @@ type SettingsSectionHeaderProps = {
   className?: string;
 };
 
-export function SettingsSectionHeader({ title, subtitle, action, className }: SettingsSectionHeaderProps) {
+export function SettingsSectionHeader({
+  title,
+  subtitle,
+  action,
+  className,
+}: SettingsSectionHeaderProps) {
   return (
-    <div className={cn("flex items-start justify-between gap-4 px-5 py-4 border-b border-border", className)}>
+    <div
+      className={cn(
+        'flex items-start justify-between gap-4 px-5 py-4 border-b border-border',
+        className,
+      )}
+    >
       <div className="min-w-0">
         <h2 className="text-xs font-body font-semibold text-foreground tracking-wide">{title}</h2>
         {subtitle && (

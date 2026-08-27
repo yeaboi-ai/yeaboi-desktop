@@ -1,14 +1,6 @@
-"use client";
+'use client';
 
-import {
-  AlertTriangle,
-  Bug,
-  Compass,
-  Sparkles,
-  Tag,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, Bug, Compass, Sparkles, Tag, Wrench, type LucideIcon } from 'lucide-react';
 
 // Visual mapping for the 5 system templates. Custom templates fall back to a
 // neutral pill so the board still says *something* about the type even when
@@ -27,47 +19,47 @@ interface TypeStyle {
 const SYSTEM_STYLES: Record<string, TypeStyle> = {
   feature: {
     Icon: Sparkles,
-    bg: "bg-emerald-500/15",
-    text: "text-emerald-600 dark:text-emerald-400",
-    border: "border-emerald-500/30",
-    label: "Feature",
+    bg: 'bg-emerald-500/15',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    border: 'border-emerald-500/30',
+    label: 'Feature',
   },
   bug: {
     Icon: Bug,
-    bg: "bg-red-500/15",
-    text: "text-red-600 dark:text-red-400",
-    border: "border-red-500/30",
-    label: "Bug",
+    bg: 'bg-red-500/15',
+    text: 'text-red-600 dark:text-red-400',
+    border: 'border-red-500/30',
+    label: 'Bug',
   },
   chore: {
     Icon: Wrench,
-    bg: "bg-slate-500/15",
-    text: "text-slate-600 dark:text-slate-400",
-    border: "border-slate-500/30",
-    label: "Chore",
+    bg: 'bg-slate-500/15',
+    text: 'text-slate-600 dark:text-slate-400',
+    border: 'border-slate-500/30',
+    label: 'Chore',
   },
   spike: {
     Icon: Compass,
-    bg: "bg-purple-500/15",
-    text: "text-purple-600 dark:text-purple-400",
-    border: "border-purple-500/30",
-    label: "Spike",
+    bg: 'bg-purple-500/15',
+    text: 'text-purple-600 dark:text-purple-400',
+    border: 'border-purple-500/30',
+    label: 'Spike',
   },
   tech_debt: {
     Icon: AlertTriangle,
-    bg: "bg-amber-500/15",
-    text: "text-amber-600 dark:text-amber-400",
-    border: "border-amber-500/30",
-    label: "Tech debt",
+    bg: 'bg-amber-500/15',
+    text: 'text-amber-600 dark:text-amber-400',
+    border: 'border-amber-500/30',
+    label: 'Tech debt',
   },
 };
 
 const FALLBACK: TypeStyle = {
   Icon: Tag,
-  bg: "bg-muted",
-  text: "text-muted-foreground",
-  border: "border-border",
-  label: "Type",
+  bg: 'bg-muted',
+  text: 'text-muted-foreground',
+  border: 'border-border',
+  label: 'Type',
 };
 
 function styleFor(slug: string | null | undefined): TypeStyle {
@@ -78,8 +70,8 @@ function styleFor(slug: string | null | undefined): TypeStyle {
 interface Props {
   slug: string | null | undefined;
   name?: string | null;
-  variant?: "icon" | "pill";
-  size?: "xs" | "sm";
+  variant?: 'icon' | 'pill';
+  size?: 'xs' | 'sm';
   className?: string;
 }
 
@@ -88,22 +80,22 @@ interface Props {
 export function TemplateBadge({
   slug,
   name,
-  variant = "icon",
-  size = "xs",
-  className = "",
+  variant = 'icon',
+  size = 'xs',
+  className = '',
 }: Props) {
   const style = styleFor(slug);
   const tooltip = name ?? style.label;
 
-  if (variant === "icon") {
-    const dim = size === "xs" ? "h-4 w-4" : "h-5 w-5";
+  if (variant === 'icon') {
+    const dim = size === 'xs' ? 'h-4 w-4' : 'h-5 w-5';
     return (
       <span
         title={tooltip}
         aria-label={`Type: ${tooltip}`}
         className={`inline-flex items-center justify-center rounded-[3px] border ${style.bg} ${style.text} ${style.border} ${dim} ${className}`}
       >
-        <style.Icon className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+        <style.Icon className={size === 'xs' ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
       </span>
     );
   }

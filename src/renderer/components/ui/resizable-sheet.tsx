@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { GripVertical, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { GripVertical, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -18,7 +18,7 @@ interface Props {
   className?: string;
 }
 
-const DEFAULT_STORAGE_KEY = "panel.width";
+const DEFAULT_STORAGE_KEY = 'panel.width';
 const DEFAULT_WIDTH = 720;
 const DEFAULT_MIN = 480;
 
@@ -47,7 +47,7 @@ export function ResizableSheet({
   // happy. SSR safety: useState's initialiser is fine on the server because we
   // guard window access; on the client it runs synchronously before paint.
   const [width, setWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return defaultWidth;
+    if (typeof window === 'undefined') return defaultWidth;
     try {
       const raw = window.localStorage.getItem(storageKey);
       const parsed = raw == null ? NaN : Number(raw);
@@ -100,10 +100,10 @@ export function ResizableSheet({
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const max = Math.floor(window.innerWidth * maxFraction);
     let next = width;
-    if (e.key === "ArrowLeft") next = Math.min(max, width + 24);
-    else if (e.key === "ArrowRight") next = Math.max(minWidth, width - 24);
-    else if (e.key === "Home") next = minWidth;
-    else if (e.key === "End") next = max;
+    if (e.key === 'ArrowLeft') next = Math.min(max, width + 24);
+    else if (e.key === 'ArrowRight') next = Math.max(minWidth, width - 24);
+    else if (e.key === 'Home') next = minWidth;
+    else if (e.key === 'End') next = max;
     else return;
     e.preventDefault();
     setWidth(next);
@@ -115,14 +115,14 @@ export function ResizableSheet({
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== 'Escape') return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
       onOpenChange(false);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [open, onOpenChange]);
 
   if (!open) return null;
@@ -130,16 +130,13 @@ export function ResizableSheet({
   return (
     <div className="fixed inset-0 z-40 flex" aria-modal="true" role="dialog">
       {/* Backdrop — click to close. */}
-      <div
-        className="flex-1 bg-black/30 transition-opacity"
-        onClick={() => onOpenChange(false)}
-      />
+      <div className="flex-1 bg-black/30 transition-opacity" onClick={() => onOpenChange(false)} />
       {/* Panel */}
       <div
         className={[
-          "relative h-full overflow-hidden bg-background border-l border-border shadow-xl flex flex-col",
-          className ?? "",
-        ].join(" ")}
+          'relative h-full overflow-hidden bg-background border-l border-border shadow-xl flex flex-col',
+          className ?? '',
+        ].join(' ')}
         style={{ width: `${width}px` }}
         onClick={(e) => e.stopPropagation()}
       >

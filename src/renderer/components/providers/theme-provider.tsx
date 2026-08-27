@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -8,16 +8,12 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { applyTheme } from "@/lib/theme/apply";
-import { BUILTIN_PRESETS, DEFAULT_THEME_ID, isBuiltInPresetId } from "@/lib/theme/presets";
-import {
-  THEME_COOKIE_NAME,
-  buildThemeCookieValue,
-  parseThemeCookie,
-} from "@/lib/theme/boot";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+} from 'react';
+import { applyTheme } from '@/lib/theme/apply';
+import { BUILTIN_PRESETS, DEFAULT_THEME_ID, isBuiltInPresetId } from '@/lib/theme/presets';
+import { THEME_COOKIE_NAME, buildThemeCookieValue, parseThemeCookie } from '@/lib/theme/boot';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 import type {
   BuiltInPresetId,
   ColorScheme,
@@ -26,10 +22,10 @@ import type {
   ThemeId,
   ThemePreference,
   TokenMap,
-} from "@/lib/theme/types";
+} from '@/lib/theme/types';
 
-const STORAGE_KEY = "theme:preference";
-const BROADCAST_NAME = "theme";
+const STORAGE_KEY = 'theme:preference';
+const BROADCAST_NAME = 'theme';
 
 interface PreviewState {
   id: ThemeId;
@@ -76,16 +72,16 @@ interface ResolvedThemePayload {
     auto_light_id?: string | null;
     auto_dark_id?: string | null;
   };
-  source: "explicit" | "system" | "org_default" | "fallback";
+  source: 'explicit' | 'system' | 'org_default' | 'fallback';
 }
 
 function readStoredPreference(): ThemePreference | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ThemePreference;
-    if (parsed.mode !== "explicit" && parsed.mode !== "system" && parsed.mode !== "org_default") {
+    if (parsed.mode !== 'explicit' && parsed.mode !== 'system' && parsed.mode !== 'org_default') {
       return null;
     }
     return parsed;
@@ -95,7 +91,7 @@ function readStoredPreference(): ThemePreference | null {
 }
 
 function writeStoredPreference(pref: ThemePreference): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pref));
   } catch {
@@ -104,25 +100,25 @@ function writeStoredPreference(pref: ThemePreference): void {
 }
 
 function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.split("; ").find((row) => row.startsWith(`${name}=`));
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.split('; ').find((row) => row.startsWith(`${name}=`));
   return m ? m.slice(name.length + 1) : null;
 }
 
 function writeCookie(name: string, value: string, days = 365): void {
-  if (typeof document === "undefined") return;
+  if (typeof document === 'undefined') return;
   const maxAge = days * 24 * 60 * 60;
   document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
 }
 
 function getSystemColorScheme(): ColorScheme {
-  if (typeof window === "undefined" || !window.matchMedia) return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (typeof window === 'undefined' || !window.matchMedia) return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function isThemeId(id: string | null | undefined): id is ThemeId {
   if (!id) return false;
-  return isBuiltInPresetId(id) || id.startsWith("custom:");
+  return isBuiltInPresetId(id) || id.startsWith('custom:');
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -130,29 +126,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { authFetch, ready: authReady } = useAuthFetch();
 
   const [preference, setPreference] = useState<ThemePreference>(() => {
-    if (typeof window === "undefined") {
-      return { mode: "org_default" };
+    if (typeof window === 'undefined') {
+      return { mode: 'org_default' };
     }
     const stored = readStoredPreference();
     if (stored) return stored;
     const cookie = parseThemeCookie(readCookie(THEME_COOKIE_NAME));
     if (cookie && isThemeId(cookie.id)) {
-      return { mode: "explicit", theme_id: cookie.id };
+      return { mode: 'explicit', theme_id: cookie.id };
     }
-    return { mode: "org_default" };
+    return { mode: 'org_default' };
   });
 
   // Custom themes resolved from server — keyed by ThemeId. Seeded from the
   // cookie so the first client render matches what SSR painted, avoiding a
   // flash to the default theme before /api/themes/me lands.
   const [customThemes, setCustomThemes] = useState<Record<string, ThemeDoc>>(() => {
-    if (typeof window === "undefined") return {};
+    if (typeof window === 'undefined') return {};
     const cookie = parseThemeCookie(readCookie(THEME_COOKIE_NAME));
-    if (cookie && cookie.tokens && cookie.id.startsWith("custom:")) {
+    if (cookie && cookie.tokens && cookie.id.startsWith('custom:')) {
       return {
         [cookie.id]: {
           version: 1,
-          name: "Custom",
+          name: 'Custom',
           base_preset: null,
           color_scheme: cookie.color_scheme,
           tokens: cookie.tokens,
@@ -171,16 +167,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
   const resolveTheme = useCallback((): { id: ThemeId; theme: ThemeDoc } => {
-    if (preference.mode === "explicit" && preference.theme_id) {
+    if (preference.mode === 'explicit' && preference.theme_id) {
       const id = preference.theme_id;
       if (isBuiltInPresetId(id)) return { id, theme: BUILTIN_PRESETS[id] };
       const custom = customThemes[id];
       if (custom) return { id, theme: custom };
     }
-    if (preference.mode === "system") {
+    if (preference.mode === 'system') {
       const scheme = getSystemColorScheme();
-      const candidate =
-        scheme === "dark" ? preference.auto_dark_id : preference.auto_light_id;
+      const candidate = scheme === 'dark' ? preference.auto_dark_id : preference.auto_light_id;
       if (candidate) {
         if (isBuiltInPresetId(candidate)) {
           return { id: candidate, theme: BUILTIN_PRESETS[candidate] };
@@ -188,10 +183,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const custom = customThemes[candidate];
         if (custom) return { id: candidate, theme: custom };
       }
-      const fallbackId: ThemeId = scheme === "dark" ? "preset:dark" : "preset:light";
+      const fallbackId: ThemeId = scheme === 'dark' ? 'preset:dark' : 'preset:light';
       return { id: fallbackId, theme: BUILTIN_PRESETS[fallbackId] };
     }
-    if (preference.mode === "org_default" && orgDefaultTheme && orgDefaultId) {
+    if (preference.mode === 'org_default' && orgDefaultTheme && orgDefaultId) {
       return { id: orgDefaultId, theme: orgDefaultTheme };
     }
     return { id: DEFAULT_THEME_ID, theme: BUILTIN_PRESETS[DEFAULT_THEME_ID] };
@@ -205,7 +200,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // are skipped during preview so the change can't leak past the current
   // tab until the user explicitly saves it.
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof document === 'undefined') return;
     applyTheme(document.documentElement, resolved.theme, resolved.id);
     if (preview) return;
     // Tokens always ride along: there is no server render any more, so the
@@ -223,12 +218,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Cross-tab sync.
   useEffect(() => {
-    if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return;
+    if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
     const channel = new BroadcastChannel(BROADCAST_NAME);
     channelRef.current = channel;
     channel.onmessage = (event) => {
       const data = event.data as ThemePreference | null;
-      if (data && (data.mode === "explicit" || data.mode === "system" || data.mode === "org_default")) {
+      if (
+        data &&
+        (data.mode === 'explicit' || data.mode === 'system' || data.mode === 'org_default')
+      ) {
         setPreference(data);
       }
     };
@@ -240,25 +238,25 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Listen to system color-scheme changes when in system mode.
   useEffect(() => {
-    if (preference.mode !== "system" || typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (preference.mode !== 'system' || typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => setPreference((p) => ({ ...p }));
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, [preference.mode]);
 
   // Hydrate from backend once auth is ready.
   const refreshFromServer = useCallback(async () => {
     if (!authReady) return;
     try {
-      const r = await authFetch("/api/themes/me");
+      const r = await authFetch('/api/themes/me');
       if (!r.ok) return;
       const data = (await r.json()) as ResolvedThemePayload;
       // Stash custom themes from active/light/dark in our cache.
       const cache: Record<string, ThemeDoc> = {};
       const stash = (id: string | null | undefined, doc: ThemeDoc | null | undefined) => {
         if (!id || !doc) return;
-        if (id.startsWith("custom:")) cache[id] = doc;
+        if (id.startsWith('custom:')) cache[id] = doc;
       };
       stash(data.preference.theme_id ?? null, data.active);
       stash(data.preference.auto_light_id ?? null, data.light ?? null);
@@ -266,7 +264,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (Object.keys(cache).length) {
         setCustomThemes((prev) => ({ ...prev, ...cache }));
       }
-      if (data.source === "org_default") {
+      if (data.source === 'org_default') {
         setOrgDefaultTheme(data.active);
         // We don't know the underlying id when source=org_default since the
         // resolver returns the resolved theme directly. Leave id as null and
@@ -295,7 +293,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
     } catch (err) {
-      logger.warn("theme: failed to refresh from server", err);
+      logger.warn('theme: failed to refresh from server', err);
     }
   }, [authFetch, authReady]);
 
@@ -312,13 +310,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!authReady) return;
     const wanted = new Set<string>();
     const consider = (id: ThemeId | string | null | undefined) => {
-      if (!id || typeof id !== "string") return;
-      if (!id.startsWith("custom:")) return;
+      if (!id || typeof id !== 'string') return;
+      if (!id.startsWith('custom:')) return;
       if (customThemes[id]) return;
       wanted.add(id);
     };
-    if (preference.mode === "explicit") consider(preference.theme_id);
-    if (preference.mode === "system") {
+    if (preference.mode === 'explicit') consider(preference.theme_id);
+    if (preference.mode === 'system') {
       consider(preference.auto_light_id);
       consider(preference.auto_dark_id);
     }
@@ -327,7 +325,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     void (async () => {
       const fetched: Record<string, ThemeDoc> = {};
       for (const id of wanted) {
-        const presetId = id.slice("custom:".length);
+        const presetId = id.slice('custom:'.length);
         try {
           const r = await authFetch(`/api/themes/presets/${presetId}`);
           if (!r.ok) continue;
@@ -342,12 +340,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           fetched[id] = {
             version: preset.version ?? 1,
             name: preset.name,
-            base_preset: (preset.base_preset as ThemeDoc["base_preset"]) ?? null,
+            base_preset: (preset.base_preset as ThemeDoc['base_preset']) ?? null,
             color_scheme: preset.color_scheme,
             tokens: preset.tokens,
           };
         } catch (err) {
-          logger.warn("theme: failed to fetch custom preset on demand", err);
+          logger.warn('theme: failed to fetch custom preset on demand', err);
         }
       }
       if (cancelled || Object.keys(fetched).length === 0) return;
@@ -370,8 +368,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     async (next: ThemePreference) => {
       if (!authReady) return;
       try {
-        const r = await authFetch("/api/users/me/theme-preference", {
-          method: "PUT",
+        const r = await authFetch('/api/users/me/theme-preference', {
+          method: 'PUT',
           body: JSON.stringify({
             mode: next.mode,
             theme_id: next.theme_id ?? null,
@@ -380,10 +378,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           }),
         });
         if (!r.ok) {
-          logger.warn("theme: failed to persist preference", r.status);
+          logger.warn('theme: failed to persist preference', r.status);
         }
       } catch (err) {
-        logger.warn("theme: error persisting preference", err);
+        logger.warn('theme: error persisting preference', err);
       }
     },
     [authFetch, authReady],
@@ -401,7 +399,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setExplicit = useCallback(
     (id: ThemeId) => {
-      updatePreference({ mode: "explicit", theme_id: id });
+      updatePreference({ mode: 'explicit', theme_id: id });
     },
     [updatePreference],
   );
@@ -409,7 +407,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setSystemMode = useCallback(
     (lightId: ThemeId, darkId: ThemeId) => {
       updatePreference({
-        mode: "system",
+        mode: 'system',
         auto_light_id: lightId,
         auto_dark_id: darkId,
       });
@@ -419,13 +417,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const followOrgDefault = useCallback(() => {
     setPreview(null);
-    updatePreference({ mode: "org_default" });
+    updatePreference({ mode: 'org_default' });
   }, [updatePreference]);
 
   // ── Preview-then-save ──────────────────────────────────────────────
   const previewTheme = useCallback(
     (id: ThemeId) => {
-      const pending: ThemePreference = { mode: "explicit", theme_id: id };
+      const pending: ThemePreference = { mode: 'explicit', theme_id: id };
       if (isBuiltInPresetId(id)) {
         setPreview({
           id,
@@ -441,8 +439,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       // Not in cache → fetch then set.
-      if (!authReady || !id.startsWith("custom:")) return;
-      const presetId = id.slice("custom:".length);
+      if (!authReady || !id.startsWith('custom:')) return;
+      const presetId = id.slice('custom:'.length);
       void (async () => {
         try {
           const r = await authFetch(`/api/themes/presets/${presetId}`);
@@ -458,14 +456,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           const doc: ThemeDoc = {
             version: preset.version ?? 1,
             name: preset.name,
-            base_preset: (preset.base_preset as ThemeDoc["base_preset"]) ?? null,
+            base_preset: (preset.base_preset as ThemeDoc['base_preset']) ?? null,
             color_scheme: preset.color_scheme,
             tokens: preset.tokens,
           };
           setCustomThemes((prev) => ({ ...prev, [id]: doc }));
           setPreview({ id, theme: doc, pendingPreference: pending, label: doc.name });
         } catch (err) {
-          logger.warn("theme: preview fetch failed", err);
+          logger.warn('theme: preview fetch failed', err);
         }
       })();
     },
@@ -477,11 +475,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Resolve which one the OS is currently asking for so the live
       // preview matches what the user would actually see.
       const scheme = getSystemColorScheme();
-      const candidate = scheme === "dark" ? darkId : lightId;
-      const fallbackId: ThemeId =
-        scheme === "dark" ? "preset:dark" : "preset:light";
+      const candidate = scheme === 'dark' ? darkId : lightId;
+      const fallbackId: ThemeId = scheme === 'dark' ? 'preset:dark' : 'preset:light';
       const pending: ThemePreference = {
-        mode: "system",
+        mode: 'system',
         auto_light_id: lightId,
         auto_dark_id: darkId,
       };
@@ -504,8 +501,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Custom not in cache — fall back to the matching built-in for the
       // immediate preview, then upgrade after the fetch lands.
       apply(fallbackId, BUILTIN_PRESETS[fallbackId]);
-      if (!authReady || !candidate.startsWith("custom:")) return;
-      const presetId = candidate.slice("custom:".length);
+      if (!authReady || !candidate.startsWith('custom:')) return;
+      const presetId = candidate.slice('custom:'.length);
       void (async () => {
         try {
           const r = await authFetch(`/api/themes/presets/${presetId}`);
@@ -521,14 +518,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           const doc: ThemeDoc = {
             version: preset.version ?? 1,
             name: preset.name,
-            base_preset: (preset.base_preset as ThemeDoc["base_preset"]) ?? null,
+            base_preset: (preset.base_preset as ThemeDoc['base_preset']) ?? null,
             color_scheme: preset.color_scheme,
             tokens: preset.tokens,
           };
           setCustomThemes((prev) => ({ ...prev, [candidate]: doc }));
           apply(candidate, doc);
         } catch (err) {
-          logger.warn("theme: preview-system fetch failed", err);
+          logger.warn('theme: preview-system fetch failed', err);
         }
       })();
     },
@@ -589,7 +586,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used inside ThemeProvider");
+  if (!ctx) throw new Error('useTheme must be used inside ThemeProvider');
   return ctx;
 }
 

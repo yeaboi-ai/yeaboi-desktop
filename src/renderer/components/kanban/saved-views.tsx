@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Bookmark, Check, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { getPref, setPref, type SavedBoardView } from "@/lib/preferences";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Bookmark, Check, Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { getPref, setPref, type SavedBoardView } from '@/lib/preferences';
 
 interface Props {
   currentQuery: string;
@@ -25,16 +25,16 @@ interface DbView {
 // up via a one-time merge.
 export function SavedViews({ currentQuery, onApply }: Props) {
   const { authFetch, ready } = useAuthFetch();
-  const [views, setViews] = useState<SavedBoardView[]>(() => getPref("board.savedViews"));
+  const [views, setViews] = useState<SavedBoardView[]>(() => getPref('board.savedViews'));
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const [usingFallback, setUsingFallback] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     if (!ready) return;
     try {
-      const resp = await authFetch("/api/card-views-proxy");
+      const resp = await authFetch('/api/card-views-proxy');
       if (!resp.ok) {
         setUsingFallback(true);
         return;
@@ -48,16 +48,16 @@ export function SavedViews({ currentQuery, onApply }: Props) {
       }));
       // One-time backfill: if the server has none but localStorage does, push
       // local entries up so users keep their views after the upgrade.
-      const local = getPref("board.savedViews");
+      const local = getPref('board.savedViews');
       if (remote.length === 0 && local.length > 0) {
         for (const v of local) {
-          await authFetch("/api/card-views-proxy", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          await authFetch('/api/card-views-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: v.name, query: v.query }),
           });
         }
-        const reloaded = await authFetch("/api/card-views-proxy");
+        const reloaded = await authFetch('/api/card-views-proxy');
         if (reloaded.ok) {
           const reloadedRows: DbView[] = await reloaded.json();
           const merged = reloadedRows.map((r) => ({
@@ -67,13 +67,13 @@ export function SavedViews({ currentQuery, onApply }: Props) {
             createdAt: r.created_at,
           }));
           setViews(merged);
-          setPref("board.savedViews", merged);
+          setPref('board.savedViews', merged);
           setUsingFallback(false);
           return;
         }
       }
       setViews(remote);
-      setPref("board.savedViews", remote);
+      setPref('board.savedViews', remote);
       setUsingFallback(false);
     } catch {
       setUsingFallback(true);
@@ -96,8 +96,8 @@ export function SavedViews({ currentQuery, onApply }: Props) {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const save = async () => {
@@ -114,13 +114,13 @@ export function SavedViews({ currentQuery, onApply }: Props) {
         },
       ];
       setViews(next);
-      setPref("board.savedViews", next);
-      setName("");
+      setPref('board.savedViews', next);
+      setName('');
       return;
     }
-    const resp = await authFetch("/api/card-views-proxy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const resp = await authFetch('/api/card-views-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: trimmed, query: currentQuery }),
     });
     if (resp.ok) {
@@ -130,8 +130,8 @@ export function SavedViews({ currentQuery, onApply }: Props) {
         { id: row.id, name: row.name, query: row.query, createdAt: row.created_at },
       ];
       setViews(next);
-      setPref("board.savedViews", next);
-      setName("");
+      setPref('board.savedViews', next);
+      setName('');
     }
   };
 
@@ -139,14 +139,14 @@ export function SavedViews({ currentQuery, onApply }: Props) {
     if (usingFallback) {
       const next = views.filter((v) => v.id !== id);
       setViews(next);
-      setPref("board.savedViews", next);
+      setPref('board.savedViews', next);
       return;
     }
-    const resp = await authFetch(`/api/card-views-proxy/${id}`, { method: "DELETE" });
+    const resp = await authFetch(`/api/card-views-proxy/${id}`, { method: 'DELETE' });
     if (resp.ok || resp.status === 204) {
       const next = views.filter((v) => v.id !== id);
       setViews(next);
-      setPref("board.savedViews", next);
+      setPref('board.savedViews', next);
     }
   };
 
@@ -196,7 +196,7 @@ export function SavedViews({ currentQuery, onApply }: Props) {
               placeholder="Save current view as…"
               className="h-8 text-sm"
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === 'Enter') {
                   e.preventDefault();
                   save();
                 }
@@ -209,8 +209,8 @@ export function SavedViews({ currentQuery, onApply }: Props) {
           <p className="text-[10px] text-muted-foreground px-1">
             <Check className="inline h-3 w-3 mr-0.5" />
             {usingFallback
-              ? "Offline — saved locally and synced when online."
-              : "Saves filters, density, swimlane. Synced across devices."}
+              ? 'Offline — saved locally and synced when online.'
+              : 'Saves filters, density, swimlane. Synced across devices.'}
           </p>
         </div>
       )}

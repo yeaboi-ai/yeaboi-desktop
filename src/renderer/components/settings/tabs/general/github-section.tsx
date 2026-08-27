@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api-base";
-import Link from "next/link";
-import { Github } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api-base';
+import Link from 'next/link';
+import { Github } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 
 type SettingEntry = { key: string; is_set: boolean; masked_value: string | null };
 
 export function GitHubSection() {
   const { ready } = useAuthFetch();
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState('');
   const [currentMasked, setCurrentMasked] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,30 +21,30 @@ export function GitHubSection() {
 
   useEffect(() => {
     if (!ready) return;
-    apiFetch("/api/settings-proxy")
+    apiFetch('/api/settings-proxy')
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data?.settings) return;
-        const gh = (data.settings as SettingEntry[]).find((s) => s.key === "github_token");
+        const gh = (data.settings as SettingEntry[]).find((s) => s.key === 'github_token');
         if (gh?.is_set) setCurrentMasked(gh.masked_value);
       })
-      .catch(() => logger.warn("Failed to load org settings"));
+      .catch(() => logger.warn('Failed to load org settings'));
   }, [ready]);
 
   const handleSave = async () => {
     if (!token.trim()) return;
     setSaving(true);
     try {
-      const r = await apiFetch("/api/settings-proxy", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const r = await apiFetch('/api/settings-proxy', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates: { github_token: token } }),
       });
       if (r.ok) {
         const data = await r.json();
-        const gh = (data.settings as SettingEntry[]).find((s) => s.key === "github_token");
+        const gh = (data.settings as SettingEntry[]).find((s) => s.key === 'github_token');
         if (gh?.is_set) setCurrentMasked(gh.masked_value);
-        setToken("");
+        setToken('');
         setEditing(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
@@ -59,10 +59,15 @@ export function GitHubSection() {
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">Connected services</h3>
+        <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">
+          Connected services
+        </h3>
         <p className="text-[11px] text-muted-foreground font-body mt-0.5">
-          Org-level credentials. Per-user OAuth providers live in the{" "}
-          <Link href="/settings#integrations" className="underline underline-offset-2 hover:text-foreground">
+          Org-level credentials. Per-user OAuth providers live in the{' '}
+          <Link
+            href="/settings#integrations"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
             Integrations tab
           </Link>
           .
@@ -95,7 +100,7 @@ export function GitHubSection() {
             className="text-xs"
             onClick={() => setEditing((e) => !e)}
           >
-            {editing ? "Cancel" : connected ? "Update" : "Connect"}
+            {editing ? 'Cancel' : connected ? 'Update' : 'Connect'}
           </Button>
         </div>
 
@@ -103,15 +108,20 @@ export function GitHubSection() {
           <div className="border-t border-border/40 px-4 py-3 space-y-2">
             <div className="flex gap-2">
               <Input
-                placeholder={currentMasked || "ghp_..."}
+                placeholder={currentMasked || 'ghp_...'}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 type="password"
                 className="flex-1"
                 aria-label="GitHub personal access token"
               />
-              <Button onClick={handleSave} disabled={saving || !token.trim()} size="sm" className="text-xs">
-                {saving ? "Saving…" : saved ? "Saved" : "Save"}
+              <Button
+                onClick={handleSave}
+                disabled={saving || !token.trim()}
+                size="sm"
+                className="text-xs"
+              >
+                {saving ? 'Saving…' : saved ? 'Saved' : 'Save'}
               </Button>
             </div>
             {currentMasked && (

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -11,16 +11,22 @@ import {
   closestCorners,
   useSensor,
   useSensors,
-} from "@dnd-kit/core";
-import type { Board, BoardColumn, Card as CardType, CardUpdate, CardCreate } from "@/hooks/use-board";
-import { summarisePriorities, type Lane } from "@/lib/board-lanes";
-import { stripHtml } from "@/lib/strip-html";
-import type { BoardGroupBy } from "@/lib/preferences";
-import { KanbanColumn } from "./column";
-import { KanbanCard, type CardHighlight } from "./card";
-import { CardDetail } from "./card-detail";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from '@dnd-kit/core';
+import type {
+  Board,
+  BoardColumn,
+  Card as CardType,
+  CardUpdate,
+  CardCreate,
+} from '@/hooks/use-board';
+import { summarisePriorities, type Lane } from '@/lib/board-lanes';
+import { stripHtml } from '@/lib/strip-html';
+import type { BoardGroupBy } from '@/lib/preferences';
+import { KanbanColumn } from './column';
+import { KanbanCard, type CardHighlight } from './card';
+import { CardDetail } from './card-detail';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface BoardViewProps {
   board: Board;
@@ -35,7 +41,7 @@ interface BoardViewProps {
   onAgentApprove?: (cardId: string) => Promise<void>;
   onAgentReject?: (cardId: string, feedback: string) => Promise<void>;
   initialCardId?: string | null;
-  density?: "comfortable" | "compact";
+  density?: 'comfortable' | 'compact';
   selectedIds?: Set<string>;
   onSelectToggle?: (cardId: string, ev: React.MouseEvent, visibleOrder: string[]) => void;
   hasFilters?: boolean;
@@ -44,7 +50,7 @@ interface BoardViewProps {
 export function BoardView({
   board,
   lanes,
-  groupBy = "off",
+  groupBy = 'off',
   search,
   priorityFilter,
   onMoveCard,
@@ -54,7 +60,7 @@ export function BoardView({
   onAgentApprove,
   onAgentReject,
   initialCardId,
-  density = "comfortable",
+  density = 'comfortable',
   selectedIds,
   onSelectToggle,
   hasFilters = false,
@@ -82,18 +88,18 @@ export function BoardView({
     const hovered = allCards.find((c) => c.id === hoveredCardId);
     if (!hovered) return map;
 
-    map.set(hovered.id, "hovered");
+    map.set(hovered.id, 'hovered');
 
     // Cards the hovered card depends on → "blocks" (emerald).
     for (const id of hovered.depends_on ?? []) {
-      if (id !== hovered.id) map.set(id, "blocks");
+      if (id !== hovered.id) map.set(id, 'blocks');
     }
 
     // Cards that depend on hovered → "blocked-by" (amber).
     for (const c of allCards) {
       if (c.id === hovered.id) continue;
       if ((c.depends_on ?? []).includes(hovered.id)) {
-        map.set(c.id, "blocked-by");
+        map.set(c.id, 'blocked-by');
       }
     }
 
@@ -106,7 +112,7 @@ export function BoardView({
   const [activeCard, setActiveCard] = useState<CardType | null>(null);
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
-  const [newCardTitle, setNewCardTitle] = useState("");
+  const [newCardTitle, setNewCardTitle] = useState('');
 
   // Auto-open card from URL param
   const initialCardHandled = useRef(false);
@@ -124,15 +130,17 @@ export function BoardView({
   const animateTimerSet = useRef(false);
   if (!animateTimerSet.current) {
     animateTimerSet.current = true;
-    if (typeof window !== "undefined") {
-      window.setTimeout(() => { animateCards.current = false; }, 3000);
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => {
+        animateCards.current = false;
+      }, 3000);
     }
   }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
+    }),
   );
 
   // Filter cards based on search/priority. Search now matches title, description,
@@ -150,10 +158,10 @@ export function BoardView({
         const haystack = [
           card.title,
           stripHtml(card.description),
-          card.friendly_id ?? "",
+          card.friendly_id ?? '',
           ...(card.labels ?? []),
         ]
-          .join("\n")
+          .join('\n')
           .toLowerCase();
         return haystack.includes(needle);
       }),
@@ -177,20 +185,21 @@ export function BoardView({
     const activeData = active.data.current;
     const overData = over.data.current;
 
-    if (activeData?.type !== "card") return;
+    if (activeData?.type !== 'card') return;
 
     const card = activeData.card as CardType;
-    const targetColumnId = overData?.type === "column"
-      ? (over.id as string)
-      : overData?.type === "card"
-        ? overData.card.column_id
-        : null;
+    const targetColumnId =
+      overData?.type === 'column'
+        ? (over.id as string)
+        : overData?.type === 'card'
+          ? overData.card.column_id
+          : null;
 
     if (!targetColumnId) return;
 
     // Calculate position
     let newPosition: number | undefined;
-    if (overData?.type === "card") {
+    if (overData?.type === 'card') {
       const targetCol = board.columns.find((c) => c.id === targetColumnId);
       const overIdx = targetCol?.cards.findIndex((c) => c.id === over.id) ?? 0;
       newPosition = overIdx;
@@ -205,28 +214,29 @@ export function BoardView({
       column_id: addingToColumn,
       title: newCardTitle.trim(),
     });
-    setNewCardTitle("");
+    setNewCardTitle('');
     setAddingToColumn(null);
   };
 
   // Lane axis is rendered as a stack of horizontal rows; "off" collapses to a
   // single all-cards lane (handled by deriveLanes already returning [{key:"all"}]).
-  const effectiveLanes: Lane[] = lanes && lanes.length > 0
-    ? lanes
-    : [
-        {
-          key: "all",
-          label: "",
-          cardIds: new Set(filteredBoard.columns.flatMap((c) => c.cards.map((card) => card.id))),
-        },
-      ];
+  const effectiveLanes: Lane[] =
+    lanes && lanes.length > 0
+      ? lanes
+      : [
+          {
+            key: 'all',
+            label: '',
+            cardIds: new Set(filteredBoard.columns.flatMap((c) => c.cards.map((card) => card.id))),
+          },
+        ];
 
   const filterColumnByLane = (column: BoardColumn, lane: Lane): BoardColumn => ({
     ...column,
     cards: column.cards.filter((c) => lane.cardIds.has(c.id)),
   });
 
-  const showLaneHeaders = groupBy !== "off" && effectiveLanes.length > 1;
+  const showLaneHeaders = groupBy !== 'off' && effectiveLanes.length > 1;
 
   return (
     <>
@@ -236,7 +246,7 @@ export function BoardView({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className={`flex flex-col ${showLaneHeaders ? "gap-3" : "gap-0"} pb-4`}>
+        <div className={`flex flex-col ${showLaneHeaders ? 'gap-3' : 'gap-0'} pb-4`}>
           {effectiveLanes.map((lane, laneIdx) => {
             const collapsed = collapsedLanes.has(lane.key);
             const laneCards = filteredBoard.columns.flatMap((col) =>
@@ -262,7 +272,7 @@ export function BoardView({
                     >
                       <ChevronDown
                         className={`h-3.5 w-3.5 shrink-0 text-white/40 transition-transform ${
-                          collapsed ? "-rotate-90" : ""
+                          collapsed ? '-rotate-90' : ''
                         }`}
                       />
                       {lane.badgeClass ? (
@@ -284,8 +294,8 @@ export function BoardView({
                       <span
                         className={
                           lane.badgeClass
-                            ? "text-[12px] font-semibold tracking-tight text-white/90"
-                            : "font-mono text-[11px] uppercase tracking-wide text-white/85"
+                            ? 'text-[12px] font-semibold tracking-tight text-white/90'
+                            : 'font-mono text-[11px] uppercase tracking-wide text-white/85'
                         }
                       >
                         {lane.label}
@@ -305,7 +315,10 @@ export function BoardView({
                             title={`${item.label}: ${item.count}`}
                             className="inline-flex items-center gap-1 rounded-full bg-white/[0.04] px-1.5 py-0.5 text-white/70"
                           >
-                            <span className={`h-1.5 w-1.5 rounded-full ${item.swatchClass}`} aria-hidden />
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${item.swatchClass}`}
+                              aria-hidden
+                            />
                             <span className="font-medium tabular-nums">{item.count}</span>
                           </span>
                         ))}
@@ -333,18 +346,20 @@ export function BoardView({
                           density={density}
                           filtered={hasFilters}
                           selectedIds={selectedIds}
-                          onSelectToggle={(cardId, ev) => onSelectToggle?.(cardId, ev, visibleOrder)}
+                          onSelectToggle={(cardId, ev) =>
+                            onSelectToggle?.(cardId, ev, visibleOrder)
+                          }
                           onCardClick={(card) => setSelectedCard(card)}
                           onAddCard={(colId) => {
                             setAddingToColumn(colId);
-                            setNewCardTitle("");
+                            setNewCardTitle('');
                           }}
                           readOnly={column.virtual ?? false}
                           emptyHint={
                             column.virtual
-                              ? "Nothing blocked. Cards waiting on a blocker land here automatically."
+                              ? 'Nothing blocked. Cards waiting on a blocker land here automatically.'
                               : showLaneHeaders
-                                ? " "
+                                ? ' '
                                 : undefined
                           }
                           cardHighlights={cardHighlights}
@@ -371,7 +386,10 @@ export function BoardView({
 
       {/* Add card inline form */}
       {addingToColumn && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/20" onClick={() => setAddingToColumn(null)}>
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-black/20"
+          onClick={() => setAddingToColumn(null)}
+        >
           <div
             className="w-80 rounded-xl border border-border bg-background p-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
@@ -383,8 +401,8 @@ export function BoardView({
               onChange={(e) => setNewCardTitle(e.target.value)}
               placeholder="Card title…"
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddCard();
-                if (e.key === "Escape") setAddingToColumn(null);
+                if (e.key === 'Enter') handleAddCard();
+                if (e.key === 'Escape') setAddingToColumn(null);
               }}
             />
             <div className="mt-3 flex gap-2 justify-end">

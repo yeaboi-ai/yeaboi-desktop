@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { createContext, useContext } from "react";
-import { useNiko } from "@/hooks/use-niko";
+import { createContext, useContext } from 'react';
+import { useNiko } from '@/hooks/use-niko';
 
 type NikoContextType = ReturnType<typeof useNiko>;
 
@@ -15,7 +15,7 @@ export function NikoProvider({ children }: { children: React.ReactNode }) {
 export function useNikoContext() {
   const ctx = useContext(NikoContext);
   if (!ctx) {
-    throw new Error("useNikoContext must be used within NikoProvider");
+    throw new Error('useNikoContext must be used within NikoProvider');
   }
   return ctx;
 }

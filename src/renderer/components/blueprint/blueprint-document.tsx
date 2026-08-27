@@ -1,39 +1,39 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { Lock } from "lucide-react";
-import { BulletSourceChip, type BulletSource } from "./bullet-source-chip";
+import { useMemo } from 'react';
+import { Lock } from 'lucide-react';
+import { BulletSourceChip, type BulletSource } from './bullet-source-chip';
 
 const SECTION_ORDER = [
-  "project_overview",
-  "goals_constraints",
-  "users_personas",
-  "team_capacity",
-  "architecture",
-  "tech_stack",
-  "api_integrations",
-  "ui_ux",
-  "security_compliance",
-  "infrastructure",
-  "risks_unknowns",
-  "out_of_scope",
-  "open_questions",
+  'project_overview',
+  'goals_constraints',
+  'users_personas',
+  'team_capacity',
+  'architecture',
+  'tech_stack',
+  'api_integrations',
+  'ui_ux',
+  'security_compliance',
+  'infrastructure',
+  'risks_unknowns',
+  'out_of_scope',
+  'open_questions',
 ];
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI / UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI / UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 // Mirrors backend src/app/services/blueprint_merge.py:_normalize. Bullets are
@@ -42,7 +42,7 @@ const BULLET_PREFIX_RE = /^\s*[-*•]\s*/;
 const WHITESPACE_RE = /\s+/g;
 
 function normalizeBullet(line: string): string {
-  return line.replace(BULLET_PREFIX_RE, "").trim().replace(WHITESPACE_RE, " ").toLowerCase();
+  return line.replace(BULLET_PREFIX_RE, '').trim().replace(WHITESPACE_RE, ' ').toLowerCase();
 }
 
 function splitBullets(text: string): Array<{ raw: string; norm: string }> {
@@ -53,7 +53,7 @@ function splitBullets(text: string): Array<{ raw: string; norm: string }> {
     const norm = normalizeBullet(rawLine);
     if (!norm || seen.has(norm)) continue;
     seen.add(norm);
-    out.push({ raw: rawLine.replace(BULLET_PREFIX_RE, "").trimEnd(), norm });
+    out.push({ raw: rawLine.replace(BULLET_PREFIX_RE, '').trimEnd(), norm });
   }
   return out;
 }
@@ -94,10 +94,10 @@ export function BlueprintDocument({
 }: BlueprintDocumentProps) {
   const sections = useMemo(() => {
     return SECTION_ORDER.map((slug) => {
-      const body = content[slug] || "";
+      const body = content[slug] || '';
       const bullets = splitBullets(body);
       const sectionBulletSources = bulletSources?.[slug] || {};
-      const fallback = (sectionSources?.[slug] as BulletSource | undefined) ?? "ai_inferred";
+      const fallback = (sectionSources?.[slug] as BulletSource | undefined) ?? 'ai_inferred';
       return {
         slug,
         label: SECTION_LABELS[slug] || slug,
@@ -119,10 +119,10 @@ export function BlueprintDocument({
 
   const updatedText = useMemo(() => {
     if (!updatedAt) return null;
-    const d = typeof updatedAt === "string" ? new Date(updatedAt) : updatedAt;
+    const d = typeof updatedAt === 'string' ? new Date(updatedAt) : updatedAt;
     return d.toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
+      dateStyle: 'medium',
+      timeStyle: 'short',
     });
   }, [updatedAt]);
 
@@ -133,7 +133,7 @@ export function BlueprintDocument({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold">Blueprint · {iterationLabel}</h1>
-              {iterationStatus === "locked" && (
+              {iterationStatus === 'locked' && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider bg-foreground/[0.08] text-muted-foreground">
                   <Lock className="h-3 w-3" /> locked
                 </span>
@@ -141,9 +141,9 @@ export function BlueprintDocument({
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               v{versionNumber}
-              {updatedText ? ` · updated ${updatedText}` : ""}
-              {updatedByLabel ? ` by ${updatedByLabel}` : ""}
-              {readOnly ? " · read-only" : ""}
+              {updatedText ? ` · updated ${updatedText}` : ''}
+              {updatedByLabel ? ` by ${updatedByLabel}` : ''}
+              {readOnly ? ' · read-only' : ''}
             </p>
           </div>
           {headerActions && <div className="shrink-0">{headerActions}</div>}
@@ -170,12 +170,12 @@ export function BlueprintDocument({
                   <span
                     className={`block h-full rounded-full ${
                       (s.score ?? 0) >= 80
-                        ? "bg-success/70"
+                        ? 'bg-success/70'
                         : (s.score ?? 0) >= 60
-                          ? "bg-primary/60"
+                          ? 'bg-primary/60'
                           : (s.score ?? 0) >= 40
-                            ? "bg-warning/60"
-                            : "bg-destructive/50"
+                            ? 'bg-warning/60'
+                            : 'bg-destructive/50'
                     }`}
                     style={{ width: `${s.score ?? 0}%` }}
                   />
@@ -191,16 +191,16 @@ export function BlueprintDocument({
           <section key={s.slug} id={s.slug} className="scroll-mt-32">
             <div className="flex items-baseline justify-between gap-3 mb-3 border-b border-border/40 pb-2">
               <h2 className="text-lg font-semibold tracking-tight">{s.label}</h2>
-              {typeof s.score === "number" && (
+              {typeof s.score === 'number' && (
                 <span
                   className={`text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded ${
                     s.score >= 80
-                      ? "bg-success/10 text-success/80"
+                      ? 'bg-success/10 text-success/80'
                       : s.score >= 60
-                        ? "bg-primary/10 text-primary/80"
+                        ? 'bg-primary/10 text-primary/80'
                         : s.score >= 40
-                          ? "bg-warning/10 text-warning/80"
-                          : "bg-destructive/10 text-destructive/80"
+                          ? 'bg-warning/10 text-warning/80'
+                          : 'bg-destructive/10 text-destructive/80'
                   }`}
                 >
                   {s.score}%
@@ -208,9 +208,7 @@ export function BlueprintDocument({
               )}
             </div>
             {s.bullets.length === 0 ? (
-              <p className="text-sm italic text-muted-foreground/60">
-                Not yet covered.
-              </p>
+              <p className="text-sm italic text-muted-foreground/60">Not yet covered.</p>
             ) : (
               <ul className="space-y-2">
                 {s.bullets.map((b) => (

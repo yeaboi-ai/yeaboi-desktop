@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import type { BoardColumn as BoardColumnType, Card as CardType } from "@/hooks/use-board";
-import { KanbanCard, type CardHighlight } from "./card";
-import { EmptyColumn } from "./empty-column";
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import type { BoardColumn as BoardColumnType, Card as CardType } from '@/hooks/use-board';
+import { KanbanCard, type CardHighlight } from './card';
+import { EmptyColumn } from './empty-column';
 
 interface KanbanColumnProps {
   column: BoardColumnType;
@@ -12,7 +12,7 @@ interface KanbanColumnProps {
   onAddCard?: (columnId: string) => void;
   animate?: boolean;
   cardIndexOffset?: number;
-  density?: "comfortable" | "compact";
+  density?: 'comfortable' | 'compact';
   filtered?: boolean;
   selectedIds?: Set<string>;
   onSelectToggle?: (cardId: string, ev: React.MouseEvent) => void;
@@ -31,7 +31,7 @@ export function KanbanColumn({
   onAddCard,
   animate,
   cardIndexOffset = 0,
-  density = "comfortable",
+  density = 'comfortable',
   filtered = false,
   selectedIds,
   onSelectToggle,
@@ -43,7 +43,7 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
-    data: { type: "column", column },
+    data: { type: 'column', column },
     disabled: readOnly,
   });
 
@@ -57,20 +57,18 @@ export function KanbanColumn({
   return (
     <div
       className={[
-        "flex flex-1 flex-col overflow-hidden rounded-xl border bg-muted/30 transition-colors",
+        'flex flex-1 flex-col overflow-hidden rounded-xl border bg-muted/30 transition-colors',
         // Narrower columns when cards are single-row so the full board fits
         // on a typical 1280–1440px viewport without horizontal scrolling.
-        density === "compact" ? "min-w-[160px]" : "min-w-[200px]",
+        density === 'compact' ? 'min-w-[160px]' : 'min-w-[200px]',
         overWip
-          ? "border-red-500/40 ring-1 ring-red-500/30"
+          ? 'border-red-500/40 ring-1 ring-red-500/30'
           : atWip
-          ? "border-orange-500/40"
-          : "border-border",
-      ].join(" ")}
+            ? 'border-orange-500/40'
+            : 'border-border',
+      ].join(' ')}
     >
-      {accent && (
-        <div className="h-1.5 w-full" style={{ backgroundColor: accent }} aria-hidden />
-      )}
+      {accent && <div className="h-1.5 w-full" style={{ backgroundColor: accent }} aria-hidden />}
       {/* Column header — tints the top with the accent color so the choice is
           visible even when the user isn't looking for it. */}
       <div
@@ -93,21 +91,21 @@ export function KanbanColumn({
           <span
             className={`rounded-full px-1.5 py-0.5 text-[11px] font-medium ${
               overWip
-                ? "bg-red-500/20 text-red-600"
+                ? 'bg-red-500/20 text-red-600'
                 : atWip
-                ? "bg-orange-500/15 text-orange-600"
-                : "bg-muted text-muted-foreground"
+                  ? 'bg-orange-500/15 text-orange-600'
+                  : 'bg-muted text-muted-foreground'
             }`}
             title={
               overWip
                 ? `Over WIP limit by ${column.cards.length - (wip ?? 0)}`
                 : atWip
-                ? "At WIP limit"
-                : undefined
+                  ? 'At WIP limit'
+                  : undefined
             }
           >
             {column.cards.length}
-            {wip !== null ? `/${wip}` : ""}
+            {wip !== null ? `/${wip}` : ''}
           </span>
         </div>
         {overWip && (
@@ -122,8 +120,8 @@ export function KanbanColumn({
         <div
           ref={setNodeRef}
           className={`flex flex-1 flex-col overflow-y-auto px-2 pb-2 min-h-[4rem] rounded-b-xl transition-colors ${
-            density === "compact" ? "gap-1" : "gap-2"
-          } ${isOver ? "bg-accent/40" : ""}`}
+            density === 'compact' ? 'gap-1' : 'gap-2'
+          } ${isOver ? 'bg-accent/40' : ''}`}
         >
           {column.cards.length === 0 ? (
             emptyHint ? (

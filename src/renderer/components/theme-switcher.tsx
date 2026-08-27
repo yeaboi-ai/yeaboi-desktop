@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Monitor, Moon, Sun } from "lucide-react";
-import { useTheme } from "@/components/providers/theme-provider";
+import { useEffect, useRef, useState } from 'react';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/providers/theme-provider';
 
 export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const { preference, setExplicit, setSystemMode } = useTheme();
@@ -14,16 +14,16 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
     const onClick = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
-  const isLight = preference.mode === "explicit" && preference.theme_id === "preset:light";
-  const isDark = preference.mode === "explicit" && preference.theme_id === "preset:dark";
-  const isSystem = preference.mode === "system";
+  const isLight = preference.mode === 'explicit' && preference.theme_id === 'preset:light';
+  const isDark = preference.mode === 'explicit' && preference.theme_id === 'preset:dark';
+  const isSystem = preference.mode === 'system';
 
   const ActiveIcon = isSystem ? Monitor : isLight ? Sun : Moon;
-  const activeLabel = isSystem ? "System" : isLight ? "Light" : "Dark";
+  const activeLabel = isSystem ? 'System' : isLight ? 'Light' : 'Dark';
 
   return (
     <div ref={wrapRef} className="relative">
@@ -42,14 +42,14 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
       </button>
       {open && (
         <div
-          className={`absolute z-50 ${compact ? "left-full ml-2 bottom-0" : "right-0 bottom-full mb-1"} min-w-[140px] rounded-md border border-border bg-popover shadow-lg py-1 text-popover-foreground`}
+          className={`absolute z-50 ${compact ? 'left-full ml-2 bottom-0' : 'right-0 bottom-full mb-1'} min-w-[140px] rounded-md border border-border bg-popover shadow-lg py-1 text-popover-foreground`}
         >
           <ThemeOption
             icon={<Sun className="h-3 w-3" />}
             label="Light"
             active={isLight}
             onClick={() => {
-              setExplicit("preset:light");
+              setExplicit('preset:light');
               setOpen(false);
             }}
           />
@@ -58,7 +58,7 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
             label="Dark"
             active={isDark}
             onClick={() => {
-              setExplicit("preset:dark");
+              setExplicit('preset:dark');
               setOpen(false);
             }}
           />
@@ -67,7 +67,7 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
             label="System"
             active={isSystem}
             onClick={() => {
-              setSystemMode("preset:light", "preset:dark");
+              setSystemMode('preset:light', 'preset:dark');
               setOpen(false);
             }}
           />
@@ -93,7 +93,7 @@ function ThemeOption({
       type="button"
       onClick={onClick}
       className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-body hover:bg-secondary text-left ${
-        active ? "text-foreground" : "text-muted-foreground"
+        active ? 'text-foreground' : 'text-muted-foreground'
       }`}
     >
       {icon}

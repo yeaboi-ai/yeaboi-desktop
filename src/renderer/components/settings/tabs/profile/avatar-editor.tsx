@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { apiFetch } from "@/lib/api-base";
-import { Camera } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { MeProfile } from "@/components/settings/types";
-import { AvatarPickerDialog } from "./avatar-picker-dialog";
+import { useState } from 'react';
+import { apiFetch } from '@/lib/api-base';
+import { Camera } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { MeProfile } from '@/components/settings/types';
+import { AvatarPickerDialog } from './avatar-picker-dialog';
 
 type AvatarEditorProps = {
   avatarUrl: string | null;
@@ -30,7 +30,7 @@ export function AvatarEditor({
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const resp = await apiFetch("/api/me/avatar", { method: "DELETE" });
+      const resp = await apiFetch('/api/me/avatar', { method: 'DELETE' });
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
         throw new Error(body?.error || `Remove failed: ${resp.status}`);
@@ -38,7 +38,7 @@ export function AvatarEditor({
       const data: MeProfile = await resp.json();
       onChange(data);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to remove avatar");
+      onError(err instanceof Error ? err.message : 'Failed to remove avatar');
     } finally {
       setRemoving(false);
     }
@@ -52,8 +52,8 @@ export function AvatarEditor({
           onClick={() => setPickerOpen(true)}
           aria-label="Change avatar"
           className={cn(
-            "relative group w-14 h-14 rounded-full overflow-hidden shrink-0 outline-none",
-            "focus-visible:ring-2 focus-visible:ring-ring/50",
+            'relative group w-14 h-14 rounded-full overflow-hidden shrink-0 outline-none',
+            'focus-visible:ring-2 focus-visible:ring-ring/50',
           )}
         >
           {avatarUrl ? (
@@ -61,7 +61,9 @@ export function AvatarEditor({
             <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
-              <span className="text-xl font-body font-semibold text-primary">{fallbackInitial}</span>
+              <span className="text-xl font-body font-semibold text-primary">
+                {fallbackInitial}
+              </span>
             </div>
           )}
           <div
@@ -88,7 +90,7 @@ export function AvatarEditor({
             onClick={() => setPickerOpen(true)}
             className="text-xs font-body font-medium text-foreground hover:underline"
           >
-            {avatarUrl ? "Change" : "Choose"}
+            {avatarUrl ? 'Change' : 'Choose'}
           </button>
           {avatarUrl && (
             <button
@@ -97,7 +99,7 @@ export function AvatarEditor({
               disabled={removing}
               className="text-[11px] font-body text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
             >
-              {removing ? "Removing…" : "Remove"}
+              {removing ? 'Removing…' : 'Remove'}
             </button>
           )}
         </div>

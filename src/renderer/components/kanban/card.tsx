@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { AlertOctagon, Link2, MessageSquare, Paperclip } from "lucide-react";
-import type { Card as CardType } from "@/hooks/use-board";
-import { useTicketTemplates } from "@/hooks/use-ticket-templates";
-import { Badge } from "@/components/ui/badge";
-import { TemplateBadge } from "@/components/tickets/template-badge";
-import { stripHtml } from "@/lib/strip-html";
-import { formatExecLabel, formatTicketKey } from "@/lib/ticket-id";
-import { resolveTicketType } from "@/lib/ticket-type";
+import { useMemo } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { AlertOctagon, Link2, MessageSquare, Paperclip } from 'lucide-react';
+import type { Card as CardType } from '@/hooks/use-board';
+import { useTicketTemplates } from '@/hooks/use-ticket-templates';
+import { Badge } from '@/components/ui/badge';
+import { TemplateBadge } from '@/components/tickets/template-badge';
+import { stripHtml } from '@/lib/strip-html';
+import { formatExecLabel, formatTicketKey } from '@/lib/ticket-id';
+import { resolveTicketType } from '@/lib/ticket-type';
 
 const PRIORITY_DOT: Record<string, string> = {
-  critical: "bg-red-500",
-  high: "bg-orange-500",
-  medium: "bg-yellow-500",
-  low: "bg-blue-500",
+  critical: 'bg-red-500',
+  high: 'bg-orange-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-blue-500',
 };
 
 export const AGENT_STATUS_STYLES: Record<string, { dot: string; label: string }> = {
-  investigating: { dot: "bg-blue-500", label: "Investigating" },
-  implementing: { dot: "bg-yellow-500", label: "Implementing" },
-  reviewing: { dot: "bg-purple-500", label: "Reviewing" },
-  pr_open: { dot: "bg-green-500", label: "PR open" },
-  done: { dot: "bg-green-600", label: "Done" },
-  failed: { dot: "bg-red-500", label: "Failed" },
+  investigating: { dot: 'bg-blue-500', label: 'Investigating' },
+  implementing: { dot: 'bg-yellow-500', label: 'Implementing' },
+  reviewing: { dot: 'bg-purple-500', label: 'Reviewing' },
+  pr_open: { dot: 'bg-green-500', label: 'PR open' },
+  done: { dot: 'bg-green-600', label: 'Done' },
+  failed: { dot: 'bg-red-500', label: 'Failed' },
 };
 
 /**
@@ -36,13 +36,13 @@ export const AGENT_STATUS_STYLES: Record<string, { dot: string; label: string }>
  * - "blocked-by": the card depends on the hovered card. Amber outline.
  * - "hovered": the card is the one currently under the cursor. Slight ring.
  */
-export type CardHighlight = "blocks" | "blocked-by" | "hovered" | null;
+export type CardHighlight = 'blocks' | 'blocked-by' | 'hovered' | null;
 
 interface KanbanCardProps {
   card: CardType;
   onClick: (card: CardType) => void;
   animationDelay?: number;
-  density?: "comfortable" | "compact";
+  density?: 'comfortable' | 'compact';
   selected?: boolean;
   onSelectToggle?: (cardId: string, ev: React.MouseEvent) => void;
   // When the parent column is virtual (e.g. the synthetic Blocked lane) we
@@ -57,7 +57,7 @@ export function KanbanCard({
   card,
   onClick,
   animationDelay,
-  density = "comfortable",
+  density = 'comfortable',
   selected = false,
   onSelectToggle,
   readOnly = false,
@@ -67,7 +67,7 @@ export function KanbanCard({
 }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
-    data: { type: "card", card },
+    data: { type: 'card', card },
     disabled: readOnly,
   });
 
@@ -90,13 +90,10 @@ export function KanbanCard({
   // falls back to a label-based inference + "feature" default so legacy cards
   // (generated before the template composer landed) still show something useful.
   const templates = useTicketTemplates();
-  const templateInfo = useMemo(
-    () => resolveTicketType(card, templates),
-    [card, templates],
-  );
+  const templateInfo = useMemo(() => resolveTicketType(card, templates), [card, templates]);
 
   const agent = card.agent_status ? AGENT_STATUS_STYLES[card.agent_status] : null;
-  const compact = density === "compact";
+  const compact = density === 'compact';
 
   const attachmentCount = card.attachment_count ?? 0;
   const linkCount = card.link_count ?? 0;
@@ -111,22 +108,23 @@ export function KanbanCard({
   // as "I'm the focus".
   const highlightClass = (() => {
     switch (highlight) {
-      case "blocks":
-        return "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-background";
-      case "blocked-by":
-        return "ring-2 ring-amber-400/60 ring-offset-2 ring-offset-background";
-      case "hovered":
-        return "ring-1 ring-white/30";
+      case 'blocks':
+        return 'ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-background';
+      case 'blocked-by':
+        return 'ring-2 ring-amber-400/60 ring-offset-2 ring-offset-background';
+      case 'hovered':
+        return 'ring-1 ring-white/30';
       default:
-        return "";
+        return '';
     }
   })();
-  const hoverHandlers = onHoverStart || onHoverEnd
-    ? {
-        onMouseEnter: () => onHoverStart?.(card.id),
-        onMouseLeave: () => onHoverEnd?.(card.id),
-      }
-    : {};
+  const hoverHandlers =
+    onHoverStart || onHoverEnd
+      ? {
+          onMouseEnter: () => onHoverStart?.(card.id),
+          onMouseLeave: () => onHoverEnd?.(card.id),
+        }
+      : {};
 
   // Compact mode: single-row "list-like" card with just the essentials.
   // The whole point of the density toggle is to scan more cards at once, so
@@ -150,16 +148,14 @@ export function KanbanCard({
           onClick(card);
         }}
         className={[
-          "group flex items-center gap-2 rounded-md border bg-card px-2 py-1.5 cursor-pointer transition-all select-none",
-          selected
-            ? "border-primary ring-1 ring-primary/40"
-            : "border-border hover:border-ring",
+          'group flex items-center gap-2 rounded-md border bg-card px-2 py-1.5 cursor-pointer transition-all select-none',
+          selected ? 'border-primary ring-1 ring-primary/40' : 'border-border hover:border-ring',
           highlightClass,
-        ].join(" ")}
+        ].join(' ')}
       >
         {card.priority && (
           <span
-            className={`inline-block h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[card.priority] ?? "bg-muted-foreground"}`}
+            className={`inline-block h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[card.priority] ?? 'bg-muted-foreground'}`}
             aria-label={`Priority: ${card.priority}`}
             title={`Priority: ${card.priority}`}
           />
@@ -223,13 +219,13 @@ export function KanbanCard({
         onClick(card);
       }}
       className={[
-        "group relative rounded-lg border bg-card shadow-sm cursor-pointer transition-all select-none",
-        "p-3",
+        'group relative rounded-lg border bg-card shadow-sm cursor-pointer transition-all select-none',
+        'p-3',
         selected
-          ? "border-primary ring-2 ring-primary/40"
-          : "border-border hover:border-ring hover:shadow-md",
+          ? 'border-primary ring-2 ring-primary/40'
+          : 'border-border hover:border-ring hover:shadow-md',
         highlightClass,
-      ].join(" ")}
+      ].join(' ')}
     >
       {/* Row 1 — exec-label pill (primary) + type badge + friendly id (secondary) */}
       <div className="flex items-center justify-between gap-2">
@@ -255,13 +251,15 @@ export function KanbanCard({
       </div>
 
       {/* Row 2 — title */}
-      <p className={`mt-1 text-sm font-medium leading-snug line-clamp-2 ${compact ? "" : ""}`}>
+      <p className={`mt-1 text-sm font-medium leading-snug line-clamp-2 ${compact ? '' : ''}`}>
         {card.title}
       </p>
 
       {/* Row 3 — description preview (comfortable only) */}
       {!compact && card.description && (
-        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{stripHtml(card.description)}</p>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+          {stripHtml(card.description)}
+        </p>
       )}
 
       {/* Row 4 — labels */}
@@ -272,22 +270,20 @@ export function KanbanCard({
               {label}
             </Badge>
           ))}
-          {overflow > 0 && (
-            <span className="text-[10px] text-muted-foreground">+{overflow}</span>
-          )}
+          {overflow > 0 && <span className="text-[10px] text-muted-foreground">+{overflow}</span>}
         </div>
       )}
 
       {/* Row 5 — meta row: priority dot, agent status, blocked, counts, points, assignee */}
       <div
         className={`flex items-center justify-between gap-2 ${
-          compact ? "mt-1" : "mt-2"
+          compact ? 'mt-1' : 'mt-2'
         } text-muted-foreground`}
       >
         <div className="flex items-center gap-2 text-[11px] min-w-0">
           {card.priority && (
             <span
-              className={`inline-block h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[card.priority] ?? "bg-muted-foreground"}`}
+              className={`inline-block h-1.5 w-1.5 rounded-full ${PRIORITY_DOT[card.priority] ?? 'bg-muted-foreground'}`}
               aria-label={`Priority: ${card.priority}`}
               title={`Priority: ${card.priority}`}
             />
@@ -299,7 +295,10 @@ export function KanbanCard({
             </span>
           )}
           {card.is_blocked && (
-            <span className="inline-flex items-center gap-1 text-red-500" title="Blocked by an open ticket">
+            <span
+              className="inline-flex items-center gap-1 text-red-500"
+              title="Blocked by an open ticket"
+            >
               <AlertOctagon className="h-3 w-3" />
               {!compact && <span className="text-[10px] font-medium">Blocked</span>}
             </span>
@@ -307,7 +306,7 @@ export function KanbanCard({
           {card.sync_status && card.sync_status.external_key && (
             <span
               className="text-[10px] font-mono uppercase opacity-80"
-              title={`Synced to ${card.sync_status.provider === "azure_devops" ? "Azure DevOps" : "Jira"} — ${card.sync_status.state}`}
+              title={`Synced to ${card.sync_status.provider === 'azure_devops' ? 'Azure DevOps' : 'Jira'} — ${card.sync_status.state}`}
             >
               {card.sync_status.external_key}
             </span>
@@ -316,12 +315,18 @@ export function KanbanCard({
 
         <div className="flex items-center gap-2 text-[11px]">
           {attachmentCount > 0 && (
-            <span className="inline-flex items-center gap-0.5" title={`${attachmentCount} attachments`}>
+            <span
+              className="inline-flex items-center gap-0.5"
+              title={`${attachmentCount} attachments`}
+            >
               <Paperclip className="h-3 w-3" /> {attachmentCount}
             </span>
           )}
           {linkCount > 0 && (
-            <span className="inline-flex items-center gap-0.5" title={`${linkCount} linked tickets`}>
+            <span
+              className="inline-flex items-center gap-0.5"
+              title={`${linkCount} linked tickets`}
+            >
               <Link2 className="h-3 w-3" /> {linkCount}
             </span>
           )}

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, type RefObject } from 'react';
 
 /**
  * Fires `onDismiss` when the user mouses-down outside `ref` OR presses ESC.
@@ -21,13 +21,13 @@ export function useDismissOnOutside(
       if (ref.current && !ref.current.contains(e.target as Node)) onDismiss();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDismiss();
+      if (e.key === 'Escape') onDismiss();
     };
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
     };
   }, [active, ref, onDismiss]);
 }

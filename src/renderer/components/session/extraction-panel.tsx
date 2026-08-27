@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, ListChecks, HelpCircle, RefreshCw } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { CheckCircle2, ListChecks, HelpCircle, RefreshCw } from 'lucide-react';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface ExtractedItem {
   text: string;
@@ -32,9 +32,9 @@ const SECTIONS: Array<{
   Icon: typeof CheckCircle2;
   tone: string;
 }> = [
-  { key: "decisions", label: "Decisions", Icon: CheckCircle2, tone: "text-success" },
-  { key: "action_items", label: "Action items", Icon: ListChecks, tone: "text-warning" },
-  { key: "open_questions", label: "Open questions", Icon: HelpCircle, tone: "text-info" },
+  { key: 'decisions', label: 'Decisions', Icon: CheckCircle2, tone: 'text-success' },
+  { key: 'action_items', label: 'Action items', Icon: ListChecks, tone: 'text-warning' },
+  { key: 'open_questions', label: 'Open questions', Icon: HelpCircle, tone: 'text-info' },
 ];
 
 export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: ExtractionPanelProps) {
@@ -62,7 +62,9 @@ export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: Extracti
   const regenerate = async () => {
     setRegenerating(true);
     try {
-      const resp = await authFetch(`/api/sessions/${sessionId}/extraction/regenerate`, { method: "POST" });
+      const resp = await authFetch(`/api/sessions/${sessionId}/extraction/regenerate`, {
+        method: 'POST',
+      });
       if (resp.ok) setData((await resp.json()) as SessionExtraction);
     } finally {
       setRegenerating(false);
@@ -86,7 +88,7 @@ export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: Extracti
             aria-label="Regenerate extraction"
             className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-muted-foreground/70 hover:text-foreground/90 hover:bg-foreground/[0.05] transition-colors disabled:opacity-40"
           >
-            <RefreshCw className={`h-3 w-3 ${regenerating ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3 w-3 ${regenerating ? 'animate-spin' : ''}`} />
             Regenerate
           </button>
         )}
@@ -96,7 +98,9 @@ export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: Extracti
       ) : totalItems === 0 ? (
         <p className="text-[12px] text-muted-foreground/70">
           Captured items will appear once we&apos;ve processed the call.
-          {canRegenerate ? " Use Regenerate if extraction looks stale." : " Extraction runs automatically when the session completes."}
+          {canRegenerate
+            ? ' Use Regenerate if extraction looks stale.'
+            : ' Extraction runs automatically when the session completes.'}
         </p>
       ) : (
         <div className="space-y-4">
@@ -104,7 +108,9 @@ export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: Extracti
             const items = data?.[key] ?? [];
             return (
               <section key={key}>
-                <p className={`flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] font-medium mb-1.5 ${tone}`}>
+                <p
+                  className={`flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] font-medium mb-1.5 ${tone}`}
+                >
                   <Icon className="h-3 w-3" />
                   {label} ({items.length})
                 </p>
@@ -114,7 +120,9 @@ export function ExtractionPanel({ sessionId, onSeekTo, canRegenerate }: Extracti
                   <ul className="space-y-1">
                     {items.map((it, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-muted-foreground/50 text-[10px] mt-0.5 select-none">•</span>
+                        <span className="text-muted-foreground/50 text-[10px] mt-0.5 select-none">
+                          •
+                        </span>
                         {it.ts && onSeekTo ? (
                           <button
                             type="button"

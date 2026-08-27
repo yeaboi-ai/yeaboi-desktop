@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Compass, MessagesSquare, Sparkles, Target } from "lucide-react";
-import { useBlueprintGaps } from "@/hooks/use-blueprint-gaps";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, Compass, MessagesSquare, Sparkles, Target } from 'lucide-react';
+import { useBlueprintGaps } from '@/hooks/use-blueprint-gaps';
 
-export type LauncherMode = "gaps" | "deep_dive" | "resume" | "free_form";
+export type LauncherMode = 'gaps' | 'deep_dive' | 'resume' | 'free_form';
 
 export interface FocusTarget {
   mode: LauncherMode;
@@ -23,26 +23,26 @@ interface BlueprintLauncherProps {
 }
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI / UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI / UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 const SECTION_ORDER = Object.keys(SECTION_LABELS);
 
 export function BlueprintLauncher({
   projectId,
-  defaultMode = "free_form",
+  defaultMode = 'free_form',
   onChange,
 }: BlueprintLauncherProps) {
   const gaps = useBlueprintGaps(projectId);
@@ -58,17 +58,17 @@ export function BlueprintLauncher({
   // Build the focus_target the caller will send. The derivation per mode is
   // explicit so behaviour stays predictable as we add modes later.
   const derived: FocusTarget = useMemo(() => {
-    if (mode === "free_form") {
+    if (mode === 'free_form') {
       return { mode, sections: [], bullet_ids: [] };
     }
-    if (mode === "gaps") {
+    if (mode === 'gaps') {
       return {
         mode,
         sections: gaps.gaps.map((g) => g.section),
         bullet_ids: [],
       };
     }
-    if (mode === "deep_dive") {
+    if (mode === 'deep_dive') {
       return {
         mode,
         sections: deepDiveSection ? [deepDiveSection] : [],
@@ -81,14 +81,14 @@ export function BlueprintLauncher({
     // which specific bullets are still open.
     return {
       mode,
-      sections: ["open_questions"],
+      sections: ['open_questions'],
       bullet_ids: [],
     };
   }, [mode, gaps.gaps, deepDiveSection, selectedBullets]);
 
   // Emit on every change so the parent always has the up-to-date target.
   // Dedupe by serialised key so the parent isn't re-notified on every render.
-  const key = `${derived.mode}|${derived.sections.join(",")}|${derived.bullet_ids.join(",")}`;
+  const key = `${derived.mode}|${derived.sections.join(',')}|${derived.bullet_ids.join(',')}`;
   const lastKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (lastKeyRef.current === key) return;
@@ -126,7 +126,7 @@ export function BlueprintLauncher({
               return (
                 <li key={slug} className="flex items-center gap-2">
                   <span
-                    className={`flex-1 truncate text-[11px] ${isGap ? "text-foreground/90" : "text-muted-foreground/70"}`}
+                    className={`flex-1 truncate text-[11px] ${isGap ? 'text-foreground/90' : 'text-muted-foreground/70'}`}
                   >
                     {SECTION_LABELS[slug]}
                   </span>
@@ -134,12 +134,12 @@ export function BlueprintLauncher({
                     <span
                       className={`block h-full rounded-full ${
                         score >= 80
-                          ? "bg-success/70"
+                          ? 'bg-success/70'
                           : score >= 60
-                            ? "bg-primary/60"
+                            ? 'bg-primary/60'
                             : score >= 40
-                              ? "bg-warning/60"
-                              : "bg-destructive/50"
+                              ? 'bg-warning/60'
+                              : 'bg-destructive/50'
                       }`}
                       style={{ width: `${score}%` }}
                     />
@@ -161,14 +161,14 @@ export function BlueprintLauncher({
           label="Fill gaps"
           subtitle={
             gaps.gaps.length === 0
-              ? "Nothing under 60% — blueprint is in good shape"
-              : `${gaps.gaps.length} ${gaps.gaps.length === 1 ? "section" : "sections"} below 60% — auto-targets them`
+              ? 'Nothing under 60% — blueprint is in good shape'
+              : `${gaps.gaps.length} ${gaps.gaps.length === 1 ? 'section' : 'sections'} below 60% — auto-targets them`
           }
-          active={mode === "gaps"}
+          active={mode === 'gaps'}
           disabled={gaps.loading || gaps.gaps.length === 0}
-          onClick={() => setMode("gaps")}
+          onClick={() => setMode('gaps')}
         >
-          {mode === "gaps" && gaps.gaps.length > 0 && (
+          {mode === 'gaps' && gaps.gaps.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {gaps.gaps.slice(0, 6).map((g) => (
                 <span
@@ -179,7 +179,9 @@ export function BlueprintLauncher({
                 </span>
               ))}
               {gaps.gaps.length > 6 && (
-                <span className="text-[10px] text-muted-foreground/60">+{gaps.gaps.length - 6} more</span>
+                <span className="text-[10px] text-muted-foreground/60">
+                  +{gaps.gaps.length - 6} more
+                </span>
               )}
             </div>
           )}
@@ -189,14 +191,14 @@ export function BlueprintLauncher({
           icon={Compass}
           label="Deep dive on a section"
           subtitle="Pick a section, optionally select specific bullets to expand"
-          active={mode === "deep_dive"}
+          active={mode === 'deep_dive'}
           disabled={gaps.loading || Object.keys(gaps.scores).length === 0}
-          onClick={() => setMode("deep_dive")}
+          onClick={() => setMode('deep_dive')}
         >
-          {mode === "deep_dive" && (
+          {mode === 'deep_dive' && (
             <div className="mt-2 space-y-2">
               <select
-                value={deepDiveSection ?? ""}
+                value={deepDiveSection ?? ''}
                 onChange={(e) => {
                   setDeepDiveSection(e.target.value || null);
                   setSelectedBullets(new Set());
@@ -226,7 +228,9 @@ export function BlueprintLauncher({
                             onChange={() => toggleBullet(b.id)}
                             className="mt-0.5 accent-primary"
                           />
-                          <span className={checked ? "text-foreground" : "text-muted-foreground/85"}>
+                          <span
+                            className={checked ? 'text-foreground' : 'text-muted-foreground/85'}
+                          >
                             {b.text}
                           </span>
                         </li>
@@ -249,18 +253,18 @@ export function BlueprintLauncher({
           label="Resume last session"
           subtitle={
             gaps.previousSessionId
-              ? `${gaps.openQuestions.length} open question${gaps.openQuestions.length === 1 ? "" : "s"}${
+              ? `${gaps.openQuestions.length} open question${gaps.openQuestions.length === 1 ? '' : 's'}${
                   gaps.previousSessionPendingCount > 0
-                    ? ` · ${gaps.previousSessionPendingCount} unresolved suggestion${gaps.previousSessionPendingCount === 1 ? "" : "s"}`
-                    : ""
+                    ? ` · ${gaps.previousSessionPendingCount} unresolved suggestion${gaps.previousSessionPendingCount === 1 ? '' : 's'}`
+                    : ''
                 }`
-              : "No prior session yet"
+              : 'No prior session yet'
           }
-          active={mode === "resume"}
+          active={mode === 'resume'}
           disabled={!gaps.previousSessionId}
-          onClick={() => setMode("resume")}
+          onClick={() => setMode('resume')}
         >
-          {mode === "resume" && gaps.openQuestions.length > 0 && (
+          {mode === 'resume' && gaps.openQuestions.length > 0 && (
             <ul className="mt-2 space-y-1 text-[11.5px] text-muted-foreground/90 list-disc list-inside max-h-32 overflow-y-auto">
               {gaps.openQuestions.slice(0, 5).map((q, i) => (
                 <li key={`${i}-${q}`}>{q}</li>
@@ -273,8 +277,8 @@ export function BlueprintLauncher({
           icon={Sparkles}
           label="Free-form"
           subtitle="No scope override — talk about anything, the agent steers"
-          active={mode === "free_form"}
-          onClick={() => setMode("free_form")}
+          active={mode === 'free_form'}
+          onClick={() => setMode('free_form')}
         />
       </div>
     </div>
@@ -305,12 +309,14 @@ function ModeCard({
       disabled={disabled}
       className={`w-full text-left rounded-xl border px-3.5 py-3 transition-colors ${
         active
-          ? "border-primary/40 bg-primary/[0.06]"
-          : "border-border/60 bg-card/40 hover:border-border hover:bg-card/60"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          ? 'border-primary/40 bg-primary/[0.06]'
+          : 'border-border/60 bg-card/40 hover:border-border hover:bg-card/60'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className="flex items-start gap-3">
-        <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${active ? "text-primary" : "text-muted-foreground"}`} />
+        <Icon
+          className={`h-4 w-4 mt-0.5 shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`}
+        />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground">{label}</p>
           <p className="text-[11.5px] text-muted-foreground mt-0.5">{subtitle}</p>
@@ -323,4 +329,3 @@ function ModeCard({
     </button>
   );
 }
-

@@ -1,12 +1,7 @@
 // The duck's arbiter — pure clock logic, ported with the duck.
 
 import { describe, expect, it } from 'vitest';
-import {
-  DuckVoice,
-  HOLD_MS,
-  PRIORITY_COACH,
-  PRIORITY_EVENT,
-} from '../src/renderer/lib/duck-voice';
+import { DuckVoice, HOLD_MS, PRIORITY_COACH, PRIORITY_EVENT } from '../src/renderer/lib/duck-voice';
 
 describe('DuckVoice', () => {
   it('takes a line and shows it', () => {
@@ -82,4 +77,3 @@ describe('DuckVoice', () => {
     expect(voice.tick(0)).toBeNull();
   });
 });
-

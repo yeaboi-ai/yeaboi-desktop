@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 
 export function useAppSetting(key: string) {
   const { authFetch, ready } = useAuthFetch();
   const [value, setValue] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
+    if (typeof window === 'undefined') return null;
     return localStorage.getItem(`app-setting:${key}`);
   });
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,7 @@ export function useAppSetting(key: string) {
           localStorage.setItem(`app-setting:${key}`, data.value);
         }
       })
-      .catch(() => logger.warn("Failed to fetch app setting: %s", key))
+      .catch(() => logger.warn('Failed to fetch app setting: %s', key))
       .finally(() => setLoading(false));
   }, [ready, authFetch, key]);
 
@@ -37,10 +37,10 @@ export function useAppSetting(key: string) {
 
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        authFetch("/api/app-settings", {
-          method: "PUT",
+        authFetch('/api/app-settings', {
+          method: 'PUT',
           body: JSON.stringify({ key, value: newValue }),
-        }).catch(() => logger.warn("Failed to save app setting: %s", key));
+        }).catch(() => logger.warn('Failed to save app setting: %s', key));
       }, 400);
     },
     [authFetch, key],

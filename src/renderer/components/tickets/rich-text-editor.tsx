@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import Typography from "@tiptap/extension-typography";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Typography from '@tiptap/extension-typography';
 import {
   Bold,
   Braces,
@@ -24,8 +24,8 @@ import {
   Quote,
   Smile,
   Strikethrough,
-} from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+} from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface Props {
   value: string | null;
@@ -45,10 +45,46 @@ interface Props {
 }
 
 const COMMON_EMOJIS = [
-  "😀", "😂", "🥲", "😍", "🤔", "😎", "🙃", "😢", "😡", "👍",
-  "👎", "👏", "🙌", "🙏", "💪", "🎉", "🚀", "🔥", "✨", "⭐",
-  "✅", "❌", "⚠️", "💡", "📝", "📌", "🐛", "🛠️", "🧪", "📦",
-  "❤️", "💔", "💯", "🤝", "👀", "🫡", "🤯", "🥳", "🍕", "☕",
+  '😀',
+  '😂',
+  '🥲',
+  '😍',
+  '🤔',
+  '😎',
+  '🙃',
+  '😢',
+  '😡',
+  '👍',
+  '👎',
+  '👏',
+  '🙌',
+  '🙏',
+  '💪',
+  '🎉',
+  '🚀',
+  '🔥',
+  '✨',
+  '⭐',
+  '✅',
+  '❌',
+  '⚠️',
+  '💡',
+  '📝',
+  '📌',
+  '🐛',
+  '🛠️',
+  '🧪',
+  '📦',
+  '❤️',
+  '💔',
+  '💯',
+  '🤝',
+  '👀',
+  '🫡',
+  '🤯',
+  '🥳',
+  '🍕',
+  '☕',
 ];
 
 export function RichTextEditor({
@@ -85,19 +121,19 @@ export function RichTextEditor({
         openOnClick: false,
         autolink: true,
         HTMLAttributes: {
-          class: "text-primary underline underline-offset-2 hover:opacity-80",
+          class: 'text-primary underline underline-offset-2 hover:opacity-80',
         },
       }),
-      Placeholder.configure({ placeholder: placeholder ?? "Write something…" }),
+      Placeholder.configure({ placeholder: placeholder ?? 'Write something…' }),
       Typography,
     ],
-    content: value ?? "",
+    content: value ?? '',
     editable: !readOnly,
     autofocus: autoFocus,
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: "tiptap-content px-3 py-2 min-h-[140px]",
+        class: 'tiptap-content px-3 py-2 min-h-[140px]',
       },
     },
     onUpdate: ({ editor }) => {
@@ -112,7 +148,7 @@ export function RichTextEditor({
   useEffect(() => {
     if (!editor) return;
     const current = editor.getHTML();
-    const next = value ?? "";
+    const next = value ?? '';
     if (current !== next && !editor.isFocused) {
       editor.commands.setContent(next, { emitUpdate: false });
     }
@@ -121,31 +157,32 @@ export function RichTextEditor({
   const uploadFile = useCallback(
     async (file: File): Promise<{ url: string; mime: string; filename: string } | null> => {
       if (!cardId) {
-        setUploadError("Save the ticket first before adding attachments.");
+        setUploadError('Save the ticket first before adding attachments.');
         return null;
       }
       setUploading(true);
       setUploadError(null);
       try {
         const fd = new FormData();
-        fd.append("file", file);
+        fd.append('file', file);
         const resp = await authFetch(`/api/card-attachments-proxy/${cardId}`, {
-          method: "POST",
+          method: 'POST',
           body: fd,
         });
         if (!resp.ok) {
-          const msg = (await resp.json().catch(() => null))?.error ?? `Upload failed (${resp.status})`;
+          const msg =
+            (await resp.json().catch(() => null))?.error ?? `Upload failed (${resp.status})`;
           setUploadError(String(msg));
           return null;
         }
         const data = await resp.json();
         if (!data?.url) {
-          setUploadError("Upload succeeded but server returned no URL.");
+          setUploadError('Upload succeeded but server returned no URL.');
           return null;
         }
         return { url: data.url, mime: data.mime_type, filename: data.filename };
       } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Upload failed");
+        setUploadError(err instanceof Error ? err.message : 'Upload failed');
         return null;
       } finally {
         setUploading(false);
@@ -158,7 +195,7 @@ export function RichTextEditor({
     async (file: File) => {
       const result = await uploadFile(file);
       if (!editor || !result) return;
-      if (result.mime.startsWith("image/")) {
+      if (result.mime.startsWith('image/')) {
         editor.chain().focus().setImage({ src: result.url, alt: result.filename }).run();
       } else {
         editor
@@ -191,11 +228,11 @@ export function RichTextEditor({
         files.forEach((f) => void insertFile(f));
       }
     };
-    dom.addEventListener("drop", onDrop);
-    dom.addEventListener("paste", onPaste);
+    dom.addEventListener('drop', onDrop);
+    dom.addEventListener('paste', onPaste);
     return () => {
-      dom.removeEventListener("drop", onDrop);
-      dom.removeEventListener("paste", onPaste);
+      dom.removeEventListener('drop', onDrop);
+      dom.removeEventListener('paste', onPaste);
     };
   }, [editor, insertFile, readOnly]);
 
@@ -209,7 +246,7 @@ export function RichTextEditor({
 
   if (readOnly) {
     return (
-      <div className={`tiptap-content ${className ?? ""}`}>
+      <div className={`tiptap-content ${className ?? ''}`}>
         <EditorContent editor={editor} />
       </div>
     );
@@ -219,39 +256,40 @@ export function RichTextEditor({
   // text + URL fields. Defaults: selected text becomes the link label; if a
   // link is already at the cursor we surface its href so the user can edit it.
   const linkInitial = (() => {
-    if (!editor) return { text: "", url: "" };
+    if (!editor) return { text: '', url: '' };
     const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to, " ").trim();
-    const existingHref = (editor.getAttributes("link").href as string | undefined) ?? "";
+    const selectedText = editor.state.doc.textBetween(from, to, ' ').trim();
+    const existingHref = (editor.getAttributes('link').href as string | undefined) ?? '';
     return { text: selectedText, url: existingHref };
   })();
 
   const applyLink = ({ text, url }: { text: string; url: string }) => {
     const trimmedUrl = url.trim();
     if (!trimmedUrl) {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
       setLinkPopoverOpen(false);
       return;
     }
-    const safeUrl = /^[a-z][a-z0-9+.-]*:/i.test(trimmedUrl)
-      ? trimmedUrl
-      : `https://${trimmedUrl}`;
+    const safeUrl = /^[a-z][a-z0-9+.-]*:/i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
     const { from, to } = editor.state.selection;
     const hadSelection = from !== to;
     const trimmedText = text.trim();
 
-    if (hadSelection && (!trimmedText || trimmedText === editor.state.doc.textBetween(from, to, " ").trim())) {
+    if (
+      hadSelection &&
+      (!trimmedText || trimmedText === editor.state.doc.textBetween(from, to, ' ').trim())
+    ) {
       // User kept the selected text — just decorate it.
-      editor.chain().focus().extendMarkRange("link").setLink({ href: safeUrl }).run();
+      editor.chain().focus().extendMarkRange('link').setLink({ href: safeUrl }).run();
     } else if (hadSelection && trimmedText) {
       // Replace the selection with the new label text.
       editor
         .chain()
         .focus()
         .insertContent({
-          type: "text",
+          type: 'text',
           text: trimmedText,
-          marks: [{ type: "link", attrs: { href: safeUrl } }],
+          marks: [{ type: 'link', attrs: { href: safeUrl } }],
         })
         .run();
     } else {
@@ -261,9 +299,9 @@ export function RichTextEditor({
         .chain()
         .focus()
         .insertContent({
-          type: "text",
+          type: 'text',
           text: label,
-          marks: [{ type: "link", attrs: { href: safeUrl } }],
+          marks: [{ type: 'link', attrs: { href: safeUrl } }],
         })
         .run();
     }
@@ -271,32 +309,32 @@ export function RichTextEditor({
   };
 
   const removeLink = () => {
-    editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
     setLinkPopoverOpen(false);
   };
 
   return (
-    <div className={`rounded-md border border-border bg-background ${className ?? ""}`}>
+    <div className={`rounded-md border border-border bg-background ${className ?? ''}`}>
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1.5 py-1">
         {!compact && (
           <>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-              active={editor.isActive("heading", { level: 1 })}
+              active={editor.isActive('heading', { level: 1 })}
               label="Heading 1"
             >
               <Heading1 className="h-3.5 w-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-              active={editor.isActive("heading", { level: 2 })}
+              active={editor.isActive('heading', { level: 2 })}
               label="Heading 2"
             >
               <Heading2 className="h-3.5 w-3.5" />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-              active={editor.isActive("heading", { level: 3 })}
+              active={editor.isActive('heading', { level: 3 })}
               label="Heading 3"
             >
               <Heading3 className="h-3.5 w-3.5" />
@@ -306,28 +344,28 @@ export function RichTextEditor({
         )}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
-          active={editor.isActive("bold")}
+          active={editor.isActive('bold')}
           label="Bold"
         >
           <Bold className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          active={editor.isActive("italic")}
+          active={editor.isActive('italic')}
           label="Italic"
         >
           <Italic className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          active={editor.isActive("strike")}
+          active={editor.isActive('strike')}
           label="Strikethrough"
         >
           <Strikethrough className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCode().run()}
-          active={editor.isActive("code")}
+          active={editor.isActive('code')}
           label="Inline code"
         >
           <Code className="h-3.5 w-3.5" />
@@ -335,7 +373,7 @@ export function RichTextEditor({
         {!compact && (
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            active={editor.isActive("codeBlock")}
+            active={editor.isActive('codeBlock')}
             label="Code block"
           >
             <Braces className="h-3.5 w-3.5" />
@@ -344,14 +382,14 @@ export function RichTextEditor({
         <Divider />
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          active={editor.isActive("bulletList")}
+          active={editor.isActive('bulletList')}
           label="Bullet list"
         >
           <List className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          active={editor.isActive("orderedList")}
+          active={editor.isActive('orderedList')}
           label="Ordered list"
         >
           <ListOrdered className="h-3.5 w-3.5" />
@@ -360,7 +398,7 @@ export function RichTextEditor({
           <>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              active={editor.isActive("blockquote")}
+              active={editor.isActive('blockquote')}
               label="Quote"
             >
               <Quote className="h-3.5 w-3.5" />
@@ -377,7 +415,7 @@ export function RichTextEditor({
         <div className="relative">
           <ToolbarButton
             onClick={() => setLinkPopoverOpen((v) => !v)}
-            active={editor.isActive("link") || linkPopoverOpen}
+            active={editor.isActive('link') || linkPopoverOpen}
             label="Link"
           >
             <LinkIcon className="h-3.5 w-3.5" />
@@ -398,7 +436,11 @@ export function RichTextEditor({
           disabled={!cardId || uploading}
           label="Image"
         >
-          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+          {uploading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ImageIcon className="h-3.5 w-3.5" />
+          )}
         </ToolbarButton>
         <div className="relative">
           <ToolbarButton onClick={() => setEmojiOpen((v) => !v)} active={emojiOpen} label="Emoji">
@@ -430,7 +472,7 @@ export function RichTextEditor({
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void insertFile(file);
-            e.target.value = "";
+            e.target.value = '';
           }}
         />
       </div>
@@ -475,8 +517,8 @@ function ToolbarButton({
       aria-pressed={active}
       className={`rounded p-1 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
         active
-          ? "bg-primary/10 text-foreground"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          ? 'bg-primary/10 text-foreground'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       }`}
     >
       {children}
@@ -521,13 +563,13 @@ function LinkPopover({
       if (!containerRef.current?.contains(e.target as Node)) onCancel();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === 'Escape') onCancel();
     };
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
     return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
     };
   }, [onCancel]);
 
@@ -548,7 +590,7 @@ function LinkPopover({
             onChange={(e) => setText(e.target.value)}
             placeholder="Display text (optional)"
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 submit();
               }
@@ -564,7 +606,7 @@ function LinkPopover({
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 submit();
               }
@@ -599,7 +641,7 @@ function LinkPopover({
             disabled={!url.trim()}
             className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground disabled:opacity-50 hover:opacity-90"
           >
-            {hasExistingLink ? "Update" : "Insert"}
+            {hasExistingLink ? 'Update' : 'Insert'}
           </button>
         </div>
       </div>

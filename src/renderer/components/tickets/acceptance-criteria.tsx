@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -8,17 +8,17 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { AcceptanceCriterion } from "@/hooks/use-board";
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { AcceptanceCriterion } from '@/hooks/use-board';
 
 interface Props {
   criteria: AcceptanceCriterion[];
@@ -80,17 +80,17 @@ function Row({ id, index, text, done, onTextChange, onToggleDone, onRemove }: Ro
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === 'Enter') {
             e.preventDefault();
             (e.target as HTMLInputElement).blur();
           }
-          if (e.key === "Backspace" && !draft) {
+          if (e.key === 'Backspace' && !draft) {
             e.preventDefault();
             onRemove(index);
           }
         }}
         className={`flex-1 bg-transparent text-sm py-1 outline-none border-b border-transparent focus:border-primary ${
-          done ? "line-through text-muted-foreground" : ""
+          done ? 'line-through text-muted-foreground' : ''
         }`}
       />
       <button
@@ -159,11 +159,11 @@ export function AcceptanceCriteria({ criteria, onChange, showHeading = true }: P
     onChange(criteria.filter((_, i) => i !== sourceIdx));
   };
 
-  const add = () => onChange([...criteria, { text: "", done: false }]);
+  const add = () => onChange([...criteria, { text: '', done: false }]);
 
   return (
     <div>
-      <div className={`flex items-center ${showHeading ? "justify-between" : "justify-end"} mb-2`}>
+      <div className={`flex items-center ${showHeading ? 'justify-between' : 'justify-end'} mb-2`}>
         {showHeading && (
           <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Acceptance criteria

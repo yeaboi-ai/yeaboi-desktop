@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { TicketLink } from "@/hooks/use-ticket";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import type { TicketLink } from '@/hooks/use-ticket';
 
 export interface CardSearchHit {
   id: string;
@@ -42,8 +42,8 @@ export function useCardLinks(cardId: string | null | undefined) {
       setError(null);
       try {
         const resp = await authFetch(`/api/card-links-proxy/${cardId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ target, link_type }),
         });
         if (!resp.ok) {
@@ -64,7 +64,7 @@ export function useCardLinks(cardId: string | null | undefined) {
     async (linkId: string) => {
       if (!cardId) return;
       const resp = await authFetch(`/api/card-links-proxy/${cardId}/${linkId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (resp.ok) await load();
     },
@@ -83,7 +83,7 @@ export function useCardSearch() {
       const trimmed = q.trim();
       if (!trimmed) return [];
       const params = new URLSearchParams({ q: trimmed });
-      if (projectId) params.set("project_id", projectId);
+      if (projectId) params.set('project_id', projectId);
       const resp = await authFetch(`/api/cards-search-proxy?${params.toString()}`);
       if (!resp.ok) return [];
       return (await resp.json()) as CardSearchHit[];

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { PresenceUser } from "@/hooks/use-card-presence";
+import type { PresenceUser } from '@/hooks/use-card-presence';
 
 interface Props {
   viewers: PresenceUser[];
@@ -22,7 +22,7 @@ export function PresenceBar({ viewers, selfId, max = 5 }: Props) {
     <div
       className="flex items-center -space-x-2"
       role="group"
-      aria-label={`${others.length} other viewer${others.length === 1 ? "" : "s"}`}
+      aria-label={`${others.length} other viewer${others.length === 1 ? '' : 's'}`}
     >
       {visible.map((v) => (
         <Avatar key={v.id} user={v} />
@@ -41,7 +41,7 @@ export function PresenceBar({ viewers, selfId, max = 5 }: Props) {
 
 function Avatar({ user }: { user: PresenceUser }) {
   const label = user.name ?? user.email ?? user.id;
-  const initial = (label ?? "?").slice(0, 1).toUpperCase();
+  const initial = (label ?? '?').slice(0, 1).toUpperCase();
   return (
     <div
       className="relative w-6 h-6 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center border border-background overflow-hidden"
@@ -49,7 +49,7 @@ function Avatar({ user }: { user: PresenceUser }) {
     >
       {user.image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.image} alt={label ?? ""} className="w-full h-full object-cover" />
+        <img src={user.image} alt={label ?? ''} className="w-full h-full object-cover" />
       ) : (
         initial
       )}

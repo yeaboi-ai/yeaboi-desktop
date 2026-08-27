@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { X, GripHorizontal, Maximize2, Minimize2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { X, GripHorizontal, Maximize2, Minimize2 } from 'lucide-react';
 
 // Global z-index counter — each panel gets the next value when focused.
 // Panels live in the 70–199 range. Top bar and action buttons use z-[200]+.
@@ -17,7 +17,7 @@ interface DrawerShellProps {
   onClose: () => void;
   /** Called when the user clicks the visible peek strip on the closed drawer. */
   onOpen?: () => void;
-  side: "left" | "right";
+  side: 'left' | 'right';
   title: string;
   width?: string;
   widthPx?: number;
@@ -42,7 +42,7 @@ export function DrawerShell({
   onOpen,
   side,
   title,
-  width = "w-[380px]",
+  width = 'w-[380px]',
   widthPx,
   defaultY,
   headerExtra,
@@ -53,7 +53,7 @@ export function DrawerShell({
   hidden,
   children,
 }: DrawerShellProps) {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
   return (
     <MorphPanel
@@ -95,7 +95,7 @@ function MorphPanel({
   children,
 }: {
   open: boolean;
-  side: "left" | "right";
+  side: 'left' | 'right';
   title: string;
   width: string;
   widthPx?: number;
@@ -110,15 +110,16 @@ function MorphPanel({
   hidden?: boolean;
   children: React.ReactNode;
 }) {
-  const panelWidth = widthPx || parseInt(width.match(/\d+/)?.[0] || "380", 10);
-  const defaultX = side === "left" ? 16 : (typeof window !== "undefined" ? window.innerWidth - panelWidth - 24 : 0);
+  const panelWidth = widthPx || parseInt(width.match(/\d+/)?.[0] || '380', 10);
+  const defaultX =
+    side === 'left' ? 16 : typeof window !== 'undefined' ? window.innerWidth - panelWidth - 24 : 0;
   // Top floating pills (Exit/title on the left, participants/Complete on
   // the right) sit at top:16 with height 44 — bottom edge at y=60. Default
   // the drawer top to 76 so it never collides with those pills.
   const defaultY = defaultYProp ?? 76;
 
   const [pos, setPos] = useState(() => {
-    if (storageKey && typeof window !== "undefined") {
+    if (storageKey && typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem(`drawer-pos-${storageKey}`);
         if (saved) return JSON.parse(saved);
@@ -148,20 +149,25 @@ function MorphPanel({
   // Escape exits fullscreen. Route through a ref so the effect's deps stay
   // tight and the callback stays current across renders.
   const toggleFullscreenRef = useRef(toggleFullscreen);
-  useEffect(() => { toggleFullscreenRef.current = toggleFullscreen; }, [toggleFullscreen]);
+  useEffect(() => {
+    toggleFullscreenRef.current = toggleFullscreen;
+  }, [toggleFullscreen]);
   useEffect(() => {
     if (!fullscreen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") toggleFullscreenRef.current(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') toggleFullscreenRef.current();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [fullscreen]);
 
   // Get the collapsed pill dimensions — either from trigger ref or sensible defaults
-  const bottomY = typeof window !== "undefined" ? window.innerHeight - 60 : 700;
-  const rightX = typeof window !== "undefined" ? window.innerWidth - 130 : 1000;
-  const autoDefault = side === "left"
-    ? { x: 56, y: bottomY, w: 100, h: 38 }
-    : { x: rightX, y: bottomY, w: 120, h: 38 };
+  const bottomY = typeof window !== 'undefined' ? window.innerHeight - 60 : 700;
+  const rightX = typeof window !== 'undefined' ? window.innerWidth - 130 : 1000;
+  const autoDefault =
+    side === 'left'
+      ? { x: 56, y: bottomY, w: 100, h: 38 }
+      : { x: rightX, y: bottomY, w: 120, h: 38 };
   const collapsedDefault = collapsedPosition
     ? { x: collapsedPosition.x, y: collapsedPosition.y, w: 120, h: 38 }
     : autoDefault;
@@ -178,7 +184,10 @@ function MorphPanel({
 
   // Reset settled when closing; set after morph finishes when opening
   useEffect(() => {
-    if (!open) { setSettled(false); return; }
+    if (!open) {
+      setSettled(false);
+      return;
+    }
     const id = setTimeout(() => setSettled(true), 360); // slightly after 0.35s transition
     return () => clearTimeout(id);
   }, [open]);
@@ -189,9 +198,8 @@ function MorphPanel({
   //         drawer consumes the full available height downwards.
   //   Closed: stops 76px above the bottom so the minimized peek strip
   //         doesn't collide with the bottom dock pill.
-  const expandedHeight = typeof window !== "undefined"
-    ? window.innerHeight - pos.y - (open ? 16 : 76)
-    : 600;
+  const expandedHeight =
+    typeof window !== 'undefined' ? window.innerHeight - pos.y - (open ? 16 : 76) : 600;
   const td = triggerDimsState;
   // Slide the panel in from its side, with a subtle vertical lift + scale
   // for movement. Closed: leave a 12px clickable peek of the panel sticking
@@ -202,10 +210,11 @@ function MorphPanel({
   // user gets visual feedback that the tab is interactive.
   const HOVER_NUDGE = 8;
   const offX = panelWidth - PEEK - (peekHover && !open ? HOVER_NUDGE : 0);
-  const closedTransform = side === "left"
-    ? `translate3d(-${offX}px, 14px, 0) scale(0.985)`
-    : `translate3d(${offX}px, 14px, 0) scale(0.985)`;
-  const panelTransform = open ? "translate3d(0, 0, 0) scale(1)" : closedTransform;
+  const closedTransform =
+    side === 'left'
+      ? `translate3d(-${offX}px, 14px, 0) scale(0.985)`
+      : `translate3d(${offX}px, 14px, 0) scale(0.985)`;
+  const panelTransform = open ? 'translate3d(0, 0, 0) scale(1)' : closedTransform;
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
@@ -227,7 +236,9 @@ function MorphPanel({
     dragging.current = false;
     setIsDragging(false);
     if (storageKey) {
-      try { localStorage.setItem(`drawer-pos-${storageKey}`, JSON.stringify(pos)); } catch {}
+      try {
+        localStorage.setItem(`drawer-pos-${storageKey}`, JSON.stringify(pos));
+      } catch {}
     }
   };
 
@@ -244,29 +255,31 @@ function MorphPanel({
           viewport; hovering nudges it 6px further in, clicking re-opens. */}
       <div
         ref={panelRef}
-        className={`fixed flex flex-col bg-background/75 backdrop-blur-md border border-border/70 shadow-2xl overflow-hidden ${open ? "" : "drawer-peek-closed"}`}
+        className={`fixed flex flex-col bg-background/75 backdrop-blur-md border border-border/70 shadow-2xl overflow-hidden ${open ? '' : 'drawer-peek-closed'}`}
         style={{
-          display: hidden ? "none" : "flex",
+          display: hidden ? 'none' : 'flex',
           left: fullscreen ? 0 : pos.x,
           top: fullscreen ? 0 : pos.y,
-          width: fullscreen ? "100vw" : panelWidth,
-          height: fullscreen ? "100vh" : expandedHeight,
+          width: fullscreen ? '100vw' : panelWidth,
+          height: fullscreen ? '100vh' : expandedHeight,
           borderRadius: fullscreen ? 0 : 16,
           zIndex: fullscreen ? 9999 : zIndex,
-          transform: fullscreen ? "none" : panelTransform,
-          transformOrigin: side === "left" ? "right center" : "left center",
-          pointerEvents: "auto",
+          transform: fullscreen ? 'none' : panelTransform,
+          transformOrigin: side === 'left' ? 'right center' : 'left center',
+          pointerEvents: 'auto',
           // Pointer cursor when closed (peek strip is a click target);
           // default cursor when open (no whole-panel toggle behaviour).
-          cursor: open ? "default" : "pointer",
+          cursor: open ? 'default' : 'pointer',
           transition: isDragging
-            ? "none"
-            : "transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), height 0.32s cubic-bezier(0.4, 0, 0.2, 1), width 0.32s cubic-bezier(0.4, 0, 0.2, 1), left 0.32s cubic-bezier(0.4, 0, 0.2, 1), top 0.32s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.2s ease",
-          willChange: "transform",
+            ? 'none'
+            : 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), height 0.32s cubic-bezier(0.4, 0, 0.2, 1), width 0.32s cubic-bezier(0.4, 0, 0.2, 1), left 0.32s cubic-bezier(0.4, 0, 0.2, 1), top 0.32s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.2s ease',
+          willChange: 'transform',
         }}
         data-side={side}
         onPointerDown={() => setZIndex(bringToFront())}
-        onMouseEnter={() => { if (!open) setPeekHover(true); }}
+        onMouseEnter={() => {
+          if (!open) setPeekHover(true);
+        }}
         onMouseLeave={() => setPeekHover(false)}
         onClick={(e) => {
           if (!open && onOpen && !e.defaultPrevented) onOpen();
@@ -279,19 +292,21 @@ function MorphPanel({
           className="flex flex-col h-full"
           style={{
             opacity: open ? 1 : 0,
-            pointerEvents: open ? "auto" : "none",
-            transition: "opacity 0.18s ease",
+            pointerEvents: open ? 'auto' : 'none',
+            transition: 'opacity 0.18s ease',
           }}
         >
           {/* Draggable header */}
           <div
-            className={`flex items-center justify-between px-5 py-3 border-b border-border/70 shrink-0 select-none ${fullscreen ? "" : "cursor-grab active:cursor-grabbing"}`}
+            className={`flex items-center justify-between px-5 py-3 border-b border-border/70 shrink-0 select-none ${fullscreen ? '' : 'cursor-grab active:cursor-grabbing'}`}
             onPointerDown={fullscreen ? undefined : handlePointerDown}
             onPointerMove={fullscreen ? undefined : handlePointerMove}
             onPointerUp={fullscreen ? undefined : handlePointerUp}
           >
             <div className="flex items-center gap-2">
-              {!fullscreen && <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground/30 pointer-events-none" />}
+              {!fullscreen && (
+                <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground/30 pointer-events-none" />
+              )}
               <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {title}
               </h2>
@@ -301,8 +316,8 @@ function MorphPanel({
               <button
                 onClick={toggleFullscreen}
                 className="p-1 rounded-lg text-muted-foreground/70 hover:text-foreground/90 hover:bg-foreground/[0.08] transition-colors"
-                aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-                title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+                aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               >
                 {fullscreen ? (
                   <Minimize2 className="h-4 w-4 pointer-events-none" />
@@ -321,7 +336,9 @@ function MorphPanel({
           </div>
 
           {/* Content — only allow scrolling once the slide has settled */}
-          <div className={`flex-1 flex flex-col ${settled ? "overflow-y-auto" : "overflow-hidden"}`}>
+          <div
+            className={`flex-1 flex flex-col ${settled ? 'overflow-y-auto' : 'overflow-hidden'}`}
+          >
             {children}
           </div>
         </div>

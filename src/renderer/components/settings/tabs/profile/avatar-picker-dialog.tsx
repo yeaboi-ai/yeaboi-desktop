@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api-base";
-import { Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from '@/lib/api-base';
+import { Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
-import type { MeProfile } from "@/components/settings/types";
+} from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
+import type { MeProfile } from '@/components/settings/types';
 import {
   PRESETS,
   presetKey,
@@ -21,15 +21,13 @@ import {
   presetToBlob,
   presetToDataUri,
   type Preset,
-} from "./avatar-presets";
+} from './avatar-presets';
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp,image/gif";
+const ACCEPTED_TYPES = 'image/png,image/jpeg,image/webp,image/gif';
 
 type Staged =
-  | { kind: "preset"; preset: Preset }
-  | { kind: "upload"; file: File; objectUrl: string }
-  | null;
+  { kind: 'preset'; preset: Preset } | { kind: 'upload'; file: File; objectUrl: string } | null;
 
 type AvatarPickerDialogProps = {
   open: boolean;
@@ -63,7 +61,7 @@ export function AvatarPickerDialog({
   // Revoke uploaded object URLs on staged change / unmount
   useEffect(() => {
     return () => {
-      if (staged?.kind === "upload") {
+      if (staged?.kind === 'upload') {
         URL.revokeObjectURL(staged.objectUrl);
       }
     };
@@ -71,15 +69,15 @@ export function AvatarPickerDialog({
 
   const stagePreset = useCallback((preset: Preset) => {
     setStaged((prev) => {
-      if (prev?.kind === "upload") URL.revokeObjectURL(prev.objectUrl);
-      return { kind: "preset", preset };
+      if (prev?.kind === 'upload') URL.revokeObjectURL(prev.objectUrl);
+      return { kind: 'preset', preset };
     });
   }, []);
 
   const stageUpload = useCallback(
     (file: File) => {
-      if (!file.type.startsWith("image/")) {
-        onError("Please choose an image file.");
+      if (!file.type.startsWith('image/')) {
+        onError('Please choose an image file.');
         return;
       }
       if (file.size > MAX_BYTES) {
@@ -87,8 +85,8 @@ export function AvatarPickerDialog({
         return;
       }
       setStaged((prev) => {
-        if (prev?.kind === "upload") URL.revokeObjectURL(prev.objectUrl);
-        return { kind: "upload", file, objectUrl: URL.createObjectURL(file) };
+        if (prev?.kind === 'upload') URL.revokeObjectURL(prev.objectUrl);
+        return { kind: 'upload', file, objectUrl: URL.createObjectURL(file) };
       });
     },
     [onError],
@@ -100,16 +98,16 @@ export function AvatarPickerDialog({
     try {
       let blob: Blob;
       let filename: string;
-      if (staged.kind === "preset") {
+      if (staged.kind === 'preset') {
         blob = await presetToBlob(staged.preset, 256);
         filename = `avatar-${staged.preset.id}.png`;
       } else {
         blob = staged.file;
-        filename = staged.file.name || "avatar";
+        filename = staged.file.name || 'avatar';
       }
       const formData = new FormData();
-      formData.append("file", blob, filename);
-      const resp = await apiFetch("/api/me/avatar", { method: "POST", body: formData });
+      formData.append('file', blob, filename);
+      const resp = await apiFetch('/api/me/avatar', { method: 'POST', body: formData });
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
         throw new Error(body?.error || `Upload failed: ${resp.status}`);
@@ -118,7 +116,7 @@ export function AvatarPickerDialog({
       onSaved(data);
       onOpenChange(false);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Failed to save avatar");
+      onError(err instanceof Error ? err.message : 'Failed to save avatar');
     } finally {
       setSaving(false);
     }
@@ -129,9 +127,7 @@ export function AvatarPickerDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Choose your avatar</DialogTitle>
-          <DialogDescription>
-            Pick a character theme or upload your own photo.
-          </DialogDescription>
+          <DialogDescription>Pick a character theme or upload your own photo.</DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-center pt-2">
@@ -161,7 +157,9 @@ export function AvatarPickerDialog({
             className="w-full justify-center text-xs"
           >
             <Upload className="size-3.5" aria-hidden="true" />
-            {staged?.kind === "upload" ? staged.file.name : "Choose image (PNG, JPG, WebP, GIF · max 5 MB)"}
+            {staged?.kind === 'upload'
+              ? staged.file.name
+              : 'Choose image (PNG, JPG, WebP, GIF · max 5 MB)'}
           </Button>
           <input
             ref={uploadInputRef}
@@ -171,7 +169,7 @@ export function AvatarPickerDialog({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) stageUpload(file);
-              e.target.value = "";
+              e.target.value = '';
             }}
           />
         </div>
@@ -181,7 +179,7 @@ export function AvatarPickerDialog({
             Cancel
           </Button>
           <Button size="sm" onClick={handleSave} disabled={!staged || saving}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? 'Saving…' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -198,7 +196,7 @@ function BigPreview({
   fallbackInitial: string;
   currentAvatarUrl: string | null;
 }) {
-  if (staged?.kind === "preset") {
+  if (staged?.kind === 'preset') {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -208,7 +206,7 @@ function BigPreview({
       />
     );
   }
-  if (staged?.kind === "upload") {
+  if (staged?.kind === 'upload') {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={staged.objectUrl} alt="" className="w-24 h-24 rounded-full object-cover" />;
   }
@@ -232,7 +230,7 @@ function PresetGrid({
   staged: Staged;
   onSelect: (preset: Preset) => void;
 }) {
-  const selectedKey = staged?.kind === "preset" ? presetKey(staged.preset) : null;
+  const selectedKey = staged?.kind === 'preset' ? presetKey(staged.preset) : null;
   return (
     <div className="grid grid-cols-6 gap-2" role="radiogroup" aria-label="Avatar themes">
       {presets.map((preset) => {
@@ -270,9 +268,9 @@ function PresetThumb({
       title={presetLabel(preset)}
       onClick={onClick}
       className={cn(
-        "relative w-full aspect-square rounded-full overflow-hidden outline-none transition-all bg-card",
-        "focus-visible:ring-2 focus-visible:ring-ring/50",
-        selected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:scale-105",
+        'relative w-full aspect-square rounded-full overflow-hidden outline-none transition-all bg-card',
+        'focus-visible:ring-2 focus-visible:ring-ring/50',
+        selected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-105',
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

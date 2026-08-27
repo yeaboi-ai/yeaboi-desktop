@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { HexColorPicker } from "react-colorful";
-import { ChevronDown, Check, Copy, Pipette, Trash2, AlertTriangle } from "lucide-react";
-import { applyThemeTokens } from "@/lib/theme/apply";
-import { contrastRatio, normalizeHex } from "@/lib/theme/contrast";
-import { BUILTIN_PRESETS } from "@/lib/theme/presets";
-import type { BuiltInPresetId, ColorScheme, TokenMap } from "@/lib/theme/types";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { HexColorPicker } from 'react-colorful';
+import { ChevronDown, Check, Copy, Pipette, Trash2, AlertTriangle } from 'lucide-react';
+import { applyThemeTokens } from '@/lib/theme/apply';
+import { contrastRatio, normalizeHex } from '@/lib/theme/contrast';
+import { BUILTIN_PRESETS } from '@/lib/theme/presets';
+import type { BuiltInPresetId, ColorScheme, TokenMap } from '@/lib/theme/types';
 
 export interface TokenGroup {
   title: string;
@@ -16,137 +16,137 @@ export interface TokenGroup {
 
 export const TOKEN_GROUPS: TokenGroup[] = [
   {
-    title: "Brand",
-    description: "Accent color for buttons, links, and highlights.",
-    keys: ["primary", "primary-foreground", "ring"],
+    title: 'Brand',
+    description: 'Accent color for buttons, links, and highlights.',
+    keys: ['primary', 'primary-foreground', 'ring'],
   },
   {
-    title: "Surfaces",
-    description: "Page background, cards, popovers, and secondary fills.",
+    title: 'Surfaces',
+    description: 'Page background, cards, popovers, and secondary fills.',
     keys: [
-      "background",
-      "foreground",
-      "card",
-      "card-foreground",
-      "popover",
-      "popover-foreground",
-      "secondary",
-      "secondary-foreground",
-      "muted",
-      "muted-foreground",
-      "accent",
-      "accent-foreground",
-      "border",
-      "input",
+      'background',
+      'foreground',
+      'card',
+      'card-foreground',
+      'popover',
+      'popover-foreground',
+      'secondary',
+      'secondary-foreground',
+      'muted',
+      'muted-foreground',
+      'accent',
+      'accent-foreground',
+      'border',
+      'input',
     ],
   },
   {
-    title: "Status",
-    description: "Destructive, success, warning, and info colors.",
+    title: 'Status',
+    description: 'Destructive, success, warning, and info colors.',
     keys: [
-      "destructive",
-      "destructive-foreground",
-      "success",
-      "success-foreground",
-      "warning",
-      "warning-foreground",
-      "info",
-      "info-foreground",
+      'destructive',
+      'destructive-foreground',
+      'success',
+      'success-foreground',
+      'warning',
+      'warning-foreground',
+      'info',
+      'info-foreground',
     ],
   },
   {
-    title: "Charts",
-    description: "Slots used by analytics chart bars and tooltips.",
+    title: 'Charts',
+    description: 'Slots used by analytics chart bars and tooltips.',
     keys: [
-      "chart-1",
-      "chart-2",
-      "chart-3",
-      "chart-4",
-      "chart-5",
-      "chart-6",
-      "chart-7",
-      "chart-8",
-      "chart-tooltip-bg",
-      "chart-tooltip-fg",
+      'chart-1',
+      'chart-2',
+      'chart-3',
+      'chart-4',
+      'chart-5',
+      'chart-6',
+      'chart-7',
+      'chart-8',
+      'chart-tooltip-bg',
+      'chart-tooltip-fg',
     ],
   },
   {
-    title: "Canvas",
-    description: "Diagram canvas — nodes, selected edges, handles.",
+    title: 'Canvas',
+    description: 'Diagram canvas — nodes, selected edges, handles.',
     keys: [
-      "canvas-bg",
-      "canvas-node-bg",
-      "canvas-node-fg",
-      "canvas-edge-selected",
-      "canvas-handle",
+      'canvas-bg',
+      'canvas-node-bg',
+      'canvas-node-fg',
+      'canvas-edge-selected',
+      'canvas-handle',
     ],
   },
   {
-    title: "Wireframe",
-    description: "Fallback design system for the wireframe simulator.",
-    keys: ["wireframe-bg", "wireframe-fg", "wireframe-accent"],
+    title: 'Wireframe',
+    description: 'Fallback design system for the wireframe simulator.',
+    keys: ['wireframe-bg', 'wireframe-fg', 'wireframe-accent'],
   },
   {
-    title: "LiveKit",
-    description: "Video tile and screenshare backgrounds.",
-    keys: ["livekit-tile-bg", "livekit-screen-bg"],
+    title: 'LiveKit',
+    description: 'Video tile and screenshare backgrounds.',
+    keys: ['livekit-tile-bg', 'livekit-screen-bg'],
   },
   {
-    title: "Misc",
-    description: "Scrollbars and text selection.",
-    keys: ["scrollbar-thumb", "scrollbar-thumb-hover", "selection-fg"],
+    title: 'Misc',
+    description: 'Scrollbars and text selection.',
+    keys: ['scrollbar-thumb', 'scrollbar-thumb-hover', 'selection-fg'],
   },
 ];
 
 const HUMAN_LABELS: Record<string, string> = {
-  background: "Background",
-  foreground: "Foreground (text)",
-  card: "Card surface",
-  "card-foreground": "Card text",
-  popover: "Popover surface",
-  "popover-foreground": "Popover text",
-  primary: "Primary",
-  "primary-foreground": "Text on primary",
-  secondary: "Secondary surface",
-  "secondary-foreground": "Secondary text",
-  muted: "Muted surface",
-  "muted-foreground": "Muted text",
-  accent: "Accent surface",
-  "accent-foreground": "Accent text",
-  destructive: "Destructive",
-  "destructive-foreground": "Text on destructive",
-  success: "Success",
-  "success-foreground": "Text on success",
-  warning: "Warning",
-  "warning-foreground": "Text on warning",
-  info: "Info",
-  "info-foreground": "Text on info",
-  border: "Border",
-  input: "Input border",
-  ring: "Focus ring",
-  "chart-tooltip-bg": "Tooltip background",
-  "chart-tooltip-fg": "Tooltip text",
-  "canvas-bg": "Canvas background",
-  "canvas-node-bg": "Node fill",
-  "canvas-node-fg": "Node text",
-  "canvas-edge-selected": "Selected edge",
-  "canvas-handle": "Connection handle",
-  "wireframe-bg": "Wireframe background",
-  "wireframe-fg": "Wireframe text",
-  "wireframe-accent": "Wireframe accent",
-  "livekit-tile-bg": "Camera tile",
-  "livekit-screen-bg": "Screenshare backdrop",
-  "scrollbar-thumb": "Scrollbar",
-  "scrollbar-thumb-hover": "Scrollbar (hover)",
-  "selection-fg": "Selected text",
+  background: 'Background',
+  foreground: 'Foreground (text)',
+  card: 'Card surface',
+  'card-foreground': 'Card text',
+  popover: 'Popover surface',
+  'popover-foreground': 'Popover text',
+  primary: 'Primary',
+  'primary-foreground': 'Text on primary',
+  secondary: 'Secondary surface',
+  'secondary-foreground': 'Secondary text',
+  muted: 'Muted surface',
+  'muted-foreground': 'Muted text',
+  accent: 'Accent surface',
+  'accent-foreground': 'Accent text',
+  destructive: 'Destructive',
+  'destructive-foreground': 'Text on destructive',
+  success: 'Success',
+  'success-foreground': 'Text on success',
+  warning: 'Warning',
+  'warning-foreground': 'Text on warning',
+  info: 'Info',
+  'info-foreground': 'Text on info',
+  border: 'Border',
+  input: 'Input border',
+  ring: 'Focus ring',
+  'chart-tooltip-bg': 'Tooltip background',
+  'chart-tooltip-fg': 'Tooltip text',
+  'canvas-bg': 'Canvas background',
+  'canvas-node-bg': 'Node fill',
+  'canvas-node-fg': 'Node text',
+  'canvas-edge-selected': 'Selected edge',
+  'canvas-handle': 'Connection handle',
+  'wireframe-bg': 'Wireframe background',
+  'wireframe-fg': 'Wireframe text',
+  'wireframe-accent': 'Wireframe accent',
+  'livekit-tile-bg': 'Camera tile',
+  'livekit-screen-bg': 'Screenshare backdrop',
+  'scrollbar-thumb': 'Scrollbar',
+  'scrollbar-thumb-hover': 'Scrollbar (hover)',
+  'selection-fg': 'Selected text',
 };
 
 const CRITICAL_PAIRS: { fg: string; bg: string; threshold: number }[] = [
-  { fg: "foreground", bg: "background", threshold: 4.5 },
-  { fg: "primary-foreground", bg: "primary", threshold: 4.5 },
-  { fg: "destructive-foreground", bg: "destructive", threshold: 4.5 },
-  { fg: "card-foreground", bg: "card", threshold: 4.5 },
-  { fg: "muted-foreground", bg: "muted", threshold: 3 },
+  { fg: 'foreground', bg: 'background', threshold: 4.5 },
+  { fg: 'primary-foreground', bg: 'primary', threshold: 4.5 },
+  { fg: 'destructive-foreground', bg: 'destructive', threshold: 4.5 },
+  { fg: 'card-foreground', bg: 'card', threshold: 4.5 },
+  { fg: 'muted-foreground', bg: 'muted', threshold: 3 },
 ];
 
 export interface ThemeEditorState {
@@ -165,10 +165,10 @@ interface ThemeEditorProps {
 }
 
 export function ThemeEditor({
-  initialName = "My theme",
-  initialColorScheme = "dark",
+  initialName = 'My theme',
+  initialColorScheme = 'dark',
   initialTokens,
-  initialBase = "preset:dark",
+  initialBase = 'preset:dark',
   onChange,
 }: ThemeEditorProps) {
   const [name, setName] = useState(initialName);
@@ -200,9 +200,7 @@ export function ThemeEditor({
         <SectionShell title="Theme info">
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-body text-muted-foreground mb-1">
-                Name
-              </label>
+              <label className="block text-[11px] font-body text-muted-foreground mb-1">Name</label>
               <input
                 type="text"
                 value={name}
@@ -217,15 +215,15 @@ export function ThemeEditor({
                   Color scheme
                 </label>
                 <div className="flex border border-border rounded overflow-hidden">
-                  {(["light", "dark"] as ColorScheme[]).map((s) => (
+                  {(['light', 'dark'] as ColorScheme[]).map((s) => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => setColorScheme(s)}
                       className={`flex-1 px-3 py-2 text-[11px] font-body capitalize transition-colors ${
                         colorScheme === s
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-transparent text-muted-foreground hover:text-foreground"
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-transparent text-muted-foreground hover:text-foreground'
                       }`}
                     >
                       {s}
@@ -260,12 +258,7 @@ export function ThemeEditor({
         <ContrastWarnings tokens={tokens} />
 
         {TOKEN_GROUPS.map((group) => (
-          <TokenGroupCard
-            key={group.title}
-            group={group}
-            tokens={tokens}
-            onChange={updateToken}
-          />
+          <TokenGroupCard key={group.title} group={group} tokens={tokens} onChange={updateToken} />
         ))}
       </div>
 
@@ -274,19 +267,11 @@ export function ThemeEditor({
   );
 }
 
-function SectionShell({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function SectionShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="border border-border rounded-lg bg-card overflow-hidden">
       <div className="px-5 py-3 border-b border-border">
-        <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">
-          {title}
-        </h3>
+        <h3 className="text-xs font-body font-semibold text-foreground tracking-wide">{title}</h3>
       </div>
       <div className="px-5 py-5">{children}</div>
     </section>
@@ -321,7 +306,7 @@ function TokenGroupCard({
           )}
         </div>
         <ChevronDown
-          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
@@ -330,7 +315,7 @@ function TokenGroupCard({
             <TokenRow
               key={key}
               tokenKey={key}
-              value={tokens[key] ?? "#000000"}
+              value={tokens[key] ?? '#000000'}
               onChange={(v) => onChange(key, v)}
             />
           ))}
@@ -362,8 +347,8 @@ function TokenRow({
     const onClick = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
   }, [open]);
 
   const commitDraft = () => {
@@ -388,7 +373,7 @@ function TokenRow({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commitDraft}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === 'Enter') {
             e.currentTarget.blur();
           }
         }}
@@ -406,7 +391,7 @@ function TokenRow({
       {open && (
         <div className="absolute right-0 top-full mt-2 z-50 p-3 rounded-lg border border-border bg-popover shadow-xl">
           <HexColorPicker
-            color={normalizeHex(value) ?? "#000000"}
+            color={normalizeHex(value) ?? '#000000'}
             onChange={(c) => {
               setDraft(c);
               onChange(c);
@@ -445,10 +430,10 @@ function ContrastWarnings({ tokens }: { tokens: TokenMap }) {
       <div className="px-5 py-3 space-y-2">
         {warnings.map((w) => (
           <p key={`${w.fg}|${w.bg}`} className="text-[11px] font-body text-foreground">
-            <span className="font-mono text-muted-foreground">{w.fg}</span> on{" "}
-            <span className="font-mono text-muted-foreground">{w.bg}</span> is{" "}
-            <span className="text-warning font-semibold">{w.ratio.toFixed(1)}:1</span> —
-            below the {w.threshold} target. Text may be hard to read.
+            <span className="font-mono text-muted-foreground">{w.fg}</span> on{' '}
+            <span className="font-mono text-muted-foreground">{w.bg}</span> is{' '}
+            <span className="text-warning font-semibold">{w.ratio.toFixed(1)}:1</span> — below the{' '}
+            {w.threshold} target. Text may be hard to read.
           </p>
         ))}
       </div>
@@ -456,13 +441,7 @@ function ContrastWarnings({ tokens }: { tokens: TokenMap }) {
   );
 }
 
-function ThemePreview({
-  tokens,
-  colorScheme,
-}: {
-  tokens: TokenMap;
-  colorScheme: ColorScheme;
-}) {
+function ThemePreview({ tokens, colorScheme }: { tokens: TokenMap; colorScheme: ColorScheme }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -486,26 +465,26 @@ function ThemePreview({
           ref={ref}
           className="p-5 space-y-5"
           style={{
-            background: tokens["background"],
-            color: tokens["foreground"],
+            background: tokens['background'],
+            color: tokens['foreground'],
           }}
         >
           {/* Header card with primary CTA */}
           <div
             className="rounded-lg p-4 border"
             style={{
-              background: tokens["card"],
-              borderColor: tokens["border"],
-              color: tokens["card-foreground"],
+              background: tokens['card'],
+              borderColor: tokens['border'],
+              color: tokens['card-foreground'],
             }}
           >
             <p
               className="font-display italic text-2xl mb-1 leading-none"
-              style={{ color: tokens["foreground"] }}
+              style={{ color: tokens['foreground'] }}
             >
               Project overview
             </p>
-            <p className="text-[11px] font-body mb-3" style={{ color: tokens["muted-foreground"] }}>
+            <p className="text-[11px] font-body mb-3" style={{ color: tokens['muted-foreground'] }}>
               7 active sessions · 23 cards
             </p>
             <div className="flex items-center gap-2">
@@ -513,8 +492,8 @@ function ThemePreview({
                 type="button"
                 className="px-3 py-1.5 rounded text-[11px] font-body"
                 style={{
-                  background: tokens["primary"],
-                  color: tokens["primary-foreground"],
+                  background: tokens['primary'],
+                  color: tokens['primary-foreground'],
                 }}
               >
                 New session
@@ -523,8 +502,8 @@ function ThemePreview({
                 type="button"
                 className="px-3 py-1.5 rounded text-[11px] font-body border"
                 style={{
-                  borderColor: tokens["border"],
-                  color: tokens["foreground"],
+                  borderColor: tokens['border'],
+                  color: tokens['foreground'],
                 }}
               >
                 Browse
@@ -534,26 +513,30 @@ function ThemePreview({
 
           {/* Status badges */}
           <div className="flex flex-wrap gap-2">
-            <Badge bg={tokens["success"]} fg={tokens["success-foreground"]} label="Done" />
-            <Badge bg={tokens["warning"]} fg={tokens["warning-foreground"]} label="In review" />
-            <Badge bg={tokens["destructive"]} fg={tokens["destructive-foreground"]} label="Blocked" />
-            <Badge bg={tokens["info"]} fg={tokens["info-foreground"]} label="In progress" />
+            <Badge bg={tokens['success']} fg={tokens['success-foreground']} label="Done" />
+            <Badge bg={tokens['warning']} fg={tokens['warning-foreground']} label="In review" />
+            <Badge
+              bg={tokens['destructive']}
+              fg={tokens['destructive-foreground']}
+              label="Blocked"
+            />
+            <Badge bg={tokens['info']} fg={tokens['info-foreground']} label="In progress" />
           </div>
 
           {/* Mini chart */}
           <div
             className="rounded-lg p-4 border"
             style={{
-              background: tokens["card"],
-              borderColor: tokens["border"],
+              background: tokens['card'],
+              borderColor: tokens['border'],
             }}
           >
-            <p className="text-[11px] font-body mb-3" style={{ color: tokens["muted-foreground"] }}>
+            <p className="text-[11px] font-body mb-3" style={{ color: tokens['muted-foreground'] }}>
               Sessions per week
             </p>
             <div className="flex items-end gap-1.5 h-20">
               {[40, 65, 32, 78, 55, 90, 70].map((h, i) => {
-                const c = tokens[`chart-${(i % 8) + 1}`] ?? tokens["primary"];
+                const c = tokens[`chart-${(i % 8) + 1}`] ?? tokens['primary'];
                 return (
                   <div
                     key={i}
@@ -569,11 +552,14 @@ function ThemePreview({
           <div
             className="rounded-lg p-4 border relative h-28 overflow-hidden"
             style={{
-              background: tokens["canvas-bg"],
-              borderColor: tokens["border"],
+              background: tokens['canvas-bg'],
+              borderColor: tokens['border'],
             }}
           >
-            <p className="text-[10px] font-body absolute top-2 left-3" style={{ color: tokens["muted-foreground"] }}>
+            <p
+              className="text-[10px] font-body absolute top-2 left-3"
+              style={{ color: tokens['muted-foreground'] }}
+            >
               Canvas
             </p>
             <svg viewBox="0 0 200 80" className="w-full h-full" preserveAspectRatio="none">
@@ -583,8 +569,8 @@ function ThemePreview({
                 width="50"
                 height="30"
                 rx="4"
-                fill={tokens["canvas-node-bg"]}
-                stroke={tokens["border"]}
+                fill={tokens['canvas-node-bg']}
+                stroke={tokens['border']}
               />
               <rect
                 x="140"
@@ -592,27 +578,30 @@ function ThemePreview({
                 width="50"
                 height="30"
                 rx="4"
-                fill={tokens["canvas-node-bg"]}
-                stroke={tokens["border"]}
+                fill={tokens['canvas-node-bg']}
+                stroke={tokens['border']}
               />
               <path
                 d="M 60 35 Q 100 35 140 35"
-                stroke={tokens["canvas-edge-selected"]}
+                stroke={tokens['canvas-edge-selected']}
                 strokeWidth="2"
                 fill="none"
               />
-              <circle cx="60" cy="35" r="3" fill={tokens["canvas-handle"]} />
-              <circle cx="140" cy="35" r="3" fill={tokens["canvas-handle"]} />
+              <circle cx="60" cy="35" r="3" fill={tokens['canvas-handle']} />
+              <circle cx="140" cy="35" r="3" fill={tokens['canvas-handle']} />
             </svg>
           </div>
 
           {/* Body text sample */}
-          <div className="text-[11px] font-body leading-relaxed" style={{ color: tokens["muted-foreground"] }}>
-            <p style={{ color: tokens["foreground"] }} className="mb-1 font-medium">
+          <div
+            className="text-[11px] font-body leading-relaxed"
+            style={{ color: tokens['muted-foreground'] }}
+          >
+            <p style={{ color: tokens['foreground'] }} className="mb-1 font-medium">
               Body sample
             </p>
             The team aligned on three goals for the quarter, with a primary focus on shipping
-            <span style={{ color: tokens["primary"] }}> the new planning canvas</span> by end of
+            <span style={{ color: tokens['primary'] }}> the new planning canvas</span> by end of
             month.
           </div>
         </div>

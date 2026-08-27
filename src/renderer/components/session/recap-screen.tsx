@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo, useState } from "react";
-import { Clock, X, Scissors, Copy, FileText, ClipboardCopy } from "lucide-react";
+import { useCallback, useMemo, useState } from 'react';
+import { Clock, X, Scissors, Copy, FileText, ClipboardCopy } from 'lucide-react';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { toast } from "@/components/ui/toast";
-import { TranscriptFeed } from "./transcript-feed";
-import { TranscriptSearch } from "./transcript-search";
-import { RecapDoc, RecapToc, type ClientChapter, type SessionExtraction } from "./recap-doc";
-import { mediumOf, type TranscriptMedium } from "./transcript-medium";
-import { renderRecapMarkdown } from "@/lib/recap-markdown";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { toast } from '@/components/ui/toast';
+import { TranscriptFeed } from './transcript-feed';
+import { TranscriptSearch } from './transcript-search';
+import { RecapDoc, RecapToc, type ClientChapter, type SessionExtraction } from './recap-doc';
+import { mediumOf, type TranscriptMedium } from './transcript-medium';
+import { renderRecapMarkdown } from '@/lib/recap-markdown';
 
 interface CallEntry {
   id: string;
@@ -76,25 +76,28 @@ export function RecapScreen({
   onClose,
 }: RecapScreenProps) {
   const { authFetch, ready } = useAuthFetch();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpeakers, setSelectedSpeakers] = useState<Set<string>>(new Set());
   const [transcriptOpen, setTranscriptOpen] = useState(true);
   const [scrollToTs, setScrollToTs] = useState<string | null>(null);
   const [recapData, setRecapData] = useState<SessionExtraction | null>(null);
-  const [transcriptScope, setTranscriptScope] = useState<"call" | "session">("call");
+  const [transcriptScope, setTranscriptScope] = useState<'call' | 'session'>('call');
   const [selectedMediums, setSelectedMediums] = useState<Set<TranscriptMedium>>(new Set());
 
   // Toggle only renders when the parent actually has more history to show
   // (i.e. allEntries is provided and strictly longer than the scoped slice).
   const hasFullSession = !!allEntries && allEntries.length > entries.length;
-  const displayEntries = transcriptScope === "session" && allEntries ? allEntries : entries;
+  const displayEntries = transcriptScope === 'session' && allEntries ? allEntries : entries;
 
   // Derive chapters from "Switched to **X**" markers in the entries stream.
   const chapters = useMemo<ClientChapter[]>(() => {
     const markers: Array<{ idx: number; label: string }> = [];
     entries.forEach((e, idx) => {
-      if (!e.speaker_name && e.text.startsWith("Switched to ")) {
-        const label = e.text.replace(/^Switched to /, "").replace(/\*\*/g, "").trim();
+      if (!e.speaker_name && e.text.startsWith('Switched to ')) {
+        const label = e.text
+          .replace(/^Switched to /, '')
+          .replace(/\*\*/g, '')
+          .trim();
         markers.push({ idx, label });
       }
     });
@@ -102,7 +105,7 @@ export function RecapScreen({
       return [];
     }
     return markers.map((m, i) => {
-      const start = entries[m.idx]?.created_at ?? entries[0]?.created_at ?? "";
+      const start = entries[m.idx]?.created_at ?? entries[0]?.created_at ?? '';
       const nextIdx = markers[i + 1]?.idx ?? entries.length - 1;
       const end = entries[nextIdx]?.created_at ?? start;
       return { id: `chapter-${i}`, label: m.label, startTs: start, endTs: end };
@@ -119,7 +122,7 @@ export function RecapScreen({
       // "Full session" so the row is actually present in the DOM.
       if (allEntries && !entries.some((e) => e.created_at === ts)) {
         if (allEntries.some((e) => e.created_at === ts)) {
-          setTranscriptScope("session");
+          setTranscriptScope('session');
         }
       }
     },
@@ -150,28 +153,30 @@ export function RecapScreen({
   };
 
   const formatDuration = (s: number) => {
-    if (s < 0) return "0:00";
+    if (s < 0) return '0:00';
     const m = Math.floor(s / 60);
     const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
   // Optional redact handler — uses the W5.7.5 endpoint.
   const handleRedact = ready
     ? async (entryId: string) => {
         const resp = await authFetch(`/api/sessions/${sessionId}/messages/${entryId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ redact: true }),
         });
         if (!resp.ok) throw new Error(`Redact failed: ${resp.status}`);
       }
     : undefined;
 
-
   const copyAsMarkdown = async () => {
     if (!recapData) {
-      toast.warning({ title: "Recap not ready", description: "Wait for the recap to finish loading." });
+      toast.warning({
+        title: 'Recap not ready',
+        description: 'Wait for the recap to finish loading.',
+      });
       return;
     }
     const md = renderRecapMarkdown(recapData, chapters, {
@@ -181,9 +186,9 @@ export function RecapScreen({
     });
     try {
       await navigator.clipboard.writeText(md);
-      toast.success({ title: "Recap copied as Markdown" });
+      toast.success({ title: 'Recap copied as Markdown' });
     } catch {
-      toast.warning({ title: "Copy failed", description: "Clipboard access was denied." });
+      toast.warning({ title: 'Copy failed', description: 'Clipboard access was denied.' });
     }
   };
 
@@ -196,7 +201,7 @@ export function RecapScreen({
         <div className="flex items-center gap-3 min-w-0">
           <Clock className="h-5 w-5 text-muted-foreground/70 shrink-0" />
           <h2 className="text-base font-semibold text-foreground truncate">
-            {title?.trim() || "Session recap"}
+            {title?.trim() || 'Session recap'}
           </h2>
           <span className="text-sm text-muted-foreground/70 tabular-nums shrink-0">
             {formatDuration(durationSeconds)}
@@ -208,8 +213,8 @@ export function RecapScreen({
             onClick={() => setTranscriptOpen((v) => !v)}
             className={`hidden lg:flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium ring-1 transition-colors ${
               transcriptOpen
-                ? "bg-foreground/[0.08] text-foreground/90 ring-border/60"
-                : "bg-transparent text-muted-foreground/70 ring-border/60 hover:text-foreground/90 hover:bg-foreground/[0.05]"
+                ? 'bg-foreground/[0.08] text-foreground/90 ring-border/60'
+                : 'bg-transparent text-muted-foreground/70 ring-border/60 hover:text-foreground/90 hover:bg-foreground/[0.05]'
             }`}
             title="Toggle transcript pane"
           >
@@ -272,12 +277,12 @@ export function RecapScreen({
                     <button
                       type="button"
                       role="tab"
-                      aria-selected={transcriptScope === "call"}
-                      onClick={() => setTranscriptScope("call")}
+                      aria-selected={transcriptScope === 'call'}
+                      onClick={() => setTranscriptScope('call')}
                       className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-                        transcriptScope === "call"
-                          ? "bg-foreground/[0.08] text-foreground/95"
-                          : "text-muted-foreground/70 hover:text-foreground/90"
+                        transcriptScope === 'call'
+                          ? 'bg-foreground/[0.08] text-foreground/95'
+                          : 'text-muted-foreground/70 hover:text-foreground/90'
                       }`}
                     >
                       This call
@@ -285,12 +290,12 @@ export function RecapScreen({
                     <button
                       type="button"
                       role="tab"
-                      aria-selected={transcriptScope === "session"}
-                      onClick={() => setTranscriptScope("session")}
+                      aria-selected={transcriptScope === 'session'}
+                      onClick={() => setTranscriptScope('session')}
                       className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-                        transcriptScope === "session"
-                          ? "bg-foreground/[0.08] text-foreground/95"
-                          : "text-muted-foreground/70 hover:text-foreground/90"
+                        transcriptScope === 'session'
+                          ? 'bg-foreground/[0.08] text-foreground/95'
+                          : 'text-muted-foreground/70 hover:text-foreground/90'
                       }`}
                       title="Show every chat + call message from this session"
                     >
@@ -325,7 +330,6 @@ export function RecapScreen({
           </aside>
         )}
       </div>
-
     </div>
   );
 }
@@ -339,7 +343,7 @@ export function RecapScreen({
  */
 export function buildRecapEntries(messages: ChatMessage[], sinceMs?: number): CallEntry[] {
   return messages
-    .filter((m) => m.message_type !== "system" || m.content.startsWith("Switched to "))
+    .filter((m) => m.message_type !== 'system' || m.content.startsWith('Switched to '))
     .filter((m) => sinceMs === undefined || new Date(m.created_at).getTime() >= sinceMs)
     .map((m) => ({
       id: m.id,

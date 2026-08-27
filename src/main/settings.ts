@@ -63,11 +63,10 @@ export class Settings {
   /** Backend base URL. Env wins so a dev shell can point elsewhere without
    *  touching the settings file. */
   get apiUrl(): string {
-    return (
-      process.env['YEABOI_API_URL'] ??
-      this.data.apiUrl ??
-      'http://localhost:8000'
-    ).replace(/\/$/, '');
+    return (process.env['YEABOI_API_URL'] ?? this.data.apiUrl ?? 'http://localhost:8000').replace(
+      /\/$/,
+      '',
+    );
   }
 
   get wsUrl(): string {

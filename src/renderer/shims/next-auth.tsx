@@ -7,14 +7,7 @@
 // its import untouched. When no identity exists yet (first run) the provider
 // renders the identity screen instead of its children.
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { FirstRunScreen } from '../app/first-run';
 
 export interface Session {
@@ -63,9 +56,7 @@ export function SessionProvider({ children }: { children: ReactNode; session?: u
     return <FirstRunScreen onDone={() => void load()} />;
   }
   return (
-    <SessionContext.Provider value={{ ...state, update: load }}>
-      {children}
-    </SessionContext.Provider>
+    <SessionContext.Provider value={{ ...state, update: load }}>{children}</SessionContext.Provider>
   );
 }
 

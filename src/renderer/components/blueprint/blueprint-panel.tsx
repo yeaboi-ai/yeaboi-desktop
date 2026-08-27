@@ -1,34 +1,34 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import Link from "next/link";
-import { ExternalLink, History as HistoryIcon, Lock, Sparkles } from "lucide-react";
-import { BlueprintSection } from "./blueprint-section";
-import { BlueprintHistoryDrawer } from "./blueprint-history-drawer";
-import { SuggestionsList } from "@/components/session/suggestions-list";
-import type { Suggestion } from "@/hooks/use-suggestions";
+import { useRef, useState } from 'react';
+import Link from 'next/link';
+import { ExternalLink, History as HistoryIcon, Lock, Sparkles } from 'lucide-react';
+import { BlueprintSection } from './blueprint-section';
+import { BlueprintHistoryDrawer } from './blueprint-history-drawer';
+import { SuggestionsList } from '@/components/session/suggestions-list';
+import type { Suggestion } from '@/hooks/use-suggestions';
 
 const SECTIONS = [
-  "project_overview",
-  "goals_constraints",
-  "users_personas",
-  "team_capacity",
-  "architecture",
-  "tech_stack",
-  "api_integrations",
-  "ui_ux",
-  "security_compliance",
-  "infrastructure",
-  "risks_unknowns",
-  "out_of_scope",
-  "open_questions",
+  'project_overview',
+  'goals_constraints',
+  'users_personas',
+  'team_capacity',
+  'architecture',
+  'tech_stack',
+  'api_integrations',
+  'ui_ux',
+  'security_compliance',
+  'infrastructure',
+  'risks_unknowns',
+  'out_of_scope',
+  'open_questions',
 ];
 
 export interface BlueprintIterationInfo {
   id: string;
   iteration_number: number;
   label: string;
-  status: "planning" | "locked";
+  status: 'planning' | 'locked';
 }
 
 interface BlueprintPanelProps {
@@ -74,10 +74,24 @@ interface BlueprintPanelProps {
 export { SECTIONS };
 
 export function BlueprintPanel({
-  content, version, editingSection, highlightEmpty, suggestedSections,
-  coverageScores, focusSections, onEdit, onSave, onCancel,
-  iterations, activeIterationId, onIterationChange, readOnly,
-  projectId, currentUserId, historyInvalidationToken, onHistoryRestored,
+  content,
+  version,
+  editingSection,
+  highlightEmpty,
+  suggestedSections,
+  coverageScores,
+  focusSections,
+  onEdit,
+  onSave,
+  onCancel,
+  iterations,
+  activeIterationId,
+  onIterationChange,
+  readOnly,
+  projectId,
+  currentUserId,
+  historyInvalidationToken,
+  onHistoryRestored,
   pendingSuggestions = [],
   onAcceptSuggestion,
   onRejectSuggestion,
@@ -107,33 +121,28 @@ export function BlueprintPanel({
         // for its height (otherwise the container scrolls before the panel
         // is in the DOM and we land mid-section).
         requestAnimationFrame(() => {
-          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+          scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         });
       }
       return next;
     });
   };
   const isScoped = Array.isArray(focusSections) && focusSections.length > 0;
-  const inScopeSections = isScoped
-    ? SECTIONS.filter((s) => focusSections!.includes(s))
-    : SECTIONS;
-  const outOfScopeSections = isScoped
-    ? SECTIONS.filter((s) => !focusSections!.includes(s))
-    : [];
+  const inScopeSections = isScoped ? SECTIONS.filter((s) => focusSections!.includes(s)) : SECTIONS;
+  const outOfScopeSections = isScoped ? SECTIONS.filter((s) => !focusSections!.includes(s)) : [];
 
-  const filledCount = inScopeSections.filter((s) => (content[s] || "").trim().length > 0).length;
+  const filledCount = inScopeSections.filter((s) => (content[s] || '').trim().length > 0).length;
   const activeIteration = iterations?.find((i) => i.id === activeIterationId);
-  const isLocked = readOnly || activeIteration?.status === "locked";
+  const isLocked = readOnly || activeIteration?.status === 'locked';
 
   // Compute overall coverage from individual scores
   const overall = coverageScores
     ? Math.round(
-        inScopeSections
-          .map((s) => coverageScores[s] ?? 0)
-          .reduce((a, b) => a + b, 0) / Math.max(inScopeSections.length, 1)
+        inScopeSections.map((s) => coverageScores[s] ?? 0).reduce((a, b) => a + b, 0) /
+          Math.max(inScopeSections.length, 1),
       )
     : 0;
-  const grade = overall >= 80 ? "A" : overall >= 60 ? "B" : overall >= 40 ? "C" : "D";
+  const grade = overall >= 80 ? 'A' : overall >= 60 ? 'B' : overall >= 40 ? 'C' : 'D';
   const hasCoverage = coverageScores && Object.keys(coverageScores).length > 0;
 
   return (
@@ -151,12 +160,14 @@ export function BlueprintPanel({
                     onClick={() => onIterationChange?.(iter.id)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
                       active
-                        ? "bg-foreground/[0.10] text-foreground border border-border"
-                        : "text-muted-foreground/70 hover:text-muted-foreground hover:bg-foreground/[0.05]"
+                        ? 'bg-foreground/[0.10] text-foreground border border-border'
+                        : 'text-muted-foreground/70 hover:text-muted-foreground hover:bg-foreground/[0.05]'
                     }`}
                   >
                     {iter.label}
-                    {iter.status === "locked" && <Lock className="h-2.5 w-2.5 text-muted-foreground/50" />}
+                    {iter.status === 'locked' && (
+                      <Lock className="h-2.5 w-2.5 text-muted-foreground/50" />
+                    )}
                   </button>
                 );
               })}
@@ -169,17 +180,17 @@ export function BlueprintPanel({
                 onClick={handleToggleSuggestions}
                 className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                   hasPendingSuggestions
-                    ? "text-success/90 hover:text-success hover:bg-success/10"
-                    : "text-muted-foreground/70 hover:text-foreground/80 hover:bg-foreground/[0.05]"
+                    ? 'text-success/90 hover:text-success hover:bg-success/10'
+                    : 'text-muted-foreground/70 hover:text-foreground/80 hover:bg-foreground/[0.05]'
                 }`}
-                title={hasPendingSuggestions ? "Review AI suggestions" : "AI suggestions (empty)"}
+                title={hasPendingSuggestions ? 'Review AI suggestions' : 'AI suggestions (empty)'}
                 aria-expanded={suggestionsExpanded}
               >
                 <Sparkles className="h-3 w-3" />
                 AI Suggestions
                 {hasPendingSuggestions && (
                   <span className="ml-0.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-semibold text-black bg-success">
-                    {pendingSuggestions.length > 99 ? "99+" : pendingSuggestions.length}
+                    {pendingSuggestions.length > 99 ? '99+' : pendingSuggestions.length}
                   </span>
                 )}
               </button>
@@ -223,27 +234,44 @@ export function BlueprintPanel({
               Overall Coverage
             </span>
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                grade === "A" ? "bg-success/15 text-success"
-                : grade === "B" ? "bg-primary/15 text-primary"
-                : grade === "C" ? "bg-warning/15 text-warning"
-                : "bg-destructive/15 text-destructive"
-              }`}>{grade}</span>
-              <span className={`text-xs font-semibold tabular-nums ${
-                overall >= 80 ? "text-success/80"
-                : overall >= 60 ? "text-primary/70"
-                : overall >= 40 ? "text-warning/70"
-                : "text-destructive/70"
-              }`}>{overall}%</span>
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  grade === 'A'
+                    ? 'bg-success/15 text-success'
+                    : grade === 'B'
+                      ? 'bg-primary/15 text-primary'
+                      : grade === 'C'
+                        ? 'bg-warning/15 text-warning'
+                        : 'bg-destructive/15 text-destructive'
+                }`}
+              >
+                {grade}
+              </span>
+              <span
+                className={`text-xs font-semibold tabular-nums ${
+                  overall >= 80
+                    ? 'text-success/80'
+                    : overall >= 60
+                      ? 'text-primary/70'
+                      : overall >= 40
+                        ? 'text-warning/70'
+                        : 'text-destructive/70'
+                }`}
+              >
+                {overall}%
+              </span>
             </div>
           </div>
           <div className="h-1.5 rounded-full bg-foreground/[0.06] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
-                overall >= 80 ? "bg-success/60"
-                : overall >= 60 ? "bg-primary/50"
-                : overall >= 40 ? "bg-warning/50"
-                : "bg-destructive/40"
+                overall >= 80
+                  ? 'bg-success/60'
+                  : overall >= 60
+                    ? 'bg-primary/50'
+                    : overall >= 40
+                      ? 'bg-warning/50'
+                      : 'bg-destructive/40'
               }`}
               style={{ width: `${overall}%` }}
             />
@@ -265,8 +293,8 @@ export function BlueprintPanel({
           <div
             className={`mb-3 rounded-xl border overflow-hidden ${
               hasPendingSuggestions
-                ? "bg-success/[0.04] border-success/15"
-                : "bg-foreground/[0.02] border-border/60"
+                ? 'bg-success/[0.04] border-success/15'
+                : 'bg-foreground/[0.02] border-border/60'
             }`}
           >
             {hasPendingSuggestions ? (
@@ -290,7 +318,7 @@ export function BlueprintPanel({
           <BlueprintSection
             key={section}
             name={section}
-            content={content[section] || ""}
+            content={content[section] || ''}
             isEditing={editingSection === section}
             highlighted={highlightEmpty}
             suggested={suggestedSections?.has(section)}
@@ -308,14 +336,15 @@ export function BlueprintPanel({
         {outOfScopeSections.length > 0 && (
           <details className="mt-4 group">
             <summary className="cursor-pointer text-[11px] uppercase tracking-wide text-muted-foreground/50 hover:text-muted-foreground transition-colors px-2 py-2">
-              Show full blueprint ({outOfScopeSections.length} more {outOfScopeSections.length === 1 ? "section" : "sections"})
+              Show full blueprint ({outOfScopeSections.length} more{' '}
+              {outOfScopeSections.length === 1 ? 'section' : 'sections'})
             </summary>
             <div className="mt-2 space-y-2 opacity-70">
               {outOfScopeSections.map((section) => (
                 <BlueprintSection
                   key={section}
                   name={section}
-                  content={content[section] || ""}
+                  content={content[section] || ''}
                   isEditing={editingSection === section}
                   highlighted={highlightEmpty}
                   suggested={suggestedSections?.has(section)}

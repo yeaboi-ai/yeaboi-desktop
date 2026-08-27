@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Plus,
@@ -18,25 +18,25 @@ import {
   TrendingUp,
   Bell,
   Info,
-} from "lucide-react";
-import type { NikoMagicPrompt } from "@/hooks/use-niko";
+} from 'lucide-react';
+import type { NikoMagicPrompt } from '@/hooks/use-niko';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   plus: Plus,
-  "bar-chart": BarChart3,
+  'bar-chart': BarChart3,
   compass: Compass,
   play: Play,
-  "shield-check": ShieldCheck,
+  'shield-check': ShieldCheck,
   layout: Layout,
-  "plus-square": PlusSquare,
-  "arrow-up-down": ArrowUpDown,
+  'plus-square': PlusSquare,
+  'arrow-up-down': ArrowUpDown,
   calendar: Calendar,
-  "user-plus": UserPlus,
-  "file-plus": FilePlus,
+  'user-plus': UserPlus,
+  'file-plus': FilePlus,
   users: Users,
   layers: Layers,
-  "alert-triangle": AlertTriangle,
-  "trending-up": TrendingUp,
+  'alert-triangle': AlertTriangle,
+  'trending-up': TrendingUp,
   bell: Bell,
   info: Info,
 };
@@ -55,7 +55,7 @@ export function NikoMagicChips({ prompts, onSelect }: NikoMagicChipsProps) {
         Quick actions
       </p>
       {prompts.map((p) => {
-        const Icon = ICON_MAP[p.icon || ""] || Compass;
+        const Icon = ICON_MAP[p.icon || ''] || Compass;
         return (
           <button
             key={p.prompt}

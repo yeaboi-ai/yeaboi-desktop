@@ -8,7 +8,7 @@
 // real FastAPI paths, and apiFetch() prefixes the backend origin and attaches
 // the same headers use-auth-fetch always sent.
 
-import { logger } from "@/lib/logger";
+import { logger } from '@/lib/logger';
 
 export interface AuthInfo {
   token: string;
@@ -33,68 +33,69 @@ export async function getAuth(force = false): Promise<AuthInfo | null> {
 
 /** Translate an old Next proxy path to the FastAPI path it proxied to.
  *  Non-proxy /api/* paths pass through — the Next rewrite was transparent. */
-export function mapApiPath(url: string, method = "GET"): string {
-  if (!url.startsWith("/api/")) return url;
-  const qIndex = url.indexOf("?");
+export function mapApiPath(url: string, method = 'GET'): string {
+  if (!url.startsWith('/api/')) return url;
+  const qIndex = url.indexOf('?');
   const path = qIndex === -1 ? url : url.slice(0, qIndex);
-  const query = qIndex === -1 ? "" : url.slice(qIndex + 1);
+  const query = qIndex === -1 ? '' : url.slice(qIndex + 1);
   const q = new URLSearchParams(query);
   const keepQuery = (p: string) => (query ? `${p}?${query}` : p);
 
   // Query-param proxies.
-  if (path === "/api/board-proxy") return `/api/projects/${q.get("projectId")}/board`;
-  if (path === "/api/global-board-proxy") return keepQuery("/api/board");
-  if (path === "/api/analytics-proxy") {
-    const endpoint = q.get("endpoint") ?? "aggregate";
+  if (path === '/api/board-proxy') return `/api/projects/${q.get('projectId')}/board`;
+  if (path === '/api/global-board-proxy') return keepQuery('/api/board');
+  if (path === '/api/analytics-proxy') {
+    const endpoint = q.get('endpoint') ?? 'aggregate';
     const p = new URLSearchParams();
-    const projectId = q.get("projectId");
-    const sessionId = q.get("sessionId");
-    if (projectId) p.set("project_id", projectId);
-    if (sessionId) p.set("session_id", sessionId);
+    const projectId = q.get('projectId');
+    const sessionId = q.get('sessionId');
+    if (projectId) p.set('project_id', projectId);
+    if (sessionId) p.set('session_id', sessionId);
     const qs = p.toString();
-    return `/api/analytics/${endpoint}${qs ? `?${qs}` : ""}`;
+    return `/api/analytics/${endpoint}${qs ? `?${qs}` : ''}`;
   }
-  if (path === "/api/session-ai-calls-proxy") {
-    const sessionId = q.get("sessionId") ?? "";
-    const limit = q.get("limit");
-    return `/api/analytics/session-ai-calls/${encodeURIComponent(sessionId)}${limit ? `?limit=${limit}` : ""}`;
+  if (path === '/api/session-ai-calls-proxy') {
+    const sessionId = q.get('sessionId') ?? '';
+    const limit = q.get('limit');
+    return `/api/analytics/session-ai-calls/${encodeURIComponent(sessionId)}${limit ? `?limit=${limit}` : ''}`;
   }
-  if (path === "/api/feedback-proxy") {
-    const id = q.get("id");
+  if (path === '/api/feedback-proxy') {
+    const id = q.get('id');
     if (id) return `/api/feedback/${id}`;
-    return keepQuery("/api/feedback");
+    return keepQuery('/api/feedback');
   }
 
   // Path-segment proxies.
   const seg = (re: RegExp) => path.match(re);
   let m: RegExpMatchArray | null;
   if ((m = seg(/^\/api\/cards-proxy\/(.+)$/))) return keepQuery(`/api/cards/${m[1]}`);
-  if (path === "/api/cards-bulk-proxy") return "/api/cards-bulk";
-  if (path === "/api/cards-search-proxy") return keepQuery("/api/cards/search");
-  if ((m = seg(/^\/api\/card-views-proxy(\/.*)?$/))) return keepQuery(`/api/card-views${m[1] ?? ""}`);
+  if (path === '/api/cards-bulk-proxy') return '/api/cards-bulk';
+  if (path === '/api/cards-search-proxy') return keepQuery('/api/cards/search');
+  if ((m = seg(/^\/api\/card-views-proxy(\/.*)?$/)))
+    return keepQuery(`/api/card-views${m[1] ?? ''}`);
   if ((m = seg(/^\/api\/card-attachments-proxy\/([^/]+)(\/.*)?$/)))
-    return `/api/cards/${m[1]}/attachments${m[2] ?? ""}`;
+    return `/api/cards/${m[1]}/attachments${m[2] ?? ''}`;
   if ((m = seg(/^\/api\/card-links-proxy\/([^/]+)(\/.*)?$/)))
-    return `/api/cards/${m[1]}/links${m[2] ?? ""}`;
+    return `/api/cards/${m[1]}/links${m[2] ?? ''}`;
   if ((m = seg(/^\/api\/agent-approve-proxy\/(.+)$/))) return `/api/cards/${m[1]}/agent/approve`;
   if ((m = seg(/^\/api\/sync-push-proxy\/(.+)$/))) return `/api/sync/cards/${m[1]}/push`;
   if ((m = seg(/^\/api\/sync-resolve-proxy\/(.+)$/))) return `/api/sync/links/${m[1]}/resolve`;
   if ((m = seg(/^\/api\/outputs-proxy\/([^/]+)$/))) return `/api/projects/${m[1]}/outputs`;
   if ((m = seg(/^\/api\/outputs-proxy\/([^/]+)\/([^/]+)$/))) {
     const base = `/api/projects/${m[1]}/outputs/${m[2]}`;
-    return method.toUpperCase() === "POST" ? `${base}/generate` : base;
+    return method.toUpperCase() === 'POST' ? `${base}/generate` : base;
   }
-  if (path === "/api/team-proxy") return keepQuery("/api/team");
-  if (path === "/api/settings-proxy") return keepQuery("/api/settings");
+  if (path === '/api/team-proxy') return keepQuery('/api/team');
+  if (path === '/api/settings-proxy') return keepQuery('/api/settings');
   return url;
 }
 
 function orgTeamHeaders(): Record<string, string> {
   const h: Record<string, string> = {};
-  const orgId = typeof window !== "undefined" ? localStorage.getItem("current_org_id") : null;
-  const teamId = typeof window !== "undefined" ? localStorage.getItem("current_team_id") : null;
-  if (orgId) h["X-Org-Id"] = orgId;
-  if (teamId) h["X-Team-Id"] = teamId;
+  const orgId = typeof window !== 'undefined' ? localStorage.getItem('current_org_id') : null;
+  const teamId = typeof window !== 'undefined' ? localStorage.getItem('current_team_id') : null;
+  if (orgId) h['X-Org-Id'] = orgId;
+  if (teamId) h['X-Team-Id'] = teamId;
   return h;
 }
 
@@ -105,12 +106,12 @@ function orgTeamHeaders(): Record<string, string> {
  */
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const auth = await getAuth();
-  if (!auth) throw new Error("not signed in yet");
-  const method = options.method ?? "GET";
+  if (!auth) throw new Error('not signed in yet');
+  const method = options.method ?? 'GET';
   const target = `${auth.apiUrl}${mapApiPath(url, method)}`;
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     Authorization: `Bearer ${auth.token}`,
     ...orgTeamHeaders(),
     ...(options.headers as Record<string, string>),
@@ -120,8 +121,8 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
     // The cached token aged out mid-flight — mint fresh and retry once.
     const fresh = await getAuth(true);
     if (fresh) {
-      logger.warn("apiFetch: 401 — retrying with a fresh token", { url });
-      headers["Authorization"] = `Bearer ${fresh.token}`;
+      logger.warn('apiFetch: 401 — retrying with a fresh token', { url });
+      headers['Authorization'] = `Bearer ${fresh.token}`;
       response = await fetch(target, { ...options, headers });
     }
   }

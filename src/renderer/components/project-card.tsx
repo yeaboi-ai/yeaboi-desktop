@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 interface ProjectCardProps {
   id: string;
@@ -9,10 +9,10 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ id, name, description, createdAt, featured }: ProjectCardProps) {
-  const formatted = new Date(createdAt).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+  const formatted = new Date(createdAt).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
   });
 
   if (featured) {
@@ -71,9 +71,7 @@ export function ProjectCard({ id, name, description, createdAt, featured }: Proj
         </div>
 
         <div className="relative mt-4">
-          <p className="text-[10px] text-muted-foreground/50 font-body tabular-nums">
-            {formatted}
-          </p>
+          <p className="text-[10px] text-muted-foreground/50 font-body tabular-nums">{formatted}</p>
         </div>
       </div>
     </Link>

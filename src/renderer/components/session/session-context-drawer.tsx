@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
 // The session's right-hand inspector. The web app carried four tabs here
 // (blueprint / design / plan / debug); the desktop keeps the blueprint —
 // the living document planning writes into — plus the debug feed. Design
 // and plan were canvas features.
 
-import { useEffect, useState } from "react";
-import { DrawerShell } from "./drawer-shell";
-import { BlueprintPanel } from "../blueprint/blueprint-panel";
+import { useEffect, useState } from 'react';
+import { DrawerShell } from './drawer-shell';
+import { BlueprintPanel } from '../blueprint/blueprint-panel';
 import {
   DebugPanel,
   type DebugIntent,
   type DebugPipelineStart,
   type DebugPipelineMetrics,
   type DebugRenderItem,
-} from "./debug-drawer";
-import type { Suggestion } from "@/hooks/use-suggestions";
+} from './debug-drawer';
+import type { Suggestion } from '@/hooks/use-suggestions';
 
-type TabKey = "blueprint" | "debug";
+type TabKey = 'blueprint' | 'debug';
 
 interface SessionContextDrawerProps {
   open: boolean;
@@ -106,36 +106,42 @@ export function SessionContextDrawer({
   collapsedContent,
   collapsedPosition,
   onOpen,
-  initialTab = "blueprint",
+  initialTab = 'blueprint',
   hidden,
 }: SessionContextDrawerProps) {
   const storageKey = `session-context-tab-${sessionId}`;
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
-    if (typeof window === "undefined") return initialTab;
+    if (typeof window === 'undefined') return initialTab;
     try {
       const saved = localStorage.getItem(storageKey);
-      if (saved === "blueprint" || saved === "debug") return saved;
+      if (saved === 'blueprint' || saved === 'debug') return saved;
     } catch {}
     return initialTab;
   });
 
   useEffect(() => {
-    try { localStorage.setItem(storageKey, activeTab); } catch {}
+    try {
+      localStorage.setItem(storageKey, activeTab);
+    } catch {}
   }, [storageKey, activeTab]);
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: "blueprint", label: "Blueprint" },
-    { key: "debug", label: "Debug" },
+    { key: 'blueprint', label: 'Blueprint' },
+    { key: 'debug', label: 'Debug' },
   ];
 
   const titleByTab: Record<TabKey, string> = {
-    blueprint: "Blueprint",
-    debug: "Debug",
+    blueprint: 'Blueprint',
+    debug: 'Debug',
   };
   const title = titleByTab[activeTab];
 
   const headerExtra = (
-    <div role="tablist" aria-label="Inspector view" className="flex items-center gap-1 rounded-lg bg-foreground/[0.05] p-0.5">
+    <div
+      role="tablist"
+      aria-label="Inspector view"
+      className="flex items-center gap-1 rounded-lg bg-foreground/[0.05] p-0.5"
+    >
       {tabs.map((t) => {
         const isActive = t.key === activeTab;
         return (
@@ -148,8 +154,8 @@ export function SessionContextDrawer({
             onClick={() => setActiveTab(t.key)}
             className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30 ${
               isActive
-                ? "bg-foreground/[0.10] text-foreground"
-                : "text-muted-foreground/70 hover:text-foreground/80"
+                ? 'bg-foreground/[0.10] text-foreground'
+                : 'text-muted-foreground/70 hover:text-foreground/80'
             }`}
           >
             {t.label}
@@ -174,7 +180,7 @@ export function SessionContextDrawer({
       headerExtra={headerExtra}
       hidden={hidden}
     >
-      {activeTab === "blueprint" && (
+      {activeTab === 'blueprint' && (
         <BlueprintPanel
           content={content}
           version={version}
@@ -199,7 +205,7 @@ export function SessionContextDrawer({
           recentlyCompletedSection={recentlyCompletedSection ?? null}
         />
       )}
-      {activeTab === "debug" && (
+      {activeTab === 'debug' && (
         <DebugPanel
           sessionId={sessionId}
           intents={debugIntents}

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { ProjectBoardSettings } from "@/components/kanban/project-board-settings";
-import { BoardToolbar, ViewMode } from "@/components/kanban/board-toolbar";
-import { BoardView } from "@/components/kanban/board-view";
-import { BulkActionsBar } from "@/components/kanban/bulk-actions-bar";
-import { ListView } from "@/components/kanban/list-view";
-import { CardDetail } from "@/components/kanban/card-detail";
-import { ShortcutHelp } from "@/components/ui/shortcut-help";
-import { useBoard, Card as CardType } from "@/hooks/use-board";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { useBoardSelection } from "@/hooks/use-board-selection";
-import { useBoardShortcuts } from "@/hooks/use-board-shortcuts";
-import { getPref, setPref, type BoardGroupBy, type BoardSortKey } from "@/lib/preferences";
-import { sortCards } from "@/lib/board-sort";
-import { deriveLanes } from "@/lib/board-lanes";
-import { decodeBoardUrlState, encodeBoardUrlState } from "@/lib/url-state";
-import { Loader2 } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ProjectBoardSettings } from '@/components/kanban/project-board-settings';
+import { BoardToolbar, ViewMode } from '@/components/kanban/board-toolbar';
+import { BoardView } from '@/components/kanban/board-view';
+import { BulkActionsBar } from '@/components/kanban/bulk-actions-bar';
+import { ListView } from '@/components/kanban/list-view';
+import { CardDetail } from '@/components/kanban/card-detail';
+import { ShortcutHelp } from '@/components/ui/shortcut-help';
+import { useBoard, Card as CardType } from '@/hooks/use-board';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useBoardSelection } from '@/hooks/use-board-selection';
+import { useBoardShortcuts } from '@/hooks/use-board-shortcuts';
+import { getPref, setPref, type BoardGroupBy, type BoardSortKey } from '@/lib/preferences';
+import { sortCards } from '@/lib/board-sort';
+import { deriveLanes } from '@/lib/board-lanes';
+import { decodeBoardUrlState, encodeBoardUrlState } from '@/lib/url-state';
+import { Loader2 } from 'lucide-react';
 
 interface SessionOption {
   id: string;
@@ -27,7 +27,13 @@ interface SessionOption {
 
 export default function GlobalBoardPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
       <GlobalBoardContent />
     </Suspense>
   );
@@ -35,30 +41,31 @@ export default function GlobalBoardPage() {
 
 function GlobalBoardContent() {
   const searchParams = useSearchParams();
-  const initialProject = searchParams.get("project");
-  const initialCard = searchParams.get("card");
+  const initialProject = searchParams.get('project');
+  const initialCard = searchParams.get('card');
   const { authFetch } = useAuthFetch();
 
   // Always fetch global board — filtering is client-side
-  const { board, loading, error, moveCard, createCard, updateCard, deleteCard, refetch } = useBoard(null, authFetch);
+  const { board, loading, error, moveCard, createCard, updateCard, deleteCard, refetch } = useBoard(
+    null,
+    authFetch,
+  );
 
   const [selectedProject, setSelectedProject] = useState<string | null>(initialProject);
-  const [selectedSession, setSelectedSession] = useState<string>("");
-  const [view, setView] = useState<ViewMode>("board");
-  const [search, setSearch] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [selectedSession, setSelectedSession] = useState<string>('');
+  const [view, setView] = useState<ViewMode>('board');
+  const [search, setSearch] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
-  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState('');
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
-  const [density, setDensity] = useState<"comfortable" | "compact">(() =>
-    getPref("board.density"),
-  );
-  const [sortBy, setSortBy] = useState<BoardSortKey>(() => getPref("board.sortBy"));
-  const [groupBy, setGroupByState] = useState<BoardGroupBy>(() => getPref("board.groupBy"));
+  const [density, setDensity] = useState<'comfortable' | 'compact'>(() => getPref('board.density'));
+  const [sortBy, setSortBy] = useState<BoardSortKey>(() => getPref('board.sortBy'));
+  const [groupBy, setGroupByState] = useState<BoardGroupBy>(() => getPref('board.groupBy'));
   // Lazy initial: read once. Setting groupBy via the dropdown flips this to
   // true so the auto-default-to-Wave logic stops overriding the user's choice.
   const [groupByExplicit, setGroupByExplicitState] = useState<boolean>(() =>
-    getPref("board.groupByExplicit"),
+    getPref('board.groupByExplicit'),
   );
 
   // Wraps the dropdown setter so explicit toggles persist + record intent.
@@ -72,15 +79,21 @@ function GlobalBoardContent() {
   const { selectedIds, toggle: toggleSelection, clear: clearSelection } = useBoardSelection();
 
   // Extract unique project names from cards
-  const projectOptions = useMemo(() => board ? Array.from(
-    new Map(
-      board.columns.flatMap((col) =>
-        col.cards
-          .filter((c) => c.project_id && c.project_name)
-          .map((c) => [c.project_id!, c.project_name!] as [string, string])
-      )
-    )
-  ) : [], [board]);
+  const projectOptions = useMemo(
+    () =>
+      board
+        ? Array.from(
+            new Map(
+              board.columns.flatMap((col) =>
+                col.cards
+                  .filter((c) => c.project_id && c.project_name)
+                  .map((c) => [c.project_id!, c.project_name!] as [string, string]),
+              ),
+            ),
+          )
+        : [],
+    [board],
+  );
 
   // Extract all sessions from cards, with their project_id
   const allSessions = useMemo(() => {
@@ -89,9 +102,13 @@ function GlobalBoardContent() {
     board.columns.forEach((col) =>
       col.cards.forEach((c) => {
         if (c.session_id && c.session_title) {
-          map.set(c.session_id, { id: c.session_id, title: c.session_title, projectId: c.project_id });
+          map.set(c.session_id, {
+            id: c.session_id,
+            title: c.session_title,
+            projectId: c.project_id,
+          });
         }
-      })
+      }),
     );
     return Array.from(map.values());
   }, [board]);
@@ -107,7 +124,7 @@ function GlobalBoardContent() {
     if (!board) return [];
     const labels = new Set<string>();
     board.columns.forEach((col) =>
-      col.cards.forEach((c) => c.labels?.forEach((l) => labels.add(l)))
+      col.cards.forEach((c) => c.labels?.forEach((l) => labels.add(l))),
     );
     return Array.from(labels).sort();
   }, [board]);
@@ -118,7 +135,7 @@ function GlobalBoardContent() {
     let cancelled = false;
     (async () => {
       try {
-        const resp = await authFetch("/api/team-proxy");
+        const resp = await authFetch('/api/team-proxy');
         if (!resp.ok) return;
         const data = await resp.json();
         if (!cancelled) {
@@ -126,14 +143,16 @@ function GlobalBoardContent() {
             (data as { id: string; name: string | null }[])
               .filter((m) => m.name)
               .map((m) => ({ id: m.id, name: m.name! }))
-              .sort((a, b) => a.name.localeCompare(b.name))
+              .sort((a, b) => a.name.localeCompare(b.name)),
           );
         }
       } catch {
         // best-effort
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [authFetch]);
 
   // Client-side filtering plus a synthetic "Blocked" lane.
@@ -154,7 +173,8 @@ function GlobalBoardContent() {
           if (selectedProject && card.project_id !== selectedProject) return false;
           if (selectedSession && card.session_id !== selectedSession) return false;
           if (assigneeFilter && card.assignee_id !== assigneeFilter) return false;
-          if (labelFilter.length > 0 && !labelFilter.some((l) => card.labels?.includes(l))) return false;
+          if (labelFilter.length > 0 && !labelFilter.some((l) => card.labels?.includes(l)))
+            return false;
           return true;
         }),
         sortBy,
@@ -173,40 +193,43 @@ function GlobalBoardContent() {
 
   const handleProjectChange = useCallback((projectId: string) => {
     setSelectedProject(projectId || null);
-    setSelectedSession("");
+    setSelectedSession('');
   }, []);
 
-  const handleSessionChange = useCallback((sessionId: string) => {
-    setSelectedSession(sessionId);
-    // Auto-select project when picking a session without a project filter
-    if (sessionId && !selectedProject) {
-      const session = allSessions.find((s) => s.id === sessionId);
-      if (session?.projectId) {
-        setSelectedProject(session.projectId);
+  const handleSessionChange = useCallback(
+    (sessionId: string) => {
+      setSelectedSession(sessionId);
+      // Auto-select project when picking a session without a project filter
+      if (sessionId && !selectedProject) {
+        const session = allSessions.find((s) => s.id === sessionId);
+        if (session?.projectId) {
+          setSelectedProject(session.projectId);
+        }
       }
-    }
-  }, [selectedProject, allSessions]);
+    },
+    [selectedProject, allSessions],
+  );
 
   // Live poll
   useEffect(() => {
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible") refetch();
+      if (document.visibilityState === 'visible') refetch();
     }, 5000);
     return () => clearInterval(interval);
   }, [refetch]);
 
   // Persist density + sort + groupBy across reloads.
   useEffect(() => {
-    setPref("board.density", density);
+    setPref('board.density', density);
   }, [density]);
   useEffect(() => {
-    setPref("board.sortBy", sortBy);
+    setPref('board.sortBy', sortBy);
   }, [sortBy]);
   useEffect(() => {
-    setPref("board.groupBy", groupBy);
+    setPref('board.groupBy', groupBy);
   }, [groupBy]);
   useEffect(() => {
-    setPref("board.groupByExplicit", groupByExplicit);
+    setPref('board.groupByExplicit', groupByExplicit);
   }, [groupByExplicit]);
 
   // Auto-default to Group by Wave for fresh boards. Fires once, only when the
@@ -220,11 +243,11 @@ function GlobalBoardContent() {
     !autoDefaulted &&
     !groupByExplicit &&
     board &&
-    groupBy === "off" &&
-    board.columns.some((col) => col.cards.some((c) => typeof c.wave === "number"))
+    groupBy === 'off' &&
+    board.columns.some((col) => col.cards.some((c) => typeof c.wave === 'number'))
   ) {
     setAutoDefaulted(true);
-    setGroupByState("wave");
+    setGroupByState('wave');
   }
 
   const hasFilters =
@@ -243,13 +266,13 @@ function GlobalBoardContent() {
       {
         q: search || null,
         priority: priorityFilter || null,
-        labels: labelFilter.length ? labelFilter.join(",") : null,
+        labels: labelFilter.length ? labelFilter.join(',') : null,
         assignee: assigneeFilter || null,
         density,
         // Only persist non-default sort/groupBy so the URL stays clean for
         // simple views.
-        sortBy: sortBy === "manual" ? null : sortBy,
-        groupBy: groupBy === "off" ? null : groupBy,
+        sortBy: sortBy === 'manual' ? null : sortBy,
+        groupBy: groupBy === 'off' ? null : groupBy,
       },
       new URLSearchParams(),
     );
@@ -259,10 +282,10 @@ function GlobalBoardContent() {
   const applySavedView = useCallback(
     (query: string) => {
       const state = decodeBoardUrlState(new URLSearchParams(query));
-      setSearch(state.q ?? "");
-      setPriorityFilter(state.priority ?? "");
-      setLabelFilter(state.labels ? state.labels.split(",").filter(Boolean) : []);
-      setAssigneeFilter(state.assignee ?? "");
+      setSearch(state.q ?? '');
+      setPriorityFilter(state.priority ?? '');
+      setLabelFilter(state.labels ? state.labels.split(',').filter(Boolean) : []);
+      setAssigneeFilter(state.assignee ?? '');
       if (state.density) setDensity(state.density);
       if (state.sortBy) setSortBy(state.sortBy);
       // Restoring a saved view counts as an explicit user choice — flip the
@@ -271,7 +294,7 @@ function GlobalBoardContent() {
       if (state.groupBy) {
         setGroupBy(state.groupBy);
       } else {
-        setGroupBy("off");
+        setGroupBy('off');
       }
     },
     [setGroupBy],
@@ -281,9 +304,9 @@ function GlobalBoardContent() {
   const bulkPatch = useCallback(
     async (patch: Record<string, unknown>) => {
       if (selectedIds.size === 0) return;
-      await authFetch("/api/cards-bulk-proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      await authFetch('/api/cards-bulk-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [...selectedIds], patch }),
       });
       await refetch();
@@ -296,7 +319,7 @@ function GlobalBoardContent() {
     if (selectedIds.size === 0) return;
     await Promise.all(
       [...selectedIds].map((id) =>
-        authFetch(`/api/cards-proxy/${id}`, { method: "DELETE" }).catch(() => null),
+        authFetch(`/api/cards-proxy/${id}`, { method: 'DELETE' }).catch(() => null),
       ),
     );
     await refetch();
@@ -317,9 +340,9 @@ function GlobalBoardContent() {
   const handleAgentApprove = async (cardId: string) => {
     try {
       await authFetch(`/api/agent-approve-proxy/${cardId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve" }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
       });
       refetch();
     } catch {
@@ -330,9 +353,9 @@ function GlobalBoardContent() {
   const handleAgentReject = async (cardId: string, feedback: string) => {
     try {
       await authFetch(`/api/agent-approve-proxy/${cardId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reject", feedback }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', feedback }),
       });
       refetch();
     } catch {
@@ -357,7 +380,7 @@ function GlobalBoardContent() {
             onSearchChange={setSearch}
             priorityFilter={priorityFilter}
             onPriorityFilterChange={setPriorityFilter}
-            projectFilter={selectedProject || ""}
+            projectFilter={selectedProject || ''}
             onProjectFilterChange={handleProjectChange}
             projectOptions={projectOptions}
             sessionFilter={selectedSession}
@@ -391,7 +414,6 @@ function GlobalBoardContent() {
           />
         </div>
 
-
         {/* Board content */}
         {loading && (
           <div className="flex flex-1 items-center justify-center">
@@ -405,7 +427,7 @@ function GlobalBoardContent() {
           </div>
         )}
 
-        {filteredBoard && view === "board" && (
+        {filteredBoard && view === 'board' && (
           <div className="flex-1 overflow-x-auto">
             <BoardView
               board={filteredBoard}
@@ -428,7 +450,7 @@ function GlobalBoardContent() {
           </div>
         )}
 
-        {filteredBoard && view === "list" && (
+        {filteredBoard && view === 'list' && (
           <ListView
             board={filteredBoard}
             search={search}
@@ -437,7 +459,7 @@ function GlobalBoardContent() {
           />
         )}
 
-        {view === "list" && (
+        {view === 'list' && (
           <CardDetail
             card={selectedCard}
             onClose={() => setSelectedCard(null)}
@@ -473,9 +495,7 @@ function GlobalBoardContent() {
         {selectedProject && (
           <ProjectBoardSettings
             projectId={selectedProject}
-            projectName={
-              projectOptions.find(([id]) => id === selectedProject)?.[1] ?? null
-            }
+            projectName={projectOptions.find(([id]) => id === selectedProject)?.[1] ?? null}
             open={settingsOpen}
             onOpenChange={setSettingsOpen}
             onColumnsChanged={refetch}

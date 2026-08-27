@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import type { Card, CardUpdate } from "@/hooks/use-board";
-import type { TicketBoardColumn, TicketLink, TicketComment, TicketActivityEvent } from "@/hooks/use-ticket";
-import type { FieldLayoutEntry } from "@/hooks/use-ticket-templates";
-import { Input } from "@/components/ui/input";
-import { AcceptanceCriteria } from "./acceptance-criteria";
+import type { Card, CardUpdate } from '@/hooks/use-board';
+import type {
+  TicketBoardColumn,
+  TicketLink,
+  TicketComment,
+  TicketActivityEvent,
+} from '@/hooks/use-ticket';
+import type { FieldLayoutEntry } from '@/hooks/use-ticket-templates';
+import { Input } from '@/components/ui/input';
+import { AcceptanceCriteria } from './acceptance-criteria';
 import {
   AssigneeSelect,
   FibonacciPoints,
@@ -13,10 +18,10 @@ import {
   SidebarSection,
   StatusSelect,
   SyncControls,
-} from "./ticket-sidebar";
-import { TicketActivity } from "./ticket-activity";
-import { TicketDescription } from "./ticket-description";
-import { TicketLinksPanel } from "./ticket-links-panel";
+} from './ticket-sidebar';
+import { TicketActivity } from './ticket-activity';
+import { TicketDescription } from './ticket-description';
+import { TicketLinksPanel } from './ticket-links-panel';
 
 interface TeamMember {
   id: string;
@@ -85,7 +90,7 @@ export function TicketField({
 function needsMainHeading(entry: FieldLayoutEntry): boolean {
   // The big main-column components carry their own heading already; custom
   // main-column fields and any future ones don't.
-  return !["rich_text", "acceptance_criteria", "activity"].includes(entry.type);
+  return !['rich_text', 'acceptance_criteria', 'activity'].includes(entry.type);
 }
 
 function renderFieldBody(
@@ -95,10 +100,10 @@ function renderFieldBody(
 ): React.ReactNode {
   const { card, persistPatch } = ctx;
   switch (entry.type) {
-    case "title":
+    case 'title':
       // Title renders in the header; nothing to draw in main/sidebar.
       return null;
-    case "rich_text":
+    case 'rich_text':
       return (
         <TicketDescription
           label={entry.label}
@@ -113,7 +118,7 @@ function renderFieldBody(
           onEditingStop={ctx.endEditing}
         />
       );
-    case "acceptance_criteria":
+    case 'acceptance_criteria':
       return (
         <AcceptanceCriteria
           criteria={card.acceptance_criteria}
@@ -121,7 +126,7 @@ function renderFieldBody(
           showHeading={!headless}
         />
       );
-    case "activity":
+    case 'activity':
       return (
         <TicketActivity
           cardId={card.id}
@@ -130,7 +135,7 @@ function renderFieldBody(
           onAddComment={ctx.addComment}
         />
       );
-    case "status":
+    case 'status':
       return (
         <StatusSelect
           card={card}
@@ -138,9 +143,11 @@ function renderFieldBody(
           onPatch={(p) => void persistPatch(p)}
         />
       );
-    case "priority":
-      return <PriorityChips priority={card.priority ?? null} onPatch={(p) => void persistPatch(p)} />;
-    case "assignee":
+    case 'priority':
+      return (
+        <PriorityChips priority={card.priority ?? null} onPatch={(p) => void persistPatch(p)} />
+      );
+    case 'assignee':
       return (
         <AssigneeSelect
           card={card}
@@ -148,14 +155,14 @@ function renderFieldBody(
           onPatch={(p) => void persistPatch(p)}
         />
       );
-    case "story_points":
+    case 'story_points':
       return (
         <FibonacciPoints
           value={card.story_points}
           onChange={(v) => void persistPatch({ story_points: v })}
         />
       );
-    case "labels":
+    case 'labels':
       return (
         <LabelsEditor
           labels={card.labels}
@@ -163,16 +170,16 @@ function renderFieldBody(
           onChange={(next) => void persistPatch({ labels: next })}
         />
       );
-    case "sync":
+    case 'sync':
       return <SyncControls card={card} />;
-    case "links":
+    case 'links':
       return <TicketLinksPanel cardId={card.id} initial={ctx.links} />;
-    case "text":
-    case "number":
-    case "date":
-    case "url":
-    case "select":
-    case "multi_select":
+    case 'text':
+    case 'number':
+    case 'date':
+    case 'url':
+    case 'select':
+    case 'multi_select':
       return <CustomFieldInput entry={entry} card={card} persistPatch={persistPatch} />;
     default:
       return null;
@@ -187,9 +194,9 @@ export function CustomFieldInput({
 }: {
   entry: FieldLayoutEntry;
   card: Card;
-  persistPatch: FieldRendererContext["persistPatch"];
+  persistPatch: FieldRendererContext['persistPatch'];
 }) {
-  const slug = entry.key.replace(/^custom:/, "");
+  const slug = entry.key.replace(/^custom:/, '');
   const value = (card.custom_fields ?? {})[slug];
 
   const update = (next: unknown) => {
@@ -198,35 +205,35 @@ export function CustomFieldInput({
   };
 
   switch (entry.type) {
-    case "number":
+    case 'number':
       return (
         <Input
           type="number"
-          value={value == null ? "" : String(value)}
-          onChange={(e) => update(e.target.value === "" ? null : Number(e.target.value))}
+          value={value == null ? '' : String(value)}
+          onChange={(e) => update(e.target.value === '' ? null : Number(e.target.value))}
         />
       );
-    case "date":
+    case 'date':
       return (
         <Input
           type="date"
-          value={value == null ? "" : String(value)}
+          value={value == null ? '' : String(value)}
           onChange={(e) => update(e.target.value || null)}
         />
       );
-    case "url":
+    case 'url':
       return (
         <Input
           type="url"
           placeholder="https://"
-          value={value == null ? "" : String(value)}
+          value={value == null ? '' : String(value)}
           onChange={(e) => update(e.target.value)}
         />
       );
-    case "select":
+    case 'select':
       return (
         <select
-          value={value == null ? "" : String(value)}
+          value={value == null ? '' : String(value)}
           onChange={(e) => update(e.target.value || null)}
           className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
         >
@@ -238,7 +245,7 @@ export function CustomFieldInput({
           ))}
         </select>
       );
-    case "multi_select": {
+    case 'multi_select': {
       const arr = Array.isArray(value) ? (value as string[]) : [];
       return (
         <div className="flex flex-wrap gap-1">
@@ -248,13 +255,11 @@ export function CustomFieldInput({
               <button
                 key={opt}
                 type="button"
-                onClick={() =>
-                  update(active ? arr.filter((x) => x !== opt) : [...arr, opt])
-                }
+                onClick={() => update(active ? arr.filter((x) => x !== opt) : [...arr, opt])}
                 className={`px-2 py-0.5 rounded text-xs border transition-colors ${
                   active
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground"
+                    ? 'border-primary bg-primary/10 text-foreground'
+                    : 'border-border text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {opt}
@@ -267,7 +272,7 @@ export function CustomFieldInput({
     default:
       return (
         <Input
-          value={value == null ? "" : String(value)}
+          value={value == null ? '' : String(value)}
           onChange={(e) => update(e.target.value)}
         />
       );

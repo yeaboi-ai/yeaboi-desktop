@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useEffect, useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface FieldSchemaEntry {
   key: string;
@@ -48,7 +48,7 @@ export function CustomFields({ templateId, customFields, onChange }: Props) {
     if (!templateId) return;
     let cancelled = false;
     (async () => {
-      const resp = await authFetch("/api/ticket-templates");
+      const resp = await authFetch('/api/ticket-templates');
       if (!resp.ok || cancelled) return;
       const all = (await resp.json()) as TicketTemplate[];
       if (cancelled) return;
@@ -70,7 +70,7 @@ export function CustomFields({ templateId, customFields, onChange }: Props) {
   return (
     <section className="space-y-3">
       <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {template ? `${template.name} fields` : "Custom fields"}
+        {template ? `${template.name} fields` : 'Custom fields'}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {schema.map((f) => (
@@ -87,8 +87,7 @@ export function CustomFields({ templateId, customFields, onChange }: Props) {
             <div className="italic">Legacy fields (template no longer defines these):</div>
             {orphanKeys.map((k) => (
               <div key={k}>
-                <span className="font-mono">{k}:</span>{" "}
-                <span>{String(values[k] ?? "")}</span>
+                <span className="font-mono">{k}:</span> <span>{String(values[k] ?? '')}</span>
               </div>
             ))}
           </div>
@@ -103,19 +102,19 @@ function renderField(
   value: unknown,
   onChange: (v: unknown) => void,
 ): React.ReactNode {
-  const v = value == null ? "" : String(value);
+  const v = value == null ? '' : String(value);
   switch (f.type) {
-    case "number":
+    case 'number':
       return (
         <Input
           type="number"
           value={v}
-          onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
         />
       );
-    case "date":
+    case 'date':
       return <Input type="date" value={v} onChange={(e) => onChange(e.target.value || null)} />;
-    case "url":
+    case 'url':
       return (
         <Input
           type="url"
@@ -124,7 +123,7 @@ function renderField(
           placeholder="https://"
         />
       );
-    case "select":
+    case 'select':
       return (
         <select
           value={v}
@@ -139,7 +138,7 @@ function renderField(
           ))}
         </select>
       );
-    case "multi_select": {
+    case 'multi_select': {
       const arr = Array.isArray(value) ? (value as string[]) : [];
       const toggle = (opt: string) => {
         const next = arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt];
@@ -154,8 +153,8 @@ function renderField(
               onClick={() => toggle(opt)}
               className={`px-2 py-0.5 rounded text-xs border transition-colors ${
                 arr.includes(opt)
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border text-muted-foreground hover:text-foreground"
+                  ? 'border-primary bg-primary/10 text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground'
               }`}
             >
               {opt}

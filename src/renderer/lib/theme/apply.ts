@@ -1,4 +1,4 @@
-import type { ColorScheme, ThemeDoc, ThemeId, TokenMap } from "./types";
+import type { ColorScheme, ThemeDoc, ThemeId, TokenMap } from './types';
 
 export function applyThemeTokens(el: HTMLElement, tokens: TokenMap): void {
   for (const [key, value] of Object.entries(tokens)) {
@@ -6,7 +6,11 @@ export function applyThemeTokens(el: HTMLElement, tokens: TokenMap): void {
   }
 }
 
-export function setThemeAttributes(el: HTMLElement, themeId: ThemeId, colorScheme: ColorScheme): void {
+export function setThemeAttributes(
+  el: HTMLElement,
+  themeId: ThemeId,
+  colorScheme: ColorScheme,
+): void {
   el.dataset.theme = themeId;
   el.dataset.colorScheme = colorScheme;
 }
@@ -21,5 +25,5 @@ export function tokensToInlineStyleString(tokens: TokenMap): string {
   for (const [key, value] of Object.entries(tokens)) {
     parts.push(`--${key}:${value}`);
   }
-  return `:root{${parts.join(";")}}`;
+  return `:root{${parts.join(';')}}`;
 }

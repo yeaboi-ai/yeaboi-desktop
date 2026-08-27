@@ -1,16 +1,16 @@
 // Mirror of GET /api/system/health-summary. Keep in sync with
 // backend/src/app/routers/system_health.py.
 
-export type ProviderStatus = "ok" | "unhealthy";
-export type FeatureMode = "ok" | "degraded" | "unavailable";
-export type SpendStatus = "ok" | "warn" | "critical" | "hard_blocked";
+export type ProviderStatus = 'ok' | 'unhealthy';
+export type FeatureMode = 'ok' | 'degraded' | 'unavailable';
+export type SpendStatus = 'ok' | 'warn' | 'critical' | 'hard_blocked';
 
 export interface ProviderSnapshot {
   status: ProviderStatus | string;
   error_code?: string | null;
   message?: string | null;
   since?: string | null;
-  scope?: "platform" | "org" | string;
+  scope?: 'platform' | 'org' | string;
   /**
    * When this provider is currently absorbing traffic that normally belongs
    * to another vendor (the primary is failing), the role names appear here.
@@ -53,13 +53,13 @@ export interface HealthSummary {
 }
 
 export const HEALTH_FEATURES = [
-  "chat",
-  "summary",
-  "niko",
-  "wireframe",
-  "vision",
-  "voice",
-  "video",
+  'chat',
+  'summary',
+  'niko',
+  'wireframe',
+  'vision',
+  'voice',
+  'video',
 ] as const;
 
 export type HealthFeatureName = (typeof HEALTH_FEATURES)[number];

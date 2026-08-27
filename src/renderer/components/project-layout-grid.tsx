@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
-import { Children, type ReactElement, type ReactNode } from "react";
+import { Children, type ReactElement, type ReactNode } from 'react';
 import {
   ResponsiveGridLayout,
   useContainerWidth,
   verticalCompactor,
   type Layout,
   type ResponsiveLayouts,
-} from "react-grid-layout";
-import { Maximize2, Minimize2, EyeOff, GripHorizontal } from "lucide-react";
+} from 'react-grid-layout';
+import { Maximize2, Minimize2, EyeOff, GripHorizontal } from 'lucide-react';
 
 interface DashboardGridProps {
   layouts: ResponsiveLayouts;
@@ -38,7 +38,7 @@ export function DashboardGrid({
 
   const visibleChildren = Children.toArray(children).filter((child) => {
     const el = child as ReactElement;
-    return el.key && visibleSet.has(String(el.key).replace(/^\.\$/, ""));
+    return el.key && visibleSet.has(String(el.key).replace(/^\.\$/, ''));
   });
 
   return (
@@ -49,8 +49,8 @@ export function DashboardGrid({
         breakpoints={{ lg: 1200, md: 996, sm: 768 }}
         cols={{ lg: 12, md: 8, sm: 4 }}
         rowHeight={80}
-        dragConfig={{ enabled: true, handle: ".panel-drag-handle" }}
-        resizeConfig={{ enabled: true, handles: ["se", "sw"] }}
+        dragConfig={{ enabled: true, handle: '.panel-drag-handle' }}
+        resizeConfig={{ enabled: true, handles: ['se', 'sw'] }}
         onLayoutChange={onLayoutChange}
         compactor={verticalCompactor}
         margin={[24, 24]}
@@ -58,13 +58,10 @@ export function DashboardGrid({
       >
         {visibleChildren.map((child) => {
           const el = child as ReactElement;
-          const key = String(el.key).replace(/^\.\$/, "");
+          const key = String(el.key).replace(/^\.\$/, '');
           const expanded = isExpanded(key);
           return (
-            <div
-              key={key}
-              className="relative group/card"
-            >
+            <div key={key} className="relative group/card">
               {/* Top-left: drag handle */}
               <div
                 className="panel-drag-handle absolute -top-1 left-1/2 -translate-x-1/2 z-20 p-1 rounded-md hover:bg-white/[0.06] transition-all cursor-grab active:cursor-grabbing opacity-0 group-hover/card:opacity-100"
@@ -77,12 +74,13 @@ export function DashboardGrid({
                 <button
                   onClick={() => onToggleExpand(key)}
                   className="p-1.5 rounded-md hover:bg-white/[0.06] transition-colors cursor-pointer"
-                  title={expanded ? "Collapse" : "Expand"}
+                  title={expanded ? 'Collapse' : 'Expand'}
                 >
-                  {expanded
-                    ? <Minimize2 className="size-5 text-muted-foreground/60" />
-                    : <Maximize2 className="size-5 text-muted-foreground/60" />
-                  }
+                  {expanded ? (
+                    <Minimize2 className="size-5 text-muted-foreground/60" />
+                  ) : (
+                    <Maximize2 className="size-5 text-muted-foreground/60" />
+                  )}
                 </button>
                 <button
                   onClick={() => onHide(key)}
@@ -92,9 +90,7 @@ export function DashboardGrid({
                   <EyeOff className="size-5 text-muted-foreground/60" />
                 </button>
               </div>
-              <div className="h-full overflow-auto">
-                {el}
-              </div>
+              <div className="h-full overflow-auto">{el}</div>
             </div>
           );
         })}

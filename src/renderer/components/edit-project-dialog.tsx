@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Sparkles } from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Sparkles } from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface EditProjectDialogProps {
   open: boolean;
@@ -21,9 +16,14 @@ interface EditProjectDialogProps {
   onSaved?: (data: { name: string; description?: string }) => void;
 }
 
-export function EditProjectDialog({ open, onOpenChange, project, onSaved }: EditProjectDialogProps) {
+export function EditProjectDialog({
+  open,
+  onOpenChange,
+  project,
+  onSaved,
+}: EditProjectDialogProps) {
   const [name, setName] = useState(project.name);
-  const [description, setDescription] = useState(project.description || "");
+  const [description, setDescription] = useState(project.description || '');
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState(false);
   const { authFetch } = useAuthFetch();
@@ -32,7 +32,7 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
   useEffect(() => {
     if (open) {
       setName(project.name);
-      setDescription(project.description || "");
+      setDescription(project.description || '');
     }
   }, [open, project]);
 
@@ -42,7 +42,7 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
     setLoading(true);
     try {
       const resp = await authFetch(`/api/projects/${project.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
       });
       if (resp.ok) {
@@ -58,8 +58,8 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
     if (!description.trim() || rewriting) return;
     setRewriting(true);
     try {
-      const resp = await authFetch("/api/projects/rewrite-idea", {
-        method: "POST",
+      const resp = await authFetch('/api/projects/rewrite-idea', {
+        method: 'POST',
         body: JSON.stringify({ text: description.trim() }),
       });
       if (resp.ok) {
@@ -89,7 +89,10 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
         {/* Form body */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="edit-name" className="text-xs font-body font-medium text-muted-foreground uppercase tracking-[0.12em]">
+            <Label
+              htmlFor="edit-name"
+              className="text-xs font-body font-medium text-muted-foreground uppercase tracking-[0.12em]"
+            >
               Name
             </Label>
             <Input
@@ -105,9 +108,14 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="edit-description" className="text-xs font-body font-medium text-muted-foreground uppercase tracking-[0.12em]">
+              <Label
+                htmlFor="edit-description"
+                className="text-xs font-body font-medium text-muted-foreground uppercase tracking-[0.12em]"
+              >
                 Description
-                <span className="ml-1.5 normal-case tracking-normal text-muted-foreground/50">(optional)</span>
+                <span className="ml-1.5 normal-case tracking-normal text-muted-foreground/50">
+                  (optional)
+                </span>
               </Label>
               <button
                 type="button"
@@ -116,8 +124,10 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
                 title="Improve clarity and fix spelling with AI"
                 className="group flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
               >
-                <Sparkles className={`h-3 w-3 ${rewriting ? "animate-spin" : "group-hover:scale-110 transition-transform"}`} />
-                <span>{rewriting ? "Rewriting…" : "AI Rewrite"}</span>
+                <Sparkles
+                  className={`h-3 w-3 ${rewriting ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`}
+                />
+                <span>{rewriting ? 'Rewriting…' : 'AI Rewrite'}</span>
               </button>
             </div>
             <Textarea
@@ -142,7 +152,7 @@ export function EditProjectDialog({ open, onOpenChange, project, onSaved }: Edit
                   Saving…
                 </span>
               ) : (
-                "Save changes"
+                'Save changes'
               )}
             </Button>
           </div>

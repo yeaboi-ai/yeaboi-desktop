@@ -36,8 +36,9 @@ export function useRouter(): AppRouterInstance {
   );
 }
 
-export function useParams<T extends Record<string, string | string[]> = Record<string, string>>():
-  T {
+export function useParams<
+  T extends Record<string, string | string[]> = Record<string, string>,
+>(): T {
   return useRouterParams() as T;
 }
 

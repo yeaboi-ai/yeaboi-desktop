@@ -8,7 +8,10 @@ export interface TicketKey {
 
 const FRIENDLY_ID_RE = /^([A-Z][A-Z0-9]{2,9})-(\d+)$/;
 
-export function formatTicketKey(parts: { key: string | null | undefined; number: number | null | undefined }): string | null {
+export function formatTicketKey(parts: {
+  key: string | null | undefined;
+  number: number | null | undefined;
+}): string | null {
   if (!parts.key || parts.number == null) return null;
   return `${parts.key}-${parts.number}`;
 }
@@ -38,6 +41,6 @@ export function formatExecLabel(card: {
   wave?: number | null;
 }): string | null {
   if (card.exec_label) return card.exec_label;
-  if (typeof card.wave === "number") return String(card.wave + 1);
+  if (typeof card.wave === 'number') return String(card.wave + 1);
   return null;
 }

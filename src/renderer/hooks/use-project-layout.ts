@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type Layout, type LayoutItem, type ResponsiveLayouts } from "react-grid-layout";
-import { useAppSetting } from "@/hooks/use-app-setting";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type Layout, type LayoutItem, type ResponsiveLayouts } from 'react-grid-layout';
+import { useAppSetting } from '@/hooks/use-app-setting';
 
 export interface DashboardPanelDef {
   id: string;
@@ -31,7 +31,7 @@ function applyResizeHandles(layouts: ResponsiveLayouts): ResponsiveLayouts {
     if (!items) continue;
     result[bp] = items.map((item: LayoutItem) => ({
       ...item,
-      resizeHandles: ["se", "sw"],
+      resizeHandles: ['se', 'sw'],
     }));
   }
   return result;
@@ -106,7 +106,10 @@ function reconcileLayouts(
     const newItems = panels
       .filter((p) => !existingIds.has(p.id))
       .map((p, idx) => {
-        const maxY = existing.length > 0 ? Math.max(...existing.map((item: LayoutItem) => item.y + item.h)) : 0;
+        const maxY =
+          existing.length > 0
+            ? Math.max(...existing.map((item: LayoutItem) => item.y + item.h))
+            : 0;
         const { w, h } = panelDimensions(p, bp, cols);
         return {
           i: p.id,
@@ -130,9 +133,7 @@ function reconcileLayouts(
 export function useDashboardLayout(panels: DashboardPanelDef[], settingKey: string) {
   const { value: savedConfig, loading, save } = useAppSetting(settingKey);
   const [hidden, setHidden] = useState<string[]>([]);
-  const [layouts, setLayouts] = useState<ResponsiveLayouts>(() =>
-    generateDefaultLayouts(panels),
-  );
+  const [layouts, setLayouts] = useState<ResponsiveLayouts>(() => generateDefaultLayouts(panels));
   const [initialized, setInitialized] = useState(false);
   const skipNextLayoutChange = useRef(false);
 
@@ -195,26 +196,47 @@ export function useDashboardLayout(panels: DashboardPanelDef[], settingKey: stri
   const showPanel = useCallback(
     (panelId: string) => {
       skipNextLayoutChange.current = true;
-      setTimeout(() => { skipNextLayoutChange.current = false; }, 500);
+      setTimeout(() => {
+        skipNextLayoutChange.current = false;
+      }, 500);
       const panelDef = panels.find((p) => p.id === panelId);
       setLayouts((prevLayouts) => {
         const updated: ResponsiveLayouts = {};
         for (const [bp, items] of Object.entries(prevLayouts)) {
-          if (!items) { updated[bp] = items; continue; }
+          if (!items) {
+            updated[bp] = items;
+            continue;
+          }
           const cols = COLS[bp] || 4;
           const { w, h } = panelDef
             ? panelDimensions(panelDef, bp, cols)
             : { w: DEFAULT_W[bp] || Math.floor(cols / 2), h: 3 };
           const others = items.filter((it: LayoutItem) => it.i !== panelId);
-          const maxY = others.length > 0 ? Math.max(...others.map((it: LayoutItem) => it.y + it.h)) : 0;
-          const defaultItem = { i: panelId, w, h, x: 0, y: maxY, minW: MIN_W[bp] || 2, minH: 2, maxW: cols, maxH: 8 };
+          const maxY =
+            others.length > 0 ? Math.max(...others.map((it: LayoutItem) => it.y + it.h)) : 0;
+          const defaultItem = {
+            i: panelId,
+            w,
+            h,
+            x: 0,
+            y: maxY,
+            minW: MIN_W[bp] || 2,
+            minH: 2,
+            maxW: cols,
+            maxH: 8,
+          };
           const exists = items.some((it: LayoutItem) => it.i === panelId);
           updated[bp] = exists
-            ? items.map((item: LayoutItem) => item.i === panelId ? { ...item, ...defaultItem } : item)
+            ? items.map((item: LayoutItem) =>
+                item.i === panelId ? { ...item, ...defaultItem } : item,
+              )
             : [...items, defaultItem];
         }
         const withHandles = applyResizeHandles(updated);
-        persist(withHandles, hidden.filter((id) => id !== panelId));
+        persist(
+          withHandles,
+          hidden.filter((id) => id !== panelId),
+        );
         return withHandles;
       });
       setHidden((prev) => prev.filter((id) => id !== panelId));
@@ -260,17 +282,16 @@ export function useDashboardLayout(panels: DashboardPanelDef[], settingKey: stri
     [panels, hidden],
   );
 
-  const hiddenPanels = useMemo(
-    () => panels.filter((p) => hidden.includes(p.id)),
-    [panels, hidden],
-  );
+  const hiddenPanels = useMemo(() => panels.filter((p) => hidden.includes(p.id)), [panels, hidden]);
 
   /** Wipe customisations and recompute layout from each panel's `defaultW`
    *  / `defaultH`. Useful when panel defaults change underfoot — a saved
    *  layout from an older release otherwise pins outdated sizes. */
   const resetLayout = useCallback(() => {
     skipNextLayoutChange.current = true;
-    setTimeout(() => { skipNextLayoutChange.current = false; }, 500);
+    setTimeout(() => {
+      skipNextLayoutChange.current = false;
+    }, 500);
     const fresh = applyResizeHandles(generateDefaultLayouts(panels));
     setLayouts(fresh);
     setHidden([]);

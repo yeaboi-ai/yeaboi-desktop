@@ -1,6 +1,6 @@
-import { SettingsCard, SettingsSectionHeader } from "@/components/settings/primitives";
-import { AIProviderSection } from "./general/ai-provider-section";
-import { GitHubSection } from "./general/github-section";
+import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
+import { AIProviderSection } from './general/ai-provider-section';
+import { GitHubSection } from './general/github-section';
 
 export function AITab() {
   return (

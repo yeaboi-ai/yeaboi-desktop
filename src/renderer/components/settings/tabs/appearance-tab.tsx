@@ -1,5 +1,5 @@
-import { SettingsCard, SettingsSectionHeader } from "@/components/settings/primitives";
-import { AppearanceSection } from "./general/appearance-section";
+import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
+import { AppearanceSection } from './general/appearance-section';
 
 export function AppearanceTab() {
   return (

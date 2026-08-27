@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import {
   type BoardColumn,
   type ColumnCreate,
   type ColumnUpdate,
   useBoard,
-} from "@/hooks/use-board";
-import { BoardSettingsDrawer } from "./board-settings-drawer";
+} from '@/hooks/use-board';
+import { BoardSettingsDrawer } from './board-settings-drawer';
 
 interface ProjectBoardSettingsProps {
   projectId: string;

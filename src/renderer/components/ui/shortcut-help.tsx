@@ -1,33 +1,28 @@
-"use client";
+'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const SHORTCUTS: { category: string; rows: { keys: string[]; label: string }[] }[] = [
   {
-    category: "Navigation",
+    category: 'Navigation',
     rows: [
-      { keys: ["/"], label: "Focus search" },
-      { keys: ["j"], label: "Next card" },
-      { keys: ["k"], label: "Previous card" },
-      { keys: ["e"], label: "Open selected card" },
-      { keys: ["Esc"], label: "Close panel / clear selection" },
+      { keys: ['/'], label: 'Focus search' },
+      { keys: ['j'], label: 'Next card' },
+      { keys: ['k'], label: 'Previous card' },
+      { keys: ['e'], label: 'Open selected card' },
+      { keys: ['Esc'], label: 'Close panel / clear selection' },
     ],
   },
   {
-    category: "Editing",
+    category: 'Editing',
     rows: [
-      { keys: ["c"], label: "Create card in focused column" },
-      { keys: ["x"], label: "Toggle card selection" },
+      { keys: ['c'], label: 'Create card in focused column' },
+      { keys: ['x'], label: 'Toggle card selection' },
     ],
   },
   {
-    category: "Help",
-    rows: [{ keys: ["?"], label: "Show this shortcut help" }],
+    category: 'Help',
+    rows: [{ keys: ['?'], label: 'Show this shortcut help' }],
   },
 ];
 

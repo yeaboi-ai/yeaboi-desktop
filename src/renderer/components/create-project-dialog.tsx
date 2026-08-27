@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Sparkles } from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Sparkles } from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface CreateProjectDialogProps {
   onCreate: (data: { description: string; name?: string }) => Promise<unknown>;
@@ -20,7 +20,7 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState(false);
   const { authFetch } = useAuthFetch();
@@ -32,7 +32,7 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
     try {
       await onCreate({ description: description.trim() });
       setOpen(false);
-      setDescription("");
+      setDescription('');
       onCreated?.();
     } finally {
       setLoading(false);
@@ -46,8 +46,8 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
     setRewriting(true);
     setError(null);
     try {
-      const resp = await authFetch("/api/projects/rewrite-idea", {
-        method: "POST",
+      const resp = await authFetch('/api/projects/rewrite-idea', {
+        method: 'POST',
         body: JSON.stringify({ text: description.trim() }),
       });
       if (resp.ok) {
@@ -55,10 +55,10 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
         if (data.rewritten) setDescription(data.rewritten);
       } else {
         const data = await resp.json().catch(() => ({}));
-        setError(data.detail || "AI rewrite failed. Please try again.");
+        setError(data.detail || 'AI rewrite failed. Please try again.');
       }
     } catch {
-      setError("Network error. Please check your connection.");
+      setError('Network error. Please check your connection.');
     } finally {
       setRewriting(false);
     }
@@ -92,8 +92,10 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
                 disabled={!description.trim() || rewriting}
                 className="group flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-muted-foreground/50 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
-                <Sparkles className={`h-3 w-3 ${rewriting ? "animate-spin" : "group-hover:scale-110 transition-transform"}`} />
-                {rewriting ? "Rewriting…" : "AI Rewrite"}
+                <Sparkles
+                  className={`h-3 w-3 ${rewriting ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`}
+                />
+                {rewriting ? 'Rewriting…' : 'AI Rewrite'}
               </button>
             </div>
             <Textarea
@@ -124,7 +126,7 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
                 Creating…
               </span>
             ) : (
-              "Create project"
+              'Create project'
             )}
           </Button>
         </form>

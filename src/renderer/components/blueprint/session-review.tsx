@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCheck, Loader2 } from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import type { Suggestion } from "@/hooks/use-suggestions";
-import { SuggestionReviewRow } from "./suggestion-review-row";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, CheckCheck, Loader2 } from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import type { Suggestion } from '@/hooks/use-suggestions';
+import { SuggestionReviewRow } from './suggestion-review-row';
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI / UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI / UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 interface SessionDiff {
@@ -36,7 +36,7 @@ interface SessionReviewProps {
   projectId: string;
   sessionId: string;
   /** Initial review state from the session payload — drives the empty / done copy. */
-  initialStatus: "none" | "pending" | "completed";
+  initialStatus: 'none' | 'pending' | 'completed';
   /** Notified when the review transitions to 'completed' so the parent page can
    *  refresh the recap/header. */
   onCompleted?: () => void;
@@ -92,16 +92,13 @@ export function SessionReview({
   }, [fetchAll]);
 
   async function accept(id: string, editedContent?: string, replace?: boolean) {
-    const resp = await authFetch(
-      `/api/projects/${projectId}/blueprint-suggestions/${id}/accept`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          edited_content: editedContent,
-          replace: !!replace,
-        }),
-      },
-    );
+    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/${id}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({
+        edited_content: editedContent,
+        replace: !!replace,
+      }),
+    });
     if (resp.ok) {
       // Refetch is cheap and keeps diff in sync with the just-merged content.
       await fetchAll();
@@ -109,23 +106,19 @@ export function SessionReview({
   }
 
   async function reject(id: string) {
-    const resp = await authFetch(
-      `/api/projects/${projectId}/blueprint-suggestions/${id}/reject`,
-      { method: "POST" },
-    );
+    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/${id}/reject`, {
+      method: 'POST',
+    });
     if (resp.ok) {
       setPending((prev) => prev.filter((s) => s.id !== id));
     }
   }
 
   async function bulkAccept(section: string) {
-    const resp = await authFetch(
-      `/api/projects/${projectId}/blueprint-suggestions/bulk-accept`,
-      {
-        method: "POST",
-        body: JSON.stringify({ section, session_id: sessionId }),
-      },
-    );
+    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/bulk-accept`, {
+      method: 'POST',
+      body: JSON.stringify({ section, session_id: sessionId }),
+    });
     if (resp.ok) {
       await fetchAll();
     }
@@ -135,15 +128,12 @@ export function SessionReview({
     if (completing) return;
     setCompleting(true);
     try {
-      const resp = await authFetch(
-        `/api/sessions/${sessionId}/blueprint-review/complete`,
-        {
-          method: "POST",
-          body: JSON.stringify({ skip_remaining: skipRemaining }),
-        },
-      );
+      const resp = await authFetch(`/api/sessions/${sessionId}/blueprint-review/complete`, {
+        method: 'POST',
+        body: JSON.stringify({ skip_remaining: skipRemaining }),
+      });
       if (resp.ok) {
-        setStatus("completed");
+        setStatus('completed');
         onCompleted?.();
       }
     } finally {
@@ -157,15 +147,12 @@ export function SessionReview({
     try {
       // Always close the review on promote — moving to a new iteration is an
       // explicit "we're done with v(n)" signal even if some suggestions linger.
-      await authFetch(
-        `/api/sessions/${sessionId}/blueprint-review/complete`,
-        {
-          method: "POST",
-          body: JSON.stringify({ skip_remaining: true }),
-        },
-      );
+      await authFetch(`/api/sessions/${sessionId}/blueprint-review/complete`, {
+        method: 'POST',
+        body: JSON.stringify({ skip_remaining: true }),
+      });
       await authFetch(`/api/projects/${projectId}/iterations`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({}),
       });
       router.push(`/projects/${projectId}/blueprint`);
@@ -195,7 +182,7 @@ export function SessionReview({
 
   const changedSections = diff ? Object.entries(diff.sections) : [];
   const noChanges = changedSections.length === 0 && pending.length === 0;
-  const isCompleted = status === "completed";
+  const isCompleted = status === 'completed';
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -206,19 +193,19 @@ export function SessionReview({
           </p>
           <h2 className="text-base font-semibold text-foreground">
             {isCompleted
-              ? "Review complete"
+              ? 'Review complete'
               : noChanges
-                ? "Nothing changed in the blueprint"
-                : `${changedSections.length} ${changedSections.length === 1 ? "section" : "sections"} changed${
+                ? 'Nothing changed in the blueprint'
+                : `${changedSections.length} ${changedSections.length === 1 ? 'section' : 'sections'} changed${
                     pending.length > 0
-                      ? ` · ${pending.length} ${pending.length === 1 ? "suggestion" : "suggestions"} waiting`
-                      : ""
+                      ? ` · ${pending.length} ${pending.length === 1 ? 'suggestion' : 'suggestions'} waiting`
+                      : ''
                   }`}
           </h2>
           {!isCompleted && !noChanges && (
             <p className="text-xs text-muted-foreground mt-1">
-              Resolve the suggestions on the right, then close the loop so the
-              blueprint is canonical for{iterationLabel ? ` ${iterationLabel}` : ""}.
+              Resolve the suggestions on the right, then close the loop so the blueprint is
+              canonical for{iterationLabel ? ` ${iterationLabel}` : ''}.
             </p>
           )}
         </div>
@@ -251,7 +238,11 @@ export function SessionReview({
                 onClick={promoteIteration}
                 disabled={completing}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-primary bg-primary/10 hover:bg-primary/15 border border-primary/30 disabled:opacity-50"
-                title={iterationLabel ? `Lock ${iterationLabel} and fork the next iteration` : "Lock this iteration and fork the next"}
+                title={
+                  iterationLabel
+                    ? `Lock ${iterationLabel} and fork the next iteration`
+                    : 'Lock this iteration and fork the next'
+                }
               >
                 Promote
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -263,18 +254,19 @@ export function SessionReview({
 
       {isCompleted ? (
         <div className="p-6 text-sm text-muted-foreground">
-          You closed the review for this session. Reopen the{" "}
+          You closed the review for this session. Reopen the{' '}
           <a
             className="underline underline-offset-2 hover:text-foreground"
             href={`/projects/${projectId}/blueprint`}
           >
             blueprint
-          </a>{" "}
+          </a>{' '}
           to see the canonical state.
         </div>
       ) : noChanges ? (
         <div className="p-6 text-sm text-muted-foreground">
-          This session didn&apos;t change the blueprint and left no pending suggestions. Nothing to review.
+          This session didn&apos;t change the blueprint and left no pending suggestions. Nothing to
+          review.
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border/60">
@@ -283,7 +275,9 @@ export function SessionReview({
               What changed
             </p>
             {changedSections.length === 0 ? (
-              <p className="text-sm italic text-muted-foreground/70">No section content changed yet.</p>
+              <p className="text-sm italic text-muted-foreground/70">
+                No section content changed yet.
+              </p>
             ) : (
               <div className="space-y-4">
                 {changedSections.map(([slug, change]) => (
@@ -341,7 +335,15 @@ export function SessionReview({
   );
 }
 
-function SectionDiff({ slug, oldText, newText }: { slug: string; oldText: string; newText: string }) {
+function SectionDiff({
+  slug,
+  oldText,
+  newText,
+}: {
+  slug: string;
+  oldText: string;
+  newText: string;
+}) {
   const label = SECTION_LABELS[slug] || slug;
   return (
     <div className="rounded-lg border border-border/60 bg-card/50">
@@ -350,9 +352,13 @@ function SectionDiff({ slug, oldText, newText }: { slug: string; oldText: string
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border/40 text-[12.5px] leading-relaxed">
         <div className="p-3">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 mb-1">Before</p>
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 mb-1">
+            Before
+          </p>
           {oldText.trim() ? (
-            <pre className="whitespace-pre-wrap font-sans text-muted-foreground/80 m-0">{oldText}</pre>
+            <pre className="whitespace-pre-wrap font-sans text-muted-foreground/80 m-0">
+              {oldText}
+            </pre>
           ) : (
             <p className="italic text-muted-foreground/50">Empty</p>
           )}

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { Bot, ShieldOff, Crown } from "lucide-react";
+import { useMemo } from 'react';
+import { Bot, ShieldOff, Crown } from 'lucide-react';
 
 interface Participant {
   id: string;
@@ -37,15 +37,15 @@ interface ParticipantListProps {
   /** Current user — only the host sees the role-change controls. */
   currentUserIsHost?: boolean;
   /** Promote/demote callback (W4.3.5). Called with the participant id and new role. */
-  onChangeParticipantRole?: (participantId: string, role: "co_host" | "member") => Promise<void>;
+  onChangeParticipantRole?: (participantId: string, role: 'co_host' | 'member') => Promise<void>;
 }
 
 const AI_NAMES = new Set([
-  "AI Facilitator",
-  "Senior Engineer",
-  "Product Manager",
-  "System Architect",
-  "Patient Mentor",
+  'AI Facilitator',
+  'Senior Engineer',
+  'Product Manager',
+  'System Architect',
+  'Patient Mentor',
   "Devil's Advocate",
 ]);
 
@@ -60,7 +60,7 @@ function getInitials(name?: string | null, email?: string | null): string {
   if (email) {
     return email.slice(0, 2).toUpperCase();
   }
-  return "??";
+  return '??';
 }
 
 // Heuristic: addresses the agent. Matches "AI", "agent", "hey AI", or
@@ -126,30 +126,31 @@ export function ParticipantList({
   onChangeParticipantRole,
 }: ParticipantListProps) {
   // Show active WebSocket users if available, fall back to session participants
-  const displayUsers = activeUsers.length > 0
-    ? activeUsers.map((u) => {
-        const p = (participants || []).find((p) => p.user_email === u.email);
-        return {
-          id: u.user_id,
-          participantId: p?.id ?? null,
-          name: u.name,
-          email: u.email,
-          color: u.color,
-          isHost: p?.role === "host",
-          isCoHost: p?.role === "co_host",
-          consentDeclined: p?.recording_consent === false,
-        };
-      })
-    : (participants || []).map((p) => ({
-        id: p.id,
-        participantId: p.id,
-        name: p.user_name || p.user_email || "Unknown",
-        email: p.user_email || "",
-        color: p.role === "host" ? "#7c3aed" : p.role === "co_host" ? "#9333ea" : "#64748b",
-        isHost: p.role === "host",
-        isCoHost: p.role === "co_host",
-        consentDeclined: p.recording_consent === false,
-      }));
+  const displayUsers =
+    activeUsers.length > 0
+      ? activeUsers.map((u) => {
+          const p = (participants || []).find((p) => p.user_email === u.email);
+          return {
+            id: u.user_id,
+            participantId: p?.id ?? null,
+            name: u.name,
+            email: u.email,
+            color: u.color,
+            isHost: p?.role === 'host',
+            isCoHost: p?.role === 'co_host',
+            consentDeclined: p?.recording_consent === false,
+          };
+        })
+      : (participants || []).map((p) => ({
+          id: p.id,
+          participantId: p.id,
+          name: p.user_name || p.user_email || 'Unknown',
+          email: p.user_email || '',
+          color: p.role === 'host' ? '#7c3aed' : p.role === 'co_host' ? '#9333ea' : '#64748b',
+          isHost: p.role === 'host',
+          isCoHost: p.role === 'co_host',
+          consentDeclined: p.recording_consent === false,
+        }));
 
   const airTime = useMemo(
     () => computeAirTime(transcriptEntries, airTimeWindowMs),
@@ -160,9 +161,9 @@ export function ParticipantList({
 
   return (
     <div className="flex items-center gap-2">
-      <div className={`w-2 h-2 rounded-full ${connected ? "bg-success" : "bg-red-500"}`} />
+      <div className={`w-2 h-2 rounded-full ${connected ? 'bg-success' : 'bg-red-500'}`} />
       <span className="text-xs text-muted-foreground">
-        {displayUsers.length} participant{displayUsers.length !== 1 ? "s" : ""}
+        {displayUsers.length} participant{displayUsers.length !== 1 ? 's' : ''}
       </span>
       <div className="flex items-center -space-x-1.5 ml-1">
         {displayUsers.slice(0, 6).map((u) => {
@@ -173,7 +174,7 @@ export function ParticipantList({
             <div
               key={u.id}
               className="relative group"
-              title={`${u.name}${u.isHost ? " (Host)" : ""}${share > 0 ? ` · ${sharePct}% air-time` : ""}${addressedAi ? " · addressing agent" : ""}`}
+              title={`${u.name}${u.isHost ? ' (Host)' : ''}${share > 0 ? ` · ${sharePct}% air-time` : ''}${addressedAi ? ' · addressing agent' : ''}`}
             >
               <div
                 className="w-7 h-7 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-semibold text-foreground"
@@ -206,7 +207,7 @@ export function ParticipantList({
                 <span
                   aria-hidden
                   className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-[3px] rounded-full bg-success/80"
-                  style={{ width: `${Math.max(20, sharePct)}%`, maxWidth: "16px" }}
+                  style={{ width: `${Math.max(20, sharePct)}%`, maxWidth: '16px' }}
                 />
               )}
               {/* Co-host crown badge (W4.3.5) */}
@@ -231,14 +232,11 @@ export function ParticipantList({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onChangeParticipantRole(
-                        u.participantId!,
-                        u.isCoHost ? "member" : "co_host",
-                      );
+                      onChangeParticipantRole(u.participantId!, u.isCoHost ? 'member' : 'co_host');
                     }}
                     className="block mt-1 px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-300 hover:bg-violet-500/25 transition-colors"
                   >
-                    {u.isCoHost ? "Demote" : "Make co-host"}
+                    {u.isCoHost ? 'Demote' : 'Make co-host'}
                   </button>
                 )}
               </div>

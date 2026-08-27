@@ -3,14 +3,19 @@ function parseColor(input: string): { r: number; g: number; b: number; a: number
   const hexMatch = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(s);
   if (hexMatch) {
     let hex = hexMatch[1];
-    if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+    if (hex.length === 3)
+      hex = hex
+        .split('')
+        .map((c) => c + c)
+        .join('');
     const r = parseInt(hex.slice(0, 2), 16);
     const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
     const a = hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1;
     return { r, g, b, a };
   }
-  const rgbMatch = /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*(?:,\s*([0-9.]+))?\s*\)$/i.exec(s);
+  const rgbMatch =
+    /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*(?:,\s*([0-9.]+))?\s*\)$/i.exec(s);
   if (rgbMatch) {
     return {
       r: Math.round(parseFloat(rgbMatch[1])),
@@ -57,6 +62,10 @@ export function normalizeHex(input: string): string | null {
   const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(input.trim());
   if (!m) return null;
   let hex = m[1];
-  if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('');
   return `#${hex.toLowerCase()}`;
 }

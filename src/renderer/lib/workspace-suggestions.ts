@@ -4,37 +4,37 @@
  */
 
 const PERSONAL_PROVIDERS = new Set([
-  "gmail.com",
-  "googlemail.com",
-  "yahoo.com",
-  "yahoo.co.uk",
-  "ymail.com",
-  "outlook.com",
-  "hotmail.com",
-  "live.com",
-  "msn.com",
-  "icloud.com",
-  "me.com",
-  "mac.com",
-  "aol.com",
-  "proton.me",
-  "protonmail.com",
-  "pm.me",
-  "duck.com",
-  "fastmail.com",
-  "fastmail.fm",
-  "tutanota.com",
-  "tuta.io",
-  "mail.com",
-  "gmx.com",
-  "gmx.de",
-  "zoho.com",
-  "yandex.com",
-  "yandex.ru",
+  'gmail.com',
+  'googlemail.com',
+  'yahoo.com',
+  'yahoo.co.uk',
+  'ymail.com',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  'aol.com',
+  'proton.me',
+  'protonmail.com',
+  'pm.me',
+  'duck.com',
+  'fastmail.com',
+  'fastmail.fm',
+  'tutanota.com',
+  'tuta.io',
+  'mail.com',
+  'gmx.com',
+  'gmx.de',
+  'zoho.com',
+  'yandex.com',
+  'yandex.ru',
 ]);
 
 function titleCase(value: string): string {
-  if (!value) return "";
+  if (!value) return '';
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -43,8 +43,8 @@ function titleCase(value: string): string {
  * or the first label if the domain has only one segment.
  */
 function rootLabel(domain: string): string {
-  const parts = domain.split(".").filter(Boolean);
-  if (parts.length === 0) return "";
+  const parts = domain.split('.').filter(Boolean);
+  if (parts.length === 0) return '';
   if (parts.length === 1) return parts[0];
   return parts[parts.length - 2];
 }
@@ -56,15 +56,12 @@ function rootLabel(domain: string): string {
  * - Personal provider (gmail, outlook, icloud, …) or no email → fall back
  *   to "<DisplayName>'s workspace", or "Personal workspace" if no name yet.
  */
-export function suggestWorkspaceName(
-  email?: string | null,
-  displayName?: string | null,
-): string {
-  const domain = email?.toLowerCase().split("@")[1]?.trim();
+export function suggestWorkspaceName(email?: string | null, displayName?: string | null): string {
+  const domain = email?.toLowerCase().split('@')[1]?.trim();
   if (domain && !PERSONAL_PROVIDERS.has(domain)) {
     const base = rootLabel(domain);
     if (base) return titleCase(base);
   }
   const name = displayName?.trim();
-  return name ? `${name}'s workspace` : "Personal workspace";
+  return name ? `${name}'s workspace` : 'Personal workspace';
 }

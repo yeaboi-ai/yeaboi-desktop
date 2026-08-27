@@ -11,13 +11,13 @@
  */
 
 const DEBOUNCE_MS = 5 * 60 * 1000;
-const STAMP_KEY = "planr:last_viewed_stamped";
+const STAMP_KEY = 'planr:last_viewed_stamped';
 
 type StampCache = Record<string, number>;
 
 function readCache(): StampCache {
   try {
-    return JSON.parse(sessionStorage.getItem(STAMP_KEY) || "{}");
+    return JSON.parse(sessionStorage.getItem(STAMP_KEY) || '{}');
   } catch {
     return {};
   }
@@ -49,7 +49,7 @@ export async function stampLastViewedProject(args: {
   projectId: string;
   authFetch: AuthFetch;
 }): Promise<void> {
-  if (typeof window === "undefined") return; // SSR no-op
+  if (typeof window === 'undefined') return; // SSR no-op
 
   const key = `${args.teamId}:${args.projectId}`;
   const cache = readCache();
@@ -59,7 +59,7 @@ export async function stampLastViewedProject(args: {
 
   try {
     const res = await args.authFetch(`/api/teams/${args.teamId}/last-viewed`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify({ project_id: args.projectId }),
     });
     if (!res.ok) {

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useProviderHealthContext } from "@/components/providers/provider-health-provider";
-import type { FeatureAvailability, HealthFeatureName } from "@/lib/types/health";
+import { useProviderHealthContext } from '@/components/providers/provider-health-provider';
+import type { FeatureAvailability, HealthFeatureName } from '@/lib/types/health';
 
 const ALWAYS_AVAILABLE: FeatureAvailability = { available: true };
 
@@ -22,13 +22,13 @@ export function useProviderHealth() {
   return {
     isLoading,
     refresh,
-    chat: lookup("chat"),
-    summary: lookup("summary"),
-    niko: lookup("niko"),
-    wireframe: lookup("wireframe"),
-    vision: lookup("vision"),
-    voice: lookup("voice"),
-    video: lookup("video"),
+    chat: lookup('chat'),
+    summary: lookup('summary'),
+    niko: lookup('niko'),
+    wireframe: lookup('wireframe'),
+    vision: lookup('vision'),
+    voice: lookup('voice'),
+    video: lookup('video'),
     usage: summary?.usage ?? null,
     providers: summary?.providers ?? {},
   };

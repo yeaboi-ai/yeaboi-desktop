@@ -6,7 +6,7 @@
 //                       dialog headers)
 // Sized 1em so they scale with the surrounding text by default.
 
-import type { SVGProps } from "react";
+import type { SVGProps } from 'react';
 
 export type BrandIconProps = SVGProps<SVGSVGElement> & { monochrome?: boolean };
 
@@ -17,8 +17,13 @@ export type BrandIconProps = SVGProps<SVGSVGElement> & { monochrome?: boolean };
 //   yellow (top-left)   #ECB22E · crimson (bottom-right) #E01E5A
 export function SlackIcon({ monochrome = true, ...props }: BrandIconProps) {
   const c = monochrome
-    ? { azure: "currentColor", yellow: "currentColor", emerald: "currentColor", crimson: "currentColor" }
-    : { azure: "#36C5F0", yellow: "#ECB22E", emerald: "#2EB67D", crimson: "#E01E5A" };
+    ? {
+        azure: 'currentColor',
+        yellow: 'currentColor',
+        emerald: 'currentColor',
+        crimson: 'currentColor',
+      }
+    : { azure: '#36C5F0', yellow: '#ECB22E', emerald: '#2EB67D', crimson: '#E01E5A' };
   return (
     <svg
       width="1em"
@@ -72,9 +77,9 @@ export function SlackIcon({ monochrome = true, ...props }: BrandIconProps) {
 // ─── PDF ─────────────────────────────────────────────────────────────────
 // Page outline with a red "PDF" plate; the plate switches off in monochrome.
 export function PdfIcon({ monochrome = true, ...props }: BrandIconProps) {
-  const stroke = "currentColor";
-  const plateFill = monochrome ? "currentColor" : "#E94335";
-  const plateText = monochrome ? "var(--background, #0a0a0a)" : "#ffffff";
+  const stroke = 'currentColor';
+  const plateFill = monochrome ? 'currentColor' : '#E94335';
+  const plateText = monochrome ? 'var(--background, #0a0a0a)' : '#ffffff';
   const plateOpacity = monochrome ? 0.85 : 1;
   return (
     <svg
@@ -93,15 +98,7 @@ export function PdfIcon({ monochrome = true, ...props }: BrandIconProps) {
         strokeLinejoin="round"
       />
       <path d="M14 3v4h4" stroke={stroke} strokeWidth="1.6" strokeLinejoin="round" />
-      <rect
-        x="6.5"
-        y="13"
-        width="11"
-        height="6"
-        rx="1.2"
-        fill={plateFill}
-        opacity={plateOpacity}
-      />
+      <rect x="6.5" y="13" width="11" height="6" rx="1.2" fill={plateFill} opacity={plateOpacity} />
       <text
         x="12"
         y="17.6"
@@ -123,9 +120,9 @@ export function PdfIcon({ monochrome = true, ...props }: BrandIconProps) {
 // down-arrow tail. We render the inner glyph in currentColor; the box
 // stroke matches.
 export function MarkdownIcon({ monochrome = true, ...props }: BrandIconProps) {
-  const stroke = "currentColor";
-  const glyph = monochrome ? "currentColor" : "#ffffff";
-  const fill = monochrome ? "transparent" : "#000000";
+  const stroke = 'currentColor';
+  const glyph = monochrome ? 'currentColor' : '#ffffff';
+  const fill = monochrome ? 'transparent' : '#000000';
   return (
     <svg
       width="1em"
@@ -147,12 +144,15 @@ export function MarkdownIcon({ monochrome = true, ...props }: BrandIconProps) {
         fill={fill}
       />
       {/* M */}
-      <path
-        d="M5.5 15.5V9h2l1.6 2.4L10.7 9h2v6.5h-1.6v-4l-1.4 2H9.1l-1.4-2v4H5.5z"
-        fill={glyph}
-      />
+      <path d="M5.5 15.5V9h2l1.6 2.4L10.7 9h2v6.5h-1.6v-4l-1.4 2H9.1l-1.4-2v4H5.5z" fill={glyph} />
       {/* down arrow */}
-      <path d="M16 9.5v4m0 0l-1.5-1.5M16 13.5l1.5-1.5" stroke={glyph} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M16 9.5v4m0 0l-1.5-1.5M16 13.5l1.5-1.5"
+        stroke={glyph}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -161,9 +161,9 @@ export function MarkdownIcon({ monochrome = true, ...props }: BrandIconProps) {
 // Envelope. Lucide has Mail; we ship our own so the four-icon set looks
 // cohesive (same stroke weight, same corner radius).
 export function EmailIcon({ monochrome = true, ...props }: BrandIconProps) {
-  const stroke = "currentColor";
-  const fill = monochrome ? "transparent" : "#1a73e8";
-  const flapStroke = monochrome ? "currentColor" : "#ffffff";
+  const stroke = 'currentColor';
+  const fill = monochrome ? 'transparent' : '#1a73e8';
+  const flapStroke = monochrome ? 'currentColor' : '#ffffff';
   return (
     <svg
       width="1em"

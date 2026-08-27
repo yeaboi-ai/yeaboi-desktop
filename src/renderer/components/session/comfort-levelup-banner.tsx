@@ -1,26 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useSyncExternalStore } from "react";
-import { GraduationCap, X } from "lucide-react";
-import {
-  LEVEL_UP_SUGGEST_AT,
-  uniqueDismissedCount,
-} from "@/lib/term-learning-state";
+import { useState, useSyncExternalStore } from 'react';
+import { GraduationCap, X } from 'lucide-react';
+import { LEVEL_UP_SUGGEST_AT, uniqueDismissedCount } from '@/lib/term-learning-state';
 
-const DISMISSED_KEY = "planning-platform:levelup-banner-dismissed:v1";
-const STATE_CHANGED_EVENT = "term-learning-state:changed";
+const DISMISSED_KEY = 'planning-platform:levelup-banner-dismissed:v1';
+const STATE_CHANGED_EVENT = 'term-learning-state:changed';
 
 interface ComfortLevelUpBannerProps {
   /** Current value from session.ai_config.technical_comfort. Banner only shows
    *  when this is "non_technical" — comfortable/expert users don't need it. */
-  technicalComfort: "non_technical" | "comfortable" | "expert" | undefined;
+  technicalComfort: 'non_technical' | 'comfortable' | 'expert' | undefined;
   /** Called when the user accepts the upgrade. Caller should PATCH the
    *  session's ai_config.technical_comfort to "comfortable". */
   onUpgrade: () => void;
 }
 
 function subscribeToLearningState(cb: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === 'undefined') return () => {};
   window.addEventListener(STATE_CHANGED_EVENT, cb);
   return () => window.removeEventListener(STATE_CHANGED_EVENT, cb);
 }
@@ -38,25 +35,21 @@ function getDismissedCount(): number {
 export function ComfortLevelUpBanner({ technicalComfort, onUpgrade }: ComfortLevelUpBannerProps) {
   // Subscribe to localStorage-backed state via the change event our
   // `recordDismissal` helper dispatches. SSR-safe: getServerSnapshot returns 0.
-  const dismissedCount = useSyncExternalStore(
-    subscribeToLearningState,
-    getDismissedCount,
-    () => 0,
-  );
+  const dismissedCount = useSyncExternalStore(subscribeToLearningState, getDismissedCount, () => 0);
 
   // User-level "don't show this banner again" — separate from individual
   // term dismissals. Local state initializer reads localStorage once.
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(DISMISSED_KEY) === "true";
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(DISMISSED_KEY) === 'true';
   });
 
-  const eligible = technicalComfort === "non_technical" && dismissedCount >= LEVEL_UP_SUGGEST_AT;
+  const eligible = technicalComfort === 'non_technical' && dismissedCount >= LEVEL_UP_SUGGEST_AT;
   if (!eligible || bannerDismissed) return null;
 
   function dismiss() {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DISMISSED_KEY, "true");
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DISMISSED_KEY, 'true');
     }
     setBannerDismissed(true);
   }

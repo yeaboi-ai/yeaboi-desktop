@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useState, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
-import { AlertTriangle, Trash2, CheckCircle, X } from "lucide-react";
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { AlertTriangle, Trash2, CheckCircle, X } from 'lucide-react';
 
 interface ConfirmOptions {
   title: string;
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: "danger" | "warning" | "default";
+  variant?: 'danger' | 'warning' | 'default';
 }
 
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
@@ -18,12 +18,14 @@ const ConfirmContext = createContext<ConfirmFn | null>(null);
 
 export function useConfirm(): ConfirmFn {
   const fn = useContext(ConfirmContext);
-  if (!fn) throw new Error("useConfirm must be used within ConfirmProvider");
+  if (!fn) throw new Error('useConfirm must be used within ConfirmProvider');
   return fn;
 }
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(null);
+  const [state, setState] = useState<(ConfirmOptions & { resolve: (v: boolean) => void }) | null>(
+    null,
+  );
 
   const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -44,28 +46,28 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const variantStyles = {
     danger: {
       icon: <Trash2 className="h-5 w-5 text-destructive" />,
-      iconBg: "bg-destructive/10",
-      button: "bg-red-500 hover:bg-red-600 text-foreground",
+      iconBg: 'bg-destructive/10',
+      button: 'bg-red-500 hover:bg-red-600 text-foreground',
     },
     warning: {
       icon: <AlertTriangle className="h-5 w-5 text-warning" />,
-      iconBg: "bg-warning/10",
-      button: "bg-amber-500 hover:bg-amber-600 text-black",
+      iconBg: 'bg-warning/10',
+      button: 'bg-amber-500 hover:bg-amber-600 text-black',
     },
     default: {
       icon: <CheckCircle className="h-5 w-5 text-success" />,
-      iconBg: "bg-success/10",
-      button: "bg-success hover:bg-success text-foreground",
+      iconBg: 'bg-success/10',
+      button: 'bg-success hover:bg-success text-foreground',
     },
   };
 
-  const v = state ? variantStyles[state.variant || "default"] : variantStyles.default;
+  const v = state ? variantStyles[state.variant || 'default'] : variantStyles.default;
 
   return (
     <ConfirmContext.Provider value={confirm}>
       {children}
       {state &&
-        typeof window !== "undefined" &&
+        typeof window !== 'undefined' &&
         createPortal(
           <>
             {/* Backdrop */}
@@ -82,13 +84,9 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               >
                 {/* Header */}
                 <div className="flex items-start gap-3 p-5 pb-3">
-                  <div className={`${v.iconBg} rounded-full p-2 shrink-0`}>
-                    {v.icon}
-                  </div>
+                  <div className={`${v.iconBg} rounded-full p-2 shrink-0`}>{v.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {state.title}
-                    </h3>
+                    <h3 className="text-sm font-semibold text-foreground">{state.title}</h3>
                     <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                       {state.message}
                     </p>
@@ -107,19 +105,19 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                     onClick={handleCancel}
                     className="flex-1 px-4 py-2 text-xs font-medium rounded-xl bg-foreground/[0.05] text-muted-foreground hover:bg-foreground/[0.10] hover:text-foreground/90 transition-colors"
                   >
-                    {state.cancelLabel || "Cancel"}
+                    {state.cancelLabel || 'Cancel'}
                   </button>
                   <button
                     onClick={handleConfirm}
                     className={`flex-1 px-4 py-2 text-xs font-medium rounded-xl transition-colors ${v.button}`}
                   >
-                    {state.confirmLabel || "Confirm"}
+                    {state.confirmLabel || 'Confirm'}
                   </button>
                 </div>
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
     </ConfirmContext.Provider>
   );

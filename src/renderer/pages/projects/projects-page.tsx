@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ProjectCard } from "@/components/project-card";
-import { CreateProjectDialog } from "@/components/create-project-dialog";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ProjectCard } from '@/components/project-card';
+import { CreateProjectDialog } from '@/components/create-project-dialog';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { logger } from '@/lib/logger';
 
 interface Project {
   id: string;
@@ -20,9 +20,9 @@ export default function ProjectsPage() {
   // Was a Next server action; the desktop talks to FastAPI directly.
   const createProject = useCallback(
     async (data: { description: string; name?: string }) => {
-      const resp = await authFetch("/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const resp = await authFetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!resp.ok) throw new Error(`create project failed: ${resp.status}`);
@@ -35,26 +35,26 @@ export default function ProjectsPage() {
   // Render nothing until we know the user has finished onboarding. Otherwise
   // the projects page paints for one frame before the redirect fires, which
   // shows up as a flash of the wrong UI right after first-time sign-in.
-  const [gate, setGate] = useState<"checking" | "redirecting" | "ok">("checking");
+  const [gate, setGate] = useState<'checking' | 'redirecting' | 'ok'>('checking');
 
   useEffect(() => {
     if (!ready) return;
 
-    authFetch("/api/me")
+    authFetch('/api/me')
       .then((r) => (r.ok ? r.json() : null))
       .then((me) => {
         void me; // onboarding gate is a web-app concern; desktop goes straight in
-        setGate("ok");
+        setGate('ok');
       })
       .catch(() => {
-        logger.warn("Failed to check onboarding status");
-        setGate("ok");
+        logger.warn('Failed to check onboarding status');
+        setGate('ok');
       });
 
     // Fetch projects (includes X-Team-Id header) — runs in parallel so when
     // the gate clears the page is already populated.
     setLoading(true);
-    authFetch("/api/projects")
+    authFetch('/api/projects')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setProjects(data))
       .catch(() => setProjects([]))
@@ -62,20 +62,19 @@ export default function ProjectsPage() {
   }, [ready, authFetch, router, teamVersion]);
 
   const refetchProjects = useCallback(() => {
-    authFetch("/api/projects")
+    authFetch('/api/projects')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setProjects(data))
-      .catch(() => logger.warn("Failed to refresh projects"));
+      .catch(() => logger.warn('Failed to refresh projects'));
   }, [authFetch]);
 
-  if (gate !== "ok") {
+  if (gate !== 'ok') {
     return <div className="min-h-screen bg-background" aria-busy="true" />;
   }
 
   return (
     <div className="min-h-screen">
       <main className="mx-auto max-w-6xl px-6 py-14">
-
         {/* Page masthead — asymmetric split */}
         <div className="flex items-end justify-between mb-14 gap-8">
           <div className="max-w-lg animate-slide-up stagger-1">
@@ -90,7 +89,7 @@ export default function ProjectsPage() {
           <div className="flex flex-col items-end gap-2 animate-fade-in stagger-2 shrink-0">
             {!loading && projects.length > 0 && (
               <span className="text-xs text-muted-foreground font-body tabular-nums">
-                {projects.length} project{projects.length !== 1 ? "s" : ""}
+                {projects.length} project{projects.length !== 1 ? 's' : ''}
               </span>
             )}
             <CreateProjectDialog onCreate={createProject} onCreated={refetchProjects} />
@@ -121,7 +120,13 @@ export default function ProjectsPage() {
   );
 }
 
-function EmptyState({ onCreate, onCreated }: { onCreate: (data: { description: string; name?: string }) => Promise<unknown>; onCreated: () => void }) {
+function EmptyState({
+  onCreate,
+  onCreated,
+}: {
+  onCreate: (data: { description: string; name?: string }) => Promise<unknown>;
+  onCreated: () => void;
+}) {
   return (
     <div className="animate-slide-up stagger-3">
       <div className="border border-border border-dashed rounded-lg p-16 flex flex-col justify-between min-h-[280px]">
@@ -130,7 +135,9 @@ function EmptyState({ onCreate, onCreated }: { onCreate: (data: { description: s
             No projects yet
           </p>
           <p className="font-display text-4xl italic text-muted-foreground/40 leading-tight max-w-sm">
-            Start your first<br />planning session
+            Start your first
+            <br />
+            planning session
           </p>
         </div>
         <div className="mt-8">
@@ -164,10 +171,10 @@ function ProjectGrid({ projects }: { projects: Project[] }) {
         <div
           className={`grid gap-4 ${
             rest.length === 1
-              ? "grid-cols-1 max-w-lg"
+              ? 'grid-cols-1 max-w-lg'
               : rest.length === 2
-              ? "grid-cols-[3fr_2fr]"
-              : "grid-cols-[2fr_1fr_1fr]"
+                ? 'grid-cols-[3fr_2fr]'
+                : 'grid-cols-[2fr_1fr_1fr]'
           }`}
         >
           {rest.map((p, i) => (

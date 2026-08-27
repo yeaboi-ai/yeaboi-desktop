@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getAuth } from "@/lib/api-base";
-import type { WsEvent } from "@/lib/ws";
-import { createSessionWs } from "@/lib/ws";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getAuth } from '@/lib/api-base';
+import type { WsEvent } from '@/lib/ws';
+import { createSessionWs } from '@/lib/ws';
 
-const TAG = "[ws]";
+const TAG = '[ws]';
 
 export function useSessionWs(sessionId: string) {
   const wsRef = useRef<WebSocket | null>(null);
@@ -22,24 +22,24 @@ export function useSessionWs(sessionId: string) {
     const connect = async () => {
       const auth = await getAuth(true);
       if (!auth || disposed) return;
-      console.info(TAG, "connecting", { sessionId });
+      console.info(TAG, 'connecting', { sessionId });
       const ws = createSessionWs(sessionId, auth.token, auth.wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.info(TAG, "open", { sessionId });
+        console.info(TAG, 'open', { sessionId });
         setConnected(true);
       };
       ws.onerror = (ev) => {
-        console.error(TAG, "error", ev);
+        console.error(TAG, 'error', ev);
       };
       ws.onclose = (ev) => {
-        console.warn(TAG, "close", { code: ev.code, reason: ev.reason, sessionId });
+        console.warn(TAG, 'close', { code: ev.code, reason: ev.reason, sessionId });
         setConnected(false);
         if (disposed || wsRef.current !== ws) return;
         reconnectTimer = setTimeout(() => {
           if (wsRef.current === ws && !disposed) {
-            console.info(TAG, "reconnecting", { sessionId });
+            console.info(TAG, 'reconnecting', { sessionId });
             void connect();
           }
         }, 3000);
@@ -48,10 +48,10 @@ export function useSessionWs(sessionId: string) {
         try {
           const data: WsEvent = JSON.parse(event.data);
           const keys = data.payload ? Object.keys(data.payload) : [];
-          console.debug(TAG, "recv", data.type, { payloadKeys: keys });
+          console.debug(TAG, 'recv', data.type, { payloadKeys: keys });
           setEvents((prev) => [...prev, data]);
         } catch (err) {
-          console.error(TAG, "recv malformed", { raw: event.data, err });
+          console.error(TAG, 'recv malformed', { raw: event.data, err });
         }
       };
     };
@@ -59,7 +59,7 @@ export function useSessionWs(sessionId: string) {
     void connect();
 
     return () => {
-      console.info(TAG, "disconnecting (effect cleanup)", { sessionId });
+      console.info(TAG, 'disconnecting (effect cleanup)', { sessionId });
       disposed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       const ws = wsRef.current;
@@ -71,10 +71,12 @@ export function useSessionWs(sessionId: string) {
   const send = useCallback((event: WsEvent) => {
     const ws = wsRef.current;
     if (ws?.readyState === WebSocket.OPEN) {
-      console.debug(TAG, "send", event.type, { payloadKeys: event.payload ? Object.keys(event.payload) : [] });
+      console.debug(TAG, 'send', event.type, {
+        payloadKeys: event.payload ? Object.keys(event.payload) : [],
+      });
       ws.send(JSON.stringify(event));
     } else {
-      console.warn(TAG, "send dropped — ws not open", {
+      console.warn(TAG, 'send dropped — ws not open', {
         type: event.type,
         readyState: ws?.readyState,
       });

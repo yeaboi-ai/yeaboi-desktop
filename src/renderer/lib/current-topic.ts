@@ -7,11 +7,23 @@
  */
 
 const PERSONA_FOCUS: Record<string, string[]> = {
-  default: ["tech_stack", "architecture", "infrastructure", "api_integrations"],
-  pm: ["project_overview", "goals_constraints", "users_personas", "ui_ux", "out_of_scope"],
-  architect: ["architecture", "tech_stack", "api_integrations", "infrastructure", "security_compliance"],
-  mentor: ["project_overview", "goals_constraints", "users_personas", "team_capacity", "open_questions"],
-  challenger: ["risks_unknowns", "goals_constraints", "out_of_scope", "security_compliance"],
+  default: ['tech_stack', 'architecture', 'infrastructure', 'api_integrations'],
+  pm: ['project_overview', 'goals_constraints', 'users_personas', 'ui_ux', 'out_of_scope'],
+  architect: [
+    'architecture',
+    'tech_stack',
+    'api_integrations',
+    'infrastructure',
+    'security_compliance',
+  ],
+  mentor: [
+    'project_overview',
+    'goals_constraints',
+    'users_personas',
+    'team_capacity',
+    'open_questions',
+  ],
+  challenger: ['risks_unknowns', 'goals_constraints', 'out_of_scope', 'security_compliance'],
 };
 
 /** Threshold below which a section is considered "needs more attention".
@@ -24,11 +36,11 @@ export function computeCurrentTopic(
   persona: string | undefined,
 ): string | null {
   if (!blueprintContent) return null;
-  const focus = PERSONA_FOCUS[persona || "default"] || PERSONA_FOCUS.default;
+  const focus = PERSONA_FOCUS[persona || 'default'] || PERSONA_FOCUS.default;
 
   let lowest: { section: string; length: number } | null = null;
   for (const section of focus) {
-    const length = (blueprintContent[section] || "").trim().length;
+    const length = (blueprintContent[section] || '').trim().length;
     if (length >= SUFFICIENT_LENGTH) continue;
     if (!lowest || length < lowest.length) {
       lowest = { section, length };
@@ -50,7 +62,7 @@ export function lastAiUpdatedSection(
   if (!sectionUpdatesByMessageId) return null;
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
-    if (m.message_type !== "ai") continue;
+    if (m.message_type !== 'ai') continue;
     const updated = sectionUpdatesByMessageId[m.id];
     if (updated && updated.length > 0) return updated[0];
   }

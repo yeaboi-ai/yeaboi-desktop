@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { useConfirm } from "@/components/ui/confirm-dialog";
-import { CheckCircle2, MoreVertical } from "lucide-react";
+import { useState, useRef, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { CheckCircle2, MoreVertical } from 'lucide-react';
 
 interface SessionHeaderProps {
   title: string | null;
@@ -14,17 +14,24 @@ interface SessionHeaderProps {
   isHost: boolean;
 }
 
-export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave, isHost }: SessionHeaderProps) {
+export function SessionHeader({
+  title,
+  status,
+  joinCode,
+  onStatusChange,
+  onLeave,
+  isHost,
+}: SessionHeaderProps) {
   const confirm = useConfirm();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const statusColors: Record<string, string> = {
-    created: "bg-muted text-muted-foreground",
-    lobby: "bg-info/20 text-info",
-    live: "bg-success/20 text-success",
-    paused: "bg-warning/20 text-warning",
-    completed: "bg-purple-500/20 text-purple-400",
+    created: 'bg-muted text-muted-foreground',
+    lobby: 'bg-info/20 text-info',
+    live: 'bg-success/20 text-success',
+    paused: 'bg-warning/20 text-warning',
+    completed: 'bg-purple-500/20 text-purple-400',
   };
 
   // Close menu when clicking outside
@@ -34,21 +41,21 @@ export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave
         setMenuOpen(false);
       }
     }
-    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (menuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
-  const canPause = isHost && status === "live";
-  const canResume = isHost && status === "paused";
-  const canEnd = isHost && (status === "live" || status === "paused");
+  const canPause = isHost && status === 'live';
+  const canResume = isHost && status === 'paused';
+  const canEnd = isHost && (status === 'live' || status === 'paused');
   const showMenu = canPause || canResume || canEnd;
 
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b border-border">
       {/* Left: title, status badge, join code */}
       <div className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold">{title || "Planning Session"}</h2>
-        <Badge className={statusColors[status] || ""}>{status}</Badge>
+        <h2 className="text-lg font-semibold">{title || 'Planning Session'}</h2>
+        <Badge className={statusColors[status] || ''}>{status}</Badge>
         <span className="text-xs text-muted-foreground font-mono">#{joinCode}</span>
       </div>
 
@@ -57,9 +64,14 @@ export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave
         {canEnd && (
           <button
             onClick={async () => {
-              const ok = await confirm({ title: "Wrap Up Session", message: "Wrap up this session? You'll review your blueprint, fill any gaps, and preview the tasks before finalizing.", confirmLabel: "Wrap up" });
+              const ok = await confirm({
+                title: 'Wrap Up Session',
+                message:
+                  "Wrap up this session? You'll review your blueprint, fill any gaps, and preview the tasks before finalizing.",
+                confirmLabel: 'Wrap up',
+              });
               if (ok) {
-                onStatusChange?.("reviewing");
+                onStatusChange?.('reviewing');
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/15 text-success hover:bg-success/25 text-xs font-medium transition-colors border border-success/20"
@@ -83,7 +95,10 @@ export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave
                 {canPause && (
                   <button
                     className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                    onClick={() => { onStatusChange?.("paused"); setMenuOpen(false); }}
+                    onClick={() => {
+                      onStatusChange?.('paused');
+                      setMenuOpen(false);
+                    }}
                   >
                     Pause Session
                   </button>
@@ -91,7 +106,10 @@ export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave
                 {canResume && (
                   <button
                     className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                    onClick={() => { onStatusChange?.("live"); setMenuOpen(false); }}
+                    onClick={() => {
+                      onStatusChange?.('live');
+                      setMenuOpen(false);
+                    }}
                   >
                     Resume Session
                   </button>
@@ -100,9 +118,14 @@ export function SessionHeader({ title, status, joinCode, onStatusChange, onLeave
                   <button
                     className="w-full text-left px-3 py-2 text-sm text-success hover:bg-success/10 transition-colors"
                     onClick={async () => {
-                      const ok = await confirm({ title: "Wrap Up Session", message: "Wrap up this session? You'll review your blueprint, fill any gaps, and preview the tasks before finalizing.", confirmLabel: "Wrap up" });
+                      const ok = await confirm({
+                        title: 'Wrap Up Session',
+                        message:
+                          "Wrap up this session? You'll review your blueprint, fill any gaps, and preview the tasks before finalizing.",
+                        confirmLabel: 'Wrap up',
+                      });
                       if (ok) {
-                        onStatusChange?.("reviewing");
+                        onStatusChange?.('reviewing');
                       }
                       setMenuOpen(false);
                     }}

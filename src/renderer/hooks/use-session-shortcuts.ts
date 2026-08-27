@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from 'react';
 
 export interface SessionShortcut {
   /** Stable identifier — used by Cmd-K to address the action programmatically. */
@@ -17,7 +17,7 @@ export interface SessionShortcut {
    */
   keys: string;
   /** Group label for the help overlay. */
-  group?: "Call" | "Agent" | "Navigation" | "Misc";
+  group?: 'Call' | 'Agent' | 'Navigation' | 'Misc';
   /** Action to invoke. Receives the originating event so handlers can preventDefault if needed. */
   run: (event: KeyboardEvent) => void;
   /** When true, this shortcut also fires when focus is in an input/textarea/contenteditable. Default false. */
@@ -27,40 +27,40 @@ export interface SessionShortcut {
 }
 
 const isMac = (): boolean => {
-  if (typeof navigator === "undefined") return false;
-  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+  if (typeof navigator === 'undefined') return false;
+  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
 };
 
 /** Format a shortcut spec ("mod+k") for display ("⌘K" on macOS, "Ctrl+K" elsewhere). */
 export function formatShortcut(keys: string): string {
   const mac = isMac();
   return keys
-    .split("+")
+    .split('+')
     .map((part) => {
       const k = part.toLowerCase();
-      if (k === "mod") return mac ? "⌘" : "Ctrl";
-      if (k === "shift") return mac ? "⇧" : "Shift";
-      if (k === "alt") return mac ? "⌥" : "Alt";
-      if (k === "space") return "Space";
-      if (k === "esc" || k === "escape") return "Esc";
+      if (k === 'mod') return mac ? '⌘' : 'Ctrl';
+      if (k === 'shift') return mac ? '⇧' : 'Shift';
+      if (k === 'alt') return mac ? '⌥' : 'Alt';
+      if (k === 'space') return 'Space';
+      if (k === 'esc' || k === 'escape') return 'Esc';
       return part.length === 1 ? part.toUpperCase() : part;
     })
-    .join(mac ? "" : "+");
+    .join(mac ? '' : '+');
 }
 
 function isInputTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
   if (target.isContentEditable) return true;
   return false;
 }
 
 function matches(spec: string, e: KeyboardEvent): boolean {
-  const parts = spec.toLowerCase().split("+");
-  const needsMod = parts.includes("mod");
-  const needsShift = parts.includes("shift");
-  const needsAlt = parts.includes("alt");
+  const parts = spec.toLowerCase().split('+');
+  const needsMod = parts.includes('mod');
+  const needsShift = parts.includes('shift');
+  const needsAlt = parts.includes('alt');
   const key = parts[parts.length - 1];
 
   const modPressed = isMac() ? e.metaKey : e.ctrlKey;
@@ -69,9 +69,9 @@ function matches(spec: string, e: KeyboardEvent): boolean {
   if (needsAlt !== e.altKey) return false;
 
   // Space and Escape map to e.code; letter keys to e.key.
-  if (key === "space") return e.code === "Space";
-  if (key === "esc" || key === "escape") return e.key === "Escape";
-  if (key === "?") return e.key === "?";
+  if (key === 'space') return e.code === 'Space';
+  if (key === 'esc' || key === 'escape') return e.key === 'Escape';
+  if (key === '?') return e.key === '?';
   return e.key.toLowerCase() === key;
 }
 
@@ -103,7 +103,7 @@ export function useSessionShortcuts(shortcuts: SessionShortcut[], enabled: boole
 
   useEffect(() => {
     if (!enabled) return;
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [enabled, onKey]);
 }

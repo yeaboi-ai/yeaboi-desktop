@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   CommandDialog,
@@ -7,15 +7,15 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from "@/components/ui/command";
-import { formatShortcut, type SessionShortcut } from "@/hooks/use-session-shortcuts";
+} from '@/components/ui/command';
+import { formatShortcut, type SessionShortcut } from '@/hooks/use-session-shortcuts';
 
 const PERSONAS = [
-  { id: "default", label: "Senior Engineer" },
-  { id: "pm", label: "Product Manager" },
-  { id: "architect", label: "System Architect" },
-  { id: "mentor", label: "Patient Mentor" },
-  { id: "challenger", label: "Devil's Advocate" },
+  { id: 'default', label: 'Senior Engineer' },
+  { id: 'pm', label: 'Product Manager' },
+  { id: 'architect', label: 'System Architect' },
+  { id: 'mentor', label: 'Patient Mentor' },
+  { id: 'challenger', label: "Devil's Advocate" },
 ] as const;
 
 interface CommandPaletteProps {
@@ -29,7 +29,13 @@ interface CommandPaletteProps {
   inCall: boolean;
 }
 
-export function CommandPalette({ open, onOpenChange, shortcuts, onSwitchPersona, inCall }: CommandPaletteProps) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+  shortcuts,
+  onSwitchPersona,
+  inCall,
+}: CommandPaletteProps) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} label="Session command palette">
       <CommandInput placeholder="Type a command or search..." />
@@ -53,11 +59,11 @@ export function CommandPalette({ open, onOpenChange, shortcuts, onSwitchPersona,
         {(() => {
           const visible = shortcuts; // Cmd-K shows everything, including no-keybind entries
           const groups = visible.reduce<Record<string, SessionShortcut[]>>((acc, s) => {
-            const g = s.group ?? "Misc";
+            const g = s.group ?? 'Misc';
             (acc[g] ??= []).push(s);
             return acc;
           }, {});
-          const order: Array<keyof typeof groups> = ["Call", "Agent", "Navigation", "Misc"];
+          const order: Array<keyof typeof groups> = ['Call', 'Agent', 'Navigation', 'Misc'];
           return order
             .filter((g) => groups[g]?.length)
             .map((g) => (
@@ -69,10 +75,10 @@ export function CommandPalette({ open, onOpenChange, shortcuts, onSwitchPersona,
                     onSelect={() => {
                       // Synthesize a minimal KeyboardEvent so handlers that
                       // call preventDefault don't crash.
-                      s.run(new KeyboardEvent("keydown"));
+                      s.run(new KeyboardEvent('keydown'));
                     }}
                     shortcut={s.keys ? formatShortcut(s.keys) : undefined}
-                    disabled={s.id.startsWith("call.") && !inCall}
+                    disabled={s.id.startsWith('call.') && !inCall}
                   >
                     {s.label}
                   </CommandItem>

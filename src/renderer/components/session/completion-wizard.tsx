@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Accessibility,
   Activity,
@@ -32,15 +32,15 @@ import {
   User as UserIcon,
   Waves,
   X,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import {
   BUILTIN_PRESETS,
   fetchOrgPresets,
   ICON_BY_NAME,
   type PresetDTO,
-} from "@/lib/api/generation-presets";
+} from '@/lib/api/generation-presets';
 import {
   BUILTIN_GRANULARITIES,
   BUILTIN_MODIFIERS,
@@ -49,8 +49,8 @@ import {
   MODIFIER_CATEGORIES,
   type GranularityDTO,
   type ModifierDTO,
-} from "@/lib/api/generation-options";
-import { TemplateBadge } from "@/components/tickets/template-badge";
+} from '@/lib/api/generation-options';
+import { TemplateBadge } from '@/components/tickets/template-badge';
 import {
   clearCachedStories,
   computeDependentsByIdx,
@@ -59,8 +59,8 @@ import {
   groupTasksByWave,
   readCachedStories,
   writeCachedStories,
-} from "./completion-wizard-helpers";
-import { GeneratingTasksLoader } from "./generating-tasks-loader";
+} from './completion-wizard-helpers';
+import { GeneratingTasksLoader } from './generating-tasks-loader';
 
 export type WizardTask = {
   title: string;
@@ -103,38 +103,38 @@ interface CompletionWizardProps {
 }
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI / UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI / UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 const SECTION_HINTS: Record<string, string> = {
   project_overview: "A 1-2 sentence summary of what you're building",
-  goals_constraints: "What success looks like and any non-negotiables",
+  goals_constraints: 'What success looks like and any non-negotiables',
   users_personas: "Who'll use this and what they need",
-  team_capacity: "Team size, roles, and time available",
-  architecture: "How the major pieces fit together",
-  tech_stack: "Frontend, backend, and database choices",
+  team_capacity: 'Team size, roles, and time available',
+  architecture: 'How the major pieces fit together',
+  tech_stack: 'Frontend, backend, and database choices',
   api_integrations: "External services and APIs you'll call",
-  ui_ux: "Style direction and key user flows",
-  security_compliance: "Auth approach and data sensitivity",
-  infrastructure: "Hosting, deploys, and CI",
+  ui_ux: 'Style direction and key user flows',
+  security_compliance: 'Auth approach and data sensitivity',
+  infrastructure: 'Hosting, deploys, and CI',
   risks_unknowns: "What could break, what's still unclear",
   out_of_scope: "What you're explicitly not building",
-  open_questions: "Things to revisit later",
+  open_questions: 'Things to revisit later',
 };
 
-type StepKey = "gaps" | "defaults" | "stories";
+type StepKey = 'gaps' | 'defaults' | 'stories';
 type StepDef = { key: StepKey; label: string };
 
 // Two orthogonal axes. Keep slug values in sync with
@@ -143,30 +143,30 @@ type StepDef = { key: StepKey; label: string };
 // Axis 1 (single-select, required): number of tickets / size each.
 // Axis 2 (multi-select, 0+): functional shape — these stack independently
 // so a user can ask for "many small + spike-first + user stories" together.
-export type Granularity = "minimal" | "balanced" | "many_small";
+export type Granularity = 'minimal' | 'balanced' | 'many_small';
 export type Modifier =
   // shape
-  | "vertical_slices"
-  | "story_driven"
-  | "spike_first"
-  | "wave_optimised"
-  | "follow_practices"
+  | 'vertical_slices'
+  | 'story_driven'
+  | 'spike_first'
+  | 'wave_optimised'
+  | 'follow_practices'
   // quality / production-readiness
-  | "test_driven"
-  | "docs_bundled"
-  | "observability_first"
-  | "release_ready"
+  | 'test_driven'
+  | 'docs_bundled'
+  | 'observability_first'
+  | 'release_ready'
   // risk & compliance
-  | "risk_mitigated"
-  | "compliance_aware"
-  | "accessibility"
+  | 'risk_mitigated'
+  | 'compliance_aware'
+  | 'accessibility'
   // methodology
-  | "mvp_first"
-  | "gherkin_ac"
-  | "api_contract_first"
-  | "demo_waves";
+  | 'mvp_first'
+  | 'gherkin_ac'
+  | 'api_contract_first'
+  | 'demo_waves';
 
-type ModifierCategory = "shape" | "quality" | "risk" | "methodology";
+type ModifierCategory = 'shape' | 'quality' | 'risk' | 'methodology';
 
 type GranularityOption = {
   slug: Granularity;
@@ -188,24 +188,24 @@ type ModifierOption = {
 
 const GRANULARITY_OPTIONS: ReadonlyArray<GranularityOption> = [
   {
-    slug: "balanced",
-    label: "Balanced",
-    signature: "8–20 tickets · 1–3 days each",
-    blurb: "Well-rounded backlog for a typical sprint.",
+    slug: 'balanced',
+    label: 'Balanced',
+    signature: '8–20 tickets · 1–3 days each',
+    blurb: 'Well-rounded backlog for a typical sprint.',
     icon: Layers,
   },
   {
-    slug: "minimal",
-    label: "Minimal",
-    signature: "3–6 tickets · 3–5 days each",
-    blurb: "Few larger tickets, merged across concerns.",
+    slug: 'minimal',
+    label: 'Minimal',
+    signature: '3–6 tickets · 3–5 days each',
+    blurb: 'Few larger tickets, merged across concerns.',
     icon: Minimize2,
   },
   {
-    slug: "many_small",
-    label: "Many small",
-    signature: "20–40 tickets · ≤1 day each",
-    blurb: "Aggressively split. Easy to parallelise.",
+    slug: 'many_small',
+    label: 'Many small',
+    signature: '20–40 tickets · ≤1 day each',
+    blurb: 'Aggressively split. Easy to parallelise.',
     icon: Grid3x3,
   },
 ];
@@ -213,135 +213,135 @@ const GRANULARITY_OPTIONS: ReadonlyArray<GranularityOption> = [
 const MODIFIER_OPTIONS: ReadonlyArray<ModifierOption> = [
   // ── shape ─────────────────────────────────────────────────────────────
   {
-    slug: "vertical_slices",
-    category: "shape",
-    label: "Vertical slices",
-    signature: "End-to-end per ticket",
-    blurb: "Each ticket spans UI + API + DB so it ships as one PR.",
+    slug: 'vertical_slices',
+    category: 'shape',
+    label: 'Vertical slices',
+    signature: 'End-to-end per ticket',
+    blurb: 'Each ticket spans UI + API + DB so it ships as one PR.',
     icon: Layers3,
   },
   {
-    slug: "story_driven",
-    category: "shape",
-    label: "User stories",
-    signature: "As a … I want …",
-    blurb: "Titles framed as user outcomes.",
+    slug: 'story_driven',
+    category: 'shape',
+    label: 'User stories',
+    signature: 'As a … I want …',
+    blurb: 'Titles framed as user outcomes.',
     icon: UserIcon,
   },
   {
-    slug: "spike_first",
-    category: "shape",
-    label: "Spike-first",
-    signature: "Investigate unknowns",
-    blurb: "Insert time-boxed spikes ahead of unknowns and ambiguity.",
+    slug: 'spike_first',
+    category: 'shape',
+    label: 'Spike-first',
+    signature: 'Investigate unknowns',
+    blurb: 'Insert time-boxed spikes ahead of unknowns and ambiguity.',
     icon: Compass,
   },
   {
-    slug: "wave_optimised",
-    category: "shape",
-    label: "Wave-optimised",
-    signature: "Max parallel wave 0",
-    blurb: "Minimise dependencies so the orchestrator runs flat.",
+    slug: 'wave_optimised',
+    category: 'shape',
+    label: 'Wave-optimised',
+    signature: 'Max parallel wave 0',
+    blurb: 'Minimise dependencies so the orchestrator runs flat.',
     icon: Waves,
   },
   {
-    slug: "follow_practices",
-    category: "shape",
-    label: "Follow your practices",
-    signature: "Mirror your repo",
-    blurb: "Reads your linked GitHub repo and matches its conventions.",
+    slug: 'follow_practices',
+    category: 'shape',
+    label: 'Follow your practices',
+    signature: 'Mirror your repo',
+    blurb: 'Reads your linked GitHub repo and matches its conventions.',
     icon: GitBranch,
     requiresRepo: true,
   },
   // ── quality / production-readiness ────────────────────────────────────
   {
-    slug: "test_driven",
-    category: "quality",
-    label: "Test-driven",
-    signature: "Tests required",
-    blurb: "Test AC on every ticket; paired test tickets for non-trivial features.",
+    slug: 'test_driven',
+    category: 'quality',
+    label: 'Test-driven',
+    signature: 'Tests required',
+    blurb: 'Test AC on every ticket; paired test tickets for non-trivial features.',
     icon: FlaskConical,
   },
   {
-    slug: "docs_bundled",
-    category: "quality",
-    label: "Docs bundled",
-    signature: "Docs updated as we go",
-    blurb: "Every user-facing change includes a docs touch; new surfaces get docs tickets.",
+    slug: 'docs_bundled',
+    category: 'quality',
+    label: 'Docs bundled',
+    signature: 'Docs updated as we go',
+    blurb: 'Every user-facing change includes a docs touch; new surfaces get docs tickets.',
     icon: BookOpen,
   },
   {
-    slug: "observability_first",
-    category: "quality",
-    label: "Observability-first",
-    signature: "Logs · metrics · traces",
-    blurb: "Every ticket includes logging/metric AC; new services get observability tickets.",
+    slug: 'observability_first',
+    category: 'quality',
+    label: 'Observability-first',
+    signature: 'Logs · metrics · traces',
+    blurb: 'Every ticket includes logging/metric AC; new services get observability tickets.',
     icon: Activity,
   },
   {
-    slug: "release_ready",
-    category: "quality",
-    label: "Release-ready",
-    signature: "Deploy + flag + rollback",
-    blurb: "Final wave includes explicit deploy, flag, monitoring, and rollback tickets.",
+    slug: 'release_ready',
+    category: 'quality',
+    label: 'Release-ready',
+    signature: 'Deploy + flag + rollback',
+    blurb: 'Final wave includes explicit deploy, flag, monitoring, and rollback tickets.',
     icon: Rocket,
   },
   // ── risk & compliance ─────────────────────────────────────────────────
   {
-    slug: "risk_mitigated",
-    category: "risk",
-    label: "Risk-mitigated",
-    signature: "Concrete mitigations",
-    blurb: "Emit a mitigation ticket for each KNOWN risk in the blueprint.",
+    slug: 'risk_mitigated',
+    category: 'risk',
+    label: 'Risk-mitigated',
+    signature: 'Concrete mitigations',
+    blurb: 'Emit a mitigation ticket for each KNOWN risk in the blueprint.',
     icon: ShieldAlert,
   },
   {
-    slug: "compliance_aware",
-    category: "risk",
-    label: "Compliance-aware",
-    signature: "Audit · encrypt · access",
-    blurb: "Dedicated compliance tickets when the blueprint has security/compliance content.",
+    slug: 'compliance_aware',
+    category: 'risk',
+    label: 'Compliance-aware',
+    signature: 'Audit · encrypt · access',
+    blurb: 'Dedicated compliance tickets when the blueprint has security/compliance content.',
     icon: ShieldCheck,
   },
   {
-    slug: "accessibility",
-    category: "risk",
-    label: "Accessibility",
-    signature: "a11y AC on UI tickets",
-    blurb: "Force a11y AC on UI tickets; at least one a11y audit ticket per surface.",
+    slug: 'accessibility',
+    category: 'risk',
+    label: 'Accessibility',
+    signature: 'a11y AC on UI tickets',
+    blurb: 'Force a11y AC on UI tickets; at least one a11y audit ticket per surface.',
     icon: Accessibility,
   },
   // ── methodology ───────────────────────────────────────────────────────
   {
-    slug: "mvp_first",
-    category: "methodology",
-    label: "MVP-first",
-    signature: "Deployable v0 first",
-    blurb: "Order so waves 0–1 ship a usable v0; later waves are enhancements.",
+    slug: 'mvp_first',
+    category: 'methodology',
+    label: 'MVP-first',
+    signature: 'Deployable v0 first',
+    blurb: 'Order so waves 0–1 ship a usable v0; later waves are enhancements.',
     icon: Flag,
   },
   {
-    slug: "gherkin_ac",
-    category: "methodology",
-    label: "Gherkin AC",
-    signature: "Given / When / Then",
-    blurb: "BDD-shaped acceptance criteria. Composes with User stories.",
+    slug: 'gherkin_ac',
+    category: 'methodology',
+    label: 'Gherkin AC',
+    signature: 'Given / When / Then',
+    blurb: 'BDD-shaped acceptance criteria. Composes with User stories.',
     icon: ListChecks,
   },
   {
-    slug: "api_contract_first",
-    category: "methodology",
-    label: "API-contract-first",
-    signature: "Schema before code",
-    blurb: "OpenAPI/schema tickets land BEFORE any implementation that consumes them.",
+    slug: 'api_contract_first',
+    category: 'methodology',
+    label: 'API-contract-first',
+    signature: 'Schema before code',
+    blurb: 'OpenAPI/schema tickets land BEFORE any implementation that consumes them.',
     icon: FileCode2,
   },
   {
-    slug: "demo_waves",
-    category: "methodology",
-    label: "Demo-able waves",
-    signature: "Each wave demos",
-    blurb: "Every wave ends with a stakeholder-demoable artifact.",
+    slug: 'demo_waves',
+    category: 'methodology',
+    label: 'Demo-able waves',
+    signature: 'Each wave demos',
+    blurb: 'Every wave ends with a stakeholder-demoable artifact.',
     icon: MonitorPlay,
   },
 ];
@@ -362,7 +362,7 @@ const MODIFIER_BY_SLUG: Record<Modifier, ModifierOption> = MODIFIER_OPTIONS.redu
   {} as Record<Modifier, ModifierOption>,
 );
 
-const DEFAULT_GRANULARITY: Granularity = "balanced";
+const DEFAULT_GRANULARITY: Granularity = 'balanced';
 
 // ── Presets ────────────────────────────────────────────────────────────────
 // Preset DEFINITIONS now live on the backend at /api/generation-presets
@@ -398,27 +398,27 @@ function recommendPreset(
   blueprint: Record<string, string>,
 ): string | null {
   if (presets.length === 0) return null;
-  const has = (key: string) => (blueprint[key] || "").trim().length > 0;
-  const filled = Object.values(blueprint).filter((v) => (v || "").trim().length > 0).length;
+  const has = (key: string) => (blueprint[key] || '').trim().length > 0;
+  const filled = Object.values(blueprint).filter((v) => (v || '').trim().length > 0).length;
   let preferred: string;
-  if (filled <= 2) preferred = "quick_prototype";
-  else if (has("security_compliance")) preferred = "production_grade";
-  else if (has("users_personas")) preferred = "stakeholder_demo";
-  else preferred = "standard_sprint";
+  if (filled <= 2) preferred = 'quick_prototype';
+  else if (has('security_compliance')) preferred = 'production_grade';
+  else if (has('users_personas')) preferred = 'stakeholder_demo';
+  else preferred = 'standard_sprint';
   return presets.some((p) => p.slug === preferred) ? preferred : presets[0].slug;
 }
 
 const ALL_STEPS: readonly StepDef[] = [
-  { key: "gaps", label: "Check coverage" },
-  { key: "defaults", label: "Review defaults" },
-  { key: "stories", label: "Preview tasks" },
+  { key: 'gaps', label: 'Check coverage' },
+  { key: 'defaults', label: 'Review defaults' },
+  { key: 'stories', label: 'Preview tasks' },
 ];
 
 /** Build the visible step list. The defaults step is skipped when there are no
  * empty sections — thin sections are handled inline via the per-card Improve
  * action, so a separate "review defaults" page would be empty. */
 function buildSteps(hasEmptySections: boolean): StepDef[] {
-  return ALL_STEPS.filter((s) => s.key !== "defaults" || hasEmptySections);
+  return ALL_STEPS.filter((s) => s.key !== 'defaults' || hasEmptySections);
 }
 
 type Coverage = {
@@ -427,7 +427,7 @@ type Coverage = {
   overall?: number;
 };
 
-type DefaultDecision = "accepted" | "declined";
+type DefaultDecision = 'accepted' | 'declined';
 
 type DefaultRow = {
   section: string;
@@ -437,9 +437,14 @@ type DefaultRow = {
   isEdited: boolean;
 };
 
-export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: CompletionWizardProps) {
+export function CompletionWizard({
+  projectId,
+  sessionId,
+  onCancel,
+  onCommit,
+}: CompletionWizardProps) {
   const { authFetch } = useAuthFetch();
-  const [step, setStep] = useState<StepKey>("gaps");
+  const [step, setStep] = useState<StepKey>('gaps');
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [blueprint, setBlueprint] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<DefaultRow[]>([]);
@@ -458,11 +463,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   const [jobId, setJobId] = useState<string | null>(null);
   const [wavesComplete, setWavesComplete] = useState(0);
   const [jobStatus, setJobStatus] = useState<
-    "pending" | "running" | "complete" | "failed" | "cancelled" | null
+    'pending' | 'running' | 'complete' | 'failed' | 'cancelled' | null
   >(null);
   // Per-thin-card improve state.
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [improveDraft, setImproveDraft] = useState<string>("");
+  const [improveDraft, setImproveDraft] = useState<string>('');
   const [improveSuggesting, setImproveSuggesting] = useState(false);
   const [improveSaving, setImproveSaving] = useState(false);
   // Regenerate-with-feedback dialog state.
@@ -517,7 +522,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
       } catch (e) {
         // Best-effort — wizard keeps using BUILTIN_* fallbacks. Still log
         // so an expired session or backend outage is visible in the console.
-        console.warn("[completion-wizard] failed to load org generation options", e);
+        console.warn('[completion-wizard] failed to load org generation options', e);
       }
     })();
     return () => {
@@ -578,7 +583,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
       } catch (e) {
         // Best-effort — picker stays at defaults. Log so an expired
         // session or transient backend error is visible.
-        console.warn("[completion-wizard] failed to load project meta", e);
+        console.warn('[completion-wizard] failed to load project meta', e);
       }
     })();
     return () => {
@@ -620,7 +625,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
         setCoverage(cov);
         if (bp?.content) setBlueprint(bp.content);
         if (!cov.gaps || cov.gaps.length === 0) {
-          setStep("stories");
+          setStep('stories');
         }
       })
       .catch((e) => !cancelled && setError(String(e)))
@@ -679,9 +684,9 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
       const stale = jobIdRef.current;
       if (opts.force && stale) {
         try {
-          await authFetch(`/api/jobs/${stale}/cancel`, { method: "POST" });
+          await authFetch(`/api/jobs/${stale}/cancel`, { method: 'POST' });
         } catch (e) {
-          console.warn("[completion-wizard] stale-job cancel failed", e);
+          console.warn('[completion-wizard] stale-job cancel failed', e);
           // Best-effort cancel; if it fails the old job will eventually die on
           // its own. Don't block the new request.
         }
@@ -693,7 +698,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
       setExpandedTaskIdx(null);
       setHoveredIdx(null);
       setWavesComplete(0);
-      setJobStatus("pending");
+      setJobStatus('pending');
       setJobId(null);
 
       try {
@@ -708,8 +713,8 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           modifiers: chosenModifiers,
         };
         const init: RequestInit = {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         };
         const r = await authFetch(`/api/projects/${projectId}/stories/preview-async`, init);
@@ -718,9 +723,9 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           throw new Error(detail);
         }
         const data = await r.json();
-        if (!data.job_id) throw new Error("No job_id returned from preview-async");
+        if (!data.job_id) throw new Error('No job_id returned from preview-async');
         setJobId(data.job_id);
-        if (data.warning && typeof data.warning === "string") {
+        if (data.warning && typeof data.warning === 'string') {
           setGenWarning(data.warning);
         }
         // Loading stays true; the polling effect flips it false on terminal status.
@@ -767,7 +772,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           setTemplatesBySlug(lookup);
         }
 
-        if (data.status === "complete") {
+        if (data.status === 'complete') {
           hydratedRef.current = true;
           // Seed the cache so a tab refresh doesn't trigger a fresh job.
           const finalTasks: WizardTask[] = data.partial_tasks || [];
@@ -783,7 +788,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           setLoading(false);
           return;
         }
-        if (data.status === "failed" || data.status === "cancelled") {
+        if (data.status === 'failed' || data.status === 'cancelled') {
           setError(data.error || `Task generation ${data.status}`);
           setLoading(false);
           return;
@@ -822,7 +827,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   }, [tasks, removed, templatesBySlug, sessionId]);
 
   useEffect(() => {
-    if (step !== "stories") {
+    if (step !== 'stories') {
       tasksLoadedRef.current = false;
       setGenerationStarted(false);
       return;
@@ -854,8 +859,8 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
     setError(null);
     try {
       const r = await authFetch(`/api/projects/${projectId}/blueprint/suggest-defaults`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sections: emptySectionKeys }),
       });
       if (!r.ok) {
@@ -863,13 +868,15 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
         throw new Error(detail);
       }
       const data = await r.json();
-      const rows: DefaultRow[] = Object.entries(data.suggestions || {}).map(([section, suggestion]) => ({
-        section,
-        suggestion: String(suggestion),
-        edited: String(suggestion),
-        decision: "accepted",
-        isEdited: false,
-      }));
+      const rows: DefaultRow[] = Object.entries(data.suggestions || {}).map(
+        ([section, suggestion]) => ({
+          section,
+          suggestion: String(suggestion),
+          edited: String(suggestion),
+          decision: 'accepted',
+          isEdited: false,
+        }),
+      );
       setDefaults(rows);
     } catch (e) {
       setError(String(e));
@@ -880,21 +887,21 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
 
   const advanceFromGaps = () => {
     if (emptySectionKeys.length > 0) {
-      setStep("defaults");
+      setStep('defaults');
       loadDefaults();
     } else {
-      setStep("stories");
+      setStep('stories');
     }
   };
 
   // ── Per-thin-card improve handlers ───────────────────────────────────────
   const startImprove = (section: string) => {
     setExpandedSection(section);
-    setImproveDraft(blueprint[section] || "");
+    setImproveDraft(blueprint[section] || '');
   };
   const cancelImprove = () => {
     setExpandedSection(null);
-    setImproveDraft("");
+    setImproveDraft('');
     setImproveSuggesting(false);
   };
   const requestSuggestion = async () => {
@@ -902,8 +909,8 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
     setImproveSuggesting(true);
     try {
       const r = await authFetch(`/api/projects/${projectId}/blueprint/suggest-defaults`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sections: [expandedSection] }),
       });
       if (!r.ok) {
@@ -923,11 +930,14 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
     if (!expandedSection || !improveDraft.trim()) return;
     setImproveSaving(true);
     try {
-      const r = await authFetch(`/api/projects/${projectId}/blueprint/sections/${expandedSection}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: improveDraft.trim() }),
-      });
+      const r = await authFetch(
+        `/api/projects/${projectId}/blueprint/sections/${expandedSection}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: improveDraft.trim() }),
+        },
+      );
       if (!r.ok) {
         const detail = await extractErrorDetail(r);
         throw new Error(detail);
@@ -954,15 +964,15 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   const persistAcceptedDefaults = async () => {
     setSavingDefaults(true);
     try {
-      const accepted = defaults.filter((d) => d.decision === "accepted" && d.edited.trim());
+      const accepted = defaults.filter((d) => d.decision === 'accepted' && d.edited.trim());
       for (const row of accepted) {
         await authFetch(`/api/projects/${projectId}/blueprint/sections/${row.section}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: row.edited.trim() }),
         });
       }
-      setStep("stories");
+      setStep('stories');
     } catch (e) {
       setError(String(e));
     } finally {
@@ -976,7 +986,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
 
   const scrollAndFlash = useCallback((idx: number) => {
     const el = cardRefs.current.get(idx);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setFlashIdx(idx);
     setTimeout(() => setFlashIdx((cur) => (cur === idx ? null : cur)), 1200);
   }, []);
@@ -993,13 +1003,13 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   const regenerateOneTask = useCallback(
     async (idx: number, fields: string[], feedback: string) => {
       const target = tasks[idx];
-      if (!target) throw new Error("Task no longer exists");
+      if (!target) throw new Error('Task no longer exists');
       const contextTitles = tasks
         .filter((_, i) => i !== idx && !removed.has(i))
         .map((t) => t.title);
       const r = await authFetch(`/api/projects/${projectId}/stories/preview/regenerate-task`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task: target,
           fields,
@@ -1013,7 +1023,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
       }
       const data = await r.json();
       const newTask = data.task as WizardTask | undefined;
-      if (!newTask) throw new Error("Regenerate response missing `task` field");
+      if (!newTask) throw new Error('Regenerate response missing `task` field');
       setTasks((prev) => prev.map((t, i) => (i === idx ? newTask : t)));
     },
     [tasks, removed, projectId, authFetch],
@@ -1028,11 +1038,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
     // disabled-state should normally prevent reaching this branch, but a
     // race at completion could slip through.
     const inflight = jobIdRef.current;
-    if (inflight && (jobStatus === "pending" || jobStatus === "running")) {
+    if (inflight && (jobStatus === 'pending' || jobStatus === 'running')) {
       try {
-        await authFetch(`/api/jobs/${inflight}/cancel`, { method: "POST" });
+        await authFetch(`/api/jobs/${inflight}/cancel`, { method: 'POST' });
       } catch (e) {
-        console.warn("[completion-wizard] in-flight cancel failed", e);
+        console.warn('[completion-wizard] in-flight cancel failed', e);
         // Best-effort — commit proceeds either way.
       }
     }
@@ -1049,24 +1059,36 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
     }
   };
 
-  if (loading && !coverage && step === "gaps") {
+  if (loading && !coverage && step === 'gaps') {
     return (
-      <WizardShell title="Checking blueprint coverage…" currentStep="gaps" steps={steps} onCancel={onCancel}>
+      <WizardShell
+        title="Checking blueprint coverage…"
+        currentStep="gaps"
+        steps={steps}
+        onCancel={onCancel}
+      >
         <LoadingBlock />
       </WizardShell>
     );
   }
 
   if (error) {
-    const retry = step === "stories" ? loadTasks : step === "defaults" ? loadDefaults : undefined;
+    const retry = step === 'stories' ? loadTasks : step === 'defaults' ? loadDefaults : undefined;
     return (
-      <WizardShell title="Something went wrong" currentStep={step} steps={steps} onCancel={onCancel}>
+      <WizardShell
+        title="Something went wrong"
+        currentStep={step}
+        steps={steps}
+        onCancel={onCancel}
+      >
         <div className="px-8 py-8 max-w-2xl">
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5">
             <p className="text-xs font-medium text-destructive/90 mb-1.5 tracking-wide uppercase">
               Request failed
             </p>
-            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{error}</p>
+            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+              {error}
+            </p>
           </div>
           <div className="mt-5 flex items-center gap-2">
             {retry && (
@@ -1095,7 +1117,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   }
 
   // ── GAPS PANE ────────────────────────────────────────────────────────────
-  if (step === "gaps") {
+  if (step === 'gaps') {
     const allSections = Object.keys(SECTION_LABELS);
     const scores = coverage?.scores || {};
     const gaps = coverage?.gaps || [];
@@ -1109,18 +1131,20 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
 
     let subtitle: string;
     if (gaps.length === 0) {
-      subtitle = "Every section is covered. Continue to preview the kanban tasks.";
+      subtitle = 'Every section is covered. Continue to preview the kanban tasks.';
     } else if (emptyCount > 0 && thinCount > 0) {
-      subtitle = `${emptyCount} ${emptyCount === 1 ? "section is" : "sections are"} empty (we'll fill those next), and ${thinCount} could use a bit more detail — improve any of them inline below.`;
+      subtitle = `${emptyCount} ${emptyCount === 1 ? 'section is' : 'sections are'} empty (we'll fill those next), and ${thinCount} could use a bit more detail — improve any of them inline below.`;
     } else if (emptyCount > 0) {
-      subtitle = `${emptyCount} ${emptyCount === 1 ? "section is" : "sections are"} empty. We can suggest defaults — you'll review each one before it's saved.`;
+      subtitle = `${emptyCount} ${emptyCount === 1 ? 'section is' : 'sections are'} empty. We can suggest defaults — you'll review each one before it's saved.`;
     } else {
-      subtitle = `${thinCount} ${thinCount === 1 ? "section" : "sections"} could use a bit more detail. Improve any inline, or continue to preview the tasks when you're ready.`;
+      subtitle = `${thinCount} ${thinCount === 1 ? 'section' : 'sections'} could use a bit more detail. Improve any inline, or continue to preview the tasks when you're ready.`;
     }
 
     return (
       <WizardShell
-        title={gaps.length === 0 ? "Your blueprint is in great shape" : "Let's review your blueprint"}
+        title={
+          gaps.length === 0 ? 'Your blueprint is in great shape' : "Let's review your blueprint"
+        }
         subtitle={subtitle}
         currentStep="gaps"
         steps={steps}
@@ -1134,7 +1158,9 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
             </p>
             <div className="mb-6">
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="font-display text-4xl italic text-foreground tabular-nums">{overall}</span>
+                <span className="font-display text-4xl italic text-foreground tabular-nums">
+                  {overall}
+                </span>
                 <span className="text-xs text-muted-foreground">/ 100</span>
               </div>
               <div className="h-1 w-full bg-border rounded-full overflow-hidden">
@@ -1147,7 +1173,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                 {fullyCoveredCount}/{allSections.length} fully covered
                 {hasSomeContentCount > fullyCoveredCount && (
                   <span className="text-muted-foreground/60">
-                    {" · "}
+                    {' · '}
                     {hasSomeContentCount}/{allSections.length} have some content
                   </span>
                 )}
@@ -1202,27 +1228,29 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                 {gaps.map((s) => {
                   const score = scores[s] ?? 0;
                   const isEmpty = score === 0;
-                  const severity = isEmpty ? "empty" : score < 40 ? "low" : "thin";
+                  const severity = isEmpty ? 'empty' : score < 40 ? 'low' : 'thin';
                   const isExpanded = expandedSection === s;
                   return (
                     <div
                       key={s}
                       className={`group rounded-lg border bg-card transition-colors ${
                         isExpanded
-                          ? "border-primary/40 md:col-span-2"
-                          : "border-border hover:border-primary/30"
+                          ? 'border-primary/40 md:col-span-2'
+                          : 'border-border hover:border-primary/30'
                       }`}
                     >
                       <div className="p-3.5">
                         <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <span className="text-sm font-medium text-foreground">{SECTION_LABELS[s] || s}</span>
+                          <span className="text-sm font-medium text-foreground">
+                            {SECTION_LABELS[s] || s}
+                          </span>
                           <span
                             className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
                               isEmpty
-                                ? "bg-destructive/15 text-destructive"
-                                : severity === "low"
-                                  ? "bg-warning/15 text-warning"
-                                  : "bg-muted-foreground/60/15 text-muted-foreground"
+                                ? 'bg-destructive/15 text-destructive'
+                                : severity === 'low'
+                                  ? 'bg-warning/15 text-warning'
+                                  : 'bg-muted-foreground/60/15 text-muted-foreground'
                             }`}
                           >
                             {severity}
@@ -1230,17 +1258,17 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {isEmpty
-                            ? `${SECTION_HINTS[s] || ""} · auto-fill in the next step`
-                            : SECTION_HINTS[s] || ""}
+                            ? `${SECTION_HINTS[s] || ''} · auto-fill in the next step`
+                            : SECTION_HINTS[s] || ''}
                         </p>
                         <div className="mt-2 h-0.5 w-full bg-border/40 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
                               isEmpty
-                                ? "bg-destructive/40"
-                                : severity === "low"
-                                  ? "bg-warning/50"
-                                  : "bg-muted-foreground/40/40"
+                                ? 'bg-destructive/40'
+                                : severity === 'low'
+                                  ? 'bg-warning/50'
+                                  : 'bg-muted-foreground/40/40'
                             }`}
                             style={{ width: `${Math.max(score, 4)}%` }}
                           />
@@ -1268,7 +1296,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                             value={improveDraft}
                             onChange={(e) => setImproveDraft(e.target.value)}
                             rows={5}
-                            placeholder={SECTION_HINTS[s] || "Add content for this section…"}
+                            placeholder={SECTION_HINTS[s] || 'Add content for this section…'}
                             className="w-full text-xs font-body bg-card border border-border rounded p-2 text-foreground resize-y focus:outline-none focus:border-primary/40"
                           />
                           <div className="mt-2 flex items-center gap-2">
@@ -1282,7 +1310,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                               ) : (
                                 <Sparkles className="h-3 w-3" />
                               )}
-                              {improveSuggesting ? "Generating…" : improveDraft.trim() ? "Suggest replacement" : "Suggest content"}
+                              {improveSuggesting
+                                ? 'Generating…'
+                                : improveDraft.trim()
+                                  ? 'Suggest replacement'
+                                  : 'Suggest content'}
                             </button>
                             <div className="ml-auto flex items-center gap-1">
                               <button
@@ -1297,7 +1329,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                                 disabled={improveSaving || !improveDraft.trim()}
                                 className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-primary text-primary-foreground hover:bg-primary/85 transition-colors disabled:opacity-40"
                               >
-                                {improveSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                                {improveSaving ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
                                 Save
                               </button>
                             </div>
@@ -1326,11 +1362,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
               className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/85 transition-colors"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              Fill {emptyCount} empty {emptyCount === 1 ? "section" : "sections"}
+              Fill {emptyCount} empty {emptyCount === 1 ? 'section' : 'sections'}
             </button>
           ) : (
             <button
-              onClick={() => setStep("stories")}
+              onClick={() => setStep('stories')}
               className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/85 transition-colors"
             >
               <ArrowRight className="h-3.5 w-3.5" />
@@ -1343,10 +1379,10 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   }
 
   // ── DEFAULTS PANE ────────────────────────────────────────────────────────
-  if (step === "defaults") {
-    const acceptedCount = defaults.filter((d) => d.decision === "accepted").length;
+  if (step === 'defaults') {
+    const acceptedCount = defaults.filter((d) => d.decision === 'accepted').length;
     const declinedCount = defaults.length - acceptedCount;
-    const editedCount = defaults.filter((d) => d.decision === "accepted" && d.isEdited).length;
+    const editedCount = defaults.filter((d) => d.decision === 'accepted' && d.isEdited).length;
     const setAll = (decision: DefaultDecision) =>
       setDefaults((prev) => prev.map((r) => ({ ...r, decision })));
 
@@ -1355,8 +1391,8 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
         title="Review the suggested defaults"
         subtitle={
           defaults.length === 0
-            ? "No defaults to suggest. Skip to the task preview."
-            : `Defaults are accepted by default — uncheck the ones you don't want, or click ${"✎"} to tweak.`
+            ? 'No defaults to suggest. Skip to the task preview.'
+            : `Defaults are accepted by default — uncheck the ones you don't want, or click ${'✎'} to tweak.`
         }
         currentStep="defaults"
         steps={steps}
@@ -1384,14 +1420,14 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
               </div>
               <div className="ml-auto flex items-center gap-1">
                 <button
-                  onClick={() => setAll("accepted")}
+                  onClick={() => setAll('accepted')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium text-success hover:bg-success/10 transition-colors"
                 >
                   <Check className="h-3 w-3" />
                   Accept all
                 </button>
                 <button
-                  onClick={() => setAll("declined")}
+                  onClick={() => setAll('declined')}
                   className="flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                 >
                   <X className="h-3 w-3" />
@@ -1407,7 +1443,9 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
                   <DefaultRowCard
                     key={row.section}
                     row={row}
-                    onChange={(next) => setDefaults((prev) => prev.map((r, j) => (j === i ? next : r)))}
+                    onChange={(next) =>
+                      setDefaults((prev) => prev.map((r, j) => (j === i ? next : r)))
+                    }
                   />
                 ))}
               </div>
@@ -1417,7 +1455,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
 
         <WizardFooter>
           <button
-            onClick={() => setStep("gaps")}
+            onClick={() => setStep('gaps')}
             className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-secondary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -1428,8 +1466,12 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
             disabled={savingDefaults}
             className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {savingDefaults ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-            Save {acceptedCount > 0 ? `${acceptedCount} ` : ""}and preview tasks
+            {savingDefaults ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ArrowRight className="h-3.5 w-3.5" />
+            )}
+            Save {acceptedCount > 0 ? `${acceptedCount} ` : ''}and preview tasks
           </button>
         </WizardFooter>
       </WizardShell>
@@ -1439,11 +1481,13 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
   // ── STORIES PANE ─────────────────────────────────────────────────────────
   return (
     <WizardShell
-      title={generationStarted ? "Preview your kanban tasks" : "How should the AI break down your plan?"}
+      title={
+        generationStarted ? 'Preview your kanban tasks' : 'How should the AI break down your plan?'
+      }
       subtitle={
         generationStarted
-          ? "Grouped by execution wave. Click a card to see its full content. Hover to highlight what it blocks and depends on."
-          : "Pick a ticket style below. You can change it and regenerate at any time."
+          ? 'Grouped by execution wave. Click a card to see its full content. Hover to highlight what it blocks and depends on.'
+          : 'Pick a ticket style below. You can change it and regenerate at any time.'
       }
       currentStep="stories"
       steps={steps}
@@ -1490,7 +1534,11 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           estimatedWaves={Math.max(2, Math.min(5, Math.ceil(filledBlueprintSections / 3))) || 3}
           // Loader prepends the repo-reading phase only when the user
           // actually requested follow_practices for this run.
-          style={requestedModifiersRef.current.includes("follow_practices") ? "follow_practices" : undefined}
+          style={
+            requestedModifiersRef.current.includes('follow_practices')
+              ? 'follow_practices'
+              : undefined
+          }
         />
       ) : tasks.length === 0 ? (
         <div className="px-6 py-12 text-center text-sm text-muted-foreground">
@@ -1513,7 +1561,7 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           </div>
 
           <div className="px-8 py-5 space-y-5">
-            {(jobStatus === "running" || jobStatus === "pending") && wavesComplete > 0 && (
+            {(jobStatus === 'running' || jobStatus === 'pending') && wavesComplete > 0 && (
               <div className="flex items-center gap-2 text-[11px] text-primary/80">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inset-0 rounded-full bg-primary/60 animate-ping" />
@@ -1568,12 +1616,12 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
           {generationStarted ? (
             <>
               {tasks.length - removed.size} tasks · {grouped.length} waves
-              {removed.size > 0 ? ` · ${removed.size} removed` : ""}
+              {removed.size > 0 ? ` · ${removed.size} removed` : ''}
             </>
           ) : null}
         </div>
         <button
-          onClick={() => (coverage?.gaps?.length ? setStep("defaults") : onCancel())}
+          onClick={() => (coverage?.gaps?.length ? setStep('defaults') : onCancel())}
           disabled={committing}
           className="flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -1592,17 +1640,21 @@ export function CompletionWizard({ projectId, sessionId, onCancel, onCommit }: C
               title="Tell the AI what to change, then regenerate"
               className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-foreground/70 hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
               Regenerate
             </button>
             <button
               onClick={finish}
               disabled={loading || committing || tasks.length - removed.size === 0}
-              title={loading ? "Wait for all waves to finish generating" : undefined}
+              title={loading ? 'Wait for all waves to finish generating' : undefined}
               className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {committing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              {committing ? "Generating board…" : "Looks good — generate board"}
+              {committing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+              {committing ? 'Generating board…' : 'Looks good — generate board'}
             </button>
           </>
         )}
@@ -1685,17 +1737,21 @@ function Stepper({ steps, currentIdx }: { steps: StepDef[]; currentIdx: number }
               <span
                 className={`flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-medium tabular-nums transition-all ${
                   done
-                    ? "bg-success/20 text-success border border-success/30"
+                    ? 'bg-success/20 text-success border border-success/30'
                     : active
-                      ? "bg-primary text-primary-foreground shadow-[0_0_0_3px_rgba(245,158,11,0.15)]"
-                      : "bg-card text-muted-foreground/60 border border-border"
+                      ? 'bg-primary text-primary-foreground shadow-[0_0_0_3px_rgba(245,158,11,0.15)]'
+                      : 'bg-card text-muted-foreground/60 border border-border'
                 }`}
               >
                 {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
               </span>
               <span
                 className={`text-[11px] font-medium tracking-wide transition-colors ${
-                  active ? "text-foreground" : done ? "text-foreground/50" : "text-muted-foreground/50"
+                  active
+                    ? 'text-foreground'
+                    : done
+                      ? 'text-foreground/50'
+                      : 'text-muted-foreground/50'
                 }`}
               >
                 {s.label}
@@ -1704,7 +1760,7 @@ function Stepper({ steps, currentIdx }: { steps: StepDef[]; currentIdx: number }
             {i < steps.length - 1 && (
               <span
                 className={`flex-1 h-px transition-colors min-w-[20px] ${
-                  done ? "bg-success/30" : "bg-border"
+                  done ? 'bg-success/30' : 'bg-border'
                 }`}
               />
             )}
@@ -1723,7 +1779,7 @@ function WizardFooter({ children }: { children: React.ReactNode }) {
   );
 }
 
-function LoadingBlock({ label = "Loading…" }: { label?: string }) {
+function LoadingBlock({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1732,29 +1788,34 @@ function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   );
 }
 
-function DefaultRowCard({ row, onChange }: { row: DefaultRow; onChange: (next: DefaultRow) => void }) {
+function DefaultRowCard({
+  row,
+  onChange,
+}: {
+  row: DefaultRow;
+  onChange: (next: DefaultRow) => void;
+}) {
   const [editing, setEditing] = useState(false);
-  const accepted = row.decision === "accepted";
-  const toggle = () =>
-    onChange({ ...row, decision: accepted ? "declined" : "accepted" });
+  const accepted = row.decision === 'accepted';
+  const toggle = () => onChange({ ...row, decision: accepted ? 'declined' : 'accepted' });
 
   return (
     <div
       className={`group rounded-lg border bg-card transition-all ${
         accepted
-          ? "border-border hover:border-primary/30"
-          : "border-border/40 opacity-50 hover:opacity-80"
+          ? 'border-border hover:border-primary/30'
+          : 'border-border/40 opacity-50 hover:opacity-80'
       }`}
     >
       <div className="flex items-start gap-3 p-3.5">
         {/* Accept toggle */}
         <button
           onClick={toggle}
-          title={accepted ? "Click to decline" : "Click to accept"}
+          title={accepted ? 'Click to decline' : 'Click to accept'}
           className={`mt-0.5 flex items-center justify-center h-4 w-4 rounded border-1.5 shrink-0 transition-colors ${
             accepted
-              ? "bg-success/80 border-success/80"
-              : "bg-transparent border-border hover:border-foreground/40"
+              ? 'bg-success/80 border-success/80'
+              : 'bg-transparent border-border hover:border-foreground/40'
           }`}
         >
           {accepted && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
@@ -1776,7 +1837,7 @@ function DefaultRowCard({ row, onChange }: { row: DefaultRow; onChange: (next: D
               autoFocus
               value={row.edited}
               onChange={(e) =>
-                onChange({ ...row, edited: e.target.value, decision: "accepted", isEdited: true })
+                onChange({ ...row, edited: e.target.value, decision: 'accepted', isEdited: true })
               }
               onBlur={() => setEditing(false)}
               rows={3}
@@ -1785,7 +1846,7 @@ function DefaultRowCard({ row, onChange }: { row: DefaultRow; onChange: (next: D
           ) : (
             <p
               className={`text-xs font-body leading-relaxed whitespace-pre-wrap ${
-                accepted ? "text-muted-foreground" : "text-muted-foreground/60 line-through"
+                accepted ? 'text-muted-foreground' : 'text-muted-foreground/60 line-through'
               }`}
             >
               {row.edited}
@@ -1799,8 +1860,8 @@ function DefaultRowCard({ row, onChange }: { row: DefaultRow; onChange: (next: D
           title="Edit"
           className={`shrink-0 mt-0.5 p-1 rounded transition-all opacity-0 group-hover:opacity-100 ${
             editing
-              ? "bg-secondary text-foreground opacity-100"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              ? 'bg-secondary text-foreground opacity-100'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
           }`}
         >
           <Pencil className="h-3 w-3" />
@@ -1853,36 +1914,36 @@ function TaskCardRow({
   const isExpanded = expandedTaskIdx === index;
   const isFlashing = flashIdx === index;
   const customFieldEntries = Object.entries(task.custom_fields || {}).filter(
-    ([, v]) => v !== null && v !== undefined && v !== "",
+    ([, v]) => v !== null && v !== undefined && v !== '',
   );
   const [regenOpen, setRegenOpen] = useState(false);
 
   // Hover highlight: this card glows when it's the hovered one OR when the
   // hovered card depends on us OR when we depend on the hovered card. Cards
   // with no relationship get dimmed so the connected ones really pop.
-  let hoverState: "self" | "blocker" | "dependent" | "unrelated" | null = null;
+  let hoverState: 'self' | 'blocker' | 'dependent' | 'unrelated' | null = null;
   if (hoveredIdx !== null && hoveredIdx !== index) {
     const hovered = tasks[hoveredIdx];
     if (hovered) {
-      if ((hovered.depends_on_indices || []).includes(index)) hoverState = "blocker";
-      else if ((task.depends_on_indices || []).includes(hoveredIdx)) hoverState = "dependent";
-      else hoverState = "unrelated";
+      if ((hovered.depends_on_indices || []).includes(index)) hoverState = 'blocker';
+      else if ((task.depends_on_indices || []).includes(hoveredIdx)) hoverState = 'dependent';
+      else hoverState = 'unrelated';
     }
   } else if (hoveredIdx === index) {
-    hoverState = "self";
+    hoverState = 'self';
   }
 
   const cardClass = isFlashing
-    ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
-    : hoverState === "self"
-      ? "ring-1 ring-primary/60 border-primary/60 bg-primary/[0.04]"
-      : hoverState === "blocker"
-        ? "ring-1 ring-destructive/70 border-destructive/40 bg-destructive/[0.06]"
-        : hoverState === "dependent"
-          ? "ring-1 ring-info/70 border-info/40 bg-info/[0.06]"
-          : hoverState === "unrelated"
-            ? "opacity-30 hover:opacity-60"
-            : "";
+    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background border-primary'
+    : hoverState === 'self'
+      ? 'ring-1 ring-primary/60 border-primary/60 bg-primary/[0.04]'
+      : hoverState === 'blocker'
+        ? 'ring-1 ring-destructive/70 border-destructive/40 bg-destructive/[0.06]'
+        : hoverState === 'dependent'
+          ? 'ring-1 ring-info/70 border-info/40 bg-info/[0.06]'
+          : hoverState === 'unrelated'
+            ? 'opacity-30 hover:opacity-60'
+            : '';
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -1895,7 +1956,7 @@ function TaskCardRow({
       onMouseLeave={() => setHoveredIdx(null)}
       onClick={() => setExpandedTaskIdx(isExpanded ? null : index)}
       className={`group rounded-md border bg-card/70 transition-all cursor-pointer ${
-        isExpanded ? "border-primary/40" : "border-border hover:border-primary/30"
+        isExpanded ? 'border-primary/40' : 'border-border hover:border-primary/30'
       } ${cardClass}`}
     >
       <div className="px-3 py-2.5">
@@ -1914,20 +1975,22 @@ function TaskCardRow({
               {task.priority && (
                 <span
                   className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                    task.priority === "critical"
-                      ? "bg-destructive/15 text-destructive"
-                      : task.priority === "high"
-                        ? "bg-orange-500/15 text-orange-400"
-                        : task.priority === "low"
-                          ? "bg-muted-foreground/60/15 text-muted-foreground"
-                          : "bg-info/15 text-info"
+                    task.priority === 'critical'
+                      ? 'bg-destructive/15 text-destructive'
+                      : task.priority === 'high'
+                        ? 'bg-orange-500/15 text-orange-400'
+                        : task.priority === 'low'
+                          ? 'bg-muted-foreground/60/15 text-muted-foreground'
+                          : 'bg-info/15 text-info'
                   }`}
                 >
                   {task.priority}
                 </span>
               )}
               {task.story_points != null && (
-                <span className="text-[9px] text-muted-foreground tabular-nums">{task.story_points} pts</span>
+                <span className="text-[9px] text-muted-foreground tabular-nums">
+                  {task.story_points} pts
+                </span>
               )}
               {isOrphan && (
                 <span
@@ -1938,12 +2001,12 @@ function TaskCardRow({
                 </span>
               )}
               {/* Contextual chip during hover-highlight — makes the relationship explicit */}
-              {hoverState === "blocker" && (
+              {hoverState === 'blocker' && (
                 <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-destructive/20 text-destructive font-medium">
                   ↑ blocks #{hoveredIdx}
                 </span>
               )}
-              {hoverState === "dependent" && (
+              {hoverState === 'dependent' && (
                 <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-info/20 text-info font-medium">
                   ↓ needs #{hoveredIdx}
                 </span>
@@ -2001,7 +2064,7 @@ function TaskCardRow({
           </div>
           <ChevronDown
             className={`h-3.5 w-3.5 text-muted-foreground/50 mt-1 shrink-0 transition-transform ${
-              isExpanded ? "rotate-180" : ""
+              isExpanded ? 'rotate-180' : ''
             }`}
           />
           <button
@@ -2026,7 +2089,7 @@ function TaskCardRow({
           <div className="space-y-4">
             <FieldGroup label="Description">
               <textarea
-                value={task.description || ""}
+                value={task.description || ''}
                 onChange={(e) => onUpdateTask(index, { description: e.target.value })}
                 placeholder="Describe the task…"
                 rows={3}
@@ -2034,18 +2097,21 @@ function TaskCardRow({
               />
             </FieldGroup>
 
-            <FieldGroup label="Acceptance criteria" rightSlot={
-              <button
-                onClick={() =>
-                  onUpdateTask(index, {
-                    acceptance_criteria: [...(task.acceptance_criteria || []), ""],
-                  })
-                }
-                className="text-[10px] uppercase tracking-wider text-primary/80 hover:text-primary"
-              >
-                + Add
-              </button>
-            }>
+            <FieldGroup
+              label="Acceptance criteria"
+              rightSlot={
+                <button
+                  onClick={() =>
+                    onUpdateTask(index, {
+                      acceptance_criteria: [...(task.acceptance_criteria || []), ''],
+                    })
+                  }
+                  className="text-[10px] uppercase tracking-wider text-primary/80 hover:text-primary"
+                >
+                  + Add
+                </button>
+              }
+            >
               {!task.acceptance_criteria || task.acceptance_criteria.length === 0 ? (
                 <p className="text-[11px] text-muted-foreground/60 italic">No criteria yet.</p>
               ) : (
@@ -2085,7 +2151,7 @@ function TaskCardRow({
                     <div key={k} className="contents">
                       <dt className="text-muted-foreground/70">{k}</dt>
                       <dd className="text-foreground/80 whitespace-pre-wrap">
-                        {typeof v === "string" ? v : JSON.stringify(v)}
+                        {typeof v === 'string' ? v : JSON.stringify(v)}
                       </dd>
                     </div>
                   ))}
@@ -2097,16 +2163,20 @@ function TaskCardRow({
             <FieldGroup label="Relations">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground mb-2">
                 <span>
-                  <span className="text-foreground/80 tabular-nums">{liveDeps.length}</span> blocked by
+                  <span className="text-foreground/80 tabular-nums">{liveDeps.length}</span> blocked
+                  by
                 </span>
                 <span>
-                  <span className="text-foreground/80 tabular-nums">{liveDependents.length}</span> blocks
+                  <span className="text-foreground/80 tabular-nums">{liveDependents.length}</span>{' '}
+                  blocks
                 </span>
                 <span className="text-muted-foreground/60">wave {task.wave ?? 0}</span>
               </div>
               {liveDependents.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Blocks:</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Blocks:
+                  </span>
                   {liveDependents.map((j) => (
                     <DepChip
                       key={j}
@@ -2128,7 +2198,7 @@ function TaskCardRow({
           <div className="space-y-4 lg:border-l lg:border-border/40 lg:pl-6">
             <FieldGroup label="Type">
               <select
-                value={task.template_slug || ""}
+                value={task.template_slug || ''}
                 onChange={(e) => onUpdateTask(index, { template_slug: e.target.value || null })}
                 className="w-full text-xs bg-card border border-border rounded px-2 py-1.5 text-foreground focus:outline-none focus:border-primary/40"
               >
@@ -2143,20 +2213,20 @@ function TaskCardRow({
 
             <FieldGroup label="Priority">
               <div className="flex flex-wrap gap-1">
-                {(["critical", "high", "medium", "low"] as const).map((p) => (
+                {(['critical', 'high', 'medium', 'low'] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => onUpdateTask(index, { priority: p })}
                     className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border transition-colors ${
                       task.priority === p
-                        ? p === "critical"
-                          ? "bg-destructive/15 text-destructive border-destructive/40"
-                          : p === "high"
-                            ? "bg-orange-500/15 text-orange-300 border-orange-400/40"
-                            : p === "low"
-                              ? "bg-muted-foreground/60/15 text-foreground/90 border-zinc-400/40"
-                              : "bg-info/15 text-info border-info/40"
-                        : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/80"
+                        ? p === 'critical'
+                          ? 'bg-destructive/15 text-destructive border-destructive/40'
+                          : p === 'high'
+                            ? 'bg-orange-500/15 text-orange-300 border-orange-400/40'
+                            : p === 'low'
+                              ? 'bg-muted-foreground/60/15 text-foreground/90 border-zinc-400/40'
+                              : 'bg-info/15 text-info border-info/40'
+                        : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/80'
                     }`}
                   >
                     {p}
@@ -2173,8 +2243,8 @@ function TaskCardRow({
                     onClick={() => onUpdateTask(index, { story_points: pts })}
                     className={`min-w-[1.75rem] h-7 rounded text-[11px] font-medium tabular-nums border transition-colors ${
                       task.story_points === pts
-                        ? "bg-primary/15 text-primary border-primary/40"
-                        : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/80"
+                        ? 'bg-primary/15 text-primary border-primary/40'
+                        : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground/80'
                     }`}
                   >
                     {pts}
@@ -2251,16 +2321,16 @@ function DepChip({
 }: {
   idx: number;
   title: string | undefined;
-  tone: "blocker" | "related" | "dependent";
+  tone: 'blocker' | 'related' | 'dependent';
   onClick: (e: React.MouseEvent) => void;
   comma?: boolean;
 }) {
   const toneClass =
-    tone === "blocker"
-      ? "text-foreground/80 hover:bg-destructive/10 hover:text-destructive"
-      : tone === "dependent"
-        ? "text-foreground/80 hover:bg-info/10 hover:text-info"
-        : "text-muted-foreground hover:bg-secondary hover:text-foreground";
+    tone === 'blocker'
+      ? 'text-foreground/80 hover:bg-destructive/10 hover:text-destructive'
+      : tone === 'dependent'
+        ? 'text-foreground/80 hover:bg-info/10 hover:text-info'
+        : 'text-muted-foreground hover:bg-secondary hover:text-foreground';
   return (
     <>
       <button
@@ -2268,7 +2338,7 @@ function DepChip({
         title={title || `Task #${idx}`}
         className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors ${toneClass}`}
       >
-        <span className="truncate max-w-[14rem]">{title || "Untitled"}</span>
+        <span className="truncate max-w-[14rem]">{title || 'Untitled'}</span>
         <span className="text-muted-foreground/60 font-mono tabular-nums">#{idx}</span>
       </button>
       {comma && <span className="text-muted-foreground/40">,</span>}
@@ -2279,8 +2349,12 @@ function DepChip({
 async function extractErrorDetail(r: Response): Promise<string> {
   try {
     const data = await r.json();
-    if (typeof data?.detail === "string") return data.detail;
-    if (Array.isArray(data?.detail)) return data.detail.map((d: { msg?: string }) => d?.msg || "").filter(Boolean).join("; ");
+    if (typeof data?.detail === 'string') return data.detail;
+    if (Array.isArray(data?.detail))
+      return data.detail
+        .map((d: { msg?: string }) => d?.msg || '')
+        .filter(Boolean)
+        .join('; ');
   } catch {
     // not JSON
   }
@@ -2299,7 +2373,9 @@ function FieldGroup({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+          {label}
+        </p>
         {rightSlot}
       </div>
       {children}
@@ -2308,16 +2384,16 @@ function FieldGroup({
 }
 
 function LabelInput({ onAdd }: { onAdd: (value: string) => void }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
   return (
     <input
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && value.trim()) {
+        if (e.key === 'Enter' && value.trim()) {
           e.preventDefault();
           onAdd(value);
-          setValue("");
+          setValue('');
         }
       }}
       placeholder="+ label"
@@ -2337,12 +2413,13 @@ function RegenerateDialog({
   onCancel: () => void;
   onSubmit: (input: { feedback: string; dislikedTitles: string[] }) => void;
 }) {
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState('');
   const [dislikedIdx, setDislikedIdx] = useState<Set<number>>(new Set());
   const liveTasks = tasks
     .map((t, idx) => ({ task: t, idx }))
     .filter(({ idx }) => !removed.has(idx));
-  const allLiveSelected = liveTasks.length > 0 && liveTasks.every(({ idx }) => dislikedIdx.has(idx));
+  const allLiveSelected =
+    liveTasks.length > 0 && liveTasks.every(({ idx }) => dislikedIdx.has(idx));
 
   const toggle = (idx: number) =>
     setDislikedIdx((prev) => {
@@ -2355,7 +2432,9 @@ function RegenerateDialog({
     setDislikedIdx(allLiveSelected ? new Set() : new Set(liveTasks.map(({ idx }) => idx)));
 
   const submit = () => {
-    const dislikedTitles = liveTasks.filter(({ idx }) => dislikedIdx.has(idx)).map(({ task }) => task.title);
+    const dislikedTitles = liveTasks
+      .filter(({ idx }) => dislikedIdx.has(idx))
+      .map(({ task }) => task.title);
     onSubmit({ feedback, dislikedTitles });
   };
 
@@ -2372,7 +2451,9 @@ function RegenerateDialog({
           <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground mb-1.5">
             Regenerate with feedback
           </p>
-          <h2 className="font-display text-xl italic text-foreground">Tell the AI what to change</h2>
+          <h2 className="font-display text-xl italic text-foreground">
+            Tell the AI what to change
+          </h2>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             Optional — helps the next attempt fit what you actually want. Skip both fields and click
             Regenerate to just retry from scratch.
@@ -2407,7 +2488,7 @@ function RegenerateDialog({
                 onClick={selectAllOrNone}
                 className="text-[10px] uppercase tracking-wider text-primary/80 hover:text-primary"
               >
-                {allLiveSelected ? "Clear all" : "Select all"}
+                {allLiveSelected ? 'Clear all' : 'Select all'}
               </button>
             </div>
             {liveTasks.length === 0 ? (
@@ -2421,20 +2502,26 @@ function RegenerateDialog({
                       <button
                         onClick={() => toggle(idx)}
                         className={`flex items-start gap-2 w-full text-left px-2 py-1.5 rounded transition-colors ${
-                          checked ? "bg-destructive/10 text-foreground" : "hover:bg-secondary/40 text-foreground/80"
+                          checked
+                            ? 'bg-destructive/10 text-foreground'
+                            : 'hover:bg-secondary/40 text-foreground/80'
                         }`}
                       >
                         <span
                           className={`mt-0.5 flex items-center justify-center h-3.5 w-3.5 rounded border shrink-0 transition-colors ${
-                            checked ? "bg-destructive/70 border-destructive/70" : "border-border"
+                            checked ? 'bg-destructive/70 border-destructive/70' : 'border-border'
                           }`}
                         >
-                          {checked && <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />}
+                          {checked && (
+                            <Check className="h-2.5 w-2.5 text-background" strokeWidth={3} />
+                          )}
                         </span>
                         <span className="text-[10px] font-mono text-muted-foreground/60 tabular-nums shrink-0 mt-0.5 w-6">
                           #{idx}
                         </span>
-                        <span className={`text-xs flex-1 ${checked ? "line-through" : ""}`}>{task.title}</span>
+                        <span className={`text-xs flex-1 ${checked ? 'line-through' : ''}`}>
+                          {task.title}
+                        </span>
                       </button>
                     </li>
                   );
@@ -2443,8 +2530,8 @@ function RegenerateDialog({
             )}
             {dislikedIdx.size > 0 && (
               <p className="text-[10px] text-muted-foreground mt-1.5">
-                {dislikedIdx.size} task{dislikedIdx.size === 1 ? "" : "s"} marked — the AI will avoid generating
-                anything similar.
+                {dislikedIdx.size} task{dislikedIdx.size === 1 ? '' : 's'} marked — the AI will
+                avoid generating anything similar.
               </p>
             )}
           </div>
@@ -2471,14 +2558,22 @@ function RegenerateDialog({
 }
 
 const REGEN_FIELD_OPTIONS: Array<{ key: string; label: string; hint: string }> = [
-  { key: "title", label: "Title", hint: "Rewrite the headline" },
-  { key: "description", label: "Description", hint: "Restate what this task does" },
-  { key: "acceptance_criteria", label: "Acceptance criteria", hint: "Replace the bullets (uses your template's AC pattern)" },
-  { key: "template_slug", label: "Type", hint: "Reclassify against your studio templates" },
-  { key: "priority", label: "Priority", hint: "Re-evaluate critical / high / medium / low" },
-  { key: "story_points", label: "Story points", hint: "Re-estimate the effort" },
-  { key: "labels", label: "Labels", hint: "Re-tag the area chips" },
-  { key: "custom_fields", label: "Custom fields", hint: "Refill the template's custom-field values" },
+  { key: 'title', label: 'Title', hint: 'Rewrite the headline' },
+  { key: 'description', label: 'Description', hint: 'Restate what this task does' },
+  {
+    key: 'acceptance_criteria',
+    label: 'Acceptance criteria',
+    hint: "Replace the bullets (uses your template's AC pattern)",
+  },
+  { key: 'template_slug', label: 'Type', hint: 'Reclassify against your studio templates' },
+  { key: 'priority', label: 'Priority', hint: 'Re-evaluate critical / high / medium / low' },
+  { key: 'story_points', label: 'Story points', hint: 'Re-estimate the effort' },
+  { key: 'labels', label: 'Labels', hint: 'Re-tag the area chips' },
+  {
+    key: 'custom_fields',
+    label: 'Custom fields',
+    hint: "Refill the template's custom-field values",
+  },
 ];
 
 function SingleTaskRegenerateDialog({
@@ -2492,9 +2587,9 @@ function SingleTaskRegenerateDialog({
 }) {
   // Default to the two fields users most often want regenerated.
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(["description", "acceptance_criteria"]),
+    new Set(['description', 'acceptance_criteria']),
   );
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -2508,7 +2603,7 @@ function SingleTaskRegenerateDialog({
 
   const submit = async () => {
     if (selected.size === 0) {
-      setError("Pick at least one field to regenerate.");
+      setError('Pick at least one field to regenerate.');
       return;
     }
     setSubmitting(true);
@@ -2540,8 +2635,8 @@ function SingleTaskRegenerateDialog({
           </p>
           <h2 className="font-display text-xl italic text-foreground line-clamp-2">{task.title}</h2>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            Pick the parts you want rewritten. The dependency graph (what this task blocks / depends on)
-            stays untouched.
+            Pick the parts you want rewritten. The dependency graph (what this task blocks / depends
+            on) stays untouched.
           </p>
         </div>
 
@@ -2558,18 +2653,22 @@ function SingleTaskRegenerateDialog({
                     <button
                       onClick={() => toggle(key)}
                       className={`flex items-start gap-2.5 w-full text-left px-2 py-1.5 rounded transition-colors ${
-                        checked ? "bg-primary/10" : "hover:bg-secondary/40"
+                        checked ? 'bg-primary/10' : 'hover:bg-secondary/40'
                       }`}
                     >
                       <span
                         className={`mt-0.5 flex items-center justify-center h-3.5 w-3.5 rounded border shrink-0 transition-colors ${
-                          checked ? "bg-primary border-primary" : "border-border"
+                          checked ? 'bg-primary border-primary' : 'border-border'
                         }`}
                       >
-                        {checked && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
+                        {checked && (
+                          <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />
+                        )}
                       </span>
                       <span className="flex-1">
-                        <span className="text-xs text-foreground/90 font-medium block">{label}</span>
+                        <span className="text-xs text-foreground/90 font-medium block">
+                          {label}
+                        </span>
                         <span className="text-[11px] text-muted-foreground/70">{hint}</span>
                       </span>
                     </button>
@@ -2581,7 +2680,10 @@ function SingleTaskRegenerateDialog({
 
           <div>
             <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground mb-1.5">
-              What was wrong with these? <span className="text-muted-foreground/50 normal-case tracking-normal">(optional)</span>
+              What was wrong with these?{' '}
+              <span className="text-muted-foreground/50 normal-case tracking-normal">
+                (optional)
+              </span>
             </p>
             <textarea
               value={feedback}
@@ -2616,15 +2718,20 @@ function SingleTaskRegenerateDialog({
             disabled={submitting || selected.size === 0}
             className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            {submitting ? "Regenerating…" : `Regenerate ${selected.size} field${selected.size === 1 ? "" : "s"}`}
+            {submitting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            {submitting
+              ? 'Regenerating…'
+              : `Regenerate ${selected.size} field${selected.size === 1 ? '' : 's'}`}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
 
 /** Full-page picker shown BEFORE the user clicks Generate.
  *
@@ -2680,7 +2787,7 @@ function PresetPickerGate({
 }) {
   const activePreset = detectActivePreset(presets, granularity, modifiers);
   const activePresetLabel = activePreset
-    ? presets.find((p) => p.slug === activePreset)?.label ?? null
+    ? (presets.find((p) => p.slug === activePreset)?.label ?? null)
     : null;
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
@@ -2690,8 +2797,8 @@ function PresetPickerGate({
           <header className="mb-3">
             <h3 className="text-sm font-medium text-foreground/90">Choose a preset</h3>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Each preset bundles a granularity + a set of approach modifiers. Tweak any of
-              it with Customize below.
+              Each preset bundles a granularity + a set of approach modifiers. Tweak any of it with
+              Customize below.
             </p>
           </header>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -2706,22 +2813,24 @@ function PresetPickerGate({
                   aria-pressed={isSelected}
                   className={`group text-left rounded-lg border p-3.5 transition-colors flex flex-col gap-2 ${
                     isSelected
-                      ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-                      : "border-border bg-card/40 hover:border-border/80 hover:bg-card/60"
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+                      : 'border-border bg-card/40 hover:border-border/80 hover:bg-card/60'
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     <NamedIcon
                       name={preset.icon}
                       className={`h-4 w-4 shrink-0 mt-0.5 ${
-                        isSelected ? "text-primary" : "text-foreground/60 group-hover:text-foreground/80"
+                        isSelected
+                          ? 'text-primary'
+                          : 'text-foreground/60 group-hover:text-foreground/80'
                       }`}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`text-sm font-medium ${
-                            isSelected ? "text-primary" : "text-foreground/90"
+                            isSelected ? 'text-primary' : 'text-foreground/90'
                           }`}
                         >
                           {preset.label}
@@ -2729,10 +2838,11 @@ function PresetPickerGate({
                         {isSelected && <Check className="h-3 w-3 text-primary" />}
                       </div>
                       <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 mt-0.5">
-                        {granularityOpts.find((g) => g.slug === preset.granularity)?.label ?? preset.granularity}
+                        {granularityOpts.find((g) => g.slug === preset.granularity)?.label ??
+                          preset.granularity}
                         {preset.modifiers.length > 0
-                          ? ` · ${preset.modifiers.length} modifier${preset.modifiers.length === 1 ? "" : "s"}`
-                          : " · no modifiers"}
+                          ? ` · ${preset.modifiers.length} modifier${preset.modifiers.length === 1 ? '' : 's'}`
+                          : ' · no modifiers'}
                       </div>
                     </div>
                   </div>
@@ -2768,9 +2878,9 @@ function PresetPickerGate({
             className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronDown
-              className={`h-3 w-3 transition-transform ${showCustomize ? "rotate-0" : "-rotate-90"}`}
+              className={`h-3 w-3 transition-transform ${showCustomize ? 'rotate-0' : '-rotate-90'}`}
             />
-            {showCustomize ? "Hide customisation" : "Customize…"}
+            {showCustomize ? 'Hide customisation' : 'Customize…'}
           </button>
           {showCustomize && (
             <div className="mt-4">
@@ -2797,7 +2907,7 @@ function PresetPickerGate({
             <Sparkles className="h-4 w-4" />
             {activePresetLabel
               ? `Generate tasks with ${activePresetLabel}`
-              : "Generate tasks (custom)"}
+              : 'Generate tasks (custom)'}
           </button>
           <p className="text-[11px] text-muted-foreground/70 text-center max-w-md">
             You can change and regenerate any time before committing the board.
@@ -2807,7 +2917,6 @@ function PresetPickerGate({
     </div>
   );
 }
-
 
 /** The dual-axis picker body (granularity row + 4 categorised modifier sub-grids).
  * Extracted from the previous StylePickerGate so PresetPickerGate can show it
@@ -2832,8 +2941,7 @@ function CustomizeBody({
   // Look up icon + signature metadata for SYSTEM slugs from the static maps
   // we still ship. Custom-admin slugs fall back to a default icon and no
   // signature chip (the blurb carries the explanation).
-  const granularityMeta = (slug: string) =>
-    GRANULARITY_BY_SLUG[slug as Granularity];
+  const granularityMeta = (slug: string) => GRANULARITY_BY_SLUG[slug as Granularity];
   const modifierMeta = (slug: string) => MODIFIER_BY_SLUG[slug as Modifier];
 
   return (
@@ -2896,7 +3004,8 @@ function CustomizeBody({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {catOpts.map((opt) => {
                   const meta = modifierMeta(opt.slug);
-                  const repoMissing = (meta?.requiresRepo ?? opt.slug === "follow_practices") && !repoUrl;
+                  const repoMissing =
+                    (meta?.requiresRepo ?? opt.slug === 'follow_practices') && !repoUrl;
                   const isSelected = modifiers.includes(opt.slug as Modifier);
                   const Icon = meta?.icon ?? Sparkles;
                   return (
@@ -2909,7 +3018,9 @@ function CustomizeBody({
                       blurb={opt.blurb}
                       promptFragment={opt.prompt_fragment}
                       disabled={repoMissing}
-                      disabledHint={repoMissing ? "Link a GitHub repo on the project to use this." : null}
+                      disabledHint={
+                        repoMissing ? 'Link a GitHub repo on the project to use this.' : null
+                      }
                       onClick={() => !repoMissing && onToggleModifier(opt.slug as Modifier)}
                     />
                   );
@@ -2922,7 +3033,6 @@ function CustomizeBody({
     </div>
   );
 }
-
 
 /** One option card (granularity OR modifier). Renders the icon + label +
  * signature + blurb + a small "?" help icon. Clicking the help icon
@@ -2954,9 +3064,9 @@ function OptionCard({
     <div
       className={`group relative rounded-lg border p-3 transition-colors flex gap-2.5 ${
         isSelected
-          ? "border-primary bg-primary/10 ring-1 ring-primary/40"
-          : "border-border bg-card/40 hover:border-border/80 hover:bg-card/60"
-      } ${disabled ? "opacity-50" : ""}`}
+          ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+          : 'border-border bg-card/40 hover:border-border/80 hover:bg-card/60'
+      } ${disabled ? 'opacity-50' : ''}`}
     >
       <button
         type="button"
@@ -2967,14 +3077,14 @@ function OptionCard({
       >
         <Icon
           className={`h-4 w-4 shrink-0 mt-0.5 ${
-            isSelected ? "text-primary" : "text-foreground/60 group-hover:text-foreground/80"
+            isSelected ? 'text-primary' : 'text-foreground/60 group-hover:text-foreground/80'
           }`}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span
               className={`text-sm font-medium ${
-                isSelected ? "text-primary" : "text-foreground/90"
+                isSelected ? 'text-primary' : 'text-foreground/90'
               }`}
             >
               {label}
@@ -2989,9 +3099,7 @@ function OptionCard({
           {blurb && (
             <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{blurb}</p>
           )}
-          {disabledHint && (
-            <p className="text-[10px] text-warning mt-1.5">{disabledHint}</p>
-          )}
+          {disabledHint && <p className="text-[10px] text-warning mt-1.5">{disabledHint}</p>}
         </div>
       </button>
 
@@ -3031,14 +3139,13 @@ function OptionCard({
             What the AI sees
           </div>
           <pre className="text-[10px] text-foreground/80 whitespace-pre-wrap leading-relaxed font-mono bg-background/60 rounded p-2 border border-border/60">
-{promptFragment || "(no prompt guidance — has no effect on its own)"}
+            {promptFragment || '(no prompt guidance — has no effect on its own)'}
           </pre>
         </div>
       )}
     </div>
   );
 }
-
 
 /** Compact summary bar shown ABOVE the cards after generation. Shows the
  * current selection as chips so the user can see at a glance what shape the
@@ -3074,7 +3181,7 @@ function StyleSummaryBar({
   // so the user sees "Production-grade" instead of having to parse 4
   // modifier names. Granularity chip falls back when nothing matches.
   const activePreset = detectActivePreset(presets, granularity, modifiers);
-  const presetEntry = activePreset ? presets.find((p) => p.slug === activePreset) ?? null : null;
+  const presetEntry = activePreset ? (presets.find((p) => p.slug === activePreset) ?? null) : null;
   return (
     <div className="border-b border-border/60 bg-card/30">
       <div className="px-8 py-2.5">

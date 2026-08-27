@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Per-browser learning state for the in-chat glossary feature.
@@ -14,7 +14,7 @@
  * the data is a soft personalization signal, not security or accounting.
  */
 
-const STORAGE_KEY = "planning-platform:term-learning-state:v1";
+const STORAGE_KEY = 'planning-platform:term-learning-state:v1';
 
 /** Number of dismissals after which a term stops being highlighted. */
 export const DISMISS_THRESHOLD = 3;
@@ -34,7 +34,7 @@ interface LearningState {
 const EMPTY: LearningState = { terms_seen: {} };
 
 function isBrowser(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
 
 function read(): LearningState {
@@ -43,7 +43,7 @@ function read(): LearningState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && parsed.terms_seen) {
+    if (parsed && typeof parsed === 'object' && parsed.terms_seen) {
       return parsed as LearningState;
     }
   } catch {
@@ -73,7 +73,7 @@ export function recordDismissal(slug: string): void {
   write(state);
   // Notify in-page listeners (e.g. the level-up banner) without a full reload.
   if (isBrowser()) {
-    window.dispatchEvent(new CustomEvent("term-learning-state:changed"));
+    window.dispatchEvent(new CustomEvent('term-learning-state:changed'));
   }
 }
 
@@ -95,5 +95,5 @@ export function uniqueDismissedCount(): number {
 export function resetLearningState(): void {
   if (!isBrowser()) return;
   window.localStorage.removeItem(STORAGE_KEY);
-  window.dispatchEvent(new CustomEvent("term-learning-state:changed"));
+  window.dispatchEvent(new CustomEvent('term-learning-state:changed'));
 }

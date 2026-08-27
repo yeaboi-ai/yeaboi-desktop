@@ -1,5 +1,5 @@
-import { createAvatar } from "@dicebear/core";
-import { avataaars } from "@dicebear/collection";
+import { createAvatar } from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
 
 // 12 "themes" for the same avataaars character style — hoodies, glasses, beanies,
 // suits, beards. One character vibe, different outfits + colour palettes.
@@ -19,186 +19,186 @@ export type Preset = {
 
 export const PRESETS: Preset[] = [
   {
-    id: "classic",
-    name: "Classic",
+    id: 'classic',
+    name: 'Classic',
     options: {
-      seed: "classic-hoodie",
-      top: ["shortHairTheCaesar"],
-      accessories: ["round"],
+      seed: 'classic-hoodie',
+      top: ['shortHairTheCaesar'],
+      accessories: ['round'],
       accessoriesProbability: 100,
-      clothing: ["hoodie"],
-      clothesColor: ["3c4f5c"],
+      clothing: ['hoodie'],
+      clothesColor: ['3c4f5c'],
       facialHair: [],
-      backgroundColor: ["b6e3f4"],
-      skinColor: ["edb98a"],
+      backgroundColor: ['b6e3f4'],
+      skinColor: ['edb98a'],
     },
   },
   {
-    id: "hoodup",
-    name: "Hood up",
+    id: 'hoodup',
+    name: 'Hood up',
     options: {
-      seed: "hood-up",
-      top: ["winterHat03"],
-      accessories: ["wayfarers"],
+      seed: 'hood-up',
+      top: ['winterHat03'],
+      accessories: ['wayfarers'],
       accessoriesProbability: 100,
-      clothing: ["hoodie"],
-      clothesColor: ["262e33"],
+      clothing: ['hoodie'],
+      clothesColor: ['262e33'],
       facialHair: [],
-      backgroundColor: ["ffd5dc"],
-      skinColor: ["d08b5b"],
+      backgroundColor: ['ffd5dc'],
+      skinColor: ['d08b5b'],
     },
   },
   {
-    id: "beanie",
-    name: "Beanie",
+    id: 'beanie',
+    name: 'Beanie',
     options: {
-      seed: "beanie",
-      top: ["winterHat04"],
-      accessories: ["round"],
+      seed: 'beanie',
+      top: ['winterHat04'],
+      accessories: ['round'],
       accessoriesProbability: 100,
-      clothing: ["graphicShirt"],
-      clothesColor: ["a7ffc4"],
-      facialHair: ["beardLight"],
+      clothing: ['graphicShirt'],
+      clothesColor: ['a7ffc4'],
+      facialHair: ['beardLight'],
       facialHairProbability: 100,
-      backgroundColor: ["c0aede"],
-      skinColor: ["edb98a"],
+      backgroundColor: ['c0aede'],
+      skinColor: ['edb98a'],
     },
   },
   {
-    id: "ceo",
-    name: "CEO",
+    id: 'ceo',
+    name: 'CEO',
     options: {
-      seed: "ceo",
-      top: ["shortHairShortFlat"],
-      accessories: ["prescription01"],
+      seed: 'ceo',
+      top: ['shortHairShortFlat'],
+      accessories: ['prescription01'],
       accessoriesProbability: 100,
-      clothing: ["blazerAndShirt"],
-      clothesColor: ["262e33"],
+      clothing: ['blazerAndShirt'],
+      clothesColor: ['262e33'],
       facialHair: [],
-      backgroundColor: ["d1d4f9"],
-      skinColor: ["f8d25c"],
+      backgroundColor: ['d1d4f9'],
+      skinColor: ['f8d25c'],
     },
   },
   {
-    id: "coder",
-    name: "Coder",
+    id: 'coder',
+    name: 'Coder',
     options: {
-      seed: "coder",
-      top: ["shortHairTheCaesarSidePart"],
-      accessories: ["prescription02"],
+      seed: 'coder',
+      top: ['shortHairTheCaesarSidePart'],
+      accessories: ['prescription02'],
       accessoriesProbability: 100,
-      clothing: ["hoodie"],
-      clothesColor: ["25557c"],
-      facialHair: ["beardMedium"],
+      clothing: ['hoodie'],
+      clothesColor: ['25557c'],
+      facialHair: ['beardMedium'],
       facialHairProbability: 100,
-      backgroundColor: ["ffdfbf"],
-      skinColor: ["d08b5b"],
+      backgroundColor: ['ffdfbf'],
+      skinColor: ['d08b5b'],
     },
   },
   {
-    id: "bookworm",
-    name: "Bookworm",
+    id: 'bookworm',
+    name: 'Bookworm',
     options: {
-      seed: "bookworm",
-      top: ["bigHair"],
-      accessories: ["prescription02"],
+      seed: 'bookworm',
+      top: ['bigHair'],
+      accessories: ['prescription02'],
       accessoriesProbability: 100,
-      clothing: ["collarAndSweater"],
-      clothesColor: ["e6e6e6"],
+      clothing: ['collarAndSweater'],
+      clothesColor: ['e6e6e6'],
       facialHair: [],
-      backgroundColor: ["b6e3f4"],
-      skinColor: ["edb98a"],
+      backgroundColor: ['b6e3f4'],
+      skinColor: ['edb98a'],
     },
   },
   {
-    id: "skater",
-    name: "Skater",
+    id: 'skater',
+    name: 'Skater',
     options: {
-      seed: "skater",
-      top: ["dreads01"],
-      accessories: ["sunglasses"],
+      seed: 'skater',
+      top: ['dreads01'],
+      accessories: ['sunglasses'],
       accessoriesProbability: 100,
-      clothing: ["graphicShirt"],
-      clothesColor: ["ff5c5c"],
+      clothing: ['graphicShirt'],
+      clothesColor: ['ff5c5c'],
       facialHair: [],
-      backgroundColor: ["a7ffc4"],
-      skinColor: ["ae5d29"],
+      backgroundColor: ['a7ffc4'],
+      skinColor: ['ae5d29'],
     },
   },
   {
-    id: "artist",
-    name: "Artist",
+    id: 'artist',
+    name: 'Artist',
     options: {
-      seed: "artist",
-      top: ["bun"],
-      accessories: ["wayfarers"],
+      seed: 'artist',
+      top: ['bun'],
+      accessories: ['wayfarers'],
       accessoriesProbability: 100,
-      clothing: ["overall"],
-      clothesColor: ["a7ffc4"],
+      clothing: ['overall'],
+      clothesColor: ['a7ffc4'],
       facialHair: [],
-      backgroundColor: ["ffd5dc"],
-      skinColor: ["fd9841"],
+      backgroundColor: ['ffd5dc'],
+      skinColor: ['fd9841'],
     },
   },
   {
-    id: "athlete",
-    name: "Athlete",
+    id: 'athlete',
+    name: 'Athlete',
     options: {
-      seed: "athlete",
-      top: ["shortHairShortCurly"],
-      accessories: ["sunglasses"],
+      seed: 'athlete',
+      top: ['shortHairShortCurly'],
+      accessories: ['sunglasses'],
       accessoriesProbability: 100,
-      clothing: ["shirtCrewNeck"],
-      clothesColor: ["ff488e"],
+      clothing: ['shirtCrewNeck'],
+      clothesColor: ['ff488e'],
       facialHair: [],
-      backgroundColor: ["c0aede"],
-      skinColor: ["614335"],
+      backgroundColor: ['c0aede'],
+      skinColor: ['614335'],
     },
   },
   {
-    id: "casual",
-    name: "Casual",
+    id: 'casual',
+    name: 'Casual',
     options: {
-      seed: "casual",
-      top: ["shortHairFrizzle"],
+      seed: 'casual',
+      top: ['shortHairFrizzle'],
       accessories: [],
       accessoriesProbability: 0,
-      clothing: ["shirtVNeck"],
-      clothesColor: ["65c9ff"],
+      clothing: ['shirtVNeck'],
+      clothesColor: ['65c9ff'],
       facialHair: [],
-      backgroundColor: ["d1d4f9"],
-      skinColor: ["edb98a"],
+      backgroundColor: ['d1d4f9'],
+      skinColor: ['edb98a'],
     },
   },
   {
-    id: "dj",
-    name: "DJ",
+    id: 'dj',
+    name: 'DJ',
     options: {
-      seed: "dj",
-      top: ["hat"],
-      accessories: ["sunglasses"],
+      seed: 'dj',
+      top: ['hat'],
+      accessories: ['sunglasses'],
       accessoriesProbability: 100,
-      clothing: ["graphicShirt"],
-      clothesColor: ["262e33"],
-      facialHair: ["moustacheFancy"],
+      clothing: ['graphicShirt'],
+      clothesColor: ['262e33'],
+      facialHair: ['moustacheFancy'],
       facialHairProbability: 100,
-      backgroundColor: ["ffd5dc"],
-      skinColor: ["d08b5b"],
+      backgroundColor: ['ffd5dc'],
+      skinColor: ['d08b5b'],
     },
   },
   {
-    id: "explorer",
-    name: "Explorer",
+    id: 'explorer',
+    name: 'Explorer',
     options: {
-      seed: "explorer",
-      top: ["hijab"],
-      accessories: ["round"],
+      seed: 'explorer',
+      top: ['hijab'],
+      accessories: ['round'],
       accessoriesProbability: 100,
-      clothing: ["blazerAndSweater"],
-      clothesColor: ["3c4f5c"],
+      clothing: ['blazerAndSweater'],
+      clothesColor: ['3c4f5c'],
       facialHair: [],
-      backgroundColor: ["ffdfbf"],
-      skinColor: ["fd9841"],
+      backgroundColor: ['ffdfbf'],
+      skinColor: ['fd9841'],
     },
   },
 ];
@@ -231,27 +231,27 @@ export async function presetToBlob(preset: Preset, size = 256): Promise<Blob> {
     .replace(/<svg([^>]*)\sheight="[^"]*"/i, `<svg$1`)
     .replace(/<svg/i, `<svg width="${size}" height="${size}"`);
 
-  const blob = new Blob([sized], { type: "image/svg+xml;charset=utf-8" });
+  const blob = new Blob([sized], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   try {
     const img = new Image();
-    img.decoding = "sync";
-    img.crossOrigin = "anonymous";
+    img.decoding = 'sync';
+    img.crossOrigin = 'anonymous';
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Failed to load preset SVG"));
+      img.onerror = () => reject(new Error('Failed to load preset SVG'));
       img.src = url;
     });
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D context unavailable");
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable');
     ctx.drawImage(img, 0, 0, size, size);
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("Failed to encode PNG"))),
-        "image/png",
+        (b) => (b ? resolve(b) : reject(new Error('Failed to encode PNG'))),
+        'image/png',
       );
     });
   } finally {

@@ -1,45 +1,51 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 const SECTIONS = [
   {
-    title: "Steer the conversation",
+    title: 'Steer the conversation',
     examples: [
-      "Pause for a sec — let me think.",
-      "Go deeper on this point.",
+      'Pause for a sec — let me think.',
+      'Go deeper on this point.',
       "What's the riskiest assumption here?",
-      "Summarize where we landed.",
+      'Summarize where we landed.',
     ],
   },
   {
-    title: "Get unstuck",
+    title: 'Get unstuck',
     examples: [
-      "Show me a smaller first slice.",
-      "What would you build first and why?",
-      "Make the opposing case.",
+      'Show me a smaller first slice.',
+      'What would you build first and why?',
+      'Make the opposing case.',
       "What's the simplest design that works?",
     ],
   },
   {
-    title: "Use the slash commands",
+    title: 'Use the slash commands',
     examples: [
-      "/persona pm — switch to Product Manager",
-      "/persona challenger — get critical feedback",
-      "/help — list all slash commands",
-      "/clear — clear chat",
+      '/persona pm — switch to Product Manager',
+      '/persona challenger — get critical feedback',
+      '/help — list all slash commands',
+      '/clear — clear chat',
     ],
   },
   {
-    title: "Capture the work",
+    title: 'Capture the work',
     examples: [
-      "What decisions have we made?",
-      "List the open questions.",
-      "What action items came out of this?",
-      "Walk me through the data model.",
+      'What decisions have we made?',
+      'List the open questions.',
+      'What action items came out of this?',
+      'Walk me through the data model.',
     ],
   },
 ];
@@ -105,14 +111,24 @@ export function CheatsheetSheet({ open, onOpenChange }: CheatsheetSheetProps) {
                 aria-label={`Show ${s.title}`}
                 aria-current={i === sectionIdx}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  i === sectionIdx ? "bg-warning/80" : "bg-foreground/[0.10] hover:bg-foreground/[0.20]"
+                  i === sectionIdx
+                    ? 'bg-warning/80'
+                    : 'bg-foreground/[0.10] hover:bg-foreground/[0.20]'
                 }`}
               />
             ))}
           </div>
 
           <p className="text-[11px] text-muted-foreground/60 pt-2">
-            Tip: press <kbd className="font-mono bg-foreground/[0.06] border border-border/70 rounded px-1.5 py-0.5">?</kbd> for keyboard shortcuts, or <kbd className="font-mono bg-foreground/[0.06] border border-border/70 rounded px-1.5 py-0.5">⌘K</kbd> for the command palette.
+            Tip: press{' '}
+            <kbd className="font-mono bg-foreground/[0.06] border border-border/70 rounded px-1.5 py-0.5">
+              ?
+            </kbd>{' '}
+            for keyboard shortcuts, or{' '}
+            <kbd className="font-mono bg-foreground/[0.06] border border-border/70 rounded px-1.5 py-0.5">
+              ⌘K
+            </kbd>{' '}
+            for the command palette.
           </p>
         </div>
       </SheetContent>

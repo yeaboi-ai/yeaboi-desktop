@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { WsEvent } from "@/lib/ws";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { WsEvent } from '@/lib/ws';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface Suggestion {
   id: string;
@@ -11,7 +11,7 @@ export interface Suggestion {
   section: string;
   content: string;
   edited_content: string | null;
-  status: "pending" | "accepted" | "rejected";
+  status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: string | null;
@@ -36,7 +36,12 @@ interface UseSuggestionsArgs {
  * inline edits), reject, or bulk-accept by section. The hook keeps the
  * pending list in sync via WebSocket events fanned out from the backend.
  */
-export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true }: UseSuggestionsArgs) {
+export function useSuggestions({
+  projectId,
+  sessionId,
+  wsEvents,
+  enabled = true,
+}: UseSuggestionsArgs) {
   const { authFetch, ready } = useAuthFetch();
   const [pending, setPending] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,18 +83,18 @@ export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true 
     setPending((prev) => {
       let next = prev;
       for (const ev of fresh) {
-        if (ev.type === "suggestion_added") {
+        if (ev.type === 'suggestion_added') {
           const p = ev.payload as Partial<Suggestion> | undefined;
           if (!p?.id || p.session_id !== sessionId) continue;
           // Backend hasn't sent edited_content/reviewed_* on add — fill defaults.
           const s: Suggestion = {
             id: p.id,
-            project_id: p.project_id ?? projectId ?? "",
+            project_id: p.project_id ?? projectId ?? '',
             session_id: p.session_id ?? null,
-            section: p.section ?? "",
-            content: p.content ?? "",
+            section: p.section ?? '',
+            content: p.content ?? '',
             edited_content: p.edited_content ?? null,
-            status: (p.status as Suggestion["status"]) ?? "pending",
+            status: (p.status as Suggestion['status']) ?? 'pending',
             created_at: p.created_at ?? new Date().toISOString(),
             reviewed_at: p.reviewed_at ?? null,
             reviewed_by: p.reviewed_by ?? null,
@@ -97,7 +102,7 @@ export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true 
           };
           if (next.some((x) => x.id === s.id)) continue;
           next = [...next, s];
-        } else if (ev.type === "suggestion_resolved") {
+        } else if (ev.type === 'suggestion_resolved') {
           const p = ev.payload as { id?: string } | undefined;
           if (!p?.id) continue;
           if (!next.some((x) => x.id === p.id)) continue;
@@ -118,7 +123,7 @@ export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true 
         const resp = await authFetch(
           `/api/projects/${projectId}/blueprint-suggestions/${id}/accept`,
           {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({
               edited_content: editedContent ?? null,
               replace: replace ?? false,
@@ -146,7 +151,7 @@ export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true 
       try {
         const resp = await authFetch(
           `/api/projects/${projectId}/blueprint-suggestions/${id}/reject`,
-          { method: "POST" },
+          { method: 'POST' },
         );
         if (!resp.ok) {
           setPending(before);
@@ -170,7 +175,7 @@ export function useSuggestions({ projectId, sessionId, wsEvents, enabled = true 
         const resp = await authFetch(
           `/api/projects/${projectId}/blueprint-suggestions/bulk-accept`,
           {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify({ section, session_id: sessionId }),
           },
         );

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -63,12 +63,12 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
           setInfo(data);
           setSelectedPersona(data.current_persona);
         } else {
-          setError("Failed to load session info");
+          setError('Failed to load session info');
         }
       })
-      .catch(() => setError("Network error"))
+      .catch(() => setError('Network error'))
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, ready]);
 
   // Switch persona
@@ -78,7 +78,7 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
     setSelectedPersona(persona);
     try {
       await authFetch(`/api/sessions/${sessionId}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ ai_config: { persona } }),
       });
     } catch {
@@ -125,7 +125,7 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-sm font-body text-destructive">
-            {error || "Unable to load session details."}
+            {error || 'Unable to load session details.'}
           </p>
           <button
             onClick={onContinue}
@@ -158,14 +158,8 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
           <p className="text-[10px] font-body font-medium tracking-[0.18em] uppercase text-muted-foreground mb-3">
             Resume Session
           </p>
-          <h1 className="font-display text-4xl italic text-foreground">
-            Resume Planning
-          </h1>
-          {title && (
-            <p className="text-sm font-body text-muted-foreground mt-2">
-              {title}
-            </p>
-          )}
+          <h1 className="font-display text-4xl italic text-foreground">Resume Planning</h1>
+          {title && <p className="text-sm font-body text-muted-foreground mt-2">{title}</p>}
         </div>
 
         {/* Coverage overview */}
@@ -202,10 +196,8 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
 
             <div>
               <p className="text-sm font-body text-foreground">
-                <span className="text-primary font-medium">{filled_count}</span>
-                {" "}of{" "}
-                <span className="font-medium">{total_count}</span>
-                {" "}sections filled
+                <span className="text-primary font-medium">{filled_count}</span> of{' '}
+                <span className="font-medium">{total_count}</span> sections filled
               </p>
               <p className="text-[11px] font-body text-muted-foreground/60 mt-0.5">
                 Coverage grade: {coverage.grade}
@@ -222,16 +214,18 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
             </p>
             <div className="flex flex-wrap gap-2">
               {coverage.gaps.map((gap) => {
-                const dotColor = gap.score === 0
-                  ? "bg-destructive/70"
-                  : gap.score < 60
-                    ? "bg-warning/70"
-                    : "bg-success/70";
-                const borderColor = gap.score === 0
-                  ? "border-destructive/20"
-                  : gap.score < 60
-                    ? "border-warning/20"
-                    : "border-success/20";
+                const dotColor =
+                  gap.score === 0
+                    ? 'bg-destructive/70'
+                    : gap.score < 60
+                      ? 'bg-warning/70'
+                      : 'bg-success/70';
+                const borderColor =
+                  gap.score === 0
+                    ? 'border-destructive/20'
+                    : gap.score < 60
+                      ? 'border-warning/20'
+                      : 'border-success/20';
                 return (
                   <span
                     key={gap.key}
@@ -262,14 +256,16 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
                     disabled={switching}
                     className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all group ${
                       isSelected
-                        ? "border-primary/60 bg-primary/10 ring-1 ring-primary/20"
-                        : "border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30"
+                        ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+                        : 'border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30'
                     } disabled:opacity-60`}
                   >
                     <div className="flex items-center justify-between">
                       <span
                         className={`text-sm font-body font-medium ${
-                          isSelected ? "text-foreground" : "text-foreground/90 group-hover:text-foreground"
+                          isSelected
+                            ? 'text-foreground'
+                            : 'text-foreground/90 group-hover:text-foreground'
                         }`}
                       >
                         {rec.label}
@@ -286,7 +282,7 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
                           </span>
                         )}
                         <span className="text-[9px] font-body text-muted-foreground/40 px-1.5 py-0.5 rounded bg-muted/30">
-                          {rec.gaps_count} {rec.gaps_count === 1 ? "gap" : "gaps"}
+                          {rec.gaps_count} {rec.gaps_count === 1 ? 'gap' : 'gaps'}
                         </span>
                       </div>
                     </div>
@@ -297,8 +293,8 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
                             key={section}
                             className={`text-[9px] font-body px-1.5 py-0.5 rounded ${
                               isSelected
-                                ? "bg-primary/15 text-primary/70"
-                                : "bg-muted/40 text-muted-foreground/50"
+                                ? 'bg-primary/15 text-primary/70'
+                                : 'bg-muted/40 text-muted-foreground/50'
                             }`}
                           >
                             {section}
@@ -325,7 +321,7 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
                 <span>Switching persona...</span>
               </>
             ) : (
-              "Continue where I left off"
+              'Continue where I left off'
             )}
           </button>
         </div>

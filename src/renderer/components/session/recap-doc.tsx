@@ -1,9 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ListChecks, HelpCircle, Quote, BookOpen, Sparkles, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from 'react';
+import {
+  CheckCircle2,
+  ListChecks,
+  HelpCircle,
+  Quote,
+  BookOpen,
+  Sparkles,
+  RefreshCw,
+} from 'lucide-react';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface ExtractedItem {
   text: string;
@@ -58,16 +66,16 @@ interface RecapDocProps {
 }
 
 const SECTION_IDS = {
-  tldr: "recap-tldr",
-  moments: "recap-moments",
-  decisions: "recap-decisions",
-  actions: "recap-actions",
-  questions: "recap-questions",
-  chapters: "recap-chapters",
+  tldr: 'recap-tldr',
+  moments: 'recap-moments',
+  decisions: 'recap-decisions',
+  actions: 'recap-actions',
+  questions: 'recap-questions',
+  chapters: 'recap-chapters',
 } as const;
 
 const EMPTY_EXTRACTION: SessionExtraction = {
-  summary: "",
+  summary: '',
   highlights: [],
   decisions: [],
   action_items: [],
@@ -81,7 +89,7 @@ export function RecapDoc({
   onSeekTo,
   canRegenerate,
   onDataLoaded,
-  containerClassName = "mx-auto max-w-[820px] px-8 py-10",
+  containerClassName = 'mx-auto max-w-[820px] px-8 py-10',
 }: RecapDocProps) {
   const { authFetch, ready } = useAuthFetch();
   const [data, setData] = useState<SessionExtraction>(EMPTY_EXTRACTION);
@@ -113,7 +121,9 @@ export function RecapDoc({
   const regenerate = async () => {
     setRegenerating(true);
     try {
-      const resp = await authFetch(`/api/sessions/${sessionId}/extraction/regenerate`, { method: "POST" });
+      const resp = await authFetch(`/api/sessions/${sessionId}/extraction/regenerate`, {
+        method: 'POST',
+      });
       if (resp.ok) {
         const fresh = (await resp.json()) as SessionExtraction;
         setData(fresh);
@@ -128,14 +138,12 @@ export function RecapDoc({
   // off label + start_ts so we still display the chapter even when AI didn't
   // produce a summary for it.
   const mergedChapters = useMemo(() => {
-    const summaryByLabel = new Map(
-      data.chapter_summaries.map((c) => [c.label.toLowerCase(), c]),
-    );
+    const summaryByLabel = new Map(data.chapter_summaries.map((c) => [c.label.toLowerCase(), c]));
     return chapters.map((c) => {
       const match = summaryByLabel.get(c.label.toLowerCase());
       return {
         ...c,
-        summary: match?.summary ?? "",
+        summary: match?.summary ?? '',
       };
     });
   }, [chapters, data.chapter_summaries]);
@@ -155,12 +163,13 @@ export function RecapDoc({
           Loading recap…
         </div>
       ) : totalItems === 0 && mergedChapters.length === 0 ? (
-        <EmptyRecap onRegenerate={canRegenerate ? regenerate : undefined} regenerating={regenerating} />
+        <EmptyRecap
+          onRegenerate={canRegenerate ? regenerate : undefined}
+          regenerating={regenerating}
+        />
       ) : (
         <article className="space-y-12">
-          {data.summary && (
-            <TldrSection summary={data.summary} />
-          )}
+          {data.summary && <TldrSection summary={data.summary} />}
           {data.highlights.length > 0 && (
             <HighlightsSection highlights={data.highlights} onSeekTo={onSeekTo} />
           )}
@@ -200,7 +209,7 @@ export function RecapDoc({
                 disabled={regenerating}
                 className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground/70 hover:text-foreground/90 transition-colors disabled:opacity-40"
               >
-                <RefreshCw className={`h-3 w-3 ${regenerating ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3 w-3 ${regenerating ? 'animate-spin' : ''}`} />
                 Regenerate recap
               </button>
               <p className="text-[11px] text-muted-foreground/50 mt-1">
@@ -217,13 +226,21 @@ export function RecapDoc({
 function TldrSection({ summary }: { summary: string }) {
   return (
     <section id={SECTION_IDS.tldr}>
-      <SectionHeading Icon={Sparkles} tone="text-foreground/80">TL;DR</SectionHeading>
+      <SectionHeading Icon={Sparkles} tone="text-foreground/80">
+        TL;DR
+      </SectionHeading>
       <p className="text-[17px] leading-[1.7] text-foreground/90">{summary}</p>
     </section>
   );
 }
 
-function HighlightsSection({ highlights, onSeekTo }: { highlights: Highlight[]; onSeekTo: (ts: string) => void }) {
+function HighlightsSection({
+  highlights,
+  onSeekTo,
+}: {
+  highlights: Highlight[];
+  onSeekTo: (ts: string) => void;
+}) {
   return (
     <section id={SECTION_IDS.moments}>
       <SectionHeading Icon={Quote} tone="text-purple-400">
@@ -235,12 +252,12 @@ function HighlightsSection({ highlights, onSeekTo }: { highlights: Highlight[]; 
             key={i}
             className="rounded-lg border-l-2 border-purple-400/50 bg-foreground/[0.03] pl-5 pr-4 py-3"
           >
-            <p className="text-[15px] leading-[1.65] text-foreground/95 italic">&ldquo;{h.quote}&rdquo;</p>
+            <p className="text-[15px] leading-[1.65] text-foreground/95 italic">
+              &ldquo;{h.quote}&rdquo;
+            </p>
             <div className="mt-2 flex items-center gap-2.5 text-[12px] text-muted-foreground/80">
               {h.speaker && <span className="font-medium">{h.speaker}</span>}
-              {h.ts && (
-                <TimestampChip ts={h.ts} onSeekTo={onSeekTo} />
-              )}
+              {h.ts && <TimestampChip ts={h.ts} onSeekTo={onSeekTo} />}
             </div>
           </li>
         ))}
@@ -264,7 +281,7 @@ function ItemsSection({
   tone: string;
   items: ExtractedItem[];
   onSeekTo: (ts: string) => void;
-  bulletStyle?: "checkbox";
+  bulletStyle?: 'checkbox';
 }) {
   return (
     <section id={id}>
@@ -315,7 +332,7 @@ function ChaptersSection({
         {chapters.map((c, i) => (
           <li key={c.id} className="flex gap-4">
             <span className="text-[13px] text-muted-foreground/50 tabular-nums shrink-0 pt-1 font-mono">
-              {String(i + 1).padStart(2, "0")}
+              {String(i + 1).padStart(2, '0')}
             </span>
             <div className="min-w-0 flex-1">
               <button
@@ -349,7 +366,9 @@ function SectionHeading({
   children: React.ReactNode;
 }) {
   return (
-    <h3 className={`mb-4 flex items-center gap-2.5 text-[13px] uppercase tracking-[0.12em] font-semibold ${tone}`}>
+    <h3
+      className={`mb-4 flex items-center gap-2.5 text-[13px] uppercase tracking-[0.12em] font-semibold ${tone}`}
+    >
       <Icon className="h-4 w-4" />
       {children}
     </h3>
@@ -360,8 +379,8 @@ function Count({ n }: { n: number }) {
   return <span className="ml-0.5 text-muted-foreground/40 font-normal">({n})</span>;
 }
 
-function Bullet({ style }: { style?: "checkbox" }) {
-  if (style === "checkbox") {
+function Bullet({ style }: { style?: 'checkbox' }) {
+  if (style === 'checkbox') {
     return (
       <span
         aria-hidden
@@ -388,20 +407,31 @@ function TimestampChip({ ts, onSeekTo }: { ts: string; onSeekTo: (ts: string) =>
 function formatTimeChip(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch {
-    return "";
+    return '';
   }
 }
 
-function EmptyRecap({ onRegenerate, regenerating }: { onRegenerate?: () => void; regenerating: boolean }) {
-  const previewSections: Array<{ Icon: typeof CheckCircle2; tone: string; label: string; lines: number }> = [
-    { Icon: Sparkles, tone: "text-foreground/40", label: "TL;DR", lines: 2 },
-    { Icon: Quote, tone: "text-purple-400/50", label: "Key moments", lines: 3 },
-    { Icon: CheckCircle2, tone: "text-success/60", label: "Decisions", lines: 2 },
-    { Icon: ListChecks, tone: "text-warning/60", label: "Action items", lines: 2 },
-    { Icon: HelpCircle, tone: "text-info/60", label: "Open questions", lines: 1 },
-    { Icon: BookOpen, tone: "text-info/50", label: "Chapters", lines: 2 },
+function EmptyRecap({
+  onRegenerate,
+  regenerating,
+}: {
+  onRegenerate?: () => void;
+  regenerating: boolean;
+}) {
+  const previewSections: Array<{
+    Icon: typeof CheckCircle2;
+    tone: string;
+    label: string;
+    lines: number;
+  }> = [
+    { Icon: Sparkles, tone: 'text-foreground/40', label: 'TL;DR', lines: 2 },
+    { Icon: Quote, tone: 'text-purple-400/50', label: 'Key moments', lines: 3 },
+    { Icon: CheckCircle2, tone: 'text-success/60', label: 'Decisions', lines: 2 },
+    { Icon: ListChecks, tone: 'text-warning/60', label: 'Action items', lines: 2 },
+    { Icon: HelpCircle, tone: 'text-info/60', label: 'Open questions', lines: 1 },
+    { Icon: BookOpen, tone: 'text-info/50', label: 'Chapters', lines: 2 },
   ];
 
   return (
@@ -413,8 +443,8 @@ function EmptyRecap({ onRegenerate, regenerating }: { onRegenerate?: () => void;
         </div>
         <p className="text-lg font-semibold text-foreground/90 mb-1.5">Recap is being prepared</p>
         <p className="text-[14px] text-muted-foreground/75 max-w-md mx-auto leading-relaxed">
-          We&apos;re reading through the conversation to surface decisions, key moments, action items, open
-          questions, and chapter summaries.
+          We&apos;re reading through the conversation to surface decisions, key moments, action
+          items, open questions, and chapter summaries.
         </p>
         {onRegenerate && (
           <button
@@ -423,8 +453,8 @@ function EmptyRecap({ onRegenerate, regenerating }: { onRegenerate?: () => void;
             disabled={regenerating}
             className="mt-5 inline-flex items-center gap-2 rounded-lg bg-info/15 px-4 py-2 text-[13px] font-medium text-info ring-1 ring-info/30 hover:bg-info/20 transition-colors disabled:opacity-40"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? "animate-spin" : ""}`} />
-            {regenerating ? "Running extraction…" : "Run extraction now"}
+            <RefreshCw className={`h-3.5 w-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+            {regenerating ? 'Running extraction…' : 'Run extraction now'}
           </button>
         )}
       </div>
@@ -458,12 +488,12 @@ function EmptyRecap({ onRegenerate, regenerating }: { onRegenerate?: () => void;
  *  state communicates what's coming. */
 export function RecapToc({ data }: { data: SessionExtraction | null }) {
   const entries: Array<{ id: string; label: string; Icon: typeof CheckCircle2; tone: string }> = [
-    { id: SECTION_IDS.tldr, label: "TL;DR", Icon: Sparkles, tone: "text-foreground/70" },
-    { id: SECTION_IDS.moments, label: "Key moments", Icon: Quote, tone: "text-purple-400" },
-    { id: SECTION_IDS.decisions, label: "Decisions", Icon: CheckCircle2, tone: "text-success" },
-    { id: SECTION_IDS.actions, label: "Action items", Icon: ListChecks, tone: "text-warning" },
-    { id: SECTION_IDS.questions, label: "Open questions", Icon: HelpCircle, tone: "text-info" },
-    { id: SECTION_IDS.chapters, label: "Chapters", Icon: BookOpen, tone: "text-info" },
+    { id: SECTION_IDS.tldr, label: 'TL;DR', Icon: Sparkles, tone: 'text-foreground/70' },
+    { id: SECTION_IDS.moments, label: 'Key moments', Icon: Quote, tone: 'text-purple-400' },
+    { id: SECTION_IDS.decisions, label: 'Decisions', Icon: CheckCircle2, tone: 'text-success' },
+    { id: SECTION_IDS.actions, label: 'Action items', Icon: ListChecks, tone: 'text-warning' },
+    { id: SECTION_IDS.questions, label: 'Open questions', Icon: HelpCircle, tone: 'text-info' },
+    { id: SECTION_IDS.chapters, label: 'Chapters', Icon: BookOpen, tone: 'text-info' },
   ];
 
   const counts: Record<string, number> = data

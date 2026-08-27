@@ -1,16 +1,25 @@
-"use client";
+'use client';
 
-import { forwardRef, useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown, ChevronDown, Check, HelpCircle, LayoutGrid, Rows3, Rows4, Settings } from "lucide-react";
-import { BOARD_SORT_OPTIONS } from "@/lib/board-sort";
-import type { BoardGroupBy, BoardSortKey } from "@/lib/preferences";
-import { SavedViews } from "./saved-views";
+import { forwardRef, useEffect, useRef, useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Check,
+  HelpCircle,
+  LayoutGrid,
+  Rows3,
+  Rows4,
+  Settings,
+} from 'lucide-react';
+import { BOARD_SORT_OPTIONS } from '@/lib/board-sort';
+import type { BoardGroupBy, BoardSortKey } from '@/lib/preferences';
+import { SavedViews } from './saved-views';
 
-export type ViewMode = "board" | "list";
+export type ViewMode = 'board' | 'list';
 
-const PRIORITIES = ["critical", "high", "medium", "low"] as const;
+const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 
 /* ── Custom dropdown (single-select) ─────────────────────────────── */
 
@@ -38,8 +47,8 @@ export function FilterDropdown({
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const selected = options.find((o) => o.value === value);
@@ -51,24 +60,31 @@ export function FilterDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`h-8 flex items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring ${
           value
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-background text-muted-foreground hover:text-foreground"
+            ? 'border-primary/40 bg-primary/10 text-foreground'
+            : 'border-border bg-background text-muted-foreground hover:text-foreground'
         }`}
       >
         <span className="truncate max-w-[140px]">{selected ? selected.label : placeholder}</span>
-        <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
         <div className="absolute top-[calc(100%+4px)] left-0 z-50 min-w-[180px] max-h-[240px] overflow-y-auto rounded-lg border border-border bg-popover shadow-lg py-1 animate-in fade-in-0 zoom-in-95">
           <button
             type="button"
-            onClick={() => { onChange(""); setOpen(false); }}
+            onClick={() => {
+              onChange('');
+              setOpen(false);
+            }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
-              !value ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              !value
+                ? 'text-foreground bg-accent'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
             }`}
           >
-            <Check className={`h-3.5 w-3.5 shrink-0 ${!value ? "opacity-100" : "opacity-0"}`} />
+            <Check className={`h-3.5 w-3.5 shrink-0 ${!value ? 'opacity-100' : 'opacity-0'}`} />
             {placeholder}
           </button>
 
@@ -76,14 +92,19 @@ export function FilterDropdown({
             <button
               key={opt.value}
               type="button"
-              onClick={() => { onChange(opt.value); setOpen(false); }}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
               className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
                 value === opt.value
-                  ? "text-foreground bg-accent"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <Check className={`h-3.5 w-3.5 shrink-0 ${value === opt.value ? "opacity-100" : "opacity-0"}`} />
+              <Check
+                className={`h-3.5 w-3.5 shrink-0 ${value === opt.value ? 'opacity-100' : 'opacity-0'}`}
+              />
               <span className="truncate">{opt.label}</span>
             </button>
           ))}
@@ -114,8 +135,8 @@ function MultiFilterDropdown({
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const toggle = (v: string) => {
@@ -126,7 +147,7 @@ function MultiFilterDropdown({
     values.length === 0
       ? placeholder
       : values.length === 1
-        ? options.find((o) => o.value === values[0])?.label ?? values[0]
+        ? (options.find((o) => o.value === values[0])?.label ?? values[0])
         : `${values.length} selected`;
 
   return (
@@ -136,12 +157,14 @@ function MultiFilterDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`h-8 flex items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring ${
           values.length > 0
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-background text-muted-foreground hover:text-foreground"
+            ? 'border-primary/40 bg-primary/10 text-foreground'
+            : 'border-border bg-background text-muted-foreground hover:text-foreground'
         }`}
       >
         <span className="truncate max-w-[140px]">{label}</span>
-        <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {open && (
@@ -166,11 +189,13 @@ function MultiFilterDropdown({
                 onClick={() => toggle(opt.value)}
                 className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
                   checked
-                    ? "text-foreground bg-accent"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    ? 'text-foreground bg-accent'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
-                <Check className={`h-3.5 w-3.5 shrink-0 ${checked ? "opacity-100" : "opacity-0"}`} />
+                <Check
+                  className={`h-3.5 w-3.5 shrink-0 ${checked ? 'opacity-100' : 'opacity-0'}`}
+                />
                 <span className="truncate">{opt.label}</span>
               </button>
             );
@@ -198,17 +223,17 @@ function SortDropdown({
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const current = BOARD_SORT_OPTIONS.find((o) => o.key === value) ?? BOARD_SORT_OPTIONS[0]!;
-  const active = value !== "manual";
+  const active = value !== 'manual';
 
   // Group options by their `group` field, preserving the order in BOARD_SORT_OPTIONS.
   const groups: { name: string; options: typeof BOARD_SORT_OPTIONS }[] = [];
   for (const opt of BOARD_SORT_OPTIONS) {
-    const groupName = opt.group ?? "";
+    const groupName = opt.group ?? '';
     let bucket = groups.find((g) => g.name === groupName);
     if (!bucket) {
       bucket = { name: groupName, options: [] };
@@ -225,14 +250,14 @@ function SortDropdown({
         title={`Sort: ${current.label}`}
         className={`h-8 flex items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring ${
           active
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-background text-muted-foreground hover:text-foreground"
+            ? 'border-primary/40 bg-primary/10 text-foreground'
+            : 'border-border bg-background text-muted-foreground hover:text-foreground'
         }`}
       >
         <ArrowUpDown className="h-3.5 w-3.5 shrink-0 opacity-70" />
-        <span className="truncate max-w-[160px]">{active ? current.label : "Sort"}</span>
+        <span className="truncate max-w-[160px]">{active ? current.label : 'Sort'}</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -256,12 +281,12 @@ function SortDropdown({
                   }}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
                     value === opt.key
-                      ? "text-foreground bg-accent"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      ? 'text-foreground bg-accent'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   }`}
                 >
                   <Check
-                    className={`h-3.5 w-3.5 shrink-0 ${value === opt.key ? "opacity-100" : "opacity-0"}`}
+                    className={`h-3.5 w-3.5 shrink-0 ${value === opt.key ? 'opacity-100' : 'opacity-0'}`}
                   />
                   <span className="truncate">{opt.label}</span>
                 </button>
@@ -277,13 +302,13 @@ function SortDropdown({
 /* ── Group-by dropdown ────────────────────────────────────────────── */
 
 const GROUP_BY_OPTIONS: { value: BoardGroupBy; label: string; description?: string }[] = [
-  { value: "off", label: "None", description: "Flat columns" },
-  { value: "wave", label: "Wave", description: "Execution order from planning" },
-  { value: "assignee", label: "Assignee" },
-  { value: "priority", label: "Priority" },
-  { value: "project", label: "Project" },
-  { value: "label", label: "Label" },
-  { value: "parent", label: "Parent" },
+  { value: 'off', label: 'None', description: 'Flat columns' },
+  { value: 'wave', label: 'Wave', description: 'Execution order from planning' },
+  { value: 'assignee', label: 'Assignee' },
+  { value: 'priority', label: 'Priority' },
+  { value: 'project', label: 'Project' },
+  { value: 'label', label: 'Label' },
+  { value: 'parent', label: 'Parent' },
 ];
 
 function GroupByDropdown({
@@ -301,12 +326,12 @@ function GroupByDropdown({
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
   const current = GROUP_BY_OPTIONS.find((o) => o.value === value) ?? GROUP_BY_OPTIONS[0]!;
-  const active = value !== "off";
+  const active = value !== 'off';
 
   return (
     <div ref={ref} className="relative">
@@ -316,14 +341,14 @@ function GroupByDropdown({
         title={`Group by: ${current.label}`}
         className={`h-8 flex items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring ${
           active
-            ? "border-primary/40 bg-primary/10 text-foreground"
-            : "border-border bg-background text-muted-foreground hover:text-foreground"
+            ? 'border-primary/40 bg-primary/10 text-foreground'
+            : 'border-border bg-background text-muted-foreground hover:text-foreground'
         }`}
       >
         <Rows4 className="h-3.5 w-3.5 shrink-0 opacity-70" />
-        <span className="truncate max-w-[140px]">{active ? current.label : "Group by"}</span>
+        <span className="truncate max-w-[140px]">{active ? current.label : 'Group by'}</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -339,21 +364,19 @@ function GroupByDropdown({
               }}
               className={`w-full flex items-start gap-2 px-3 py-1.5 text-sm transition-colors ${
                 value === opt.value
-                  ? "text-foreground bg-accent"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  ? 'text-foreground bg-accent'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
               <Check
                 className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                  value === opt.value ? "opacity-100" : "opacity-0"
+                  value === opt.value ? 'opacity-100' : 'opacity-0'
                 }`}
               />
               <span className="flex flex-col items-start text-left">
                 <span className="truncate">{opt.label}</span>
                 {opt.description && (
-                  <span className="text-[10px] text-muted-foreground/60">
-                    {opt.description}
-                  </span>
+                  <span className="text-[10px] text-muted-foreground/60">{opt.description}</span>
                 )}
               </span>
             </button>
@@ -385,8 +408,8 @@ interface BoardToolbarProps {
   assigneeFilter: string;
   onAssigneeFilterChange: (v: string) => void;
   assigneeOptions: { id: string; name: string }[];
-  density?: "comfortable" | "compact";
-  onDensityChange?: (d: "comfortable" | "compact") => void;
+  density?: 'comfortable' | 'compact';
+  onDensityChange?: (d: 'comfortable' | 'compact') => void;
   sortBy?: BoardSortKey;
   onSortByChange?: (v: BoardSortKey) => void;
   groupBy?: BoardGroupBy;
@@ -424,11 +447,11 @@ export function BoardToolbar({
   assigneeFilter,
   onAssigneeFilterChange,
   assigneeOptions,
-  density = "comfortable",
+  density = 'comfortable',
   onDensityChange,
-  sortBy = "manual",
+  sortBy = 'manual',
   onSortByChange,
-  groupBy = "off",
+  groupBy = 'off',
   onGroupByChange,
   currentViewQuery,
   onApplyView,
@@ -437,16 +460,23 @@ export function BoardToolbar({
   searchInputRef,
 }: BoardToolbarProps) {
   const hasFilters =
-    search || priorityFilter || projectFilter || sessionFilter || labelFilter.length > 0 || assigneeFilter;
+    search ||
+    priorityFilter ||
+    projectFilter ||
+    sessionFilter ||
+    labelFilter.length > 0 ||
+    assigneeFilter;
 
   return (
     <div className="flex flex-wrap items-center gap-3">
       {/* View toggle */}
       <div className="flex rounded-lg border border-border overflow-hidden">
         <button
-          onClick={() => onViewChange("board")}
+          onClick={() => onViewChange('board')}
           className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-            view === "board" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+            view === 'board'
+              ? 'bg-foreground text-background'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <span className="flex items-center gap-1.5">
@@ -459,9 +489,11 @@ export function BoardToolbar({
           </span>
         </button>
         <button
-          onClick={() => onViewChange("list")}
+          onClick={() => onViewChange('list')}
           className={`px-3 py-1.5 text-sm font-medium border-l border-border transition-colors ${
-            view === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+            view === 'list'
+              ? 'bg-foreground text-background'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <span className="flex items-center gap-1.5">
@@ -498,7 +530,10 @@ export function BoardToolbar({
           value={sessionFilter}
           onChange={onSessionFilterChange}
           placeholder="All Sessions"
-          options={sessionOptions.map((s) => ({ value: s.id, label: s.title || "Untitled Session" }))}
+          options={sessionOptions.map((s) => ({
+            value: s.id,
+            label: s.title || 'Untitled Session',
+          }))}
         />
       )}
 
@@ -507,7 +542,10 @@ export function BoardToolbar({
         value={priorityFilter}
         onChange={onPriorityFilterChange}
         placeholder="All priorities"
-        options={PRIORITIES.map((p) => ({ value: p, label: p.charAt(0).toUpperCase() + p.slice(1) }))}
+        options={PRIORITIES.map((p) => ({
+          value: p,
+          label: p.charAt(0).toUpperCase() + p.slice(1),
+        }))}
       />
 
       {/* Label filter (multi-select) */}
@@ -534,12 +572,12 @@ export function BoardToolbar({
           variant="ghost"
           size="sm"
           onClick={() => {
-            onSearchChange("");
-            onPriorityFilterChange("");
-            onProjectFilterChange("");
-            onSessionFilterChange("");
+            onSearchChange('');
+            onPriorityFilterChange('');
+            onProjectFilterChange('');
+            onSessionFilterChange('');
             onLabelFilterChange([]);
-            onAssigneeFilterChange("");
+            onAssigneeFilterChange('');
           }}
           className="h-8 text-xs"
         >
@@ -549,12 +587,8 @@ export function BoardToolbar({
 
       {/* Trailing controls — sort, saved views, density, help — pushed to the right */}
       <div className="ml-auto flex items-center gap-2">
-        {onGroupByChange && (
-          <GroupByDropdown value={groupBy} onChange={onGroupByChange} />
-        )}
-        {onSortByChange && (
-          <SortDropdown value={sortBy} onChange={onSortByChange} />
-        )}
+        {onGroupByChange && <GroupByDropdown value={groupBy} onChange={onGroupByChange} />}
+        {onSortByChange && <SortDropdown value={sortBy} onChange={onSortByChange} />}
         {currentViewQuery !== undefined && onApplyView && (
           <SavedViews currentQuery={currentViewQuery} onApply={onApplyView} />
         )}
@@ -562,26 +596,26 @@ export function BoardToolbar({
           <div className="flex rounded-md border border-border overflow-hidden">
             <button
               type="button"
-              aria-pressed={density === "comfortable"}
-              onClick={() => onDensityChange("comfortable")}
+              aria-pressed={density === 'comfortable'}
+              onClick={() => onDensityChange('comfortable')}
               title="Comfortable density"
               className={`h-8 px-2 transition-colors ${
-                density === "comfortable"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
+                density === 'comfortable'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
-              aria-pressed={density === "compact"}
-              onClick={() => onDensityChange("compact")}
+              aria-pressed={density === 'compact'}
+              onClick={() => onDensityChange('compact')}
               title="Compact density"
               className={`h-8 px-2 border-l border-border transition-colors ${
-                density === "compact"
-                  ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground"
+                density === 'compact'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Rows3 className="h-3.5 w-3.5" />

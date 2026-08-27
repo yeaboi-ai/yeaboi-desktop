@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useEffect, useRef, useState } from 'react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface FieldLayoutEntry {
   key: string;
   label: string;
   type: string;
-  source: "builtin" | "custom";
-  placement: "main" | "sidebar" | "header";
+  source: 'builtin' | 'custom';
+  placement: 'main' | 'sidebar' | 'header';
   visible: boolean;
   required: boolean;
   options?: string[] | null;
@@ -49,7 +49,7 @@ export function useTicketTemplates() {
 
     cachedPromise = (async () => {
       try {
-        const resp = await authFetch("/api/ticket-templates");
+        const resp = await authFetch('/api/ticket-templates');
         if (!resp.ok) return [];
         const data = (await resp.json()) as TicketTemplateLite[];
         cachedAt = Date.now();

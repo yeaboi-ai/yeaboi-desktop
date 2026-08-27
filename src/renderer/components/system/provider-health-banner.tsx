@@ -1,60 +1,60 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ExternalLink, X } from "lucide-react";
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, ExternalLink, X } from 'lucide-react';
 
-import { useProviderHealthContext } from "@/components/providers/provider-health-provider";
-import { cn } from "@/lib/utils";
-import type { FeatureAvailability, HealthSummary } from "@/lib/types/health";
+import { useProviderHealthContext } from '@/components/providers/provider-health-provider';
+import { cn } from '@/lib/utils';
+import type { FeatureAvailability, HealthSummary } from '@/lib/types/health';
 
-const DISMISS_KEY_PREFIX = "provider-health-banner.dismissed.";
+const DISMISS_KEY_PREFIX = 'provider-health-banner.dismissed.';
 
 /** Fingerprint the current outage so dismiss only hides THIS specific
  * incident — a fresh failure with a different code/provider/`since` (or a
  * different active-failover target) shows the banner again. */
 function fingerprint(summary: HealthSummary): string {
-  if (summary.usage?.status === "hard_blocked") return "hard_blocked";
+  if (summary.usage?.status === 'hard_blocked') return 'hard_blocked';
   const provider_parts = Object.entries(summary.providers ?? {})
-    .filter(([, p]) => p.status && p.status !== "ok")
-    .map(([name, p]) => `${name}:${p.error_code ?? "x"}:${p.since ?? ""}`)
+    .filter(([, p]) => p.status && p.status !== 'ok')
+    .map(([name, p]) => `${name}:${p.error_code ?? 'x'}:${p.since ?? ''}`)
     .sort();
   // Include active-failover targets so the banner refreshes when we swap
   // back to the primary (degraded → ok) or to a different backup.
   const failover_parts = Object.entries(summary.features ?? {})
-    .filter(([, info]) => info.mode === "degraded")
-    .map(([name, info]) => `${name}->${info.active_provider ?? "?"}`)
+    .filter(([, info]) => info.mode === 'degraded')
+    .map(([name, info]) => `${name}->${info.active_provider ?? '?'}`)
     .sort();
-  return [...provider_parts, ...failover_parts].join("|");
+  return [...provider_parts, ...failover_parts].join('|');
 }
 
 interface BannerContent {
-  variant: "credit" | "spend" | "degraded";
+  variant: 'credit' | 'spend' | 'degraded';
   title: string;
   detail: string;
   affectedFeatures: string[];
 }
 
 const FEATURE_LABELS: Record<string, string> = {
-  chat: "Chat",
-  summary: "Summarization",
-  niko: "Niko",
-  wireframe: "Wireframes",
-  vision: "Vision",
-  voice: "Voice agent",
-  video: "Video",
+  chat: 'Chat',
+  summary: 'Summarization',
+  niko: 'Niko',
+  wireframe: 'Wireframes',
+  vision: 'Vision',
+  voice: 'Voice agent',
+  video: 'Video',
 };
 
 const PROVIDER_LABELS: Record<string, string> = {
-  anthropic: "Anthropic",
-  openai: "OpenAI",
-  gemini: "Gemini",
-  google: "Google",
-  deepseek: "DeepSeek",
-  qwen: "Qwen",
-  deepgram: "Deepgram",
-  elevenlabs: "ElevenLabs",
-  cartesia: "Cartesia",
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  gemini: 'Gemini',
+  google: 'Google',
+  deepseek: 'DeepSeek',
+  qwen: 'Qwen',
+  deepgram: 'Deepgram',
+  elevenlabs: 'ElevenLabs',
+  cartesia: 'Cartesia',
 };
 
 function providerLabel(name: string): string {
@@ -62,40 +62,36 @@ function providerLabel(name: string): string {
 }
 
 function pickBanner(summary: HealthSummary): BannerContent | null {
-  if (summary.usage?.status === "hard_blocked") {
+  if (summary.usage?.status === 'hard_blocked') {
     return {
-      variant: "spend",
-      title: "Monthly AI spend cap reached — calls paused",
+      variant: 'spend',
+      title: 'Monthly AI spend cap reached — calls paused',
       detail: `Month-to-date spend of $${summary.usage.month_to_date_usd.toFixed(2)} has hit your hard cap. Raise the limit in Settings → Integrations to resume.`,
       affectedFeatures: Object.keys(summary.features ?? {}),
     };
   }
 
   const unhealthyProviders = Object.entries(summary.providers ?? {})
-    .filter(([, p]) => p.status && p.status !== "ok")
+    .filter(([, p]) => p.status && p.status !== 'ok')
     .map(([name, p]) => ({ name, ...p }));
 
   if (unhealthyProviders.length === 0) return null;
 
   const unavailableFeatures = Object.entries(summary.features ?? {})
-    .filter(([, info]) => info.mode === "unavailable" || info.available === false)
+    .filter(([, info]) => info.mode === 'unavailable' || info.available === false)
     .map(([name]) => name);
 
   const degradedFeatures = Object.entries(summary.features ?? {})
-    .filter(([, info]) => info.mode === "degraded")
+    .filter(([, info]) => info.mode === 'degraded')
     .map(([name, info]: [string, FeatureAvailability]) => ({ name, info }));
 
   // If anything is hard-down, the red variant wins — the user has at least
   // one feature that won't work at all.
   if (unavailableFeatures.length > 0) {
-    const provNames = unhealthyProviders.map((p) => providerLabel(p.name)).join(", ");
-    const isCredit = unhealthyProviders.some(
-      (p) => p.error_code === "PROVIDER_CREDIT_EXHAUSTED",
-    );
-    const isAuth = unhealthyProviders.some(
-      (p) => p.error_code === "PROVIDER_INVALID_KEY",
-    );
-    const byok = unhealthyProviders.some((p) => p.scope === "org");
+    const provNames = unhealthyProviders.map((p) => providerLabel(p.name)).join(', ');
+    const isCredit = unhealthyProviders.some((p) => p.error_code === 'PROVIDER_CREDIT_EXHAUSTED');
+    const isAuth = unhealthyProviders.some((p) => p.error_code === 'PROVIDER_INVALID_KEY');
+    const byok = unhealthyProviders.some((p) => p.scope === 'org');
 
     let title = `${provNames} is having trouble`;
     if (byok && isAuth) {
@@ -111,11 +107,11 @@ function pickBanner(summary: HealthSummary): BannerContent | null {
     const detail = unhealthyProviders[0].message
       ? unhealthyProviders[0].message
       : byok
-        ? "Update the key in Settings → Integrations to restore the affected features."
-        : "Recharge or update the API key to restore the affected features.";
+        ? 'Update the key in Settings → Integrations to restore the affected features.'
+        : 'Recharge or update the API key to restore the affected features.';
 
     return {
-      variant: "credit",
+      variant: 'credit',
       title,
       detail,
       affectedFeatures: unavailableFeatures,
@@ -129,15 +125,13 @@ function pickBanner(summary: HealthSummary): BannerContent | null {
     // the title; the rest get listed under "Affected".
     const first = degradedFeatures[0];
     const primary = providerLabel(first.info.primary_provider ?? unhealthyProviders[0].name);
-    const backup = providerLabel(first.info.active_provider ?? "backup");
+    const backup = providerLabel(first.info.active_provider ?? 'backup');
     const featureLabel = FEATURE_LABELS[first.name] ?? first.name;
 
     return {
-      variant: "degraded",
+      variant: 'degraded',
       title: `${primary} is degraded — ${featureLabel} is using ${backup} as a backup`,
-      detail:
-        first.info.message ??
-        `Responses may differ in style until ${primary} recovers.`,
+      detail: first.info.message ?? `Responses may differ in style until ${primary} recovers.`,
       affectedFeatures: degradedFeatures.map((d) => d.name),
     };
   }
@@ -153,15 +147,15 @@ export function ProviderHealthBanner() {
   const { summary } = useProviderHealthContext();
   const ref = useRef<HTMLDivElement>(null);
   const content = summary ? pickBanner(summary) : null;
-  const fp = summary && content ? fingerprint(summary) : "";
-  const dismissKey = fp ? DISMISS_KEY_PREFIX + fp : "";
+  const fp = summary && content ? fingerprint(summary) : '';
+  const dismissKey = fp ? DISMISS_KEY_PREFIX + fp : '';
 
   // Sync dismissed state with the current fingerprint. A new outage code or
   // provider produces a new fingerprint and the banner shows again.
   const [dismissed, setDismissed] = useState(false);
   useEffect(() => {
     if (!dismissKey) return;
-    setDismissed(sessionStorage.getItem(dismissKey) === "1");
+    setDismissed(sessionStorage.getItem(dismissKey) === '1');
   }, [dismissKey]);
 
   const visible = !!content && !dismissed;
@@ -173,46 +167,46 @@ export function ProviderHealthBanner() {
   useEffect(() => {
     const root = document.documentElement;
     if (!visible) {
-      root.style.setProperty("--banner-h", "0px");
-      root.style.paddingTop = "";
+      root.style.setProperty('--banner-h', '0px');
+      root.style.paddingTop = '';
       return;
     }
     const update = () => {
       const h = ref.current?.getBoundingClientRect().height ?? 0;
-      root.style.setProperty("--banner-h", `${h}px`);
+      root.style.setProperty('--banner-h', `${h}px`);
       root.style.paddingTop = `${h}px`;
     };
     update();
     const ro = new ResizeObserver(update);
     if (ref.current) ro.observe(ref.current);
-    window.addEventListener("resize", update);
+    window.addEventListener('resize', update);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", update);
-      root.style.setProperty("--banner-h", "0px");
-      root.style.paddingTop = "";
+      window.removeEventListener('resize', update);
+      root.style.setProperty('--banner-h', '0px');
+      root.style.paddingTop = '';
     };
   }, [visible]);
 
   if (!visible) return null;
 
   const onDismiss = () => {
-    if (dismissKey) sessionStorage.setItem(dismissKey, "1");
+    if (dismissKey) sessionStorage.setItem(dismissKey, '1');
     setDismissed(true);
   };
 
-  const isDegraded = content.variant === "degraded";
-  const isAmber = content.variant === "spend" || isDegraded;
+  const isDegraded = content.variant === 'degraded';
+  const isAmber = content.variant === 'spend' || isDegraded;
   return (
     <div
       ref={ref}
       role="alert"
       data-variant={content.variant}
       className={cn(
-        "fixed inset-x-0 top-0 z-[9999] w-full border-b backdrop-blur-md",
+        'fixed inset-x-0 top-0 z-[9999] w-full border-b backdrop-blur-md',
         isAmber
-          ? "bg-amber-950/95 border-amber-500/40 text-amber-100"
-          : "bg-red-950/95 border-red-500/40 text-red-100",
+          ? 'bg-amber-950/95 border-amber-500/40 text-amber-100'
+          : 'bg-red-950/95 border-red-500/40 text-red-100',
       )}
     >
       <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-2.5">
@@ -222,10 +216,8 @@ export function ProviderHealthBanner() {
           <div className="mt-0.5 text-[13px] opacity-90 leading-snug">{content.detail}</div>
           {content.affectedFeatures.length > 0 && (
             <div className="mt-1 text-[12px] opacity-75">
-              {isDegraded ? "Affected" : "Disabled"}:{" "}
-              {content.affectedFeatures
-                .map((f) => FEATURE_LABELS[f] ?? f)
-                .join(", ")}
+              {isDegraded ? 'Affected' : 'Disabled'}:{' '}
+              {content.affectedFeatures.map((f) => FEATURE_LABELS[f] ?? f).join(', ')}
             </div>
           )}
         </div>

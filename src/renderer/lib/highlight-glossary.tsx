@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Children, isValidElement, type ReactNode } from "react";
-import { GLOSSARY_REGEX, lookupGlossary } from "@/lib/glossary";
-import { GlossaryTerm } from "@/components/glossary-term";
-import { shouldHighlight } from "@/lib/term-learning-state";
+import { Children, isValidElement, type ReactNode } from 'react';
+import { GLOSSARY_REGEX, lookupGlossary } from '@/lib/glossary';
+import { GlossaryTerm } from '@/components/glossary-term';
+import { shouldHighlight } from '@/lib/term-learning-state';
 
 /**
  * Wrap any glossary-matched terms in a raw string with <GlossaryTerm>.
@@ -27,11 +27,7 @@ function highlightStringWithGlossary(text: string, seen: Set<string>): ReactNode
     if (!shouldHighlight(entry.slug)) continue;
     if (match.index > cursor) nodes.push(text.slice(cursor, match.index));
     nodes.push(
-      <GlossaryTerm
-        key={`${entry.slug}-${match.index}`}
-        matchedText={match[0]}
-        entry={entry}
-      />,
+      <GlossaryTerm key={`${entry.slug}-${match.index}`} matchedText={match[0]} entry={entry} />,
     );
     cursor = match.index + match[0].length;
   }
@@ -47,7 +43,7 @@ function highlightStringWithGlossary(text: string, seen: Set<string>): ReactNode
  */
 export function highlightChildren(children: ReactNode, seen: Set<string>): ReactNode {
   return Children.map(children, (child) => {
-    if (typeof child === "string") return highlightStringWithGlossary(child, seen);
+    if (typeof child === 'string') return highlightStringWithGlossary(child, seen);
     if (isValidElement(child)) return child;
     return child;
   });

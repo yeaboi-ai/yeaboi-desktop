@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Loader2, Trash2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { BoardColumn } from "@/hooks/use-board";
+import { useState } from 'react';
+import { Loader2, Trash2, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { BoardColumn } from '@/hooks/use-board';
 
 interface Props {
   count: number;
@@ -14,7 +14,7 @@ interface Props {
   onClear: () => void;
 }
 
-const PRIORITIES = ["critical", "high", "medium", "low"] as const;
+const PRIORITIES = ['critical', 'high', 'medium', 'low'] as const;
 
 export function BulkActionsBar({
   count,
@@ -43,7 +43,7 @@ export function BulkActionsBar({
       className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full border border-border bg-popover/95 backdrop-blur shadow-lg px-3 py-2 text-sm"
     >
       <span className="text-muted-foreground px-1">
-        {count} card{count === 1 ? "" : "s"} selected
+        {count} card{count === 1 ? '' : 's'} selected
       </span>
 
       <select
@@ -53,7 +53,7 @@ export function BulkActionsBar({
         onChange={async (e) => {
           if (!e.target.value) return;
           const value = e.target.value;
-          e.currentTarget.value = "";
+          e.currentTarget.value = '';
           await wrap(() => onMoveTo(value));
         }}
       >
@@ -74,7 +74,7 @@ export function BulkActionsBar({
         onChange={async (e) => {
           if (!e.target.value) return;
           const value = e.target.value;
-          e.currentTarget.value = "";
+          e.currentTarget.value = '';
           await wrap(() => onSetPriority(value));
         }}
       >

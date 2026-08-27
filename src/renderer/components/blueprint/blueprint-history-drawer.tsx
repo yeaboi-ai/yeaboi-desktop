@@ -1,35 +1,39 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeft, History as HistoryIcon, Lock, RotateCcw } from "lucide-react";
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, ArrowLeft, History as HistoryIcon, Lock, RotateCcw } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from '@/components/ui/sheet';
 
-import { BlueprintDiff } from "@/components/blueprint/blueprint-diff";
-import { useBlueprintHistory, type SnapshotDetail, type SnapshotListItem } from "@/hooks/use-blueprint-history";
-import { labelForCreatedBy } from "@/lib/blueprint-labels";
+import { BlueprintDiff } from '@/components/blueprint/blueprint-diff';
+import {
+  useBlueprintHistory,
+  type SnapshotDetail,
+  type SnapshotListItem,
+} from '@/hooks/use-blueprint-history';
+import { labelForCreatedBy } from '@/lib/blueprint-labels';
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI/UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI/UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 interface BlueprintHistoryDrawerProps {
@@ -112,8 +116,8 @@ export function BlueprintHistoryDrawer({
     const old: Record<string, string> = {};
     const next: Record<string, string> = {};
     for (const [slug, change] of Object.entries(dfp)) {
-      old[slug] = change.old || "";
-      next[slug] = change.new || "";
+      old[slug] = change.old || '';
+      next[slug] = change.new || '';
     }
     return { old, new: next };
   }, [selectedDetail]);
@@ -129,7 +133,7 @@ export function BlueprintHistoryDrawer({
     const out: string[] = [];
     const slugs = new Set([...Object.keys(target), ...Object.keys(currentContent || {})]);
     for (const slug of slugs) {
-      if ((target[slug] || "") !== ((currentContent || {})[slug] || "")) out.push(slug);
+      if ((target[slug] || '') !== ((currentContent || {})[slug] || '')) out.push(slug);
     }
     return out.sort();
   }, [confirmRow, selectedDetail, currentContent]);
@@ -160,7 +164,7 @@ export function BlueprintHistoryDrawer({
         Restore v{confirmRow.version_number}?
       </>
     );
-    headerSubtitle = "Review the change before restoring.";
+    headerSubtitle = 'Review the change before restoring.';
   } else if (selectedDetail) {
     headerTitle = (
       <>
@@ -184,8 +188,8 @@ export function BlueprintHistoryDrawer({
       </>
     );
     headerSubtitle = iterationLocked
-      ? "Iteration is locked — restore is disabled."
-      : "Pick a version to view the change, or restore.";
+      ? 'Iteration is locked — restore is disabled.'
+      : 'Pick a version to view the change, or restore.';
   }
 
   const doRestore = async () => {
@@ -242,7 +246,9 @@ export function BlueprintHistoryDrawer({
             />
           ) : selectedDetail ? (
             <div className="p-4 space-y-3">
-              <div className="text-xs text-muted-foreground">Changes introduced in this version.</div>
+              <div className="text-xs text-muted-foreground">
+                Changes introduced in this version.
+              </div>
               {selectedLoading ? (
                 <div className="text-sm text-muted-foreground/70">Loading diff…</div>
               ) : detailDiff ? (
@@ -253,7 +259,8 @@ export function BlueprintHistoryDrawer({
                 </div>
               )}
               <div className="pt-2">
-                {currentVersion !== undefined && selectedDetail.version_number === currentVersion ? (
+                {currentVersion !== undefined &&
+                selectedDetail.version_number === currentVersion ? (
                   <div className="w-full rounded-md bg-success/10 border border-success/30 px-3 py-2 text-xs text-success/85 text-center">
                     This is the current blueprint state — nothing to restore.
                   </div>
@@ -289,15 +296,16 @@ export function BlueprintHistoryDrawer({
                   currentUserId,
                   serverLabel: s.created_by_label,
                 });
-                const isCurrent = currentVersion !== undefined && s.version_number === currentVersion;
+                const isCurrent =
+                  currentVersion !== undefined && s.version_number === currentVersion;
                 return (
                   <li
                     key={s.id}
                     className={
-                      "px-4 py-3 transition-colors " +
+                      'px-4 py-3 transition-colors ' +
                       (isCurrent
-                        ? "bg-success/[0.04] border-l-2 border-success/50"
-                        : "hover:bg-foreground/[0.04]")
+                        ? 'bg-success/[0.04] border-l-2 border-success/50'
+                        : 'hover:bg-foreground/[0.04]')
                     }
                   >
                     <button
@@ -342,7 +350,7 @@ export function BlueprintHistoryDrawer({
                           disabled={iterationLocked || restoring}
                           onClick={() => setConfirmRow(s)}
                           className="h-7 text-xs"
-                          title={iterationLocked ? "Iteration is locked" : "Restore this version"}
+                          title={iterationLocked ? 'Iteration is locked' : 'Restore this version'}
                         >
                           {iterationLocked ? (
                             <Lock className="h-3 w-3 mr-1" />
@@ -370,7 +378,7 @@ export function BlueprintHistoryDrawer({
                     disabled={loading}
                     className="text-xs"
                   >
-                    {loading ? "Loading…" : "Load older"}
+                    {loading ? 'Loading…' : 'Load older'}
                   </Button>
                 </li>
               )}
@@ -416,9 +424,9 @@ function RestoreConfirmPane({
       <div className="rounded-md border border-warning/30 bg-warning/[0.06] p-3 flex gap-2">
         <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
         <div className="text-xs text-amber-100/85 leading-relaxed">
-          Restoring will replace the current blueprint with the contents of{" "}
-          <span className="font-medium">v{row.version_number}</span>. A new snapshot
-          is created automatically, so you can roll back to where you are now.
+          Restoring will replace the current blueprint with the contents of{' '}
+          <span className="font-medium">v{row.version_number}</span>. A new snapshot is created
+          automatically, so you can roll back to where you are now.
         </div>
       </div>
 
@@ -431,7 +439,7 @@ function RestoreConfirmPane({
           <>
             <dt className="text-muted-foreground/70">Original change</dt>
             <dd className="text-foreground/90">
-              {row.changed_sections.map((s) => SECTION_LABELS[s] || s).join(", ")}
+              {row.changed_sections.map((s) => SECTION_LABELS[s] || s).join(', ')}
             </dd>
           </>
         )}
@@ -463,8 +471,8 @@ function RestoreConfirmPane({
       </div>
 
       <div className="text-[11px] text-muted-foreground/70 leading-relaxed">
-        The voice agent&apos;s deletion memory for this iteration is cleared so it
-        won&apos;t silently re-strip restored content on its next extraction.
+        The voice agent&apos;s deletion memory for this iteration is cleared so it won&apos;t
+        silently re-strip restored content on its next extraction.
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-2">
@@ -476,7 +484,7 @@ function RestoreConfirmPane({
           onClick={onConfirm}
           disabled={restoring || (!loading && willChange.length === 0)}
         >
-          {restoring ? "Restoring…" : `Restore v${row.version_number}`}
+          {restoring ? 'Restoring…' : `Restore v${row.version_number}`}
         </Button>
       </div>
     </div>

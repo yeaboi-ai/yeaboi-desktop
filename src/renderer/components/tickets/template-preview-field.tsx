@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { Link as LinkIcon, MessageSquare, RefreshCw } from "lucide-react";
-import type { Card, CardUpdate } from "@/hooks/use-board";
-import type { FieldLayoutEntry } from "@/hooks/use-ticket-templates";
-import { CustomFieldInput } from "./ticket-field-renderer";
-import { RichTextEditor } from "./rich-text-editor";
+import { Link as LinkIcon, MessageSquare, RefreshCw } from 'lucide-react';
+import type { Card, CardUpdate } from '@/hooks/use-board';
+import type { FieldLayoutEntry } from '@/hooks/use-ticket-templates';
+import { CustomFieldInput } from './ticket-field-renderer';
+import { RichTextEditor } from './rich-text-editor';
 import {
   AssigneeSelect,
   FibonacciPoints,
   LabelsEditor,
   PriorityChips,
   StatusSelect,
-} from "./ticket-sidebar";
+} from './ticket-sidebar';
 
 // Sample card the Studio Template tab binds preview-mode renderers to. Values
 // pulled from the draft (defaults) override these where set.
@@ -22,18 +22,18 @@ export interface PreviewDraftDefaults {
 }
 
 const SAMPLE_CARD_BASE: Card = {
-  id: "preview",
-  column_id: "preview-col",
+  id: 'preview',
+  column_id: 'preview-col',
   position: 0,
-  title: "Example feature ticket",
-  description: "Sample description shown in the Studio preview.",
-  priority: "medium",
+  title: 'Example feature ticket',
+  description: 'Sample description shown in the Studio preview.',
+  priority: 'medium',
   story_points: null,
   assignee_id: null,
   labels: [],
   acceptance_criteria: [
-    { text: "User can …", done: false },
-    { text: "System persists …", done: true },
+    { text: 'User can …', done: false },
+    { text: 'System persists …', done: true },
   ],
   parent_card_id: null,
   depends_on: [],
@@ -72,61 +72,51 @@ export function TemplatePreviewField({
   return <>{renderPreviewBody(entry, draftDefaults)}</>;
 }
 
-function renderPreviewBody(
-  entry: FieldLayoutEntry,
-  d: PreviewDraftDefaults,
-): React.ReactNode {
+function renderPreviewBody(entry: FieldLayoutEntry, d: PreviewDraftDefaults): React.ReactNode {
   switch (entry.type) {
-    case "title":
+    case 'title':
       return null;
-    case "rich_text":
+    case 'rich_text':
       return <PreviewDescription />;
-    case "acceptance_criteria":
+    case 'acceptance_criteria':
       return <PreviewAcceptanceCriteria />;
-    case "activity":
+    case 'activity':
       return (
         <PreviewStub
           icon={<MessageSquare className="h-3.5 w-3.5" />}
           text="Comments and activity will appear here"
         />
       );
-    case "status":
+    case 'status':
       return <StatusSelect card={buildSampleCard(d)} columns={[]} onPatch={NOOP_PATCH} />;
-    case "priority":
-      return <PriorityChips priority={d.defaultPriority ?? "medium"} onPatch={NOOP_PATCH} />;
-    case "assignee":
+    case 'priority':
+      return <PriorityChips priority={d.defaultPriority ?? 'medium'} onPatch={NOOP_PATCH} />;
+    case 'assignee':
       return <AssigneeSelect card={buildSampleCard(d)} teamMembers={[]} onPatch={NOOP_PATCH} />;
-    case "story_points":
+    case 'story_points':
       return <FibonacciPoints value={d.defaultStoryPoints} onChange={() => {}} />;
-    case "labels":
-      return <LabelsEditor labels={d.defaultLabels} available={d.defaultLabels} onChange={() => {}} />;
-    case "sync":
+    case 'labels':
+      return (
+        <LabelsEditor labels={d.defaultLabels} available={d.defaultLabels} onChange={() => {}} />
+      );
+    case 'sync':
       return (
         <PreviewStub
           icon={<RefreshCw className="h-3.5 w-3.5" />}
           text="Jira / Azure DevOps push controls"
         />
       );
-    case "links":
+    case 'links':
       return (
-        <PreviewStub
-          icon={<LinkIcon className="h-3.5 w-3.5" />}
-          text="Linked tickets and PRs"
-        />
+        <PreviewStub icon={<LinkIcon className="h-3.5 w-3.5" />} text="Linked tickets and PRs" />
       );
-    case "text":
-    case "number":
-    case "date":
-    case "url":
-    case "select":
-    case "multi_select":
-      return (
-        <CustomFieldInput
-          entry={entry}
-          card={buildSampleCard(d)}
-          persistPatch={NOOP_PATCH}
-        />
-      );
+    case 'text':
+    case 'number':
+    case 'date':
+    case 'url':
+    case 'select':
+    case 'multi_select':
+      return <CustomFieldInput entry={entry} card={buildSampleCard(d)} persistPatch={NOOP_PATCH} />;
     default:
       return null;
   }
@@ -148,7 +138,7 @@ function PreviewAcceptanceCriteria() {
         <input type="checkbox" readOnly /> User can complete the primary flow
       </li>
       <li className="flex items-center gap-2">
-        <input type="checkbox" checked readOnly />{" "}
+        <input type="checkbox" checked readOnly />{' '}
         <span className="line-through">System persists the result across reloads</span>
       </li>
     </ul>

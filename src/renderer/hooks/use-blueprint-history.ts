@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { logger } from "@/lib/logger";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useCallback, useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface SnapshotListItem {
   id: string;
@@ -55,11 +55,14 @@ interface UseBlueprintHistoryReturn {
   selectedLoading: boolean;
   /** Restore the given snapshot. On success, list is refreshed and the
    *  caller's `onRestored` is invoked with the new version number. */
-  restore: (snapshotId: string, opts?: { onRestored?: (newVersion: number) => void }) => Promise<void>;
+  restore: (
+    snapshotId: string,
+    opts?: { onRestored?: (newVersion: number) => void },
+  ) => Promise<void>;
   restoring: boolean;
 }
 
-const TAG = "[blueprint-history]";
+const TAG = '[blueprint-history]';
 
 export function useBlueprintHistory({
   projectId,
@@ -86,8 +89,8 @@ export function useBlueprintHistory({
       setError(null);
       try {
         const params = new URLSearchParams({ limit: String(pageSize) });
-        if (iterationId) params.set("iteration_id", iterationId);
-        if (beforeVersion !== null) params.set("before_version", String(beforeVersion));
+        if (iterationId) params.set('iteration_id', iterationId);
+        if (beforeVersion !== null) params.set('before_version', String(beforeVersion));
         const resp = await authFetch(
           `/api/projects/${projectId}/blueprint/snapshots?${params.toString()}`,
         );
@@ -99,8 +102,8 @@ export function useBlueprintHistory({
         setSnapshots((prev) => (beforeVersion === null ? page : [...prev, ...page]));
         setHasMore(page.length === pageSize);
       } catch (e) {
-        logger.warn(TAG, "list fetch failed", e);
-        setError("Network error loading history");
+        logger.warn(TAG, 'list fetch failed', e);
+        setError('Network error loading history');
       } finally {
         setLoading(false);
       }
@@ -130,17 +133,15 @@ export function useBlueprintHistory({
       if (detailCache[id]) return; // cached
       setSelectedLoading(true);
       try {
-        const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint/snapshots/${id}`,
-        );
+        const resp = await authFetch(`/api/projects/${projectId}/blueprint/snapshots/${id}`);
         if (!resp.ok) {
-          logger.warn(TAG, "detail fetch failed", { id, status: resp.status });
+          logger.warn(TAG, 'detail fetch failed', { id, status: resp.status });
           return;
         }
         const detail: SnapshotDetail = await resp.json();
         setDetailCache((prev) => ({ ...prev, [id]: detail }));
       } catch (e) {
-        logger.warn(TAG, "detail fetch error", e);
+        logger.warn(TAG, 'detail fetch error', e);
       } finally {
         setSelectedLoading(false);
       }
@@ -158,10 +159,9 @@ export function useBlueprintHistory({
       if (!ready || !projectId) return;
       setRestoring(true);
       try {
-        const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint/restore/${snapshotId}`,
-          { method: "POST" },
-        );
+        const resp = await authFetch(`/api/projects/${projectId}/blueprint/restore/${snapshotId}`, {
+          method: 'POST',
+        });
         if (!resp.ok) {
           const detail = await resp.json().catch(() => ({}));
           setError(detail.detail || `Restore failed (${resp.status})`);
@@ -173,8 +173,8 @@ export function useBlueprintHistory({
         // backend's broadcast already updated the live blueprint state.
         await fetchPage(null);
       } catch (e) {
-        logger.warn(TAG, "restore error", e);
-        setError("Network error during restore");
+        logger.warn(TAG, 'restore error', e);
+        setError('Network error during restore');
       } finally {
         setRestoring(false);
       }

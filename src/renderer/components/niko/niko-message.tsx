@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useSession } from "next-auth/react";
-import ReactMarkdown from "react-markdown";
-import { Bot, User } from "lucide-react";
-import { NikoToolCard } from "./niko-tool-card";
-import type { NikoMessage as NikoMessageType } from "@/hooks/use-niko";
+import { useSession } from 'next-auth/react';
+import ReactMarkdown from 'react-markdown';
+import { Duck } from '@/components/brand/duck';
+import { NikoToolCard } from './niko-tool-card';
+import type { NikoMessage as NikoMessageType } from '@/hooks/use-niko';
 
 interface NikoMessageProps {
   message: NikoMessageType;
@@ -13,13 +13,13 @@ interface NikoMessageProps {
 
 export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
   const { data: session } = useSession();
-  const isUser = message.role === "user";
+  const isUser = message.role === 'user';
 
   const userImage = session?.user?.image;
-  const userName = session?.user?.name ?? session?.user?.email ?? "You";
+  const userName = session?.user?.name ?? session?.user?.email ?? 'You';
 
   return (
-    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
       {isUser ? (
         userImage ? (
@@ -34,30 +34,24 @@ export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
           </div>
         )
       ) : (
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary">
-          <Bot className="size-3.5" />
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5">
+          <Duck state="idle" size={20} />
         </div>
       )}
 
       {/* Content */}
-      <div
-        className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? "items-end" : ""}`}
-      >
+      <div className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? 'items-end' : ''}`}>
         {/* Tool calls */}
         {message.toolCalls && message.toolCalls.length > 0 && (
           <div className="flex flex-col gap-1 w-full">
             {message.toolCalls.map((tc, i) => {
               const result = message.toolResults?.[i];
-              const status = result
-                ? result.success
-                  ? "success"
-                  : "error"
-                : "running";
+              const status = result ? (result.success ? 'success' : 'error') : 'running';
               return (
                 <NikoToolCard
                   key={`${tc.name}-${i}`}
                   name={tc.name}
-                  status={status as "running" | "success" | "error"}
+                  status={status as 'running' | 'success' | 'error'}
                   error={result?.error}
                 />
               );
@@ -69,9 +63,7 @@ export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
         {message.content && (
           <div
             className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${
-              isUser
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted/50 text-foreground"
+              isUser ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-foreground'
             }`}
           >
             {isUser ? (

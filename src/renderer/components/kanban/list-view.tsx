@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import type { Board, Card as CardType, CardUpdate } from "@/hooks/use-board";
-import { Badge } from "@/components/ui/badge";
-import { stripHtml } from "@/lib/strip-html";
+import type { Board, Card as CardType, CardUpdate } from '@/hooks/use-board';
+import { Badge } from '@/components/ui/badge';
+import { stripHtml } from '@/lib/strip-html';
 
 const PRIORITY_STYLES: Record<string, string> = {
-  critical: "bg-red-500/15 text-red-600",
-  high: "bg-orange-500/15 text-orange-600",
-  medium: "bg-yellow-500/15 text-yellow-600",
-  low: "bg-blue-500/15 text-blue-500",
+  critical: 'bg-red-500/15 text-red-600',
+  high: 'bg-orange-500/15 text-orange-600',
+  medium: 'bg-yellow-500/15 text-yellow-600',
+  low: 'bg-blue-500/15 text-blue-500',
 };
 
 interface ListViewProps {
@@ -20,7 +20,7 @@ interface ListViewProps {
 
 export function ListView({ board, search, priorityFilter, onCardClick }: ListViewProps) {
   const allCards: (CardType & { columnName: string })[] = board.columns.flatMap((col) =>
-    col.cards.map((c) => ({ ...c, columnName: col.name }))
+    col.cards.map((c) => ({ ...c, columnName: col.name })),
   );
 
   const filtered = allCards.filter((card) => {
@@ -59,7 +59,9 @@ export function ListView({ board, search, priorityFilter, onCardClick }: ListVie
           <div>
             <p className="font-medium line-clamp-1">{card.title}</p>
             {card.description && (
-              <p className="text-xs text-muted-foreground line-clamp-1">{stripHtml(card.description)}</p>
+              <p className="text-xs text-muted-foreground line-clamp-1">
+                {stripHtml(card.description)}
+              </p>
             )}
           </div>
 
@@ -70,7 +72,7 @@ export function ListView({ board, search, priorityFilter, onCardClick }: ListVie
           <div className="self-center">
             {card.priority ? (
               <span
-                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PRIORITY_STYLES[card.priority] ?? ""}`}
+                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PRIORITY_STYLES[card.priority] ?? ''}`}
               >
                 {card.priority}
               </span>
@@ -80,9 +82,7 @@ export function ListView({ board, search, priorityFilter, onCardClick }: ListVie
           </div>
 
           {/* Story points */}
-          <span className="self-center text-muted-foreground">
-            {card.story_points ?? "—"}
-          </span>
+          <span className="self-center text-muted-foreground">{card.story_points ?? '—'}</span>
 
           {/* Labels */}
           <div className="flex flex-wrap gap-1 self-center">

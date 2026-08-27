@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Loader2, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { TicketActivityEvent, TicketComment } from "@/hooks/use-ticket";
-import { stripHtml } from "@/lib/strip-html";
-import { RichTextEditor } from "./rich-text-editor";
+import { useState } from 'react';
+import { Loader2, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { TicketActivityEvent, TicketComment } from '@/hooks/use-ticket';
+import { stripHtml } from '@/lib/strip-html';
+import { RichTextEditor } from './rich-text-editor';
 
 function timeAgo(dateStr: string): string {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return "just now";
+  if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
@@ -24,15 +24,15 @@ interface Props {
 
 // Merge comments + system events into a unified, time-ordered timeline.
 export function TicketActivity({ cardId, comments, events, onAddComment }: Props) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
 
   type Item =
-    | { kind: "comment"; at: string; data: TicketComment }
-    | { kind: "event"; at: string; data: TicketActivityEvent };
+    | { kind: 'comment'; at: string; data: TicketComment }
+    | { kind: 'event'; at: string; data: TicketActivityEvent };
   const merged: Item[] = [
-    ...comments.map<Item>((c) => ({ kind: "comment", at: c.created_at, data: c })),
-    ...events.map<Item>((e) => ({ kind: "event", at: e.created_at, data: e })),
+    ...comments.map<Item>((c) => ({ kind: 'comment', at: c.created_at, data: c })),
+    ...events.map<Item>((e) => ({ kind: 'event', at: e.created_at, data: e })),
   ].sort((a, b) => +new Date(a.at) - +new Date(b.at));
 
   const submit = async () => {
@@ -42,7 +42,7 @@ export function TicketActivity({ cardId, comments, events, onAddComment }: Props
     setPosting(true);
     try {
       await onAddComment(trimmed);
-      setDraft("");
+      setDraft('');
     } finally {
       setPosting(false);
     }
@@ -60,14 +60,14 @@ export function TicketActivity({ cardId, comments, events, onAddComment }: Props
         <ul className="space-y-4">
           {merged.map((item) => (
             <li key={`${item.kind}-${item.data.id}`} className="text-sm">
-              {item.kind === "comment" ? (
+              {item.kind === 'comment' ? (
                 <div className="flex gap-2">
                   <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">
                         {item.data.user_name ?? item.data.user_id.slice(0, 6)}
-                      </span>{" "}
+                      </span>{' '}
                       • {timeAgo(item.data.created_at)}
                     </div>
                     <CommentBody content={item.data.content} />
@@ -76,9 +76,9 @@ export function TicketActivity({ cardId, comments, events, onAddComment }: Props
               ) : (
                 <div className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {item.data.actor_name ?? "system"}
-                  </span>{" "}
-                  {item.data.kind.replace("_", " ")} • {timeAgo(item.data.created_at)}
+                    {item.data.actor_name ?? 'system'}
+                  </span>{' '}
+                  {item.data.kind.replace('_', ' ')} • {timeAgo(item.data.created_at)}
                 </div>
               )}
             </li>
@@ -96,7 +96,7 @@ export function TicketActivity({ cardId, comments, events, onAddComment }: Props
         />
         <div className="flex justify-end">
           <Button onClick={submit} disabled={posting || !stripHtml(draft).trim()} size="sm">
-            {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Comment"}
+            {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Comment'}
           </Button>
         </div>
       </div>
@@ -110,12 +110,7 @@ export function TicketActivity({ cardId, comments, events, onAddComment }: Props
 function CommentBody({ content }: { content: string }) {
   const looksHtml = /<[a-z][\s\S]*>/i.test(content);
   if (looksHtml) {
-    return (
-      <div
-        className="tiptap-content mt-0.5"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
+    return <div className="tiptap-content mt-0.5" dangerouslySetInnerHTML={{ __html: content }} />;
   }
   return <p className="whitespace-pre-wrap mt-0.5">{content}</p>;
 }

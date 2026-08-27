@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getAuth } from "@/lib/api-base";
-import { normalizeAC, type Card } from "./use-board";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getAuth } from '@/lib/api-base';
+import { normalizeAC, type Card } from './use-board';
 
 export interface TicketAttachment {
   id: string;
@@ -20,7 +20,7 @@ export interface TicketAttachment {
 export interface TicketLink {
   id: string;
   link_type: string;
-  direction: "outbound" | "inbound";
+  direction: 'outbound' | 'inbound';
   other_card: { id: string; friendly_id: string | null; title: string; status: string | null };
 }
 
@@ -89,7 +89,7 @@ export function useTicket(idOrKey: string | null, fetchFn?: FetchFn) {
       }
       setTicket(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }

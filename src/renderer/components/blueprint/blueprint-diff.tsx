@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI/UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI/UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
-type DiffOp = { type: "eq" | "add" | "del"; text: string };
+type DiffOp = { type: 'eq' | 'add' | 'del'; text: string };
 
 /** Line-level LCS diff producing eq/add/del runs for one section.
  *
@@ -27,8 +27,8 @@ type DiffOp = { type: "eq" | "add" | "del"; text: string };
  * the reader follows the change top-to-bottom.
  */
 export function lcsLineDiff(a: string, b: string): DiffOp[] {
-  const aLines = a.length === 0 ? [] : a.split("\n");
-  const bLines = b.length === 0 ? [] : b.split("\n");
+  const aLines = a.length === 0 ? [] : a.split('\n');
+  const bLines = b.length === 0 ? [] : b.split('\n');
   const m = aLines.length;
   const n = bLines.length;
 
@@ -50,23 +50,23 @@ export function lcsLineDiff(a: string, b: string): DiffOp[] {
   let j = n;
   while (i > 0 && j > 0) {
     if (aLines[i - 1] === bLines[j - 1]) {
-      ops.unshift({ type: "eq", text: aLines[i - 1] });
+      ops.unshift({ type: 'eq', text: aLines[i - 1] });
       i -= 1;
       j -= 1;
     } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      ops.unshift({ type: "del", text: aLines[i - 1] });
+      ops.unshift({ type: 'del', text: aLines[i - 1] });
       i -= 1;
     } else {
-      ops.unshift({ type: "add", text: bLines[j - 1] });
+      ops.unshift({ type: 'add', text: bLines[j - 1] });
       j -= 1;
     }
   }
   while (i > 0) {
-    ops.unshift({ type: "del", text: aLines[i - 1] });
+    ops.unshift({ type: 'del', text: aLines[i - 1] });
     i -= 1;
   }
   while (j > 0) {
-    ops.unshift({ type: "add", text: bLines[j - 1] });
+    ops.unshift({ type: 'add', text: bLines[j - 1] });
     j -= 1;
   }
   return ops;
@@ -86,10 +86,10 @@ export function BlueprintDiff({ oldContent, newContent }: BlueprintDiffProps) {
     const slugs = Array.from(new Set([...Object.keys(oldContent), ...Object.keys(newContent)]));
     return slugs
       .map((slug) => {
-        const oldText = oldContent[slug] ?? "";
-        const newText = newContent[slug] ?? "";
+        const oldText = oldContent[slug] ?? '';
+        const newText = newContent[slug] ?? '';
         const ops = lcsLineDiff(oldText, newText);
-        const changed = ops.some((op) => op.type !== "eq");
+        const changed = ops.some((op) => op.type !== 'eq');
         return { slug, ops, changed };
       })
       .sort((a, b) => Number(b.changed) - Number(a.changed));
@@ -106,7 +106,8 @@ export function BlueprintDiff({ oldContent, newContent }: BlueprintDiffProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {visible.filter((s) => s.changed).length} section{visible.filter((s) => s.changed).length === 1 ? "" : "s"} changed
+          {visible.filter((s) => s.changed).length} section
+          {visible.filter((s) => s.changed).length === 1 ? '' : 's'} changed
         </span>
         {hiddenCount > 0 && (
           <button
@@ -139,15 +140,15 @@ export function BlueprintDiff({ oldContent, newContent }: BlueprintDiffProps) {
               <div
                 key={idx}
                 className={
-                  op.type === "add"
-                    ? "text-success/90 bg-success/[0.06] border-l-2 border-success/40 pl-2"
-                    : op.type === "del"
-                      ? "text-destructive/80 bg-destructive/[0.05] border-l-2 border-destructive/40 pl-2 line-through decoration-red-400/40"
-                      : "text-muted-foreground/70 pl-2"
+                  op.type === 'add'
+                    ? 'text-success/90 bg-success/[0.06] border-l-2 border-success/40 pl-2'
+                    : op.type === 'del'
+                      ? 'text-destructive/80 bg-destructive/[0.05] border-l-2 border-destructive/40 pl-2 line-through decoration-red-400/40'
+                      : 'text-muted-foreground/70 pl-2'
                 }
               >
-                {op.type === "add" ? "+ " : op.type === "del" ? "- " : "  "}
-                {op.text || " "}
+                {op.type === 'add' ? '+ ' : op.type === 'del' ? '- ' : '  '}
+                {op.text || ' '}
               </div>
             ))}
           </pre>

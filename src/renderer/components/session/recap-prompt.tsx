@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
-import { ClipboardList, X } from "lucide-react";
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { ClipboardList, X } from 'lucide-react';
 
 interface RecapPromptProps {
   open: boolean;
@@ -15,10 +15,10 @@ interface RecapPromptProps {
 }
 
 function formatDuration(s: number): string {
-  if (s < 0) return "0:00";
+  if (s < 0) return '0:00';
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 export function RecapPrompt({
@@ -35,7 +35,7 @@ export function RecapPrompt({
     return () => clearTimeout(t);
   }, [open, onSkip, autoDismissMs]);
 
-  if (!open || typeof window === "undefined") return null;
+  if (!open || typeof window === 'undefined') return null;
 
   return createPortal(
     <div
@@ -49,7 +49,9 @@ export function RecapPrompt({
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground">Your call recap is ready</p>
-          <p className="text-xs text-muted-foreground/80 mt-0.5">Call ended · {formatDuration(durationSeconds)}</p>
+          <p className="text-xs text-muted-foreground/80 mt-0.5">
+            Call ended · {formatDuration(durationSeconds)}
+          </p>
         </div>
         <button
           type="button"

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuthFetch } from "./use-auth-fetch";
-import { logger } from "@/lib/logger";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuthFetch } from './use-auth-fetch';
+import { logger } from '@/lib/logger';
 
-type Rating = "thumbs_up" | "thumbs_down";
-type TargetType = "chat_message" | "voice_response" | "session" | "transcript";
-type AgentType = "chat" | "voice" | "platform_chat";
+type Rating = 'thumbs_up' | 'thumbs_down';
+type TargetType = 'chat_message' | 'voice_response' | 'session' | 'transcript';
+type AgentType = 'chat' | 'voice' | 'platform_chat';
 
 interface FeedbackEntry {
   id: string;
@@ -44,7 +44,7 @@ export function useFeedback(sessionId?: string) {
         }
         setRatings(map);
       })
-      .catch(() => logger.warn("Failed to hydrate feedback"));
+      .catch(() => logger.warn('Failed to hydrate feedback'));
   }, [ready, sessionId, authFetch]);
 
   const submitFeedback = useCallback(
@@ -53,13 +53,13 @@ export function useFeedback(sessionId?: string) {
       const key = params.targetId;
       setRatings((prev) => {
         const next = new Map(prev);
-        next.set(key, { id: "", rating: params.rating });
+        next.set(key, { id: '', rating: params.rating });
         return next;
       });
 
       try {
-        const resp = await authFetch("/api/feedback-proxy", {
-          method: "POST",
+        const resp = await authFetch('/api/feedback-proxy', {
+          method: 'POST',
           body: JSON.stringify({
             target_type: params.targetType,
             target_id: params.targetId,
@@ -85,7 +85,7 @@ export function useFeedback(sessionId?: string) {
           next.delete(key);
           return next;
         });
-        logger.warn("Failed to submit feedback");
+        logger.warn('Failed to submit feedback');
       }
     },
     [authFetch],
@@ -105,7 +105,7 @@ export function useFeedback(sessionId?: string) {
 
       try {
         const resp = await authFetch(`/api/feedback-proxy?id=${entry.id}`, {
-          method: "DELETE",
+          method: 'DELETE',
         });
         if (!resp.ok && resp.status !== 204) {
           // Revert on failure
@@ -121,7 +121,7 @@ export function useFeedback(sessionId?: string) {
           next.set(targetId, entry);
           return next;
         });
-        logger.warn("Failed to retract feedback");
+        logger.warn('Failed to retract feedback');
       }
     },
     [authFetch, ratings],

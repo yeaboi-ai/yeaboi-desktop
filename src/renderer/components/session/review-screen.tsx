@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { CompletionWizard, type WizardTask } from "./completion-wizard";
-import { clearCachedStories } from "./completion-wizard-helpers";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { CompletionWizard, type WizardTask } from './completion-wizard';
+import { clearCachedStories } from './completion-wizard-helpers';
 
 interface ReviewScreenProps {
   projectId: string;
@@ -30,12 +30,12 @@ export function ReviewScreen({ projectId, sessionId, onComplete, onCancel }: Rev
   // in its built-in error UI (with Try again).
   const handleCommit = async (tasks: WizardTask[]) => {
     const r = await authFetch(`/api/projects/${projectId}/stories/commit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks }),
     });
     if (!r.ok) {
-      const text = await r.text().catch(() => "");
+      const text = await r.text().catch(() => '');
       throw new Error(text || `commit ${r.status}`);
     }
     clearCachedStories(sessionId);

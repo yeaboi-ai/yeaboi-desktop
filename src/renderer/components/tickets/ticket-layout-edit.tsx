@@ -1,25 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { useDroppable } from "@dnd-kit/core";
-import { Eye, EyeOff, GripVertical, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
+import { Eye, EyeOff, GripVertical, Plus, Trash2 } from 'lucide-react';
 import {
   invalidateTicketTemplatesCache,
   type FieldLayoutEntry,
-} from "@/hooks/use-ticket-templates";
-import { TicketField, type FieldRendererContext } from "./ticket-field-renderer";
+} from '@/hooks/use-ticket-templates';
+import { TicketField, type FieldRendererContext } from './ticket-field-renderer';
 
-const CUSTOM_FIELD_TYPES = [
-  "text",
-  "rich_text",
-  "number",
-  "date",
-  "url",
-  "select",
-  "multi_select",
-];
+const CUSTOM_FIELD_TYPES = ['text', 'rich_text', 'number', 'date', 'url', 'select', 'multi_select'];
 
 // Hook owning the local layout draft and persistence to the active template.
 // While editing, the workspace renders from `layout` (local optimistic copy);
@@ -40,10 +32,7 @@ export function useLayoutEditor(args: {
   // Hydrate the draft when the user toggles edit mode on; reset when off.
   // Also reset whenever the underlying remote layout shifts (e.g. a teammate
   // edited the same template) so we don't fight their changes.
-  const remoteKey = useMemo(
-    () => remoteLayout.map((e) => e.key).join("|"),
-    [remoteLayout],
-  );
+  const remoteKey = useMemo(() => remoteLayout.map((e) => e.key).join('|'), [remoteLayout]);
   const [hydrationKey, setHydrationKey] = useState<string | null>(null);
   if (active && hydrationKey !== remoteKey) {
     setHydrationKey(remoteKey);
@@ -60,8 +49,8 @@ export function useLayoutEditor(args: {
       setSaving(true);
       try {
         const resp = await authFetch(`/api/ticket-templates/${templateId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ field_layout: next }),
         });
         if (!resp.ok) {
@@ -130,14 +119,16 @@ export function SortableLayoutField({
    *  inert preview renderers. */
   previewSlot?: React.ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: entry.key, data: { placement: entry.placement } });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: entry.key,
+    data: { placement: entry.placement },
+  });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
   };
-  const isBuiltin = entry.source === "builtin";
+  const isBuiltin = entry.source === 'builtin';
 
   return (
     <div
@@ -154,7 +145,7 @@ export function SortableLayoutField({
         onRemove={onRemove}
       />
 
-      <div className={entry.visible ? "" : "opacity-40 pointer-events-none"}>
+      <div className={entry.visible ? '' : 'opacity-40 pointer-events-none'}>
         {previewSlot ?? (
           <TicketField
             entry={{ ...entry, visible: true }}
@@ -237,8 +228,8 @@ function LayoutEditToolbar({
         type="button"
         onClick={() => onPatch({ visible: !entry.visible })}
         className="rounded p-1 text-muted-foreground/60 hover:text-foreground opacity-0 group-hover:opacity-100 transition"
-        aria-label={entry.visible ? "Hide field" : "Show field"}
-        title={entry.visible ? "Hide on this template" : "Show on this template"}
+        aria-label={entry.visible ? 'Hide field' : 'Show field'}
+        title={entry.visible ? 'Hide on this template' : 'Show on this template'}
       >
         {entry.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
       </button>
@@ -250,9 +241,7 @@ function LayoutEditToolbar({
         className="rounded p-1 text-muted-foreground/60 hover:text-destructive disabled:opacity-0 opacity-0 group-hover:opacity-100 transition"
         aria-label="Delete field"
         title={
-          isBuiltin
-            ? "Built-in fields can be hidden but not removed"
-            : "Delete this custom field"
+          isBuiltin ? 'Built-in fields can be hidden but not removed' : 'Delete this custom field'
         }
       >
         <Trash2 className="h-3.5 w-3.5" />
@@ -267,7 +256,7 @@ export function LayoutZoneDroppable({
   zone,
   children,
 }: {
-  zone: "main" | "sidebar";
+  zone: 'main' | 'sidebar';
   children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `zone:${zone}` });
@@ -275,7 +264,7 @@ export function LayoutZoneDroppable({
     <div
       ref={setNodeRef}
       className={`rounded-md transition ${
-        isOver ? "ring-2 ring-primary/30 ring-offset-2 ring-offset-background" : ""
+        isOver ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background' : ''
       }`}
     >
       {children}
@@ -288,15 +277,15 @@ export function AddCustomFieldButton({
   zone,
 }: {
   onAdd: (entry: FieldLayoutEntry) => void;
-  zone: "main" | "sidebar";
+  zone: 'main' | 'sidebar';
 }) {
   const handleClick = () => {
     const slug = `new_field_${Math.floor(Math.random() * 10_000)}`;
     onAdd({
       key: `custom:${slug}`,
-      label: "New field",
-      type: zone === "main" ? "rich_text" : "text",
-      source: "custom",
+      label: 'New field',
+      type: zone === 'main' ? 'rich_text' : 'text',
+      source: 'custom',
       placement: zone,
       visible: true,
       required: false,

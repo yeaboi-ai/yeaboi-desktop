@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ThumbsUp, ThumbsDown, X } from "lucide-react";
-import { useFeedback } from "@/hooks/use-feedback";
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ThumbsUp, ThumbsDown, X } from 'lucide-react';
+import { useFeedback } from '@/hooks/use-feedback';
 
-type Rating = "thumbs_up" | "thumbs_down";
-type TargetType = "chat_message" | "voice_response" | "session" | "transcript";
-type AgentType = "chat" | "voice" | "platform_chat";
+type Rating = 'thumbs_up' | 'thumbs_down';
+type TargetType = 'chat_message' | 'voice_response' | 'session' | 'transcript';
+type AgentType = 'chat' | 'voice' | 'platform_chat';
 
 const NEGATIVE_REASONS = [
-  "Inaccurate or wrong",
-  "Not relevant to my question",
-  "Too vague or generic",
-  "Too verbose",
-  "Missed important context",
+  'Inaccurate or wrong',
+  'Not relevant to my question',
+  'Too vague or generic',
+  'Too verbose',
+  'Missed important context',
 ];
 
 interface FeedbackButtonsProps {
@@ -37,7 +37,7 @@ export function FeedbackButtons({
   const currentRating = getRating(targetId);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus textarea when dialog opens
@@ -53,12 +53,12 @@ export function FeedbackButtons({
       return;
     }
 
-    if (rating === "thumbs_down") {
+    if (rating === 'thumbs_down') {
       // Submit the rating immediately, then open dialog for optional details
       submitFeedback({ targetType, targetId, sessionId, agentType, rating });
       setShowDialog(true);
       setSelectedReasons([]);
-      setComment("");
+      setComment('');
     } else {
       submitFeedback({ targetType, targetId, sessionId, agentType, rating });
     }
@@ -66,15 +66,15 @@ export function FeedbackButtons({
 
   const toggleReason = (reason: string) => {
     setSelectedReasons((prev) =>
-      prev.includes(reason) ? prev.filter((r) => r !== reason) : [...prev, reason]
+      prev.includes(reason) ? prev.filter((r) => r !== reason) : [...prev, reason],
     );
   };
 
   const handleSubmitDetails = () => {
     const parts: string[] = [];
-    if (selectedReasons.length > 0) parts.push(selectedReasons.join("; "));
+    if (selectedReasons.length > 0) parts.push(selectedReasons.join('; '));
     if (comment.trim()) parts.push(comment.trim());
-    const fullComment = parts.join(" — ");
+    const fullComment = parts.join(' — ');
 
     if (fullComment) {
       submitFeedback({
@@ -82,7 +82,7 @@ export function FeedbackButtons({
         targetId,
         sessionId,
         agentType,
-        rating: "thumbs_down",
+        rating: 'thumbs_down',
         comment: fullComment,
       });
     }
@@ -94,20 +94,18 @@ export function FeedbackButtons({
   };
 
   const iconSize = compact ? 12 : 14;
-  const btnBase = compact
-    ? "p-1 rounded transition-colors"
-    : "p-1.5 rounded-md transition-colors";
+  const btnBase = compact ? 'p-1 rounded transition-colors' : 'p-1.5 rounded-md transition-colors';
 
   return (
     <>
       <div className="flex items-center gap-0.5">
         <button
           type="button"
-          onClick={() => handleClick("thumbs_up")}
+          onClick={() => handleClick('thumbs_up')}
           className={`${btnBase} ${
-            currentRating === "thumbs_up"
-              ? "text-success bg-success/10"
-              : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]"
+            currentRating === 'thumbs_up'
+              ? 'text-success bg-success/10'
+              : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]'
           }`}
           title="Helpful"
         >
@@ -115,11 +113,11 @@ export function FeedbackButtons({
         </button>
         <button
           type="button"
-          onClick={() => handleClick("thumbs_down")}
+          onClick={() => handleClick('thumbs_down')}
           className={`${btnBase} ${
-            currentRating === "thumbs_down"
-              ? "text-destructive bg-destructive/10"
-              : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]"
+            currentRating === 'thumbs_down'
+              ? 'text-destructive bg-destructive/10'
+              : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]'
           }`}
           title="Not helpful"
         >
@@ -129,7 +127,7 @@ export function FeedbackButtons({
 
       {/* Negative feedback dialog */}
       {showDialog &&
-        typeof window !== "undefined" &&
+        typeof window !== 'undefined' &&
         createPortal(
           <>
             <div
@@ -144,9 +142,7 @@ export function FeedbackButtons({
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 pb-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Help us improve
-                    </h3>
+                    <h3 className="text-sm font-semibold text-foreground">Help us improve</h3>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
                       What went wrong? This is optional.
                     </p>
@@ -169,8 +165,8 @@ export function FeedbackButtons({
                         onClick={() => toggleReason(reason)}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-colors ${
                           selectedReasons.includes(reason)
-                            ? "bg-destructive/15 border-destructive/30 text-destructive"
-                            : "bg-foreground/[0.04] border-border/70 text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground/80"
+                            ? 'bg-destructive/15 border-destructive/30 text-destructive'
+                            : 'bg-foreground/[0.04] border-border/70 text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground/80'
                         }`}
                       >
                         {reason}
@@ -211,7 +207,7 @@ export function FeedbackButtons({
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
     </>
   );

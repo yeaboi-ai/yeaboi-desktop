@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { DashboardPanelDef } from "@/hooks/use-project-layout";
+import { useState, useRef, useEffect } from 'react';
+import { Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { DashboardPanelDef } from '@/hooks/use-project-layout';
 
 interface HiddenPanelsMenuProps {
   hiddenPanels: DashboardPanelDef[];
@@ -21,19 +21,15 @@ export function HiddenPanelsMenu({ hiddenPanels, onShow }: HiddenPanelsMenuProps
         setOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
   if (hiddenPanels.length === 0) return null;
 
   return (
     <div className="relative" ref={ref}>
-      <Button
-        variant="outline"
-        size="xs"
-        onClick={() => setOpen(!open)}
-      >
+      <Button variant="outline" size="xs" onClick={() => setOpen(!open)}>
         <Eye className="size-3" />
         <span>{hiddenPanels.length} hidden</span>
       </Button>
@@ -46,13 +42,14 @@ export function HiddenPanelsMenu({ hiddenPanels, onShow }: HiddenPanelsMenuProps
           {hiddenPanels.map((panel) => (
             <button
               key={panel.id}
-              onClick={() => { onShow(panel.id); if (hiddenPanels.length === 1) setOpen(false); }}
+              onClick={() => {
+                onShow(panel.id);
+                if (hiddenPanels.length === 1) setOpen(false);
+              }}
               className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-left hover:bg-muted/50 transition-colors"
             >
               <Eye className="size-3.5 text-primary/70 shrink-0" />
-              <span className="text-xs font-body text-foreground">
-                {panel.label}
-              </span>
+              <span className="text-xs font-body text-foreground">{panel.label}</span>
             </button>
           ))}
         </div>

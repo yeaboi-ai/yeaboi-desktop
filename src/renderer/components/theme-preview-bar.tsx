@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Check, Eye, X } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "@/components/providers/theme-provider";
+import { Check, Eye, X } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from '@/components/providers/theme-provider';
 
 /**
  * Global preview-then-save banner. Anchored at the top of the viewport so it
@@ -17,7 +17,7 @@ export function ThemePreviewBar() {
 
   if (!preview) return null;
 
-  const onThemesPage = pathname?.startsWith("/settings/themes") ?? false;
+  const onThemesPage = pathname?.startsWith('/settings/themes') ?? false;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[300] pointer-events-none">
@@ -29,7 +29,7 @@ export function ThemePreviewBar() {
           style={{
             // Inline style so the banner is unmistakable even if the
             // previewed theme has a low-contrast warning color token.
-            background: "color-mix(in srgb, var(--warning) 18%, var(--card))",
+            background: 'color-mix(in srgb, var(--warning) 18%, var(--card))',
           }}
         >
           <div className="flex flex-wrap items-center gap-3 px-4 py-3">

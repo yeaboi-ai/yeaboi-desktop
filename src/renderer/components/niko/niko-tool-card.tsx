@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   CheckCircle2,
@@ -13,7 +13,7 @@ import {
   Shield,
   Users,
   FileText,
-} from "lucide-react";
+} from 'lucide-react';
 
 const TOOL_ICONS: Record<string, React.ElementType> = {
   create_project: FolderPlus,
@@ -39,31 +39,31 @@ const TOOL_ICONS: Record<string, React.ElementType> = {
 };
 
 const TOOL_LABELS: Record<string, string> = {
-  create_project: "Creating project",
-  update_project: "Updating project",
-  delete_project: "Deleting project",
-  list_projects: "Listing projects",
-  get_project: "Getting project details",
-  create_session: "Creating session",
-  list_sessions: "Listing sessions",
-  update_session: "Updating session",
-  create_card: "Creating card",
-  update_card: "Updating card",
-  delete_card: "Deleting card",
-  list_board_cards: "Loading board",
-  move_card: "Moving card",
-  get_blueprint_coverage: "Checking blueprint",
-  update_blueprint_section: "Updating blueprint",
-  list_personas: "Listing personas",
-  create_persona: "Creating persona",
-  list_templates: "Listing templates",
-  create_template: "Creating template",
-  get_project_status: "Getting project status",
+  create_project: 'Creating project',
+  update_project: 'Updating project',
+  delete_project: 'Deleting project',
+  list_projects: 'Listing projects',
+  get_project: 'Getting project details',
+  create_session: 'Creating session',
+  list_sessions: 'Listing sessions',
+  update_session: 'Updating session',
+  create_card: 'Creating card',
+  update_card: 'Updating card',
+  delete_card: 'Deleting card',
+  list_board_cards: 'Loading board',
+  move_card: 'Moving card',
+  get_blueprint_coverage: 'Checking blueprint',
+  update_blueprint_section: 'Updating blueprint',
+  list_personas: 'Listing personas',
+  create_persona: 'Creating persona',
+  list_templates: 'Listing templates',
+  create_template: 'Creating template',
+  get_project_status: 'Getting project status',
 };
 
 interface NikoToolCardProps {
   name: string;
-  status: "running" | "success" | "error";
+  status: 'running' | 'success' | 'error';
   error?: string;
 }
 
@@ -76,14 +76,10 @@ export function NikoToolCard({ name, status, error }: NikoToolCardProps) {
       <Icon className="size-3.5 text-muted-foreground" />
       <span className="text-muted-foreground">{label}</span>
       <div className="ml-auto">
-        {status === "running" && (
-          <Loader2 className="size-3.5 animate-spin text-primary" />
-        )}
-        {status === "success" && (
-          <CheckCircle2 className="size-3.5 text-emerald-500" />
-        )}
-        {status === "error" && (
-          <span title={error || "Failed"}>
+        {status === 'running' && <Loader2 className="size-3.5 animate-spin text-primary" />}
+        {status === 'success' && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+        {status === 'error' && (
+          <span title={error || 'Failed'}>
             <XCircle className="size-3.5 text-destructive" />
           </span>
         )}

@@ -1,12 +1,22 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, X, ThumbsUp, ThumbsDown, Mic, MicOff, AlertTriangle, EyeOff, Type } from "lucide-react";
-import { FeedbackButtons } from "@/components/ui/feedback-buttons";
-import { useFeedback } from "@/hooks/use-feedback";
-import { useReducedColor } from "@/hooks/use-reduced-color";
-import { AIReasoningPeek, extractAIMeta } from "./ai-reasoning-peek";
-import { mediumOf, type TranscriptMedium } from "./transcript-medium";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Check,
+  X,
+  ThumbsUp,
+  ThumbsDown,
+  Mic,
+  MicOff,
+  AlertTriangle,
+  EyeOff,
+  Type,
+} from 'lucide-react';
+import { FeedbackButtons } from '@/components/ui/feedback-buttons';
+import { useFeedback } from '@/hooks/use-feedback';
+import { useReducedColor } from '@/hooks/use-reduced-color';
+import { AIReasoningPeek, extractAIMeta } from './ai-reasoning-peek';
+import { mediumOf, type TranscriptMedium } from './transcript-medium';
 
 interface TranscriptEntry {
   id: string;
@@ -54,57 +64,73 @@ interface TranscriptFeedProps {
 /** Strip markdown syntax from transcript text (bold, italic, headers, etc.) */
 function stripMarkdown(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, "$1")  // **bold**
-    .replace(/\*(.+?)\*/g, "$1")       // *italic*
-    .replace(/__(.+?)__/g, "$1")       // __bold__
-    .replace(/_(.+?)_/g, "$1")         // _italic_
-    .replace(/^#{1,6}\s+/gm, "")       // # headers
-    .replace(/`(.+?)`/g, "$1");        // `code`
+    .replace(/\*\*(.+?)\*\*/g, '$1') // **bold**
+    .replace(/\*(.+?)\*/g, '$1') // *italic*
+    .replace(/__(.+?)__/g, '$1') // __bold__
+    .replace(/_(.+?)_/g, '$1') // _italic_
+    .replace(/^#{1,6}\s+/gm, '') // # headers
+    .replace(/`(.+?)`/g, '$1'); // `code`
 }
 
 /** Censor profanity — keeps first letter, replaces rest with asterisks.
  *  Uses word boundaries and excludes common words that contain profanity substrings
  *  (e.g. "assume", "assess", "assist", "cocktail", "dictionary"). */
-const PROFANITY = /\b(fuck|shit|bitch|ass(?!ess|ume|ist|et|ign|oci|ert)|damn|crap|dick(?!ens|tionar)|piss|cock(?!tail|pit|roach)|cunt|bastard|twat|wanker|bollocks)\w*/gi;
+const PROFANITY =
+  /\b(fuck|shit|bitch|ass(?!ess|ume|ist|et|ign|oci|ert)|damn|crap|dick(?!ens|tionar)|piss|cock(?!tail|pit|roach)|cunt|bastard|twat|wanker|bollocks)\w*/gi;
 function censorProfanity(text: string): string {
-  return text.replace(PROFANITY, (match) => match[0].toUpperCase() + "*".repeat(match.length - 1));
+  return text.replace(PROFANITY, (match) => match[0].toUpperCase() + '*'.repeat(match.length - 1));
 }
 
 const SPEAKER_COLORS = [
-  "text-amber-400",
-  "text-success",
-  "text-purple-400",
-  "text-pink-400",
-  "text-orange-400",
+  'text-amber-400',
+  'text-success',
+  'text-purple-400',
+  'text-pink-400',
+  'text-orange-400',
 ];
 
 // Colorblind-safe (Wong 2011 / Bang Wong palette adapted to dark UI).
 // Distinguishable for Deuteranopia, Protanopia, and Tritanopia.
 const SPEAKER_COLORS_CB = [
-  "text-[#56B4E9]", // sky blue
-  "text-[#E69F00]", // orange
-  "text-[#009E73]", // bluish green
-  "text-[#F0E442]", // yellow
-  "text-[#CC79A7]", // reddish purple
+  'text-[#56B4E9]', // sky blue
+  'text-[#E69F00]', // orange
+  'text-[#009E73]', // bluish green
+  'text-[#F0E442]', // yellow
+  'text-[#CC79A7]', // reddish purple
 ];
 
 // Leading symbol per speaker — provides identification independent of color.
-const SPEAKER_SYMBOLS = ["●", "▲", "■", "◆", "★"];
+const SPEAKER_SYMBOLS = ['●', '▲', '■', '◆', '★'];
 
-const AI_COLOR = "text-cyan-400";
-const AI_COLOR_CB = "text-[#0072B2]"; // CB-safe blue
-const AI_SYMBOL = "✦";
+const AI_COLOR = 'text-cyan-400';
+const AI_COLOR_CB = 'text-[#0072B2]'; // CB-safe blue
+const AI_SYMBOL = '✦';
 const AI_NAMES = new Set([
-  "AI Facilitator", "Senior Engineer", "Product Manager",
-  "System Architect", "Patient Mentor", "Devil's Advocate",
+  'AI Facilitator',
+  'Senior Engineer',
+  'Product Manager',
+  'System Architect',
+  'Patient Mentor',
+  "Devil's Advocate",
 ]);
 
-export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry, readOnly, sessionId, searchQuery, filterSpeakers, filterMediums, scrollToTs, onScrollHandled }: TranscriptFeedProps) {
+export function TranscriptFeed({
+  entries: rawEntries,
+  onEditEntry,
+  onRedactEntry,
+  readOnly,
+  sessionId,
+  searchQuery,
+  filterSpeakers,
+  filterMediums,
+  scrollToTs,
+  onScrollHandled,
+}: TranscriptFeedProps) {
   // Apply optional search/speaker/medium filters before rendering. We never
   // filter out config-change rows or the "Call ended" markers — those provide
   // context regardless of which speakers or mediums are selected.
   const entries = useMemo(() => {
-    const q = searchQuery?.trim().toLowerCase() ?? "";
+    const q = searchQuery?.trim().toLowerCase() ?? '';
     const speakers = filterSpeakers && filterSpeakers.size > 0 ? filterSpeakers : null;
     const mediums = filterMediums && filterMediums.size > 0 ? filterMediums : null;
     if (!q && !speakers && !mediums) return rawEntries;
@@ -123,7 +149,7 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const [editText, setEditText] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
   const { submitFeedback, retractFeedback, getRating } = useFeedback(sessionId);
@@ -135,7 +161,7 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
 
   const cancelEdit = useCallback(() => {
     setEditingId(null);
-    setEditText("");
+    setEditText('');
   }, []);
 
   const saveEdit = useCallback(async () => {
@@ -144,9 +170,9 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
     try {
       await onEditEntry(editingId, editText.trim());
       setEditingId(null);
-      setEditText("");
+      setEditText('');
     } catch (e) {
-      console.error("Failed to save transcript edit:", e);
+      console.error('Failed to save transcript edit:', e);
     } finally {
       setEditSaving(false);
     }
@@ -157,22 +183,22 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
   // existing PATCH endpoint detects the diff and feeds it to apply_corrections_to_vocabulary
   // so STT improves on future sessions, not just the visible text.
   const handleThumb = useCallback(
-    (entry: TranscriptEntry, rating: "thumbs_up" | "thumbs_down") => {
+    (entry: TranscriptEntry, rating: 'thumbs_up' | 'thumbs_down') => {
       const current = getRating(entry.id);
       if (current === rating) {
         retractFeedback(entry.id);
-        if (rating === "thumbs_down" && editingId === entry.id) cancelEdit();
+        if (rating === 'thumbs_down' && editingId === entry.id) cancelEdit();
         return;
       }
       submitFeedback({
-        targetType: "transcript",
+        targetType: 'transcript',
         targetId: entry.id,
         sessionId,
-        agentType: "voice",
+        agentType: 'voice',
         rating,
         context: { text: entry.text },
       });
-      if (rating === "thumbs_down") {
+      if (rating === 'thumbs_down') {
         setEditingId(entry.id);
         setEditText(entry.text);
         setTimeout(() => editInputRef.current?.focus(), 50);
@@ -205,12 +231,12 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
 
   // Auto-scroll on new entries and interim updates. Skipped in read-only
   // (recap) mode so it doesn't fight the seek-to-timestamp effect below.
-  const lastText = entries.length > 0 ? entries[entries.length - 1].text : "";
+  const lastText = entries.length > 0 ? entries[entries.length - 1].text : '';
   useEffect(() => {
     if (readOnly) return;
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
   }, [entries.length, lastText, readOnly]);
 
@@ -224,7 +250,7 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
     // attribute selectors handle the value as a string when quoted properly.
     const target = root.querySelector<HTMLElement>(`[data-ts="${scrollToTs}"]`);
     if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setFlashTs(scrollToTs);
       const t = window.setTimeout(() => setFlashTs(null), 1500);
       onScrollHandled?.();
@@ -251,26 +277,33 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
         const time = (() => {
           try {
             const d = new Date(entry.created_at);
-            return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-          } catch { return ""; }
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } catch {
+            return '';
+          }
         })();
-        const isCallEnded = entry.text.startsWith("Call ended");
-        const isConfigChange = !entry.speaker_name && (
-          entry.text.startsWith("Switched to") || entry.text.startsWith("Assertiveness set")
-          || entry.text.startsWith("Language changed") || entry.text.startsWith("Emotion set")
-          || entry.text.startsWith("Speed set") || entry.text.startsWith("Voice changed")
-        );
+        const isCallEnded = entry.text.startsWith('Call ended');
+        const isConfigChange =
+          !entry.speaker_name &&
+          (entry.text.startsWith('Switched to') ||
+            entry.text.startsWith('Assertiveness set') ||
+            entry.text.startsWith('Language changed') ||
+            entry.text.startsWith('Emotion set') ||
+            entry.text.startsWith('Speed set') ||
+            entry.text.startsWith('Voice changed'));
         if (isCallEnded || isConfigChange) {
           const durationMatch = isCallEnded ? entry.text.match(/\(([^)]+)\)/) : null;
-          const duration = durationMatch?.[1] ?? "";
-          const label = isCallEnded ? `Call ended${duration ? ` · ${duration}` : ""}` : entry.text.replace(/\*\*/g, "");
+          const duration = durationMatch?.[1] ?? '';
+          const label = isCallEnded
+            ? `Call ended${duration ? ` · ${duration}` : ''}`
+            : entry.text.replace(/\*\*/g, '');
           const isFlashing = flashTs === entry.created_at;
           return (
             <div
               key={entry.id}
               data-ts={entry.created_at}
               className={`my-2 animate-in fade-in duration-300 rounded-md transition-shadow ${
-                isFlashing ? "ring-2 ring-info/40" : ""
+                isFlashing ? 'ring-2 ring-info/40' : ''
               }`}
             >
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground/40">
@@ -286,7 +319,12 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
         const isEditing = editingId === entry.id;
         // Only allow editing DB-backed entries (UUID format), not Deepgram interim or config change entries
         const isDbEntry = /^[0-9a-f]{8}-/.test(entry.id);
-        const isEditable = isDbEntry && entry.is_final && !readOnly && onEditEntry && !AI_NAMES.has(entry.speaker_name || "");
+        const isEditable =
+          isDbEntry &&
+          entry.is_final &&
+          !readOnly &&
+          onEditEntry &&
+          !AI_NAMES.has(entry.speaker_name || '');
 
         const isFocused = focusedId === entry.id;
         const navIdx = entries.findIndex((e) => e.id === entry.id);
@@ -304,20 +342,20 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
         const handleEntryKey = (e: React.KeyboardEvent) => {
           if (isEditing) return;
           // j/k navigation (also Down/Up arrows)
-          if (e.key === "j" || e.key === "ArrowDown") {
+          if (e.key === 'j' || e.key === 'ArrowDown') {
             e.preventDefault();
             moveFocus(1);
-          } else if (e.key === "k" || e.key === "ArrowUp") {
+          } else if (e.key === 'k' || e.key === 'ArrowUp') {
             e.preventDefault();
             moveFocus(-1);
-          } else if (e.key === "e" && isEditable) {
+          } else if (e.key === 'e' && isEditable) {
             e.preventDefault();
             setEditingId(entry.id);
             setEditText(entry.text);
             setTimeout(() => editInputRef.current?.focus(), 50);
-          } else if (e.key === "t" && isEditable) {
+          } else if (e.key === 't' && isEditable) {
             e.preventDefault();
-            handleThumb(entry, e.shiftKey ? "thumbs_down" : "thumbs_up");
+            handleThumb(entry, e.shiftKey ? 'thumbs_down' : 'thumbs_up');
           }
         };
 
@@ -325,46 +363,62 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
         return (
           <div
             key={entry.id}
-            tabIndex={isEditable ? (isFocused || (focusedId === null && navIdx === entries.length - 1) ? 0 : -1) : -1}
+            tabIndex={
+              isEditable
+                ? isFocused || (focusedId === null && navIdx === entries.length - 1)
+                  ? 0
+                  : -1
+                : -1
+            }
             onFocus={() => isEditable && setFocusedId(entry.id)}
             onKeyDown={handleEntryKey}
             data-transcript-entry-id={entry.id}
             data-ts={entry.created_at}
             className={`group/transcript text-sm flex gap-2 animate-in fade-in duration-300 rounded-md outline-none transition-shadow px-1 ${
-              entry.is_final ? "" : "text-muted-foreground italic"
-            } ${isFocused ? "ring-1 ring-white/20 bg-foreground/[0.02]" : ""} ${
-              isFlashing ? "ring-2 ring-info/40" : ""
+              entry.is_final ? '' : 'text-muted-foreground italic'
+            } ${isFocused ? 'ring-1 ring-white/20 bg-foreground/[0.02]' : ''} ${
+              isFlashing ? 'ring-2 ring-info/40' : ''
             }`}
           >
-            {time && <span className="text-[10px] text-muted-foreground/70 tabular-nums shrink-0 pt-0.5 select-none">{time}</span>}
+            {time && (
+              <span className="text-[10px] text-muted-foreground/70 tabular-nums shrink-0 pt-0.5 select-none">
+                {time}
+              </span>
+            )}
             <div className="min-w-0 flex-1">
-              {entry.speaker_name && (() => {
-                const style = speakerStyles.get(entry.speaker_name);
-                const color = style?.color ?? "text-foreground/80";
-                const symbol = style?.symbol;
-                const medium = mediumOf(entry.message_type);
-                const MediumIcon = medium === "spoken" ? Mic : medium === "typed" ? Type : null;
-                const mediumLabel = medium === "spoken" ? "Voice" : medium === "typed" ? "Chat" : null;
-                const mediumTone =
-                  medium === "spoken"
-                    ? "bg-info/10 text-info/90 ring-info/25"
-                    : "bg-foreground/[0.06] text-muted-foreground/90 ring-border/60";
-                return (
-                  <span className={`font-medium ${color}`}>
-                    {symbol && <span aria-hidden className="mr-1.5 text-[10px]">{symbol}</span>}
-                    {MediumIcon && mediumLabel && (
-                      <span
-                        title={mediumLabel === "Voice" ? "Spoken in a call" : "Typed in chat"}
-                        className={`inline-flex items-center gap-0.5 mr-1.5 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-[0.04em] ring-1 align-[1px] ${mediumTone}`}
-                      >
-                        <MediumIcon aria-hidden className="h-2.5 w-2.5" />
-                        {mediumLabel}
-                      </span>
-                    )}
-                    {entry.speaker_name}:{" "}
-                  </span>
-                );
-              })()}
+              {entry.speaker_name &&
+                (() => {
+                  const style = speakerStyles.get(entry.speaker_name);
+                  const color = style?.color ?? 'text-foreground/80';
+                  const symbol = style?.symbol;
+                  const medium = mediumOf(entry.message_type);
+                  const MediumIcon = medium === 'spoken' ? Mic : medium === 'typed' ? Type : null;
+                  const mediumLabel =
+                    medium === 'spoken' ? 'Voice' : medium === 'typed' ? 'Chat' : null;
+                  const mediumTone =
+                    medium === 'spoken'
+                      ? 'bg-info/10 text-info/90 ring-info/25'
+                      : 'bg-foreground/[0.06] text-muted-foreground/90 ring-border/60';
+                  return (
+                    <span className={`font-medium ${color}`}>
+                      {symbol && (
+                        <span aria-hidden className="mr-1.5 text-[10px]">
+                          {symbol}
+                        </span>
+                      )}
+                      {MediumIcon && mediumLabel && (
+                        <span
+                          title={mediumLabel === 'Voice' ? 'Spoken in a call' : 'Typed in chat'}
+                          className={`inline-flex items-center gap-0.5 mr-1.5 rounded px-1 py-px text-[9px] font-semibold uppercase tracking-[0.04em] ring-1 align-[1px] ${mediumTone}`}
+                        >
+                          <MediumIcon aria-hidden className="h-2.5 w-2.5" />
+                          {mediumLabel}
+                        </span>
+                      )}
+                      {entry.speaker_name}:{' '}
+                    </span>
+                  );
+                })()}
               {isEditing ? (
                 <span className="inline-flex items-center gap-1.5 w-full">
                   <input
@@ -372,23 +426,37 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Escape") cancelEdit();
-                      if (e.key === "Enter") saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                      if (e.key === 'Enter') saveEdit();
                     }}
                     className="flex-1 bg-foreground/[0.05] border border-border rounded px-2 py-0.5 text-foreground/90 text-sm focus:outline-none focus:border-border"
                     disabled={editSaving}
                   />
-                  <button onClick={saveEdit} disabled={editSaving} className="p-0.5 text-success hover:text-success" title="Save">
+                  <button
+                    onClick={saveEdit}
+                    disabled={editSaving}
+                    className="p-0.5 text-success hover:text-success"
+                    title="Save"
+                  >
                     <Check className="h-3 w-3" />
                   </button>
-                  <button onClick={cancelEdit} disabled={editSaving} className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground" title="Cancel">
+                  <button
+                    onClick={cancelEdit}
+                    disabled={editSaving}
+                    className="p-0.5 text-muted-foreground/50 hover:text-muted-foreground"
+                    title="Cancel"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </span>
               ) : (
                 <>
-                  <span className="text-foreground/90">{censorProfanity(stripMarkdown(entry.text))}</span>
-                  {entry.original_content && <span className="text-[9px] text-muted-foreground/30 ml-1">(edited)</span>}
+                  <span className="text-foreground/90">
+                    {censorProfanity(stripMarkdown(entry.text))}
+                  </span>
+                  {entry.original_content && (
+                    <span className="text-[9px] text-muted-foreground/30 ml-1">(edited)</span>
+                  )}
                 </>
               )}
             </div>
@@ -396,64 +464,66 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
                 Thumbs-down opens an inline rewrite — corrections feed the
                 vocabulary service so STT improves on future sessions.
                 Visible on hover OR keyboard focus (W5.4.4). */}
-            {isEditable && !isEditing && (() => {
-              const rating = getRating(entry.id);
-              return (
-                <div
-                  className={`transition-opacity flex items-center gap-0.5 shrink-0 self-center ${
-                    isFocused ? "opacity-100" : "opacity-0 group-hover/transcript:opacity-100"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleThumb(entry, "thumbs_up")}
-                    className={`p-1 rounded transition-colors ${
-                      rating === "thumbs_up"
-                        ? "text-success bg-success/10"
-                        : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]"
+            {isEditable &&
+              !isEditing &&
+              (() => {
+                const rating = getRating(entry.id);
+                return (
+                  <div
+                    className={`transition-opacity flex items-center gap-0.5 shrink-0 self-center ${
+                      isFocused ? 'opacity-100' : 'opacity-0 group-hover/transcript:opacity-100'
                     }`}
-                    title="Transcript looks right"
                   >
-                    <ThumbsUp className="h-3 w-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleThumb(entry, "thumbs_down")}
-                    className={`p-1 rounded transition-colors ${
-                      rating === "thumbs_down"
-                        ? "text-red-400 bg-red-400/10"
-                        : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]"
-                    }`}
-                    title="Rewrite — improves transcription quality"
-                  >
-                    <ThumbsDown className="h-3 w-3" />
-                  </button>
-                  {onRedactEntry && (
                     <button
                       type="button"
-                      onClick={async () => {
-                        const ok = window.confirm(
-                          "Redact this transcript entry? The text will be permanently replaced with [redacted] for all participants and any future export."
-                        );
-                        if (!ok) return;
-                        try {
-                          await onRedactEntry(entry.id);
-                        } catch (e) {
-                          console.error("Failed to redact:", e);
-                        }
-                      }}
-                      className="p-1 rounded text-muted-foreground/30 hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
-                      title="Redact — replaces this entry with [redacted]"
-                      aria-label="Redact this transcript entry"
+                      onClick={() => handleThumb(entry, 'thumbs_up')}
+                      className={`p-1 rounded transition-colors ${
+                        rating === 'thumbs_up'
+                          ? 'text-success bg-success/10'
+                          : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]'
+                      }`}
+                      title="Transcript looks right"
                     >
-                      <EyeOff className="h-3 w-3" />
+                      <ThumbsUp className="h-3 w-3" />
                     </button>
-                  )}
-                </div>
-              );
-            })()}
+                    <button
+                      type="button"
+                      onClick={() => handleThumb(entry, 'thumbs_down')}
+                      className={`p-1 rounded transition-colors ${
+                        rating === 'thumbs_down'
+                          ? 'text-red-400 bg-red-400/10'
+                          : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-foreground/[0.05]'
+                      }`}
+                      title="Rewrite — improves transcription quality"
+                    >
+                      <ThumbsDown className="h-3 w-3" />
+                    </button>
+                    {onRedactEntry && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const ok = window.confirm(
+                            'Redact this transcript entry? The text will be permanently replaced with [redacted] for all participants and any future export.',
+                          );
+                          if (!ok) return;
+                          try {
+                            await onRedactEntry(entry.id);
+                          } catch (e) {
+                            console.error('Failed to redact:', e);
+                          }
+                        }}
+                        className="p-1 rounded text-muted-foreground/30 hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
+                        title="Redact — replaces this entry with [redacted]"
+                        aria-label="Redact this transcript entry"
+                      >
+                        <EyeOff className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             {/* Feedback buttons + reasoning peek for AI transcript entries */}
-            {AI_NAMES.has(entry.speaker_name || "") && entry.is_final && (
+            {AI_NAMES.has(entry.speaker_name || '') && entry.is_final && (
               <div className="opacity-0 group-hover/transcript:opacity-100 transition-opacity shrink-0 self-center flex items-center gap-1">
                 {(() => {
                   const meta = extractAIMeta(entry.attachments);
@@ -476,39 +546,42 @@ export function TranscriptFeed({ entries: rawEntries, onEditEntry, onRedactEntry
 
 const EXAMPLE_PROMPTS = [
   "Let's plan the auth flow",
-  "What are the open questions for this milestone?",
-  "Walk me through the data model",
-  "Help me scope this for one sprint",
+  'What are the open questions for this milestone?',
+  'Walk me through the data model',
+  'Help me scope this for one sprint',
 ];
 
-type MicState = "checking" | "granted" | "denied" | "missing" | "unsupported";
+type MicState = 'checking' | 'granted' | 'denied' | 'missing' | 'unsupported';
 
 function useMicPermissionState(): MicState {
-  const [state, setState] = useState<MicState>("checking");
+  const [state, setState] = useState<MicState>('checking');
 
   useEffect(() => {
     let cancelled = false;
     const probe = async () => {
-      if (typeof navigator === "undefined" || !navigator.mediaDevices) {
-        if (!cancelled) setState("unsupported");
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+        if (!cancelled) setState('unsupported');
         return;
       }
       // Prefer the Permissions API when available — it doesn't prompt.
-      type PermStatus = { state: PermissionState; addEventListener?: (e: string, f: () => void) => void };
+      type PermStatus = {
+        state: PermissionState;
+        addEventListener?: (e: string, f: () => void) => void;
+      };
       type PermsLike = { query: (descriptor: { name: string }) => Promise<PermStatus> };
       const perms = (navigator as Navigator & { permissions?: PermsLike }).permissions;
       if (perms) {
         try {
-          const status = await perms.query({ name: "microphone" });
+          const status = await perms.query({ name: 'microphone' });
           if (cancelled) return;
-          if (status.state === "granted") setState("granted");
-          else if (status.state === "denied") setState("denied");
-          else setState("checking"); // 'prompt' — leave neutral, user can click to test
-          status.addEventListener?.("change", () => {
+          if (status.state === 'granted') setState('granted');
+          else if (status.state === 'denied') setState('denied');
+          else setState('checking'); // 'prompt' — leave neutral, user can click to test
+          status.addEventListener?.('change', () => {
             if (cancelled) return;
-            if (status.state === "granted") setState("granted");
-            else if (status.state === "denied") setState("denied");
-            else setState("checking");
+            if (status.state === 'granted') setState('granted');
+            else if (status.state === 'denied') setState('denied');
+            else setState('checking');
           });
           return;
         } catch {
@@ -519,10 +592,10 @@ function useMicPermissionState(): MicState {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         if (cancelled) return;
-        const hasInput = devices.some((d) => d.kind === "audioinput");
-        setState(hasInput ? "checking" : "missing");
+        const hasInput = devices.some((d) => d.kind === 'audioinput');
+        setState(hasInput ? 'checking' : 'missing');
       } catch {
-        if (!cancelled) setState("unsupported");
+        if (!cancelled) setState('unsupported');
       }
     };
     probe();
@@ -540,7 +613,9 @@ function EmptyTranscript() {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 py-8 text-center max-w-md mx-auto">
       <p className="text-sm text-foreground/80 mb-1">Nothing said yet.</p>
-      <p className="text-xs text-muted-foreground/70 mb-5">Try saying one of these to your AI facilitator:</p>
+      <p className="text-xs text-muted-foreground/70 mb-5">
+        Try saying one of these to your AI facilitator:
+      </p>
       <ul className="space-y-1.5 mb-6 w-full">
         {EXAMPLE_PROMPTS.map((p) => (
           <li
@@ -557,7 +632,7 @@ function EmptyTranscript() {
 }
 
 function MicDiagnostic({ state }: { state: MicState }) {
-  if (state === "granted" || state === "checking") {
+  if (state === 'granted' || state === 'checking') {
     return (
       <div className="flex items-center gap-1.5 text-[11px] text-success/70">
         <Mic className="h-3 w-3" />
@@ -565,7 +640,7 @@ function MicDiagnostic({ state }: { state: MicState }) {
       </div>
     );
   }
-  if (state === "denied") {
+  if (state === 'denied') {
     return (
       <div className="flex items-start gap-2 text-[11px] text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-md px-3 py-2 text-left">
         <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -578,7 +653,7 @@ function MicDiagnostic({ state }: { state: MicState }) {
       </div>
     );
   }
-  if (state === "missing") {
+  if (state === 'missing') {
     return (
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-foreground/[0.04] border border-border/60 rounded-md px-3 py-2">
         <MicOff className="h-3.5 w-3.5" />

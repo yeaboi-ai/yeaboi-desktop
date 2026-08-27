@@ -1,5 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 type SettingsListRowProps = React.HTMLAttributes<HTMLDivElement> & {
   leading?: React.ReactNode;
@@ -18,8 +18,8 @@ export function SettingsListRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-2.5 transition-colors",
-        hoverable && "hover:bg-card/40",
+        'flex items-center gap-3 px-4 py-2.5 transition-colors',
+        hoverable && 'hover:bg-card/40',
         className,
       )}
       {...props}
