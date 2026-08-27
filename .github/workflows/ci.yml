@@ -54,3 +54,20 @@ jobs:
       # `build-check` turns an unresolved asset reference (a warning the build
       # survives with exit 0) into a red job.
       - run: npm run build:check
+
+  manifest:
+    name: Renderer routes match the manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      # The parity seam: contracts/v1/routes_manifest.json is code-generated
+      # from src/renderer/lib/yeaboi/routes.json, and yeaboi.ai's
+      # surface-parity suite reads its committed copy to decide whether a
+      # capability reached the desktop. This fails when the committed manifest
+      # is stale — regenerate with `npm run gen-manifest` and commit.
+      - run: node scripts/gen-routes-manifest.mjs --check
