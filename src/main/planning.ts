@@ -37,9 +37,11 @@ export function resolvePlanningCommand(port: number): {
   args: string[];
   cwd?: string;
 } {
-  const uvicornArgs = [
+  // The wheel installs the API as `app`; only the repo checkout spells it
+  // `src.app` (backend/ as cwd, src/ as a namespace dir).
+  const uvicornArgs = (module_: string) => [
     'uvicorn',
-    'src.app.main:create_app',
+    `${module_}:create_app`,
     '--factory',
     '--host',
     '127.0.0.1',
@@ -48,19 +50,19 @@ export function resolvePlanningCommand(port: number): {
   ];
   const explicit = process.env['YEABOI_DESKTOP_PLANNING_PYTHON'];
   if (explicit) {
-    return { command: explicit, args: ['-m', ...uvicornArgs] };
+    return { command: explicit, args: ['-m', ...uvicornArgs('app.main')] };
   }
   if (app.isPackaged) {
     const python = process.platform === 'win32' ? 'python.exe' : 'bin/python3';
     return {
       command: `${process.resourcesPath}/py-planning/${python}`,
-      args: ['-m', ...uvicornArgs],
+      args: ['-m', ...uvicornArgs('app.main')],
     };
   }
   const repo =
     process.env['YEABOI_PLANNING_REPO'] ??
     resolve(import.meta.dirname, '../../../planning-platform/backend');
-  return { command: 'uv', args: ['run', ...uvicornArgs], cwd: repo };
+  return { command: 'uv', args: ['run', ...uvicornArgs('src.app.main')], cwd: repo };
 }
 
 /** The env a local-mode planning backend runs under: the shared ~/.yeaboi/.env

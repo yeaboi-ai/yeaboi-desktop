@@ -2,7 +2,10 @@ node_modules/
 out/
 dist/
 resources/py/
+resources/py-planning/
+resources/livekit/
 .python-cache/
+.livekit-cache/
 
 # The shared tooling checkout, pinned by .tooling-rev — cloned, never committed.
 .tooling/
