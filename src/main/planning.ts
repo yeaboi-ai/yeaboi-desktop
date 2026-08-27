@@ -30,7 +30,8 @@ const PORT_RANGE = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 
 /** How to launch the backend. Resolution order (dev escape hatch first):
  *  1. $YEABOI_DESKTOP_PLANNING_PYTHON — an explicit interpreter
  *  2. packaged: the bundled python in resources/py-planning
- *  3. dev fallback: `uv run uvicorn` in a sibling planning-platform checkout
+ *  3. dev fallback: `uv run uvicorn` in the vendored backend/ tree
+ *     ($YEABOI_PLANNING_REPO points elsewhere for a separate checkout)
  */
 export function resolvePlanningCommand(port: number): {
   command: string;
@@ -60,8 +61,7 @@ export function resolvePlanningCommand(port: number): {
     };
   }
   const repo =
-    process.env['YEABOI_PLANNING_REPO'] ??
-    resolve(import.meta.dirname, '../../../planning-platform/backend');
+    process.env['YEABOI_PLANNING_REPO'] ?? resolve(import.meta.dirname, '../../backend');
   return { command: 'uv', args: ['run', ...uvicornArgs('src.app.main')], cwd: repo };
 }
 

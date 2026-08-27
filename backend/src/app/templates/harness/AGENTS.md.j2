@@ -1,0 +1,30 @@
+# {{ project_name }}
+
+> Agent-friendly map. ~100 lines pointing to deeper sources.
+
+## Overview
+
+{{ blueprint.project_overview or "Project overview not yet defined." }}
+
+## Repository Map
+
+| Domain | Location | Purpose |
+|--------|----------|---------|
+{% for domain in domains -%}
+| {{ domain.name }} | `{{ domain.path }}` | {{ domain.purpose }} |
+{% endfor %}
+
+## Workflow
+
+1. Read this file first
+2. Check `docs/exec-plans/active/` for current work
+3. Read `ARCHITECTURE.md` for layering rules
+4. Check domain-specific docs as needed
+
+## Constraints
+
+{{ blueprint.goals_constraints or "No constraints defined yet." }}
+
+## Tech Stack
+
+{{ blueprint.tech_stack or "Tech stack not yet defined." }}

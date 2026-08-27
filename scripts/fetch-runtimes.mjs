@@ -85,12 +85,14 @@ function parseArgs(input = argv.slice(2)) {
     arch: hostArch,
     check: false,
     version: '',
+    planning: false,
     planningWheel: '',
   };
   for (let i = 0; i < input.length; i += 1) {
     const flag = input[i];
     if (flag === '--check') args.check = true;
     else if (flag === '--version') args.version = input[(i += 1)] ?? '';
+    else if (flag === '--planning') args.planning = true;
     else if (flag === '--planning-wheel') args.planningWheel = input[(i += 1)] ?? '';
     else if (flag === '--platform') args.platform = input[(i += 1)] ?? '';
     else if (flag === '--arch') args.arch = input[(i += 1)] ?? '';
@@ -200,11 +202,23 @@ async function stage({ platform, arch, version }) {
   );
 }
 
-/** Stage the planning backend: same runtime, a CI-built wheel (no PyPI
- *  release exists), core deps only — the ~200MB voice extra is installed on
- *  demand by the app (src/main/voice-pack.ts). */
+/** Stage the planning backend: same runtime, the wheel built from the
+ *  vendored backend/ tree (or an explicit --planning-wheel), core deps only —
+ *  the ~200MB voice extra is installed on demand by the app
+ *  (src/main/voice-pack.ts). */
 async function stagePlanning({ platform, arch, planningWheel }) {
-  if (!planningWheel) throw new Error('--planning-wheel is required: the CI-built backend wheel');
+  if (!planningWheel) {
+    // Default: build from the vendored tree, so `--planning` needs no CI
+    // artifact — the backend lives in this repo now.
+    const backend = join(ROOT, 'backend');
+    console.log('building the planning wheel from backend/');
+    rmSync(join(backend, 'dist'), { recursive: true, force: true });
+    run('uv', ['build', '--wheel'], { cwd: backend });
+    const dist = join(backend, 'dist');
+    const wheel = (await readdir(dist)).find((name) => name.endsWith('.whl'));
+    if (!wheel) throw new Error('uv build produced no wheel in backend/dist');
+    planningWheel = join(dist, wheel);
+  }
   if (!existsSync(planningWheel)) throw new Error(`no wheel at ${planningWheel}`);
   const target = `${platform}-${arch}`;
   const archive = await fetchRuntime(target);
@@ -254,10 +268,13 @@ async function main() {
     check(args);
     return;
   }
+  const wantPlanning = Boolean(args.planningWheel || args.planning);
   if (args.version) await stage(args);
-  if (args.planningWheel) await stagePlanning(args);
-  if (!args.version && !args.planningWheel) {
-    throw new Error('nothing to stage: pass --version (yeaboi) and/or --planning-wheel');
+  if (wantPlanning) await stagePlanning(args);
+  if (!args.version && !wantPlanning) {
+    throw new Error(
+      'nothing to stage: pass --version (yeaboi) and/or --planning [--planning-wheel <path>]',
+    );
   }
 }
 

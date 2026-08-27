@@ -1,0 +1,24 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      {% if "python" in tech_stack_lower -%}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: pytest
+      {% endif -%}
+      {% if "node" in tech_stack_lower or "next" in tech_stack_lower -%}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm test
+      {% endif -%}
+      {% if not "python" in tech_stack_lower and not "node" in tech_stack_lower and not "next" in tech_stack_lower -%}
+      - run: echo "Configure your test runner here"
+      {% endif %}

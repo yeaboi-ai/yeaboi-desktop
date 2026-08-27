@@ -14,3 +14,7 @@ __pycache__/
 
 # Feature clips render here; only the spec in .demo/clips/ is committed.
 .demo/out/
+backend/.venv/
+backend/dist/
+backend/.pytest_cache/
+backend/**/__pycache__/

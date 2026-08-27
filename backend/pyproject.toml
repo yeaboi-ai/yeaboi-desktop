@@ -1,0 +1,104 @@
+[project]
+name = "planning-platform-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "python-dotenv>=1.0",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "redis>=5.0",
+    "pyjwt[crypto]>=2.9",
+    "httpx>=0.27",
+    "pydantic-settings>=2.0",
+    "anthropic>=0.40",
+    # livekit-api is pure Python (token minting, room admin) and is all the
+    # API server needs; the heavy agent runtime lives in the `voice` extra.
+    "livekit-api>=1.0",
+    # elevenlabs stays core: tts_service.py lazy-imports it whenever an
+    # ElevenLabs key is configured, voice pack installed or not.
+    "elevenlabs>=1.0",
+    # aiosqlite: the desktop's local mode runs the whole backend on SQLite.
+    "aiosqlite>=0.20",
+    "python-multipart>=0.0.9",
+    "google-genai>=1.0",
+    "openai>=1.0",
+    "jinja2>=3.1",
+    "PyGithub>=2.0",
+    "resend>=2.0",
+    "slowapi>=0.1",
+    "websockets>=13.0",
+    "cryptography>=43.0",
+    "pymupdf>=1.27.2.2",
+    "python-docx>=1.2.0",
+    "openpyxl>=3.1.5",
+    "python-magic>=0.4.27",
+    "pillow>=12.2.0",
+    "python-json-logger>=3.0",
+    "sentry-sdk[fastapi]>=2.0",
+    "prometheus-client>=0.20",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp>=1.20",
+    "opentelemetry-instrumentation-fastapi>=0.44b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.44b0",
+    "opentelemetry-instrumentation-httpx>=0.44b0",
+    "pyahocorasick>=2.3.0",
+    "boto3>=1.35",
+    "email-validator>=2.3.0",
+]
+
+[project.optional-dependencies]
+# The LiveKit agent runtime (backend/agent/worker.py) — a separate process
+# with ~200MB of deps (onnxruntime via silero, av, numpy). The desktop app
+# installs this on demand (voice pack) rather than shipping it; `make agent`
+# and Dockerfile.agent install it explicitly.
+voice = [
+    "livekit-agents>=1.4,<1.5",
+    "livekit-plugins-deepgram>=1.0",
+    "livekit-plugins-anthropic>=1.0",
+    "livekit-plugins-elevenlabs>=1.0",
+    "livekit-plugins-cartesia>=1.0",
+    "livekit-plugins-silero>=1.0",
+    "livekit-plugins-google>=1.0",
+    "livekit-plugins-tavus>=1.4,<1.5",
+    "numpy>=1.26",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-httpx>=0.35",
+    "ruff>=0.8",
+    "aiosqlite>=0.20",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The wheel the desktop app bundles (fetch-runtimes.mjs stages it into
+# resources/py-planning). Two top-level packages: `app` (the API server,
+# spawned as `python -m uvicorn app.main:create_app`) and `agent` (the LiveKit
+# worker, spawned as `python -m agent.worker` once the voice pack lands).
+# alembic rides inside the wheel at app/_alembic so local mode can stamp and
+# upgrade without a repo checkout (src/app/local_bootstrap.py checks there
+# first).
+[tool.hatch.build.targets.wheel]
+packages = ["src/app", "agent"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"alembic" = "app/_alembic/alembic"
+"alembic.ini" = "app/_alembic/alembic.ini"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

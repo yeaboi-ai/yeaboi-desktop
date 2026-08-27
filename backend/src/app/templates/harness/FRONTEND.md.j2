@@ -1,0 +1,25 @@
+# Frontend
+
+> Frontend architecture for {{ project_name }}.
+
+## Tech Stack
+
+{{ blueprint.tech_stack or "Tech stack not yet defined." }}
+
+## UI/UX
+
+{{ blueprint.ui_ux or "UI/UX not yet defined." }}
+
+## Conventions
+
+- Components in `src/components/`
+- Pages in `src/app/` (Next.js App Router) or `src/pages/`
+- Shared types in `src/types/`
+- API calls in `src/lib/api.ts`
+- No business logic in UI components — delegate to hooks/services
+
+## State Management
+
+- Server state: React Query or SWR
+- Local UI state: useState / useReducer
+- Global app state: Zustand (if needed)

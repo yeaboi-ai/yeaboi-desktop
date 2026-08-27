@@ -1,0 +1,26 @@
+# Security
+
+> Security and compliance requirements for {{ project_name }}.
+
+## Requirements
+
+{{ blueprint.security_compliance or "Security requirements not yet defined." }}
+
+## Principles
+
+- Least privilege — services only access what they need
+- Secrets in environment variables, never in code
+- Input validation on all public endpoints
+- Audit log for sensitive operations
+- Dependencies pinned and regularly updated
+
+## Authentication
+
+- JWTs expire in 1 hour, refresh tokens in 30 days
+- Rotate secrets on suspected compromise
+
+## Data
+
+- PII encrypted at rest
+- HTTPS everywhere
+- No sensitive data in logs
