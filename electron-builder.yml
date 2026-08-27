@@ -1,6 +1,7 @@
-# How the shell becomes an installable, signed application. There is no
-# bundled backend any more — the app is a pure client of the planning
-# platform's FastAPI (localhost in dev; packaging a backend is future work).
+# How the shell becomes an installable, signed, notarized application. The packaged
+# app is self-contained: two python-build-standalone runtimes and a livekit-server
+# ship as extraResources and are spawned from process.resourcesPath. Only a dev run
+# reaches for a backend it did not bring.
 
 appId: ai.yeaboi.desktop
 # productName is not repeated here: electron-builder reads it from
@@ -41,14 +42,30 @@ asar: true
 # electron-updater asks this repository what the latest version is, so it must
 # be the repository the release workflow publishes into — an installed app
 # pointed at the wrong one updates itself to nothing, silently, forever.
+# yeaboi-desktop is private and can host no installers anybody can download, so the
+# builds go to a public releases-only repo. This block is also written verbatim into
+# the packaged app-update.yml, which is what electron-updater polls: the publish
+# target and the update feed are one decision, and pointed apart an installed app
+# updates itself to nothing, silently, forever.
+#
+# draft, deliberately: --publish always uploads before the Gatekeeper assessment runs
+# and before the second arch exists. A draft is invisible until `gh release edit
+# --draft=false`, which is one command once both legs are green.
 publish:
   provider: github
   owner: yeaboi-ai
-  repo: yeaboi-desktop
+  repo: yeaboi-desktop-releases
   releaseType: draft
 
 mac:
   category: public.app-category.developer-tools
+  # No ${version} in the name. yeaboi.ai links these as
+  # /releases/latest/download/<asset>, which GitHub resolves only while the asset
+  # name is identical across releases — a versioned name 404s every download link
+  # on the site the day the next release ships. The arch is mandatory for the
+  # opposite reason: the default drops the suffix on x64, leaving a bare
+  # "yeaboi.ai.dmg" that reads like the one everybody should take.
+  artifactName: '${productName}-${arch}.${ext}'
   # The app is English-only; Electron's other 50-odd .lproj bundles are ~40 MB
   # of resources nothing reads.
   electronLanguages: [en, en-US]

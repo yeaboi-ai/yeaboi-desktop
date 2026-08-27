@@ -17,39 +17,51 @@ that is already on PyPI, named at release time.
 No pre-commit hooks here — commit normally. Trailer:
 
 ```
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+Name the model that did the work, rather than pinning a version this file then has to chase.
 
 ## Gate
 
-`make ship-gate` = `lint` → `format-check` → `test` → `build` → `contracts-check` → `tooling-check`
-→ `check-manifest` → `build-check`.
+There is no `make ship-gate` here, and no shared-tooling clone: the Makefile is this repo's own
+and stops at `help install dev build typecheck test icons pack dist clean`. The gate is what
+`ci.yml` runs, in three jobs:
+
+```
+npm run lint            # tsc --noEmit
+npm run format:check
+npm test                # vitest
+npm run build:check     # npm run build, then scripts/check-build.mjs over its output
+node scripts/gen-routes-manifest.mjs --check
+```
 
 - **`lint` is `typecheck`.** No ESLint in this tree, and never was. With strict TypeScript on,
   `tsc --noEmit` is what actually rejects code, so that is what the target honestly runs.
 - **Prettier is real**, and `.prettierignore` matters: `contracts/` is vendored byte-for-byte and
   the route manifest under it is generated, so reformatting either makes a `--check` unsatisfiable.
-- **Electron is never downloaded.** `ELECTRON_SKIP_BINARY_DOWNLOAD=1` in CI and in
-  `scripts/provision.sh`; nothing in the ordinary loop launches it. `make pack` fetches it.
-- **`build-check` exists because a bundler warning here is a hole in the app.** `npm run build`
+- **Electron is never downloaded in CI.** `ELECTRON_SKIP_BINARY_DOWNLOAD=1` in `ci.yml`; nothing
+  in the ordinary loop launches it. `make pack` fetches it.
+- **`build:check` exists because a bundler warning here is a hole in the app.** `npm run build`
   exits 0 on a `url()` it could not resolve — the asset is "resolved at runtime", where nothing
   resolves it. `@yeaboi-ai/design@1.0.0` shipped `fonts.css` without its three faces exactly that
   way, and the renderer fell back to the system font stack with every check green.
 
 ## Two contracts come from `yeaboi`
 
-`contracts/v1/` is **vendored**, pinned by sha in `.contracts-rev`. Never edit anything under
-`contracts/`; `make contracts-check` fails on an edited-in-place copy and prints a note (not a
-failure) when the pin is merely behind.
+`contracts/v1/` holds exactly one file here — `routes_manifest.json`. (`app_http.md` is the other
+half of the wire, but it lives in **yeaboi**; there is no vendored copy in this tree, and no
+`.contracts-rev` or `make contracts-sync` either. Do not go looking for them.)
 
-| File | Direction | What that means here |
-|---|---|---|
-| `app_http.md` | yeaboi → here | The wire. Changing it is a **yeaboi PR first**, then `make contracts-sync`. |
-| `routes_manifest.json` | here → yeaboi → here | Generated from `src/renderer/routes.json` by `npm run gen-manifest`, but **committed in yeaboi**, whose surface-parity suite reads it. |
+`routes_manifest.json` is **generated here and committed in both repos**: `npm run gen-manifest`
+writes it from `src/renderer/lib/yeaboi/routes.json`, and yeaboi's `test_surface_parity.py` and
+`test_tui_parity.py` read their copy to decide whether a capability reached the desktop.
 
-So a route change is: change `routes.json` here → `make gen-manifest` → open a small yeaboi PR with
-the regenerated manifest → merge it → `make contracts-sync` here. `make check-manifest` is red in
-between, which is the point: the two repos cannot silently disagree about what the app has.
+So a route change is: edit `routes.json` → `npm run gen-manifest` → commit here → open a small
+yeaboi PR carrying the regenerated manifest. `node scripts/gen-routes-manifest.mjs --check` (CI's
+`manifest` job) is red in between, which is the point: the two repos cannot silently disagree about
+what the app has. Never edit anything under `contracts/` by hand — `.prettierignore` exempts it so
+that a formatter cannot make the two copies differ.
 
 ## Brand assets are committed, not built
 
@@ -73,13 +85,33 @@ half a rename lands.
 
 ## Releasing
 
-`.github/workflows/release.yml` on a `v*` tag or a dispatch. Two things to know:
+`.github/workflows/release.yml`, **dispatch only**. Things to know:
 
 - **The version is an input, never derived from the tree.** `package.json` says `0.1.0` on `main`
   and the workflow stamps the real number at build time — a rebuild of last month's app must bundle
   last month's yeaboi.
+- **This repo carries no release tags.** The tag lives in `yeaboi-desktop-releases`, created when
+  the draft is published. There is deliberately no `push: tags` trigger: this clone shares an
+  object store with the Python repo and has carried 141 of its tags, any one of which would
+  otherwise start a signed build.
+- **Installers publish to `yeaboi-ai/yeaboi-desktop-releases`**, a public repo, because this one is
+  private. That needs `RELEASES_REPO_TOKEN` — a PAT scoped to that repo with Contents: write. The
+  default `GITHUB_TOKEN` cannot write to another repository, and a secret may not be named
+  `GITHUB_*`.
 - **`electron-builder.yml`'s `publish` block is what `electron-updater` polls.** Pointed at the
   wrong repository, an installed app updates itself to nothing, silently, forever.
+- **`--check` is what stops a green build shipping an empty app.** A missing `extraResources`
+  source is only a warning in electron-builder, so a build that staged nothing signs, notarizes
+  and publishes an installer that cannot start. Both staging scripts are run twice: once to stage,
+  once to `--check`.
+- **`mac.artifactName` carries no `${version}`.** yeaboi.ai links the dmgs through
+  `/releases/latest/download/<asset>`, which resolves only while the name is stable.
+- **The release is a draft until someone publishes it.** `--publish always` uploads before the
+  Gatekeeper assessment runs and before the second arch exists. Finish with
+  `gh release edit v<version> --repo yeaboi-ai/yeaboi-desktop-releases --draft=false`. Re-running
+  after publishing skips the uploads with only a warning — delete the release first.
+- **`latest-mac.yml` is merged after the fact.** The two mac legs each write one naming only their
+  own arch and the second upload replaces the first; the `update-metadata` job merges them back.
 
 ## Rebase conflicts
 
@@ -88,7 +120,7 @@ Nothing generated is committed here except the icon set and the vendored contrac
 | Path | What to do |
 |---|---|
 | `package-lock.json` | Take upstream, then re-run `npm install` for your own change and commit the result |
-| `contracts/**` | Take upstream, then `make contracts-sync` if you meant to move the pin |
+| `contracts/**` | Take upstream, then `npm run gen-manifest` if you meant to move the manifest |
 | `build/`, `resources/duck-*` | Take either side, then `make icons` — they are rendered, so neither side is authoritative |
 
 ## Clips
@@ -96,8 +128,8 @@ Nothing generated is committed here except the icon set and the vendored contrac
 A clip here is `kind: "page"` with an `electron:` block — the repo's `demo_spec.py` is the example,
 and its docstring lists the two prerequisites a plain `make install` does not satisfy:
 
-- **The Electron binary.** `scripts/provision.sh` sets `ELECTRON_SKIP_BINARY_DOWNLOAD=1` on
-  purpose; fetch it once with `node node_modules/electron/install.js`.
+- **The Electron binary.** CI sets `ELECTRON_SKIP_BINARY_DOWNLOAD=1` on purpose; if your tree has
+  no `node_modules/electron/dist`, fetch it once with `node node_modules/electron/install.js`.
 - **`YEABOI_DESKTOP_PYTHON`** must point at an interpreter that can `import yeaboi`. Without the
   `YEABOI_APP_READY` handshake the window only ever shows the splash duck — and a clip of the
   splash still passes verification, because verification proves a recording is alive, not correct.
