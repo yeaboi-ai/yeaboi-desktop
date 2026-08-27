@@ -1,21 +1,24 @@
 import { resolve } from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 
-// The renderer is a normal Vite ESM app — NOT one of the six committed IIFE
-// bundles. Those constraints (file://, tunnel CSP) do not apply inside
-// Electron; what does carry over is the design system, which arrives as the
-// published @yeaboi-ai/design (mirrored in tsconfig.json "paths").
-//
-// An alias rather than a bare import, because that package ships SOURCE: Vite
-// compiles it here exactly as it compiled the sibling directory this used to
-// point at, so moving it between repos changed where the files are and nothing
-// about how they are built.
+const renderer = resolve(import.meta.dirname, 'src/renderer');
+
+// The renderer is the planning UI as a React 19 SPA. It was written for
+// Next.js; rather than editing sixty files, the Next surface it touches is
+// aliased to small local shims (routing over react-router, identity over the
+// preload bridge). "use client" directives are inert string literals under
+// Vite and are left in place.
 const rendererAliases = {
-  react: 'preact/compat',
-  'react-dom/client': 'preact/compat/client',
-  'react-dom': 'preact/compat',
-  'react/jsx-runtime': 'preact/jsx-runtime',
+  '@': renderer,
+  // @yeaboi-ai/design ships SOURCE .tsx — Vite compiles it here (see esbuild
+  // note below). The alias pins the import root inside the package.
   '@design': resolve(import.meta.dirname, 'node_modules/@yeaboi-ai/design/design'),
+  'next/navigation': resolve(renderer, 'shims/next-navigation.ts'),
+  'next/link': resolve(renderer, 'shims/next-link.tsx'),
+  'next/dynamic': resolve(renderer, 'shims/next-dynamic.tsx'),
+  'next-auth/react': resolve(renderer, 'shims/next-auth.tsx'),
 };
 
 export default defineConfig({
@@ -35,24 +38,20 @@ export default defineConfig({
     },
   },
   renderer: {
+    plugins: [react(), tailwindcss()],
     // @yeaboi-ai/design ships SOURCE .tsx, and esbuild does not apply this
-    // project's tsconfig jsx settings to files under node_modules — it fell
-    // back to the classic transform, emitting React.createElement into a
-    // bundle that imports no React. The window came up blank on
-    // "React is not defined". Set it here, where it covers every file Vite
-    // transforms rather than only the ones tsconfig reaches.
+    // project's tsconfig jsx settings to files under node_modules — without
+    // this it falls back to the classic transform and the window comes up
+    // blank on "React is not defined". Set it here, where it covers every
+    // file Vite transforms rather than only the ones tsconfig reaches.
     esbuild: {
       jsx: 'automatic',
-      jsxImportSource: 'preact',
     },
     resolve: {
       alias: rendererAliases,
-      dedupe: ['preact'],
     },
     server: {
       fs: {
-        // The design system is a dependency now, so the dev server no longer
-        // needs to serve files from outside this package.
         allow: [import.meta.dirname],
       },
     },

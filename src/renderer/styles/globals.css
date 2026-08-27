@@ -1,0 +1,799 @@
+@import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
+/* react-resizable styles inlined — override default handle appearance */
+.react-resizable {
+  position: relative;
+}
+.react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  background: transparent;
+  background-image: none;
+}
+.react-resizable-handle-se { bottom: 0; right: 0; cursor: se-resize; }
+.react-resizable-handle-sw { bottom: 0; left: 0; cursor: sw-resize; }
+
+@custom-variant dark (&:is([data-color-scheme="dark"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ── Theme tokens ─────────────────────────────────────────────────────
+   Light defaults live on :root. The active theme is applied by the
+   ThemeProvider via inline CSS variables on <html>, which override
+   these. The data-color-scheme attribute drives the `dark:` variant.
+   These values are kept in sync with frontend/lib/theme/presets.ts. */
+
+:root {
+  --radius: 0.5rem;
+
+  --background: #fafaf9;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #b8821f;
+  --primary-foreground: #fafaf9;
+  --secondary: #f1f1ef;
+  --secondary-foreground: #171717;
+  --muted: #f1f1ef;
+  --muted-foreground: #6b6b6b;
+  --accent: #f1f1ef;
+  --accent-foreground: #171717;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafaf9;
+  --success: #059669;
+  --success-foreground: #fafaf9;
+  --warning: #b45309;
+  --warning-foreground: #fafaf9;
+  --info: #2563eb;
+  --info-foreground: #fafaf9;
+  --border: #e5e5e3;
+  --input: #e5e5e3;
+  --ring: #b8821f;
+
+  --chart-1: #b8821f;
+  --chart-2: #2563eb;
+  --chart-3: #059669;
+  --chart-4: #db2777;
+  --chart-5: #7c3aed;
+  --chart-6: #ea580c;
+  --chart-7: #0891b2;
+  --chart-8: #ca8a04;
+  --chart-grid: rgba(0,0,0,0.06);
+  --chart-axis: rgba(0,0,0,0.4);
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-fg: #171717;
+
+  --canvas-bg: #fafaf9;
+  --canvas-grid: rgba(0,0,0,0.04);
+  --canvas-grid-strong: rgba(0,0,0,0.08);
+  --canvas-node-bg: #ffffff;
+  --canvas-node-fg: #171717;
+  --canvas-node-border: #e5e5e3;
+  --canvas-edge-default: rgba(0,0,0,0.3);
+  --canvas-edge-selected: #b8821f;
+  --canvas-edge-hover: rgba(184,130,31,0.7);
+  --canvas-handle: #b8821f;
+  --canvas-selection-fill: rgba(184,130,31,0.06);
+  --canvas-selection-stroke: rgba(184,130,31,0.4);
+  --canvas-minimap-mask: rgba(255,255,255,0.6);
+  --canvas-minimap-node: rgba(0,0,0,0.12);
+
+  --livekit-tile-bg: #171717;
+  --livekit-screen-bg: #000000;
+  --selection-bg: rgba(184,130,31,0.25);
+  --selection-fg: #171717;
+  --scrollbar-thumb: #cccccc;
+  --scrollbar-thumb-hover: #999999;
+  --grid-placeholder-bg: rgba(184,130,31,0.12);
+  --grid-placeholder-border: rgba(184,130,31,0.3);
+  --glow-primary-shadow: 0 0 0 1px rgba(184,130,31,0.3), 0 4px 24px rgba(184,130,31,0.08);
+  --wireframe-bg: #fafaf9;
+  --wireframe-fg: #171717;
+  --wireframe-accent: #b8821f;
+}
+
+[data-color-scheme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #f0f0f0;
+  --card: #121212;
+  --card-foreground: #f0f0f0;
+  --popover: #0f0f0f;
+  --popover-foreground: #f0f0f0;
+  --primary: #e5a630;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #f0f0f0;
+  --muted: #1c1c1c;
+  --muted-foreground: #858585;
+  --accent: #1c1c1c;
+  --accent-foreground: #f0f0f0;
+  --destructive: #e5484d;
+  --destructive-foreground: #f0f0f0;
+  --success: #34d399;
+  --success-foreground: #0a0a0a;
+  --warning: #f59e0b;
+  --warning-foreground: #0a0a0a;
+  --info: #60a5fa;
+  --info-foreground: #0a0a0a;
+  --border: #222222;
+  --input: #222222;
+  --ring: #e5a630;
+
+  --chart-1: #e5a630;
+  --chart-2: #60a5fa;
+  --chart-3: #34d399;
+  --chart-4: #f472b6;
+  --chart-5: #a78bfa;
+  --chart-6: #fb923c;
+  --chart-7: #22d3ee;
+  --chart-8: #fbbf24;
+  --chart-grid: rgba(255,255,255,0.06);
+  --chart-axis: rgba(255,255,255,0.4);
+  --chart-tooltip-bg: #121212;
+  --chart-tooltip-fg: #f0f0f0;
+
+  --canvas-bg: #0a0a0a;
+  --canvas-grid: rgba(255,255,255,0.04);
+  --canvas-grid-strong: rgba(255,255,255,0.08);
+  --canvas-node-bg: #121212;
+  --canvas-node-fg: #f0f0f0;
+  --canvas-node-border: #222222;
+  --canvas-edge-default: rgba(255,255,255,0.25);
+  --canvas-edge-selected: #e5a630;
+  --canvas-edge-hover: rgba(229,166,48,0.6);
+  --canvas-handle: #e5a630;
+  --canvas-selection-fill: rgba(229,166,48,0.04);
+  --canvas-selection-stroke: rgba(229,166,48,0.35);
+  --canvas-minimap-mask: rgba(0,0,0,0.6);
+  --canvas-minimap-node: rgba(255,255,255,0.08);
+
+  --livekit-tile-bg: #0a0a0a;
+  --livekit-screen-bg: #000000;
+  --selection-bg: rgba(229,166,48,0.25);
+  --selection-fg: #f0f0f0;
+  --scrollbar-thumb: #333333;
+  --scrollbar-thumb-hover: #474747;
+  --grid-placeholder-bg: rgba(229,166,48,0.12);
+  --grid-placeholder-border: rgba(229,166,48,0.3);
+  --glow-primary-shadow: 0 0 0 1px rgba(229,166,48,0.3), 0 4px 24px rgba(229,166,48,0.08);
+  --wireframe-bg: #0a0a0a;
+  --wireframe-fg: #f0f0f0;
+  --wireframe-accent: #e5a630;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Fix cursor on all interactive elements */
+button, [role="button"], a, input[type="submit"], input[type="button"], select, summary {
+  cursor: pointer;
+}
+
+button:disabled, [role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Subtle grain texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* ── Custom scrollbar ────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Text selection ──────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+/* ── Typography helpers ──────────────────────────────────────────────── */
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+/* ── Animation utilities ─────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 180ms; }
+.stagger-5 { animation-delay: 240ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* ── Card appearance animation ────────────────────────────────────────── */
+
+@keyframes card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── LiveKit participant tile — premium video ───────────────────────── */
+
+.lk-participant-tile {
+  width: 100% !important;
+  height: 100% !important;
+  background: var(--livekit-tile-bg) !important;
+}
+
+.lk-participant-tile video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Screen-share tiles must show the entire shared content (letterboxed),
+   not crop it. `cover` is correct for cameras (faces), wrong for screens. */
+.screen-share-tile video,
+.lk-participant-tile[data-lk-source="screen_share"] video {
+  object-fit: contain !important;
+  background: var(--livekit-screen-bg) !important;
+}
+
+/* Hide default LiveKit name overlay — we render our own */
+.lk-participant-tile .lk-participant-name {
+  display: none !important;
+}
+
+/* Hide default LiveKit mute indicators — we render our own */
+.lk-track-muted-indicator-microphone {
+  display: none !important;
+}
+
+.lk-track-muted-indicator-camera {
+  display: none !important;
+}
+
+/* Clean up default LiveKit focus indicator */
+.lk-participant-tile .lk-focus-toggle-button {
+  display: none !important;
+}
+
+/* Smooth connection state overlay */
+.lk-connection-quality {
+  display: none !important;
+}
+
+/* ── Speaking animation bars ─────────────────────────────────────────── */
+
+@keyframes speak-bar {
+  0% { height: 4px; }
+  100% { height: 12px; }
+}
+
+/* ── Primary accent glow ─────────────────────────────────────────────── */
+
+.glow-amber {
+  box-shadow: var(--glow-primary-shadow);
+}
+
+/* ── Hairline border ─────────────────────────────────────────────────── */
+
+.border-hairline {
+  border: 1px solid var(--border);
+}
+
+/* ── Chat widget animated border ────────────────────────────────────── */
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes chipFloat {
+  0% { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  60% { opacity: 0.7; filter: blur(0px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+}
+
+/* Travelling shimmer segment for indeterminate loading bars. */
+@keyframes loader-shimmer-travel {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+
+/* ── react-grid-layout overrides ────────────────────────────────────── */
+
+.react-grid-item.react-grid-placeholder {
+  background: var(--grid-placeholder-bg) !important;
+  border: 1px dashed var(--grid-placeholder-border) !important;
+  border-radius: 0.5rem;
+  opacity: 1 !important;
+}
+
+.react-grid-item > .react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 20;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 0.6;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  display: none !important;
+}
+
+.react-grid-item > .react-resizable-handle-se {
+  width: 16px !important;
+  height: 16px !important;
+  bottom: 6px !important;
+  right: 6px !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Ccircle cx='8' cy='8' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='4' cy='8' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='8' cy='4' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3C/svg%3E") no-repeat center !important;
+  transform: none !important;
+}
+
+.react-grid-item > .react-resizable-handle-sw {
+  width: 16px !important;
+  height: 16px !important;
+  bottom: 6px !important;
+  left: 6px !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Ccircle cx='2' cy='8' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='6' cy='8' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='2' cy='4' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3C/svg%3E") no-repeat center !important;
+  transform: none !important;
+}
+
+.project-layout-grid .react-grid-item {
+  transition: all 200ms ease;
+}
+
+/* W4.1.5 — hand-raise badge pulse on participant tile.
+   Two-stage glow so the chip pops sharply on raise then settles into a
+   gentle breathing ring. Honors prefers-reduced-motion. */
+@keyframes raise-hand-tile-pulse {
+  0% {
+    transform: scale(0.7);
+    box-shadow: 0 0 0 0 rgba(252, 211, 77, 0);
+  }
+  20% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 8px rgba(252, 211, 77, 0.35);
+  }
+  40% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(252, 211, 77, 0);
+  }
+  70% {
+    box-shadow: 0 0 0 4px rgba(252, 211, 77, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(252, 211, 77, 0);
+  }
+}
+
+.raise-hand-tile-pulse {
+  animation: raise-hand-tile-pulse 1.6s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .raise-hand-tile-pulse {
+    animation: none;
+  }
+  [style*="loader-shimmer-travel"],
+  [class*="loader-shimmer-travel"] {
+    animation: none !important;
+    opacity: 0.4;
+  }
+}
+
+/* ── React Flow (canvas) ─────────────────────────────────────────────
+   Theme-aware overrides moved out of CanvasEngine.tsx so they apply
+   anywhere React Flow is mounted. Hardcoded colors replaced with vars. */
+
+.react-flow {
+  background: var(--canvas-bg) !important;
+}
+.react-flow__pane { cursor: default !important; }
+.react-flow__node { cursor: grab !important; }
+.react-flow__node:active { cursor: grabbing !important; }
+.react-flow__node:hover { z-index: 10 !important; }
+.react-flow__edge { cursor: pointer !important; }
+.react-flow__edge.selected path {
+  stroke: var(--canvas-edge-selected) !important;
+  stroke-width: 2.5 !important;
+}
+.react-flow__edge path {
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+.react-flow__handle { cursor: crosshair !important; }
+
+.react-flow__selection {
+  background: var(--canvas-selection-fill) !important;
+  border: 1.5px solid var(--canvas-selection-stroke) !important;
+  border-radius: 2px !important;
+}
+.react-flow__nodesselection-rect {
+  background: transparent !important;
+  border: none !important;
+}
+
+.react-flow__minimap-mask { fill: var(--canvas-minimap-mask) !important; }
+.react-flow__minimap-node {
+  rx: 3;
+  ry: 3;
+  stroke: var(--canvas-minimap-node);
+  stroke-width: 0.5;
+}
+.react-flow__minimap svg { border-radius: 8px; }
+.edge-draw-in path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: edge-draw 0.6s ease-out forwards;
+}
+@keyframes edge-draw { to { stroke-dashoffset: 0; } }
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* Glossary popover micro-delight                                            */
+/* Used by GlossaryTerm to make the in-chat term explainer feel a touch      */
+/* more playful: gentle pulse on the trigger, springy popover entrance,      */
+/* arrow wiggle on hover, confetti burst on "Got it".                        */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/* Attention pulse on the underlined term while hovered. */
+@keyframes glossary-term-pulse {
+  0%, 100% { transform: translateY(0);    opacity: 0.95; }
+  50%      { transform: translateY(-1px); opacity: 1;    }
+}
+.glossary-term-trigger {
+  display: inline-block;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.glossary-term-trigger:hover {
+  transform: translateY(-1px);
+  animation: glossary-term-pulse 1.1s ease-in-out infinite;
+}
+
+/* Tiny wiggle on the external-link arrow when its link is hovered. */
+@keyframes glossary-arrow-wiggle {
+  0%, 100% { transform: translate(0, 0)        rotate(0deg); }
+  25%      { transform: translate(1px, -1px)   rotate(8deg); }
+  75%      { transform: translate(1px, 1px)    rotate(-6deg); }
+}
+.glossary-learn-more:hover .glossary-arrow {
+  animation: glossary-arrow-wiggle 0.45s ease-in-out;
+}
+
+/* Spring-in entrance for the glossary popover. Overrides the default fade   */
+/* on Base UI's Popover — uses a back-ease so the popup overshoots slightly. */
+.glossary-popover[data-starting-style] {
+  opacity: 0;
+  transform: scale(0.88);
+}
+.glossary-popover {
+  transition: opacity 200ms ease-out,
+              transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.glossary-popover[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96);
+  transition-duration: 120ms;
+}
+
+/* 3-particle confetti burst on "Got it". Three dots flying outward at       */
+/* 120° intervals and fading. Triggered by toggling .is-bursting on the      */
+/* container. CSS-only — no canvas, no deps.                                 */
+@keyframes glossary-confetti-up {
+  0%   { transform: translate(-50%, -50%) translate(0, 0)        scale(0.4); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(0, -38px)    scale(1.2); opacity: 0; }
+}
+@keyframes glossary-confetti-left {
+  0%   { transform: translate(-50%, -50%) translate(0, 0)        scale(0.4); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(-34px, 20px) scale(1.2); opacity: 0; }
+}
+@keyframes glossary-confetti-right {
+  0%   { transform: translate(-50%, -50%) translate(0, 0)        scale(0.4); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(34px, 20px)  scale(1.2); opacity: 0; }
+}
+.glossary-confetti-host {
+  position: relative;
+  display: inline-block;
+}
+.glossary-confetti-host .glossary-confetti-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #e5a630;
+  box-shadow: 0 0 8px rgba(229, 166, 48, 0.65);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+}
+.glossary-confetti-host .glossary-confetti-piece:nth-child(2) { background: #f6c453; }
+.glossary-confetti-host .glossary-confetti-piece:nth-child(3) { background: #ffd97a; }
+.glossary-confetti-host.is-bursting .glossary-confetti-piece:nth-child(1) {
+  animation: glossary-confetti-up    0.75s ease-out forwards;
+}
+.glossary-confetti-host.is-bursting .glossary-confetti-piece:nth-child(2) {
+  animation: glossary-confetti-left  0.75s ease-out forwards;
+}
+.glossary-confetti-host.is-bursting .glossary-confetti-piece:nth-child(3) {
+  animation: glossary-confetti-right 0.75s ease-out forwards;
+}
+
+/* Respect users who prefer reduced motion — disable pulse, wiggle, spring,  */
+/* and confetti animations so the popover behaves like the static design.    */
+@media (prefers-reduced-motion: reduce) {
+  .glossary-term-trigger:hover,
+  .glossary-learn-more:hover .glossary-arrow,
+  .glossary-confetti-host.is-bursting .glossary-confetti-piece {
+    animation: none;
+  }
+  .glossary-popover {
+    transition: opacity 100ms ease-out;
+  }
+  .glossary-popover[data-starting-style],
+  .glossary-popover[data-ending-style] {
+    transform: none;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* Rich text editor (Tiptap) — scoped typography for ticket descriptions    */
+/* and comments. Tailwind's preflight strips heading/list/blockquote        */
+/* defaults, so we restyle everything inside `.tiptap-content`. Keep these  */
+/* rules narrow so they don't bleed into the rest of the app.               */
+/* ───────────────────────────────────────────────────────────────────────── */
+.tiptap-content {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--foreground);
+}
+.tiptap-content > * + * { margin-top: 0.75em; }
+.tiptap-content p { margin: 0; }
+.tiptap-content p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.tiptap-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  margin-top: 1.25em;
+}
+.tiptap-content h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-top: 1em;
+}
+.tiptap-content h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 0.875em;
+}
+.tiptap-content strong { font-weight: 600; }
+.tiptap-content em { font-style: italic; }
+.tiptap-content s { text-decoration: line-through; }
+.tiptap-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tiptap-content a:hover { opacity: 0.8; }
+.tiptap-content ul,
+.tiptap-content ol {
+  padding-left: 1.5rem;
+  margin: 0.25em 0;
+}
+.tiptap-content ul { list-style: disc; }
+.tiptap-content ol { list-style: decimal; }
+.tiptap-content li > p { display: inline; }
+.tiptap-content li + li { margin-top: 0.25em; }
+.tiptap-content blockquote {
+  border-left: 3px solid var(--border);
+  padding: 0.25rem 0 0.25rem 0.875rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin: 0.5em 0;
+}
+.tiptap-content code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.tiptap-content pre {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 0.875rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  line-height: 1.5;
+  margin: 0.5em 0;
+  white-space: pre;
+}
+.tiptap-content pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  white-space: pre;
+}
+.tiptap-content hr {
+  height: 0;
+  border: 0 !important;
+  border-top: 1px solid var(--border) !important;
+  margin: 1.25em 0;
+}
+.tiptap-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 0.5em 0;
+  display: block;
+}
+.tiptap-content img.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.tiptap-content:focus { outline: none; }
+

@@ -1,5 +1,4 @@
-// The duck's arbiter and the beta-gate route map. Everything else in
-// ambience.ts is a call, which the route tests cover on the Python side.
+// The duck's arbiter — pure clock logic, ported with the duck.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -7,8 +6,7 @@ import {
   HOLD_MS,
   PRIORITY_COACH,
   PRIORITY_EVENT,
-  betaKeyFor,
-} from '../src/renderer/ambience';
+} from '../src/renderer/lib/duck-voice';
 
 describe('DuckVoice', () => {
   it('takes a line and shows it', () => {
@@ -85,23 +83,3 @@ describe('DuckVoice', () => {
   });
 });
 
-describe('betaKeyFor', () => {
-  it('names the gate a beta mode needs', () => {
-    expect(betaKeyFor('/humans/ship')).toBe('ship');
-    expect(betaKeyFor('/agents/advisor')).toBe('agent-advisor');
-  });
-
-  it("covers a mode's sub-pages — the gate is about the mode", () => {
-    expect(betaKeyFor('/humans/ship/run')).toBe('ship');
-    expect(betaKeyFor('/humans/performance/engineer')).toBe('performance');
-  });
-
-  it('is empty off the gated modes', () => {
-    expect(betaKeyFor('/humans/standup')).toBe('');
-    expect(betaKeyFor('/home')).toBe('');
-  });
-
-  it('does not gate a route that merely starts with the same letters', () => {
-    expect(betaKeyFor('/humans/shipping-forecast')).toBe('');
-  });
-});

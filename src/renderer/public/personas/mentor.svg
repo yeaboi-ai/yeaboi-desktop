@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0e2d1a"/><stop offset="100%" stop-color="#151f1a"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#10b981"/></linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#bg)"/>
+  <circle cx="100" cy="78" r="32" fill="url(#accent)" opacity="0.12"/>
+  <circle cx="100" cy="78" r="24" fill="url(#accent)" opacity="0.2"/>
+  <!-- Lightbulb icon -->
+  <path d="M100 58a16 16 0 0110 28.5V92a4 4 0 01-4 4h-12a4 4 0 01-4-4v-5.5A16 16 0 01100 58z" stroke="#34d399" stroke-width="2.5" fill="none"/>
+  <line x1="94" y1="82" x2="106" y2="82" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="94" y1="87" x2="106" y2="87" stroke="#34d399" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+  <text x="100" y="148" text-anchor="middle" fill="#34d399" font-family="system-ui" font-size="16" font-weight="600" opacity="0.7">MENTOR</text>
+</svg>
