@@ -47,6 +47,8 @@ mac:
   extendInfo:
     # The duck climbs the Dock by asking the Dock where its icons are.
     NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it.
+    NSMicrophoneUsageDescription: yeaboi uses the microphone for voice calls in planning sessions and for on-device dictation.
+    NSCameraUsageDescription: yeaboi uses the camera for video tiles in planning-session calls.
 
 dmg:
   background: build/dmg-background.png

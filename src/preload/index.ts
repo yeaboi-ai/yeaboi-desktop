@@ -52,6 +52,13 @@ export interface YeaboiBridge {
   onEvent: (callback: (event: unknown) => void) => void;
   /** Open one live retro/poker board in its own top-level window, by id. */
   openBoard: (boardId: string) => Promise<unknown>;
+  /** Screenshare: main wants a source picked; the renderer lists sources,
+   *  draws the picker, and answers with the chosen id ('' = dismissed). */
+  onCaptureRequest: (callback: () => void) => void;
+  listCaptureSources: () => Promise<
+    { id: string; name: string; thumbnail: string; kind: 'screen' | 'window' }[]
+  >;
+  pickCaptureSource: (sourceId: string) => Promise<unknown>;
   /** Main asking the app to show a route — the tray, or a click on the duck. */
   onNavigate: (callback: (route: string) => void) => void;
   /** The tray asking for the About panel, which is a modal and not a route. */
@@ -103,6 +110,11 @@ const bridge: YeaboiBridge = {
     ipcRenderer.on('app:event', (_event, payload: unknown) => callback(payload));
   },
   openBoard: (boardId) => ipcRenderer.invoke('boards:open', boardId),
+  onCaptureRequest: (callback) => {
+    ipcRenderer.on('capture:request', () => callback());
+  },
+  listCaptureSources: () => ipcRenderer.invoke('capture:list-sources'),
+  pickCaptureSource: (sourceId) => ipcRenderer.invoke('capture:pick', sourceId),
   onNavigate: (callback) => {
     ipcRenderer.on('app:navigate', (_event, route: string) => callback(route));
   },

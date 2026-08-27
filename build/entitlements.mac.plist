@@ -6,7 +6,10 @@
 
   JIT and unsigned executable memory: V8.
   Network client: the app talks to the local planning backend.
+  Network server: the bundled backends and LiveKit listen on loopback/LAN.
   Apple events: the desktop duck asks the Dock where its icons are.
+  Microphone and camera: voice/video calls in planning sessions, and
+  on-device dictation.
 -->
 <plist version="1.0">
 <dict>
@@ -16,7 +19,13 @@
   <true/>
   <key>com.apple.security.network.client</key>
   <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
   <key>com.apple.security.automation.apple-events</key>
+  <true/>
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <key>com.apple.security.device.camera</key>
   <true/>
 </dict>
 </plist>

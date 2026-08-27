@@ -21,7 +21,9 @@ import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
 import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
+import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
+import { LivekitSidecar } from './livekit';
 import { Pet, type PetNotice } from './pet';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { PlanningSidecar } from './planning';
@@ -35,6 +37,7 @@ import { Updater } from './updater';
 const settings = new Settings();
 const sidecar = new Sidecar();
 const planning = new PlanningSidecar();
+const livekit = new LivekitSidecar();
 const events = new EventReader(sidecar);
 const pet = new Pet();
 const updater = new Updater();
@@ -135,6 +138,18 @@ if (!gotLock) {
         `[planning] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}${state.kind === 'ready' ? ` at ${state.url}` : ''}`,
       );
     });
+
+    // LiveKit — voice/video calls. Optional: 'down' just disables calls.
+    void livekit.start();
+    livekit.onState((state) => {
+      console.log(
+        `[livekit] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}${state.kind === 'ready' && state.external ? ' (external)' : ''}`,
+      );
+    });
+    registerCapture(session.defaultSession, () => {
+      mainWindow?.webContents.send('capture:request');
+    });
+    void ensureMediaAccess();
     installAppScheme(join(import.meta.dirname, '../renderer'));
     installPermissionHandlers(
       (listener) => app.on('session-created', listener),
@@ -260,7 +275,7 @@ if (!gotLock) {
     pet.hide();
     events.stop();
     tray?.destroy();
-    void Promise.allSettled([planning.stop(), sidecar.stop()]).finally(() => {
+    void Promise.allSettled([livekit.stop(), planning.stop(), sidecar.stop()]).finally(() => {
       cleanShutdown = true;
       app.quit();
     });

@@ -29,6 +29,11 @@ interface YeaboiBridge {
   onBackendState: (callback: (state: unknown) => void) => void;
   onEvent: (callback: (event: unknown) => void) => void;
   openBoard: (boardId: string) => Promise<unknown>;
+  onCaptureRequest: (callback: () => void) => void;
+  listCaptureSources: () => Promise<
+    { id: string; name: string; thumbnail: string; kind: 'screen' | 'window' }[]
+  >;
+  pickCaptureSource: (sourceId: string) => Promise<unknown>;
   onNavigate: (callback: (route: string) => void) => void;
   onAbout: (callback: () => void) => void;
   appMeta: () => Promise<{
