@@ -377,6 +377,15 @@ body::before {
 
 /* ── Chat widget animated border ────────────────────────────────────── */
 
+/* The duck as a small UI mark. The sprite is 128px and the primitive sets
+   `image-rendering: pixelated` so it stays blocky when it scales UP; every mark
+   scales DOWN, where pixelated is nearest-neighbour and the sprite shreds.
+   `span[data-duck-mark] img` is (0,1,2) — it outranks the module's `.duck img`
+   without !important. See components/brand/duck.tsx. */
+span[data-duck-mark] img {
+  image-rendering: auto;
+}
+
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);

@@ -1,23 +1,32 @@
 'use client';
 
+// The chips that float above the bar before anything is typed.
+//
+// They come from the backend per screen (`GET /api/niko/suggestions?route=`),
+// so what is offered on /agents/usage differs from /humans/retro. The glyph is
+// the one deviation from the platform this was ported from: the payload already
+// carries an `icon`, and yeaboi.ai's test_niko_suggestions.py pins that
+// vocabulary against ICON_MAP below — dropping it would leave a tested contract
+// with nothing reading it.
+
 import {
-  Plus,
-  BarChart3,
-  Compass,
-  Play,
-  ShieldCheck,
-  Layout,
-  PlusSquare,
-  ArrowUpDown,
-  Calendar,
-  UserPlus,
-  FilePlus,
-  Users,
-  Layers,
   AlertTriangle,
-  TrendingUp,
+  ArrowUpDown,
+  BarChart3,
   Bell,
+  Calendar,
+  Compass,
+  FilePlus,
   Info,
+  Layers,
+  Layout,
+  Play,
+  Plus,
+  PlusSquare,
+  ShieldCheck,
+  TrendingUp,
+  UserPlus,
+  Users,
 } from 'lucide-react';
 import type { NikoMagicPrompt } from '@/hooks/use-niko';
 
@@ -44,26 +53,41 @@ const ICON_MAP: Record<string, React.ElementType> = {
 interface NikoMagicChipsProps {
   prompts: NikoMagicPrompt[];
   onSelect: (prompt: string) => void;
+  /** Chips duck out of the way when the slash palette takes the same space. */
+  hidden?: boolean;
 }
 
-export function NikoMagicChips({ prompts, onSelect }: NikoMagicChipsProps) {
+export function NikoMagicChips({ prompts, onSelect, hidden }: NikoMagicChipsProps) {
   if (!prompts.length) return null;
 
   return (
-    <div className="flex flex-col gap-1.5 px-1">
-      <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider px-1">
-        Quick actions
-      </p>
-      {prompts.map((p) => {
-        const Icon = ICON_MAP[p.icon || ''] || Compass;
+    <div
+      className="absolute left-1/2 flex items-center justify-center gap-2.5"
+      style={{
+        bottom: 'calc(100% + 10px)',
+        transition: 'opacity 0.4s ease, transform 0.4s ease',
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? 'none' : 'auto',
+        transform: hidden ? 'translateX(-50%) translateY(8px)' : 'translateX(-50%)',
+      }}
+    >
+      {prompts.map((prompt, i) => {
+        const Icon = ICON_MAP[prompt.icon || ''] || Compass;
         return (
           <button
-            key={p.prompt}
-            onClick={() => onSelect(p.prompt)}
-            className="flex items-center gap-2 rounded-lg border border-border/40 bg-muted/20 px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
+            key={prompt.prompt}
+            onClick={() => onSelect(prompt.prompt)}
+            title={prompt.prompt}
+            className="flex items-center gap-1.5 rounded-full border border-border/60 bg-foreground/[0.04] px-3.5 py-1.5 text-[11px] font-body whitespace-nowrap text-muted-foreground transition-all duration-300 hover:border-primary/30 hover:text-foreground/90 hover:shadow-lg hover:shadow-primary/10"
+            style={{
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              animationDelay: `${i * 150}ms`,
+              animation: 'chipFloat 0.8s ease-out both',
+            }}
           >
-            <Icon className="size-3.5 shrink-0 text-primary/60" />
-            <span>{p.label}</span>
+            <Icon className="size-3 shrink-0 text-primary/60" />
+            <span>{prompt.label}</span>
           </button>
         );
       })}
