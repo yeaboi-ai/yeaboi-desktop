@@ -10,6 +10,12 @@ import GlobalBoardPage from '@/pages/board-page';
 import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
+import AgentsPage from '@/pages/yeaboi/agents/agents-page';
+import AnalysisPage from '@/pages/yeaboi/analysis/analysis-page';
+import AnalysisResultsPage from '@/pages/yeaboi/analysis/analysis-results-page';
+import AnalysisSetupPage from '@/pages/yeaboi/analysis/analysis-setup-page';
+import CeremoniesPage from '@/pages/yeaboi/ceremonies/ceremonies-page';
+import CeremoniesSlackPage from '@/pages/yeaboi/ceremonies/ceremonies-slack-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/yeaboi/home-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
@@ -18,6 +24,23 @@ import PlanPage from '@/pages/yeaboi/planning/plan-page';
 import PlanningPage from '@/pages/yeaboi/planning/planning-page';
 import RoadmapPage from '@/pages/yeaboi/planning/roadmap-page';
 import PlanningSessionsPage from '@/pages/yeaboi/planning/sessions-page';
+import EngineerPage from '@/pages/yeaboi/performance/engineer-page';
+import PerformancePage from '@/pages/yeaboi/performance/performance-page';
+import PokerBoardPage from '@/pages/yeaboi/poker/poker-board-page';
+import PokerPage from '@/pages/yeaboi/poker/poker-page';
+import PokerSetupPage from '@/pages/yeaboi/poker/poker-setup-page';
+import ProvenancePage from '@/pages/yeaboi/provenance-page';
+import ReportingPage from '@/pages/yeaboi/reporting/reporting-page';
+import ReportingSetupPage from '@/pages/yeaboi/reporting/reporting-setup-page';
+import ReportingStylePage from '@/pages/yeaboi/reporting/reporting-style-page';
+import RetroBoardPage from '@/pages/yeaboi/retro/retro-board-page';
+import RetroPage from '@/pages/yeaboi/retro/retro-page';
+import StandupPage from '@/pages/yeaboi/standup/standup-page';
+import StandupReviewPage from '@/pages/yeaboi/standup/standup-review-page';
+import StandupSchedulePage from '@/pages/yeaboi/standup/standup-schedule-page';
+import StandupSetupPage from '@/pages/yeaboi/standup/standup-setup-page';
+import SetupPage from '@/pages/yeaboi/settings/setup-page';
+import YeaboiSettingsPage from '@/pages/yeaboi/settings/yeaboi-settings-page';
 import ShipPage from '@/pages/yeaboi/ship/ship-page';
 import ShipRunPage from '@/pages/yeaboi/ship/ship-run-page';
 import UsagePage from '@/pages/yeaboi/usage-page';
@@ -87,6 +110,34 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/humans/planning/roadmap': <RoadmapPage />,
   '/humans/ship': <ShipPage />,
   '/humans/ship/run': <ShipRunPage />,
+  '/humans/analysis': <AnalysisPage />,
+  '/humans/analysis/new': <AnalysisSetupPage />,
+  '/humans/analysis/results': <AnalysisResultsPage />,
+  '/humans/standup': <StandupPage />,
+  '/humans/standup/setup': <StandupSetupPage />,
+  '/humans/standup/schedule': <StandupSchedulePage />,
+  '/humans/standup/review': <StandupReviewPage />,
+  '/humans/reporting': <ReportingPage />,
+  '/humans/reporting/new': <ReportingSetupPage />,
+  '/humans/reporting/style': <ReportingStylePage />,
+  '/humans/performance': <PerformancePage />,
+  '/humans/performance/engineer': <EngineerPage />,
+  '/humans/retro': <RetroPage />,
+  '/humans/retro/board': <RetroBoardPage />,
+  '/humans/poker': <PokerPage />,
+  '/humans/poker/new': <PokerSetupPage />,
+  '/humans/poker/board': <PokerBoardPage />,
+  '/agents/usage': <AgentsPage />,
+  '/agents/advisor': <AgentsPage />,
+  '/agents/standup': <AgentsPage />,
+  '/agents/security': <AgentsPage />,
+  '/ceremonies': <CeremoniesPage />,
+  '/ceremonies/slack': <CeremoniesSlackPage />,
+  '/provenance': <ProvenancePage />,
+  '/settings/credentials': <YeaboiSettingsPage />,
+  '/settings/sharing': <YeaboiSettingsPage />,
+  '/settings/system': <YeaboiSettingsPage />,
+  '/setup': <SetupPage />,
 };
 
 // Registry paths the planning routes below already serve, and the non-route

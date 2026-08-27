@@ -23,7 +23,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "pack": "electron-builder --dir --publish never",
-    "dist": "electron-builder --publish never"
+    "dist": "electron-builder --publish never",
+    "gen-manifest": "node scripts/gen-routes-manifest.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
