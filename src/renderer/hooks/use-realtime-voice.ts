@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useScreensaverSuppression } from '@/hooks/use-screensaver-suppression';
 import { logger } from '@/lib/logger';
 
 type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
@@ -42,6 +43,10 @@ export function useRealtimeVoice({
   const [status, setStatus] = useState<RealtimeVoiceStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Talking to the app is not being away from it, and a voice session sees no
+  // pointer or key events at all — without this the saver covers a live mic.
+  useScreensaverSuppression(status === 'connecting' || status === 'connected');
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
