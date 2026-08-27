@@ -30,7 +30,7 @@ export function DuckChrome() {
   }, [voice]);
 
   return (
-    <div className="pointer-events-none fixed bottom-4 left-4 z-40 flex items-end gap-2">
+    <div className="pointer-events-none fixed bottom-20 left-3 z-40 flex items-end gap-2">
       <Duck state="idle" size={36} />
       {line && (
         <div
