@@ -5,7 +5,13 @@
 import { useMemo } from 'react';
 import { Navigate, Outlet, createHashRouter, useParams } from 'react-router';
 import { Providers } from '@/components/providers';
+import { APP_ROUTES } from '@/lib/yeaboi/routes';
 import GlobalBoardPage from '@/pages/board-page';
+import FeedbackPage from '@/pages/yeaboi/feedback-page';
+import HomePage from '@/pages/yeaboi/home-page';
+import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
+import UsagePage from '@/pages/yeaboi/usage-page';
+import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
 import BoardSettingsPage from '@/pages/projects/board-settings-page';
 import ProjectDetailPage from '@/pages/projects/project-page';
@@ -57,11 +63,46 @@ function Root() {
   );
 }
 
+// Pages built so far for the yeaboi (TUI-parity) surface; every registry path
+// not named here mounts the placeholder so nav, palette and manifest agree.
+const YEABOI_PAGES: Record<string, React.ReactElement> = {
+  '/home': <HomePage />,
+  '/whats-new': <WhatsNewPage />,
+  '/feedback': <FeedbackPage />,
+  '/usage': <UsagePage />,
+};
+
+// Registry paths the planning routes below already serve, and the non-route
+// affordances (`action:*`, `dialog:*`) the palette owns.
+const NON_PAGE = (path: string) => !path.startsWith('/');
+const PLANNING_SERVED = new Set([
+  '/projects',
+  '/projects/:id',
+  '/projects/:id/board-settings',
+  '/projects/:id/blueprint',
+  '/projects/:id/sessions/new',
+  '/projects/:id/sessions/:sessionId',
+  '/projects/:id/sessions/:sessionId/completed',
+  '/board',
+  '/tickets/:id',
+  '/settings',
+  '/settings/themes',
+  '/settings/themes/edit',
+]);
+
+const yeaboiRoutes = APP_ROUTES.filter(
+  (route) => !NON_PAGE(route.path) && !PLANNING_SERVED.has(route.path),
+).map((route) => ({
+  path: route.path,
+  element: YEABOI_PAGES[route.path] ?? <PlaceholderPage />,
+}));
+
 export const router = createHashRouter([
   {
     element: <Root />,
     children: [
-      { path: '/', element: <Navigate to="/projects" replace /> },
+      { path: '/', element: <Navigate to="/home" replace /> },
+      ...yeaboiRoutes,
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },
       { path: '/projects/:id/board', element: <ProjectBoardRedirect /> },
@@ -75,7 +116,7 @@ export const router = createHashRouter([
       { path: '/settings', element: <SettingsPage /> },
       { path: '/settings/themes', element: <ThemesSettingsPage /> },
       { path: '/settings/themes/edit', element: <ThemeEditorPage /> },
-      { path: '*', element: <Navigate to="/projects" replace /> },
+      { path: '*', element: <Navigate to="/home" replace /> },
     ],
   },
 ]);

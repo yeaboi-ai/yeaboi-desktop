@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { BrandProvider } from '@/components/providers/brand-provider';
 import { AppShell } from './app-shell';
 import { DuckChrome } from '@/components/brand/duck-chrome';
+import { AmbienceHost } from '@/components/yeaboi/ambience-host';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <ProviderHealthBanner />
                 <AppShell>{children}</AppShell>
                 <DuckChrome />
+                <AmbienceHost />
                 <Toaster />
               </NikoProvider>
             </ProviderHealthProvider>

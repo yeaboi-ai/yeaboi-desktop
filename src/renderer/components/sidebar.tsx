@@ -7,7 +7,31 @@ import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
 import { Duck } from '@design/primitives/Duck';
 import { Wordmark } from '@design/primitives/Wordmark';
-import { LayoutGrid, Columns3, Settings, LogOut, Palette } from 'lucide-react';
+import {
+  LayoutGrid,
+  Columns3,
+  Settings,
+  LogOut,
+  Palette,
+  Home,
+  MessageSquareText,
+  BarChart3,
+  Sunrise,
+  RotateCcw,
+  Spade,
+  TrendingUp,
+  Presentation,
+  Rocket,
+  Bot,
+  CalendarClock,
+  Coins,
+  Sparkles,
+  Map,
+  FileClock,
+  ShieldCheck,
+  Gauge,
+  Megaphone,
+} from 'lucide-react';
 import {
   useAuthFetch,
   getStoredOrgId,
@@ -18,10 +42,69 @@ import {
 } from '@/hooks/use-auth-fetch';
 import { logger } from '@/lib/logger';
 
-const NAV_ITEMS = [
-  { href: '/projects', label: 'Projects', icon: LayoutGrid, shortcut: 'p' },
-  { href: '/board', label: 'Board', icon: Columns3, shortcut: 'b' },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutGrid;
+}
+
+interface NavSection {
+  label: string | null;
+  items: NavItem[];
+}
+
+// One nav for both surfaces: the planning workspace and the yeaboi (TUI
+// parity) modes. The yeaboi hrefs are the manifest's paths verbatim
+// (lib/yeaboi/routes.json) — the sidebar is a view over that registry, not a
+// second list of truths.
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: null,
+    items: [{ href: '/home', label: 'Home', icon: Home }],
+  },
+  {
+    label: 'Workspace',
+    items: [
+      { href: '/projects', label: 'Projects', icon: LayoutGrid },
+      { href: '/board', label: 'Board', icon: Columns3 },
+    ],
+  },
+  {
+    label: 'Humans',
+    items: [
+      { href: '/humans/planning', label: 'Planning', icon: MessageSquareText },
+      { href: '/humans/planning/roadmap', label: 'Roadmap', icon: Map },
+      { href: '/humans/analysis', label: 'Analysis', icon: BarChart3 },
+      { href: '/humans/standup', label: 'Standup', icon: Sunrise },
+      { href: '/humans/retro', label: 'Retro', icon: RotateCcw },
+      { href: '/humans/poker', label: 'Poker', icon: Spade },
+      { href: '/humans/performance', label: 'Performance', icon: TrendingUp },
+      { href: '/humans/reporting', label: 'Reporting', icon: Presentation },
+      { href: '/humans/ship', label: 'Ship', icon: Rocket },
+    ],
+  },
+  {
+    label: 'Agents',
+    items: [
+      { href: '/agents/usage', label: 'Usage', icon: Coins },
+      { href: '/agents/advisor', label: 'Advisor', icon: Sparkles },
+      { href: '/agents/standup', label: 'Standup', icon: Bot },
+      { href: '/agents/security', label: 'Security', icon: ShieldCheck },
+    ],
+  },
+  {
+    label: 'Ops',
+    items: [
+      { href: '/ceremonies', label: 'Ceremonies', icon: CalendarClock },
+      { href: '/provenance', label: 'Provenance', icon: FileClock },
+      { href: '/usage', label: 'Usage', icon: Gauge },
+      { href: '/whats-new', label: "What's New", icon: Megaphone },
+      { href: '/feedback', label: 'Feedback', icon: MessageSquareText },
+    ],
+  },
 ];
+
+const NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
 
 const CMD_SHORTCUTS: Record<string, string> = {
   p: '/projects',
@@ -160,8 +243,15 @@ export function Sidebar() {
 
   if (!session) return null;
 
+  // Longest-prefix wins, so /humans/planning/roadmap lights Roadmap and not
+  // Planning too.
+  const activeHref = NAV_ITEMS.map((item) => item.href)
+    .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
   const isActive = (href: string) =>
-    href === '/projects' ? pathname?.startsWith('/projects') : pathname?.startsWith(href);
+    href === '/settings' || href === '/settings/themes'
+      ? pathname?.startsWith(href)
+      : activeHref === href;
 
   return (
     <aside
@@ -233,26 +323,36 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`flex items-center gap-2.5 px-2 md:px-3 py-2 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
-              isActive(href)
-                ? 'bg-secondary text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-            }`}
-            style={{
-              boxShadow: isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-              transition: 'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-            }}
-            title={label}
-          >
-            <Icon className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden md:inline">{label}</span>
-          </Link>
+      {/* Nav — sectioned, and scrollable now that both surfaces live in it. */}
+      <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3 overflow-y-auto min-h-0">
+        {NAV_SECTIONS.map((section, index) => (
+          <div key={section.label ?? `top-${index}`} className="flex flex-col gap-0.5">
+            {section.label && (
+              <p className="hidden md:block px-3 pt-3 pb-1 text-[9px] font-body font-semibold uppercase tracking-widest text-muted-foreground/50">
+                {section.label}
+              </p>
+            )}
+            {section.items.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
+                  isActive(href)
+                    ? 'bg-secondary text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+                style={{
+                  boxShadow: isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+                  transition:
+                    'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
+                }}
+                title={label}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden md:inline">{label}</span>
+              </Link>
+            ))}
+          </div>
         ))}
       </nav>
 
