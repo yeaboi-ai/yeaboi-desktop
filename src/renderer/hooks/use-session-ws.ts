@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getAuth } from "@/lib/api-base";
 import type { WsEvent } from "@/lib/ws";
 import { createSessionWs } from "@/lib/ws";
 
@@ -10,72 +11,62 @@ export function useSessionWs(sessionId: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<WsEvent[]>([]);
-  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    console.info(TAG, "fetching ws-token");
-    fetch("/api/ws-token")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.token) {
-          console.info(TAG, "ws-token acquired");
-          setToken(data.token);
-        } else {
-          console.warn(TAG, "ws-token response missing token", data);
+    if (!sessionId) return;
+    let disposed = false;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // A token is minted fresh for every (re)connect — the web app reused the
+    // mount-time token, which made reconnects after 1h die on a stale JWT.
+    const connect = async () => {
+      const auth = await getAuth(true);
+      if (!auth || disposed) return;
+      console.info(TAG, "connecting", { sessionId });
+      const ws = createSessionWs(sessionId, auth.token, auth.wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.info(TAG, "open", { sessionId });
+        setConnected(true);
+      };
+      ws.onerror = (ev) => {
+        console.error(TAG, "error", ev);
+      };
+      ws.onclose = (ev) => {
+        console.warn(TAG, "close", { code: ev.code, reason: ev.reason, sessionId });
+        setConnected(false);
+        if (disposed || wsRef.current !== ws) return;
+        reconnectTimer = setTimeout(() => {
+          if (wsRef.current === ws && !disposed) {
+            console.info(TAG, "reconnecting", { sessionId });
+            void connect();
+          }
+        }, 3000);
+      };
+      ws.onmessage = (event) => {
+        try {
+          const data: WsEvent = JSON.parse(event.data);
+          const keys = data.payload ? Object.keys(data.payload) : [];
+          console.debug(TAG, "recv", data.type, { payloadKeys: keys });
+          setEvents((prev) => [...prev, data]);
+        } catch (err) {
+          console.error(TAG, "recv malformed", { raw: event.data, err });
         }
-      })
-      .catch((err) => {
-        console.error(TAG, "ws-token fetch failed", err);
-      });
-  }, []);
+      };
+    };
 
-  useEffect(() => {
-    if (!token || !sessionId) return;
-
-    console.info(TAG, "connecting", { sessionId });
-    const ws = createSessionWs(sessionId, token);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.info(TAG, "open", { sessionId });
-      setConnected(true);
-    };
-    ws.onerror = (ev) => {
-      console.error(TAG, "error", ev);
-    };
-    ws.onclose = (ev) => {
-      console.warn(TAG, "close", { code: ev.code, reason: ev.reason, sessionId });
-      setConnected(false);
-      const timeout = setTimeout(() => {
-        if (wsRef.current === ws) {
-          console.info(TAG, "reconnecting", { sessionId });
-          const newWs = createSessionWs(sessionId, token);
-          wsRef.current = newWs;
-          newWs.onopen = ws.onopen;
-          newWs.onclose = ws.onclose;
-          newWs.onmessage = ws.onmessage;
-          newWs.onerror = ws.onerror;
-        }
-      }, 3000);
-      return () => clearTimeout(timeout);
-    };
-    ws.onmessage = (event) => {
-      try {
-        const data: WsEvent = JSON.parse(event.data);
-        const keys = data.payload ? Object.keys(data.payload) : [];
-        console.debug(TAG, "recv", data.type, { payloadKeys: keys });
-        setEvents((prev) => [...prev, data]);
-      } catch (err) {
-        console.error(TAG, "recv malformed", { raw: event.data, err });
-      }
-    };
+    void connect();
 
     return () => {
       console.info(TAG, "disconnecting (effect cleanup)", { sessionId });
+      disposed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      const ws = wsRef.current;
       wsRef.current = null;
-      ws.close();
+      ws?.close();
     };
-  }, [sessionId, token]);
+  }, [sessionId]);
 
   const send = useCallback((event: WsEvent) => {
     const ws = wsRef.current;

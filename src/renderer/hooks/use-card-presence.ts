@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getAuth } from "@/lib/api-base";
 
 export interface PresenceUser {
   id: string;
@@ -46,22 +47,10 @@ export function useCardPresence(boardId: string | null | undefined, cardId: stri
 
     (async () => {
       try {
-        const tokenResp = await fetch("/api/ws-token");
-        if (!tokenResp.ok || cancelledRef.current) return;
-        const { token } = await tokenResp.json();
-        if (!token || cancelledRef.current) return;
-
-        let wsHost = process.env.NEXT_PUBLIC_WS_URL;
-        if (!wsHost) {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-          if (apiUrl) {
-            wsHost = apiUrl.replace(/^http/, "ws");
-          } else if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
-            wsHost = "wss://planning-platform-production.up.railway.app";
-          } else {
-            wsHost = "ws://localhost:8000";
-          }
-        }
+        const auth = await getAuth(true);
+        if (!auth || cancelledRef.current) return;
+        const token = auth.token;
+        const wsHost = auth.wsUrl;
 
         ws = new WebSocket(`${wsHost}/ws/board/${boardId}?token=${encodeURIComponent(token)}`);
         wsRef.current = ws;

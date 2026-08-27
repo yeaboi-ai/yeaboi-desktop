@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import { Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +54,7 @@ export function ProfileTab() {
 
   useEffect(() => {
     if (!ready) return;
-    fetch("/api/me", { cache: "no-store" })
+    apiFetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: MeProfile | null) => {
         if (data) {
@@ -86,7 +87,7 @@ export function ProfileTab() {
     setSaveError(null);
     setSaved(false);
     try {
-      const r = await fetch("/api/me", {
+      const r = await apiFetch("/api/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(changed),

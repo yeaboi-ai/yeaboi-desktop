@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import Link from "next/link";
 import { Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ export function GitHubSection() {
 
   useEffect(() => {
     if (!ready) return;
-    fetch("/api/settings-proxy")
+    apiFetch("/api/settings-proxy")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data?.settings) return;
@@ -34,7 +35,7 @@ export function GitHubSection() {
     if (!token.trim()) return;
     setSaving(true);
     try {
-      const r = await fetch("/api/settings-proxy", {
+      const r = await apiFetch("/api/settings-proxy", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ updates: { github_token: token } }),

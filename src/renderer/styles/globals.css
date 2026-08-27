@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/instrument-serif/400-italic.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/600.css";
+@import "@fontsource/dm-sans/700.css";
 @import "react-grid-layout/css/styles.css";
 /* react-resizable styles inlined — override default handle appearance */
 .react-resizable {
@@ -64,6 +70,10 @@
    These values are kept in sync with frontend/lib/theme/presets.ts. */
 
 :root {
+  /* next/font used to inject these as class variables; the faces now ship
+     with the app via @fontsource (imports at the top of this file). */
+  --font-display: "Instrument Serif";
+  --font-body: "DM Sans";
   --radius: 0.5rem;
 
   --background: #fafaf9;
@@ -105,23 +115,7 @@
   --chart-tooltip-bg: #ffffff;
   --chart-tooltip-fg: #171717;
 
-  --canvas-bg: #fafaf9;
-  --canvas-grid: rgba(0,0,0,0.04);
-  --canvas-grid-strong: rgba(0,0,0,0.08);
-  --canvas-node-bg: #ffffff;
-  --canvas-node-fg: #171717;
-  --canvas-node-border: #e5e5e3;
-  --canvas-edge-default: rgba(0,0,0,0.3);
-  --canvas-edge-selected: #b8821f;
-  --canvas-edge-hover: rgba(184,130,31,0.7);
-  --canvas-handle: #b8821f;
-  --canvas-selection-fill: rgba(184,130,31,0.06);
-  --canvas-selection-stroke: rgba(184,130,31,0.4);
-  --canvas-minimap-mask: rgba(255,255,255,0.6);
-  --canvas-minimap-node: rgba(0,0,0,0.12);
 
-  --livekit-tile-bg: #171717;
-  --livekit-screen-bg: #000000;
   --selection-bg: rgba(184,130,31,0.25);
   --selection-fg: #171717;
   --scrollbar-thumb: #cccccc;
@@ -129,9 +123,6 @@
   --grid-placeholder-bg: rgba(184,130,31,0.12);
   --grid-placeholder-border: rgba(184,130,31,0.3);
   --glow-primary-shadow: 0 0 0 1px rgba(184,130,31,0.3), 0 4px 24px rgba(184,130,31,0.08);
-  --wireframe-bg: #fafaf9;
-  --wireframe-fg: #171717;
-  --wireframe-accent: #b8821f;
 }
 
 [data-color-scheme="dark"] {
@@ -174,23 +165,7 @@
   --chart-tooltip-bg: #121212;
   --chart-tooltip-fg: #f0f0f0;
 
-  --canvas-bg: #0a0a0a;
-  --canvas-grid: rgba(255,255,255,0.04);
-  --canvas-grid-strong: rgba(255,255,255,0.08);
-  --canvas-node-bg: #121212;
-  --canvas-node-fg: #f0f0f0;
-  --canvas-node-border: #222222;
-  --canvas-edge-default: rgba(255,255,255,0.25);
-  --canvas-edge-selected: #e5a630;
-  --canvas-edge-hover: rgba(229,166,48,0.6);
-  --canvas-handle: #e5a630;
-  --canvas-selection-fill: rgba(229,166,48,0.04);
-  --canvas-selection-stroke: rgba(229,166,48,0.35);
-  --canvas-minimap-mask: rgba(0,0,0,0.6);
-  --canvas-minimap-node: rgba(255,255,255,0.08);
 
-  --livekit-tile-bg: #0a0a0a;
-  --livekit-screen-bg: #000000;
   --selection-bg: rgba(229,166,48,0.25);
   --selection-fg: #f0f0f0;
   --scrollbar-thumb: #333333;
@@ -198,9 +173,6 @@
   --grid-placeholder-bg: rgba(229,166,48,0.12);
   --grid-placeholder-border: rgba(229,166,48,0.3);
   --glow-primary-shadow: 0 0 0 1px rgba(229,166,48,0.3), 0 4px 24px rgba(229,166,48,0.08);
-  --wireframe-bg: #0a0a0a;
-  --wireframe-fg: #f0f0f0;
-  --wireframe-accent: #e5a630;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────── */
@@ -355,51 +327,6 @@ body::before {
   }
 }
 
-/* ── LiveKit participant tile — premium video ───────────────────────── */
-
-.lk-participant-tile {
-  width: 100% !important;
-  height: 100% !important;
-  background: var(--livekit-tile-bg) !important;
-}
-
-.lk-participant-tile video {
-  object-fit: cover !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Screen-share tiles must show the entire shared content (letterboxed),
-   not crop it. `cover` is correct for cameras (faces), wrong for screens. */
-.screen-share-tile video,
-.lk-participant-tile[data-lk-source="screen_share"] video {
-  object-fit: contain !important;
-  background: var(--livekit-screen-bg) !important;
-}
-
-/* Hide default LiveKit name overlay — we render our own */
-.lk-participant-tile .lk-participant-name {
-  display: none !important;
-}
-
-/* Hide default LiveKit mute indicators — we render our own */
-.lk-track-muted-indicator-microphone {
-  display: none !important;
-}
-
-.lk-track-muted-indicator-camera {
-  display: none !important;
-}
-
-/* Clean up default LiveKit focus indicator */
-.lk-participant-tile .lk-focus-toggle-button {
-  display: none !important;
-}
-
-/* Smooth connection state overlay */
-.lk-connection-quality {
-  display: none !important;
-}
 
 /* ── Speaking animation bars ─────────────────────────────────────────── */
 
@@ -526,51 +453,6 @@ body::before {
   }
 }
 
-/* ── React Flow (canvas) ─────────────────────────────────────────────
-   Theme-aware overrides moved out of CanvasEngine.tsx so they apply
-   anywhere React Flow is mounted. Hardcoded colors replaced with vars. */
-
-.react-flow {
-  background: var(--canvas-bg) !important;
-}
-.react-flow__pane { cursor: default !important; }
-.react-flow__node { cursor: grab !important; }
-.react-flow__node:active { cursor: grabbing !important; }
-.react-flow__node:hover { z-index: 10 !important; }
-.react-flow__edge { cursor: pointer !important; }
-.react-flow__edge.selected path {
-  stroke: var(--canvas-edge-selected) !important;
-  stroke-width: 2.5 !important;
-}
-.react-flow__edge path {
-  transition: stroke 0.15s ease, stroke-width 0.15s ease;
-}
-.react-flow__handle { cursor: crosshair !important; }
-
-.react-flow__selection {
-  background: var(--canvas-selection-fill) !important;
-  border: 1.5px solid var(--canvas-selection-stroke) !important;
-  border-radius: 2px !important;
-}
-.react-flow__nodesselection-rect {
-  background: transparent !important;
-  border: none !important;
-}
-
-.react-flow__minimap-mask { fill: var(--canvas-minimap-mask) !important; }
-.react-flow__minimap-node {
-  rx: 3;
-  ry: 3;
-  stroke: var(--canvas-minimap-node);
-  stroke-width: 0.5;
-}
-.react-flow__minimap svg { border-radius: 8px; }
-.edge-draw-in path {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: edge-draw 0.6s ease-out forwards;
-}
-@keyframes edge-draw { to { stroke-dashoffset: 0; } }
 
 /* ───────────────────────────────────────────────────────────────────────── */
 /* Glossary popover micro-delight                                            */

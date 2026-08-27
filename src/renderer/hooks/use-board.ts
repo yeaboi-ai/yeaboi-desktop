@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getAuth } from "@/lib/api-base";
 
 export interface CardSyncStatus {
   provider: "jira" | "azure_devops";
@@ -185,22 +186,10 @@ export function useBoard(projectId: string | null, fetchFn?: FetchFn) {
 
     const setupWs = async () => {
       try {
-        const tokenResp = await fetch("/api/ws-token");
-        if (!tokenResp.ok) return;
-        const { token } = await tokenResp.json();
-        if (!token) return;
-
-        let wsHost = process.env.NEXT_PUBLIC_WS_URL;
-        if (!wsHost) {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-          if (apiUrl) {
-            wsHost = apiUrl.replace(/^http/, "ws");
-          } else if (window.location.hostname !== "localhost") {
-            wsHost = "wss://planning-platform-production.up.railway.app";
-          } else {
-            wsHost = "ws://localhost:8000";
-          }
-        }
+        const auth = await getAuth(true);
+        if (!auth) return;
+        const token = auth.token;
+        const wsHost = auth.wsUrl;
         const ws = new WebSocket(`${wsHost}/ws/board/${board.id}?token=${encodeURIComponent(token)}`);
         wsRef.current = ws;
 

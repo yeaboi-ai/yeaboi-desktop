@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import { RefreshCw, ChevronRight } from "lucide-react";
 
 interface AiCallRow {
@@ -69,7 +70,7 @@ export function AiInspectorSection({ sessionId }: { sessionId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/session-ai-calls-proxy?sessionId=${encodeURIComponent(sessionId)}&limit=2000`)
+    apiFetch(`/api/session-ai-calls-proxy?sessionId=${encodeURIComponent(sessionId)}&limit=2000`)
       .then(async (r) => {
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));

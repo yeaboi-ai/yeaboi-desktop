@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import type { OutputStatus, OutputType } from "@/components/deliverables/output-types";
 
 export interface OutputCatalogueEntry {
@@ -32,7 +33,7 @@ export function useProjectOutputs(projectId: string): UseProjectOutputsResult {
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetch(`/api/outputs-proxy/${projectId}`);
+      const resp = await apiFetch(`/api/outputs-proxy/${projectId}`);
       if (!resp.ok) {
         setError(`Failed to load outputs (${resp.status})`);
         setOutputs(null);
@@ -49,7 +50,7 @@ export function useProjectOutputs(projectId: string): UseProjectOutputsResult {
 
   const generate = useCallback(
     async (outputType: OutputType, payload: Record<string, unknown> = {}) => {
-      const resp = await fetch(
+      const resp = await apiFetch(
         `/api/outputs-proxy/${projectId}/${outputType}`,
         {
           method: "POST",

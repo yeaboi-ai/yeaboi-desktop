@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,7 +109,7 @@ export function AvatarPickerDialog({
       }
       const formData = new FormData();
       formData.append("file", blob, filename);
-      const resp = await fetch("/api/me/avatar", { method: "POST", body: formData });
+      const resp = await apiFetch("/api/me/avatar", { method: "POST", body: formData });
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
         throw new Error(body?.error || `Upload failed: ${resp.status}`);

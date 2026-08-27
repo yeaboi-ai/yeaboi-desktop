@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 import { Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MeProfile } from "@/components/settings/types";
@@ -29,7 +30,7 @@ export function AvatarEditor({
   const handleRemove = async () => {
     setRemoving(true);
     try {
-      const resp = await fetch("/api/me/avatar", { method: "DELETE" });
+      const resp = await apiFetch("/api/me/avatar", { method: "DELETE" });
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
         throw new Error(body?.error || `Remove failed: ${resp.status}`);

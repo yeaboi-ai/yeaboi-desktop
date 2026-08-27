@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { requestProviderHealthRefresh } from "@/components/providers/provider-health-provider";
+import { apiFetch, getAuth } from "@/lib/api-base";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -46,21 +47,20 @@ export function dispatchTeamChange() {
 
 /**
  * Hook that provides an authenticated fetch function for client components.
- * Gets a JWT from /api/ws-token and includes it in all requests.
+ * The token comes from the main process over the preload bridge (see
+ * lib/api-base.ts); this hook adds the 403 stale-org retry and the 402
+ * provider-health nudge on top of the shared apiFetch.
  *
  * `teamVersion` increments on team/org change — include it in useEffect deps
  * to re-fetch data when the user switches teams.
  */
 export function useAuthFetch() {
-  const [token, setToken] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
   const [teamVersion, setTeamVersion] = useState(0);
 
   useEffect(() => {
-    fetch("/api/ws-token")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.token) setToken(data.token);
-      })
+    getAuth()
+      .then((auth) => setReady(auth !== null))
       .catch(() => logger.warn("Failed to fetch auth token"));
   }, []);
 
@@ -73,30 +73,20 @@ export function useAuthFetch() {
 
   const authFetch = useCallback(
     async (url: string, options: RequestInit = {}): Promise<Response> => {
-      // Don't set a default Content-Type for FormData — the browser sets it with the boundary.
-      const isFormData = options.body instanceof FormData;
       const traceId = crypto.randomUUID().replace(/-/g, "");
       const spanId = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-
-      const buildBaseHeaders = (): Record<string, string> => {
-        const h: Record<string, string> = {
-          ...(isFormData ? {} : { "Content-Type": "application/json" }),
-          traceparent: `00-${traceId}-${spanId}-01`,
-          "X-Request-Id": traceId.slice(0, 32),
-          ...(options.headers as Record<string, string>),
-        };
-        if (token) h["Authorization"] = `Bearer ${token}`;
-        return h;
+      const traceHeaders: Record<string, string> = {
+        traceparent: `00-${traceId}-${spanId}-01`,
+        "X-Request-Id": traceId.slice(0, 32),
       };
 
       const orgId = getStoredOrgId();
       const teamId = getStoredTeamId();
 
-      const headers = buildBaseHeaders();
-      if (orgId) headers["X-Org-Id"] = orgId;
-      if (teamId) headers["X-Team-Id"] = teamId;
-
-      let response = await fetch(url, { ...options, headers });
+      let response = await apiFetch(url, {
+        ...options,
+        headers: { ...traceHeaders, ...(options.headers as Record<string, string>) },
+      });
 
       // Stale identity recovery: a 403 here typically means the
       // X-Org-Id / X-Team-Id we sent points at a deleted or no-longer-
@@ -110,12 +100,15 @@ export function useAuthFetch() {
         if (orgId) clearStoredOrgId();
         if (teamId) clearStoredTeamId();
         dispatchTeamChange();
-        const retryHeaders = buildBaseHeaders(); // intentionally without org/team
         logger.warn(
           "authFetch: 403 with org/team headers — clearing stale identity and retrying",
           { url, hadOrgId: !!orgId, hadTeamId: !!teamId },
         );
-        response = await fetch(url, { ...options, headers: retryHeaders });
+        // Retried without the (now cleared) org/team localStorage keys.
+        response = await apiFetch(url, {
+          ...options,
+          headers: { ...traceHeaders, ...(options.headers as Record<string, string>) },
+        });
       }
 
       // A 402 from any backend route means a provider error or hard-spend
@@ -127,8 +120,8 @@ export function useAuthFetch() {
       }
       return response;
     },
-    [token],
+    [],
   );
 
-  return { authFetch, ready: !!token, teamVersion };
+  return { authFetch, ready, teamVersion };
 }

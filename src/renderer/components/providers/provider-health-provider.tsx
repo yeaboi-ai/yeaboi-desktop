@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { apiFetch } from "@/lib/api-base";
 
 import { toast } from "@/components/ui/toast";
 import { logger } from "@/lib/logger";
@@ -38,7 +39,7 @@ export function ProviderHealthProvider({ children }: { children: React.ReactNode
     inFlightRef.current = true;
     setIsLoading(true);
     try {
-      const res = await fetch("/api/system/health-summary", { credentials: "include" });
+      const res = await apiFetch("/api/system/health-summary", { credentials: "include" });
       if (!res.ok) return;
       const body = (await res.json()) as HealthSummary;
       setSummary(body);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo, use } from "react";
+import { apiFetch } from "@/lib/api-base";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -977,7 +978,7 @@ export default function ProjectDetailPage({
       if (engResp.ok) setEngMetrics(await engResp.json());
 
       // Check admin status — try team members first, fall back to org members
-      const meResp = await fetch("/api/me");
+      const meResp = await apiFetch("/api/me");
       if (meResp.ok) {
         const me = await meResp.json();
         let admin = false;

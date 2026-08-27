@@ -40,7 +40,9 @@ export function FirstRunScreen({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background text-foreground">
       <Duck state="idle" size={72} />
-      <Wordmark text="YEABOI" size="160px" />
+      <div className="w-64">
+        <Wordmark text="YEABOI" />
+      </div>
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm">
         <h1 className="font-display text-2xl italic">Who's planning?</h1>
         <p className="mt-1 text-xs text-muted-foreground">
