@@ -13,7 +13,25 @@ directories:
 files:
   - out/**
   - resources/**
+  # The staged runtimes ship as extraResources, outside asar — keep the
+  # globs above from double-packing them.
+  - '!resources/py/**'
+  - '!resources/py-planning/**'
+  - '!resources/livekit/**'
   - package.json
+
+# The two Python backends and the LiveKit server, staged by
+# scripts/fetch-runtimes.mjs and scripts/fetch-livekit.mjs. sidecar.ts,
+# planning.ts and livekit.ts resolve them under process.resourcesPath.
+extraResources:
+  - from: resources/py
+    to: py
+    filter: ['**/*', '!**/__pycache__/**']
+  - from: resources/py-planning
+    to: py-planning
+    filter: ['**/*', '!**/__pycache__/**']
+  - from: resources/livekit
+    to: livekit
 
 # No native modules — skipping the rebuild saves a toolchain on every runner.
 npmRebuild: false

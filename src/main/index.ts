@@ -33,11 +33,13 @@ import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
 import { AppTray } from './tray';
 import { Updater } from './updater';
+import { VoiceAgentSidecar, registerVoicePack, voicePackInstalled } from './voice-pack';
 
 const settings = new Settings();
 const sidecar = new Sidecar();
 const planning = new PlanningSidecar();
 const livekit = new LivekitSidecar();
+const voiceAgent = new VoiceAgentSidecar();
 const events = new EventReader(sidecar);
 const pet = new Pet();
 const updater = new Updater();
@@ -150,6 +152,20 @@ if (!gotLock) {
       mainWindow?.webContents.send('capture:request');
     });
     void ensureMediaAccess();
+
+    // The voice agent (facilitator's STT→LLM→TTS loop) — only once both the
+    // planning backend and LiveKit are up, and only when the pack is there.
+    registerVoicePack();
+    const maybeStartVoiceAgent = () => {
+      const planningUrl =
+        externalPlanningUrl || (planning.current.kind === 'ready' ? planning.current.url : '');
+      if (!planningUrl) return;
+      if (livekit.current.kind !== 'ready') return;
+      if (!voicePackInstalled()) return;
+      voiceAgent.start(planningUrl);
+    };
+    planning.onState(maybeStartVoiceAgent);
+    livekit.onState(maybeStartVoiceAgent);
     installAppScheme(join(import.meta.dirname, '../renderer'));
     installPermissionHandlers(
       (listener) => app.on('session-created', listener),
@@ -275,7 +291,12 @@ if (!gotLock) {
     pet.hide();
     events.stop();
     tray?.destroy();
-    void Promise.allSettled([livekit.stop(), planning.stop(), sidecar.stop()]).finally(() => {
+    void Promise.allSettled([
+      voiceAgent.stop(),
+      livekit.stop(),
+      planning.stop(),
+      sidecar.stop(),
+    ]).finally(() => {
       cleanShutdown = true;
       app.quit();
     });
