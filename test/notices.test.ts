@@ -2,7 +2,7 @@
 // get a banner title, and which streamed run paths are worth announcing.
 
 import { describe, expect, it } from 'vitest';
-import { clampBanner, noticeTitle } from '../src/main/notify';
+import { clampBanner, noticeTitle } from '../src/shared/notices';
 import { runNotice } from '../src/renderer/lib/yeaboi/run-notices';
 
 // The kinds src/yeaboi/app/awareness.py publishes. Adding one there without a
