@@ -21,6 +21,8 @@ import {
 import CanvasEngine from '@/components/canvas/CanvasEngine';
 import { CanvasErrorBoundary } from '@/components/canvas/CanvasErrorBoundary';
 import { SimulatorViewport, type SimScreen } from '@/components/canvas/simulator-viewport';
+import { CallLayer } from '@/components/session/call-layer';
+import { useCallState } from './use-call-state';
 import { useCanvasState } from './use-canvas-state';
 import { ChatPanel } from '@/components/session/chat-panel';
 import { ParticipantList } from '@/components/session/participant-list';
@@ -107,6 +109,9 @@ export default function SessionPage() {
 
   // ── The canvas base layer ──────────────────────────────────────────────
   const canvas = useCanvasState({ sessionId, authFetch, ready: data.ready, events });
+
+  // ── The call (LiveKit) ─────────────────────────────────────────────────
+  const call = useCallState({ sessionId, authFetch });
   const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
@@ -618,6 +623,20 @@ export default function SessionPage() {
               Ready to finalize
             </span>
           )}
+        {(session.status === 'live' || session.status === 'paused') && !readOnly && (
+          <button
+            onClick={() => (call.inCall ? call.leave() : void call.join())}
+            disabled={call.isConnecting}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+              call.inCall
+                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/15'
+                : 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/15'
+            }`}
+            title={call.inCall ? 'Leave the call' : 'Start a voice/video call with the facilitator'}
+          >
+            {call.isConnecting ? 'Joining…' : call.inCall ? `Leave ${call.timer}` : 'Call'}
+          </button>
+        )}
         {(session.status === 'live' || session.status === 'paused') && (
           <button
             onClick={() => void wrapUp()}
@@ -782,6 +801,34 @@ export default function SessionPage() {
           </aside>
         )}
       </div>
+
+      {/* ── The call: huddle bar + floating video window (portals) ── */}
+      <CallLayer
+        inCall={call.inCall}
+        lkToken={call.token}
+        lkUrl={call.url}
+        agentStatus={call.agentStatus}
+        agentInCall={call.agentInCall}
+        onLeaveCall={call.leave}
+        timerStr={call.timer}
+        teamMembers={data.teamMembers.map((m) => ({
+          id: m.id,
+          name: (m.name as string | null) ?? null,
+          email: m.email,
+        }))}
+        micMuted={call.micMuted}
+        onMicMuteChange={call.setMicMuted}
+        captionsOn={call.captionsOn}
+        onToggleCaptions={call.toggleCaptions}
+        onDispatchAgent={() => void call.dispatchAgent()}
+        onDetachAgent={() => void call.detachAgent()}
+        personaName={
+          blueprintPersonas.find(
+            (p) => p.slug === ((session.ai_config?.['persona'] as string) ?? ''),
+          )?.name ?? 'Facilitator'
+        }
+        personaSlug={(session.ai_config?.['persona'] as string) ?? 'default'}
+      />
 
       {/* ── AI settings dock (bottom pill) ── */}
       <AISettingsDrawer

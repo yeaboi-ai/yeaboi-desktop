@@ -11,6 +11,7 @@ import { BrandProvider } from '@/components/providers/brand-provider';
 import { AppShell } from './app-shell';
 import { DuckChrome } from '@/components/brand/duck-chrome';
 import { AmbienceHost } from '@/components/yeaboi/ambience-host';
+import { CapturePicker } from '@/components/session/capture-picker';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <AppShell>{children}</AppShell>
                 <DuckChrome />
                 <AmbienceHost />
+                <CapturePicker />
                 <Toaster />
               </NikoProvider>
             </ProviderHealthProvider>

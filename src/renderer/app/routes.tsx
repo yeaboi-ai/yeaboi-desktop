@@ -7,6 +7,9 @@ import { Navigate, Outlet, createHashRouter, useParams } from 'react-router';
 import { Providers } from '@/components/providers';
 import { APP_ROUTES } from '@/lib/yeaboi/routes';
 import GlobalBoardPage from '@/pages/board-page';
+import RecordingPage from '@/pages/recordings/recording-page';
+import SharedClipPage from '@/pages/recordings/shared-clip-page';
+import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/yeaboi/home-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
@@ -102,6 +105,9 @@ const PLANNING_SERVED = new Set([
   '/settings',
   '/settings/themes',
   '/settings/themes/edit',
+  '/recordings/:id',
+  '/recording/:token',
+  '/clip/:token',
 ]);
 
 const yeaboiRoutes = APP_ROUTES.filter(
@@ -130,6 +136,9 @@ export const router = createHashRouter([
       { path: '/settings', element: <SettingsPage /> },
       { path: '/settings/themes', element: <ThemesSettingsPage /> },
       { path: '/settings/themes/edit', element: <ThemeEditorPage /> },
+      { path: '/recordings/:id', element: <RecordingPage /> },
+      { path: '/recording/:token', element: <SharedRecordingPage /> },
+      { path: '/clip/:token', element: <SharedClipPage /> },
       { path: '*', element: <Navigate to="/home" replace /> },
     ],
   },
