@@ -12,6 +12,8 @@ const renderer = resolve(import.meta.dirname, 'src/renderer');
 // Vite and are left in place.
 const rendererAliases = {
   '@': renderer,
+  // Plain data both processes agree on (the duck's preference shape).
+  '@shared': resolve(import.meta.dirname, 'src/shared'),
   // @yeaboi-ai/design ships SOURCE .tsx — Vite compiles it here (see esbuild
   // note below). The alias pins the import root inside the package.
   '@design': resolve(import.meta.dirname, 'node_modules/@yeaboi-ai/design/design'),

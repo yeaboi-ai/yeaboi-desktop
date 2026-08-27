@@ -2,6 +2,9 @@
 // sees the loopback URL or the bearer token — window.yeaboi.api is a blind
 // relay whose auth lives in the main process.
 
+import { duckQuip } from '@/lib/duck-events';
+import { runNotice } from './run-notices';
+
 export interface Envelope<T = unknown> {
   ok: boolean;
   llm_mode: string;
@@ -56,13 +59,21 @@ export async function apiPost<T>(path: string, body: object = {}): Promise<T> {
   return resp as T;
 }
 
-/** POST a request whose response is NDJSON, calling back once per parsed line. */
+/** POST a request whose response is NDJSON, calling back once per parsed line.
+ *
+ *  Every mode run comes through here, so this is also where a finished run is
+ *  announced — see run-notices.ts. Announcing it per-page would mean the same
+ *  three lines in six of them, and one of them forgetting. */
 export async function apiStream(
   path: string,
   body: object,
   onLine: (line: unknown) => void,
 ): Promise<void> {
-  const { status, body: resp } = await bridge().apiStream(path, body, onLine);
+  const { status, body: resp } = await bridge().apiStream(path, body, (line) => {
+    const notice = runNotice(path, line);
+    if (notice) duckQuip(notice.key, { route: notice.route });
+    onLine(line);
+  });
   if (status !== 200)
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
 }

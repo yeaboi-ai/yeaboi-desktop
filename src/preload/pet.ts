@@ -8,7 +8,8 @@ export interface PetBridge {
   setInteractive: (over: boolean) => void;
   onCursor: (fn: (point: { x: number; y: number }) => void) => void;
   onConfig: (fn: (config: unknown) => void) => void;
-  onNudge: (fn: (delta: number) => void) => void;
+  /** Size, colour, gait and whether the duck dodges the cursor. */
+  onPrefs: (fn: (prefs: unknown) => void) => void;
   onRecenter: (fn: () => void) => void;
   /** Something happened while nobody was looking — say it. */
   onNotice: (fn: (notice: { quip: string; sticky: boolean; route: string }) => void) => void;
@@ -24,8 +25,8 @@ const bridge: PetBridge = {
   onConfig: (fn) => {
     ipcRenderer.on('pet:config', (_event, config) => fn(config));
   },
-  onNudge: (fn) => {
-    ipcRenderer.on('pet:nudge', (_event, delta) => fn(delta));
+  onPrefs: (fn) => {
+    ipcRenderer.on('pet:prefs', (_event, prefs) => fn(prefs));
   },
   onRecenter: (fn) => {
     ipcRenderer.on('pet:recenter', () => fn());

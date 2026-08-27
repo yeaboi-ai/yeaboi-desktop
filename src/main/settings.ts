@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { app } from 'electron';
+import { type PetPrefs, mergePetPrefs, normalizePetPrefs } from '../shared/pet-prefs';
 
 export interface Identity {
   email: string;
@@ -14,7 +15,9 @@ export interface Identity {
 
 interface SettingsFile {
   identity?: Identity;
+  /** Pre-prefs pet switch. Still written, so a downgrade still finds it. */
   petEnabled?: boolean;
+  pet?: unknown;
   apiUrl?: string;
   jwtSecret?: string;
 }
@@ -52,12 +55,24 @@ export class Settings {
   }
 
   get petEnabled(): boolean {
-    return this.data.petEnabled !== false; // the duck defaults to on
+    return this.pet.enabled;
   }
 
   setPetEnabled(enabled: boolean): void {
-    this.data.petEnabled = enabled;
+    this.setPet({ enabled });
+  }
+
+  /** Everything the duck is, clamped. Reading is cheap enough not to cache. */
+  get pet(): PetPrefs {
+    return normalizePetPrefs(this.data.pet, this.data.petEnabled);
+  }
+
+  setPet(patch: Partial<PetPrefs>): PetPrefs {
+    const next = mergePetPrefs(this.pet, patch);
+    this.data.pet = next;
+    this.data.petEnabled = next.enabled;
     this.save();
+    return next;
   }
 
   /** Backend base URL. Env wins so a dev shell can point elsewhere without

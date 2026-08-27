@@ -24,7 +24,9 @@ import { closeAllBoardWindows, registerBoardWindows } from './boards';
 import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
 import { LivekitSidecar } from './livekit';
+import { Notifier, clampBanner, noticeTitle } from './notify';
 import { Pet, type PetNotice } from './pet';
+import type { PetPrefs } from '../shared/pet-prefs';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { PlanningSidecar } from './planning';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
@@ -42,6 +44,7 @@ const livekit = new LivekitSidecar();
 const voiceAgent = new VoiceAgentSidecar();
 const events = new EventReader(sidecar);
 const pet = new Pet();
+const notifier = new Notifier((route) => openApp(route));
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
@@ -105,10 +108,12 @@ function showAbout(): void {
   mainWindow?.webContents.send('app:about');
 }
 
-function setPetPreference(enabled: boolean): void {
-  settings.setPetEnabled(enabled);
-  pet.setEnabled(enabled);
-  tray?.setPetEnabled(enabled);
+/** The one path a duck preference travels: store, window, tray checkbox. */
+function setPetPreference(patch: Partial<PetPrefs>): PetPrefs {
+  const prefs = settings.setPet(patch);
+  pet.setPrefs(prefs);
+  tray?.setPetEnabled(prefs.enabled);
+  return prefs;
 }
 
 // Global hardening for every webContents this app ever creates (pet included).
@@ -198,11 +203,17 @@ if (!gotLock) {
     broadcast(events, () => (mainWindow && !mainWindow.isDestroyed() ? [mainWindow] : []));
     events.on((event) => {
       if (event.type !== 'notice') return;
-      pet.notify({
-        quip: String(event['quip'] ?? ''),
-        sticky: Boolean(event['sticky']),
-        route: String(event['route'] ?? ''),
-      } satisfies PetNotice);
+      const quip = String(event['quip'] ?? '');
+      const route = String(event['route'] ?? '');
+      const prefs = settings.pet;
+      if (prefs.notify.bubble) {
+        pet.notify({ quip, sticky: Boolean(event['sticky']), route } satisfies PetNotice);
+      }
+      // These are the things that happened with nobody looking, so the banner
+      // is the point of them — it goes out whether or not a window is open.
+      if (prefs.notify.os) {
+        notifier.post({ title: noticeTitle(String(event['kind'] ?? '')), body: quip, route });
+      }
     });
     void sidecar.start();
 
@@ -232,10 +243,21 @@ if (!gotLock) {
       });
     });
     ipcMain.handle('pet:set-enabled', (_event, enabled: unknown) => {
-      setPetPreference(Boolean(enabled));
+      setPetPreference({ enabled: Boolean(enabled) });
       return { enabled: pet.on };
     });
     ipcMain.handle('pet:get-enabled', () => settings.petEnabled);
+    ipcMain.handle('pet:get-prefs', () => settings.pet);
+    ipcMain.handle('pet:set-prefs', (_event, patch: unknown) =>
+      setPetPreference((patch ?? {}) as Partial<PetPrefs>),
+    );
+
+    // A banner the renderer asked for: a run it was streaming has finished.
+    // Clamped here for the same reason `pet:notify` is.
+    ipcMain.on('app:notify', (_event, banner: unknown) => {
+      const clamped = clampBanner(banner);
+      if (clamped) notifier.post(clamped);
+    });
 
     ipcMain.handle('app:meta', () => ({
       version: app.getVersion(),
@@ -256,8 +278,8 @@ if (!gotLock) {
     });
 
     createMainWindow();
-    pet.setEnabled(settings.petEnabled);
-    tray = new AppTray(pet, {
+    pet.setPrefs(settings.pet);
+    tray = new AppTray({
       open: () => openApp(),
       about: () => showAbout(),
       // One menu item for the whole update sequence: it does whatever the
@@ -267,7 +289,10 @@ if (!gotLock) {
         else if (updater.current.kind === 'available') void updater.download();
         else void updater.check();
       },
-      togglePet: (enabled) => setPetPreference(enabled),
+      togglePet: (enabled) => void setPetPreference({ enabled }),
+      nudgePet: (delta) => void setPetPreference({ raise: settings.pet.raise + delta }),
+      recenterPet: () => pet.recenter(),
+      petSettings: () => openApp('/settings?tab=duck'),
       quit: () => app.quit(),
     });
     tray.create(settings.petEnabled);

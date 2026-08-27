@@ -12,7 +12,6 @@ import trayIconPath from '../../resources/duck-tray.png?asset';
 // Its @2x sibling ships beside it in resources/ and Electron picks it up by
 // name — an import would only re-emit the same file under a second one.
 import trayTemplatePath from '../../resources/duck-trayTemplate.png?asset';
-import type { Pet } from './pet';
 import type { UpdateState } from './updater';
 
 /** Menu-bar icons are measured in points; 20 is the conventional height. */
@@ -44,6 +43,11 @@ export interface TrayActions {
   about: () => void;
   update: () => void;
   togglePet: (enabled: boolean) => void;
+  /** Raise or lower where the duck's feet sit, in pixels. Persisted. */
+  nudgePet: (delta: number) => void;
+  recenterPet: () => void;
+  /** Open the app on the duck's settings tab. */
+  petSettings: () => void;
   quit: () => void;
 }
 
@@ -52,10 +56,7 @@ export class AppTray {
   private petEnabled = false;
   private update: UpdateState = { kind: 'idle' };
 
-  constructor(
-    private readonly pet: Pet,
-    private readonly actions: TrayActions,
-  ) {}
+  constructor(private readonly actions: TrayActions) {}
 
   create(petEnabled: boolean): void {
     this.petEnabled = petEnabled;
@@ -100,9 +101,10 @@ export class AppTray {
           click: (item) => this.actions.togglePet(item.checked),
         },
         // The nudges only mean something while there is a duck to nudge.
-        { label: 'Sit higher', enabled: this.petEnabled, click: () => this.pet.nudge(6) },
-        { label: 'Sit lower', enabled: this.petEnabled, click: () => this.pet.nudge(-6) },
-        { label: 'Come here', enabled: this.petEnabled, click: () => this.pet.recenter() },
+        { label: 'Sit higher', enabled: this.petEnabled, click: () => this.actions.nudgePet(6) },
+        { label: 'Sit lower', enabled: this.petEnabled, click: () => this.actions.nudgePet(-6) },
+        { label: 'Come here', enabled: this.petEnabled, click: () => this.actions.recenterPet() },
+        { label: 'Duck settings…', click: () => this.actions.petSettings() },
         { type: 'separator' },
         { label: `yeaboi ${app.getVersion()}`, enabled: false },
         {
