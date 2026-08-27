@@ -24,7 +24,9 @@ import { closeAllBoardWindows, registerBoardWindows } from './boards';
 import { EventReader, broadcast } from './events';
 import { Pet, type PetNotice } from './pet';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
+import { PlanningSidecar } from './planning';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
+import { loadMachineSecrets } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
 import { AppTray } from './tray';
@@ -32,11 +34,16 @@ import { Updater } from './updater';
 
 const settings = new Settings();
 const sidecar = new Sidecar();
+const planning = new PlanningSidecar();
 const events = new EventReader(sidecar);
 const pet = new Pet();
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
+
+// An externally provided backend URL means "mine, don't spawn one" — the dev
+// escape hatch for pointing the renderer at a hand-run planning server.
+const externalPlanningUrl = process.env['YEABOI_API_URL'] ?? '';
 
 registerAppScheme();
 
@@ -115,6 +122,19 @@ if (!gotLock) {
 
   void app.whenReady().then(() => {
     settings.load();
+    // Machine secrets under ~/.yeaboi/planning: generated on first run. The
+    // JWT secret main mints with must equal the NEXTAUTH_SECRET the local
+    // planning sidecar runs under — same file, same value. An explicit
+    // $YEABOI_JWT_SECRET (external backend dev) still wins in settings.ts.
+    if (!externalPlanningUrl) {
+      process.env['YEABOI_JWT_SECRET'] ??= loadMachineSecrets().nextauthSecret;
+      void planning.start();
+    }
+    planning.onState((state) => {
+      console.log(
+        `[planning] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}${state.kind === 'ready' ? ` at ${state.url}` : ''}`,
+      );
+    });
     installAppScheme(join(import.meta.dirname, '../renderer'));
     installPermissionHandlers(
       (listener) => app.on('session-created', listener),
@@ -240,7 +260,7 @@ if (!gotLock) {
     pet.hide();
     events.stop();
     tray?.destroy();
-    void sidecar.stop().finally(() => {
+    void Promise.allSettled([planning.stop(), sidecar.stop()]).finally(() => {
       cleanShutdown = true;
       app.quit();
     });
