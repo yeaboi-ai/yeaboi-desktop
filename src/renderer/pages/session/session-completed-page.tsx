@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { use, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { use, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   ArrowRight,
   CheckCircle2,
@@ -13,14 +13,14 @@ import {
   MessageSquare,
   Sparkles,
   Users,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { RecapDoc, type ClientChapter } from "@/components/session/recap-doc";
-import { FeedbackButtons } from "@/components/ui/feedback-buttons";
-import { RecapScreen, buildRecapEntries } from "@/components/session/recap-screen";
-import { SessionReview } from "@/components/blueprint/session-review";
-import { AGENT_STATUS_STYLES } from "@/components/kanban/card";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { RecapDoc, type ClientChapter } from '@/components/session/recap-doc';
+import { FeedbackButtons } from '@/components/ui/feedback-buttons';
+import { RecapScreen, buildRecapEntries } from '@/components/session/recap-screen';
+import { SessionReview } from '@/components/blueprint/session-review';
+import { AGENT_STATUS_STYLES } from '@/components/kanban/card';
 
 type Card = {
   id: string;
@@ -49,7 +49,7 @@ type SessionResp = {
   status?: string | null;
   updated_at?: string | null;
   participants?: Participant[];
-  blueprint_review_status?: "none" | "pending" | "completed";
+  blueprint_review_status?: 'none' | 'pending' | 'completed';
 };
 
 type Message = {
@@ -77,26 +77,23 @@ type SnapshotDetail = {
 };
 
 const SECTION_LABELS: Record<string, string> = {
-  problem: "Problem",
-  users_personas: "Users & Personas",
-  solution: "Solution",
-  scope: "Scope",
-  tech_stack: "Tech Stack",
-  ui_ux: "UI / UX",
-  metrics: "Metrics",
-  risks: "Risks",
-  open_questions: "Open Questions",
+  problem: 'Problem',
+  users_personas: 'Users & Personas',
+  solution: 'Solution',
+  scope: 'Scope',
+  tech_stack: 'Tech Stack',
+  ui_ux: 'UI / UX',
+  metrics: 'Metrics',
+  risks: 'Risks',
+  open_questions: 'Open Questions',
 };
 
 function prettySection(slug: string): string {
-  return (
-    SECTION_LABELS[slug] ||
-    slug.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  );
+  return SECTION_LABELS[slug] || slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "—";
+  if (!Number.isFinite(seconds) || seconds <= 0) return '—';
   const mins = Math.round(seconds / 60);
   if (mins < 60) return `${mins} min`;
   const h = Math.floor(mins / 60);
@@ -108,11 +105,11 @@ function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function initials(name?: string | null, email?: string | null): string {
-  const src = (name || email || "?").trim();
+  const src = (name || email || '?').trim();
   const parts = src.split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return src.slice(0, 2).toUpperCase();
@@ -143,7 +140,7 @@ export default function SessionCompletedPage({
         authFetch(`/api/sessions/${sessionId}/messages`).then((r) => (r.ok ? r.json() : [])),
         authFetch(`/api/projects/${projectId}/board`).then((r) => (r.ok ? r.json() : null)),
         authFetch(`/api/projects/${projectId}/blueprint/snapshots?limit=200`).then((r) =>
-          r.ok ? r.json() : []
+          r.ok ? r.json() : [],
         ),
       ]);
 
@@ -153,9 +150,7 @@ export default function SessionCompletedPage({
       if (Array.isArray(msgResp)) setMessages(msgResp as Message[]);
 
       if (boardResp && (boardResp as BoardResponse).columns) {
-        const cards: Card[] = (boardResp as BoardResponse).columns!.flatMap(
-          (c) => c.cards || []
-        );
+        const cards: Card[] = (boardResp as BoardResponse).columns!.flatMap((c) => c.cards || []);
         const sessionCards = cards.filter((c) => c.session_id === sessionId);
         const useCards = sessionCards.length > 0 ? sessionCards : cards;
         setTaskCount(useCards.length);
@@ -173,7 +168,7 @@ export default function SessionCompletedPage({
         if (match) {
           setSnapshotMeta(match);
           const detailResp = await authFetch(
-            `/api/projects/${projectId}/blueprint/snapshots/${match.id}`
+            `/api/projects/${projectId}/blueprint/snapshots/${match.id}`,
           );
           if (detailResp.ok && !cancelled) {
             const detail = (await detailResp.json()) as SnapshotDetail;
@@ -207,14 +202,17 @@ export default function SessionCompletedPage({
     const entries = buildRecapEntries(messages);
     const markers: Array<{ idx: number; label: string }> = [];
     entries.forEach((e, idx) => {
-      if (!e.speaker_name && e.text.startsWith("Switched to ")) {
-        const label = e.text.replace(/^Switched to /, "").replace(/\*\*/g, "").trim();
+      if (!e.speaker_name && e.text.startsWith('Switched to ')) {
+        const label = e.text
+          .replace(/^Switched to /, '')
+          .replace(/\*\*/g, '')
+          .trim();
         markers.push({ idx, label });
       }
     });
     if (markers.length === 0) return [];
     return markers.map((m, i) => {
-      const start = entries[m.idx]?.created_at ?? entries[0]?.created_at ?? "";
+      const start = entries[m.idx]?.created_at ?? entries[0]?.created_at ?? '';
       const nextIdx = markers[i + 1]?.idx ?? entries.length - 1;
       const end = entries[nextIdx]?.created_at ?? start;
       return { id: `chapter-${i}`, label: m.label, startTs: start, endTs: end };
@@ -228,15 +226,15 @@ export default function SessionCompletedPage({
   // Mirrors the same deep-link pattern used by the live session page so the
   // shortcut behaves identically whether the session is live or completed.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    if (params.has("recap") && messages.length > 0) {
+    if (params.has('recap') && messages.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecapOpen(true);
-      params.delete("recap");
+      params.delete('recap');
       const qs = params.toString();
-      const next = window.location.pathname + (qs ? `?${qs}` : "");
-      window.history.replaceState({}, "", next);
+      const next = window.location.pathname + (qs ? `?${qs}` : '');
+      window.history.replaceState({}, '', next);
     }
   }, [messages.length]);
 
@@ -249,7 +247,7 @@ export default function SessionCompletedPage({
         <div className="flex items-baseline gap-3">
           <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
           <h1 className="font-display text-2xl italic leading-tight text-foreground">
-            {session?.title || "Planning session"}
+            {session?.title || 'Planning session'}
           </h1>
           <span className="text-[10px] uppercase tracking-wider text-success/80 px-2 py-0.5 rounded bg-success/10 border border-success/20">
             wrapped up
@@ -262,7 +260,7 @@ export default function SessionCompletedPage({
             {messageCount > 0 && (
               <span className="inline-flex items-center gap-1">
                 <MessageSquare className="h-3 w-3" />
-                {messageCount} {messageCount === 1 ? "message" : "messages"}
+                {messageCount} {messageCount === 1 ? 'message' : 'messages'}
               </span>
             )}
             {durationSeconds > 0 && (
@@ -274,8 +272,7 @@ export default function SessionCompletedPage({
             {participants.length > 0 && (
               <span className="inline-flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                {participants.length}{" "}
-                {participants.length === 1 ? "participant" : "participants"}
+                {participants.length} {participants.length === 1 ? 'participant' : 'participants'}
               </span>
             )}
             {completedDate && (
@@ -291,7 +288,7 @@ export default function SessionCompletedPage({
               {participants.slice(0, 5).map((p) => (
                 <span
                   key={p.id}
-                  title={p.user_name || p.user_email || "Participant"}
+                  title={p.user_name || p.user_email || 'Participant'}
                   className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-muted text-[9px] font-medium text-foreground/70 border border-background"
                 >
                   {initials(p.user_name, p.user_email)}
@@ -330,13 +327,15 @@ export default function SessionCompletedPage({
             <SessionReview
               projectId={projectId}
               sessionId={sessionId}
-              initialStatus={session?.blueprint_review_status ?? "none"}
+              initialStatus={session?.blueprint_review_status ?? 'none'}
               onCompleted={() => {
                 // After review completes, refresh the session so the header
                 // can stop calling it "pending."
                 authFetch(`/api/sessions/${sessionId}`)
                   .then((r) => (r.ok ? r.json() : null))
-                  .then((s) => { if (s) setSession(s as SessionResp); });
+                  .then((s) => {
+                    if (s) setSession(s as SessionResp);
+                  });
               }}
             />
 
@@ -345,8 +344,8 @@ export default function SessionCompletedPage({
                 <Sparkles className="h-5 w-5 text-success shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    {taskCount} {taskCount === 1 ? "task" : "tasks"} generated
-                    {waveCount ? ` across ${waveCount} ${waveCount === 1 ? "wave" : "waves"}` : ""}
+                    {taskCount} {taskCount === 1 ? 'task' : 'tasks'} generated
+                    {waveCount ? ` across ${waveCount} ${waveCount === 1 ? 'wave' : 'waves'}` : ''}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Open the board to see them, reorder, or kick off the orchestrator.
@@ -375,11 +374,11 @@ export default function SessionCompletedPage({
                         <div className="flex items-center gap-2.5 min-w-0">
                           <span
                             className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
-                              styles?.dot ?? "bg-muted-foreground/40"
+                              styles?.dot ?? 'bg-muted-foreground/40'
                             }`}
                           />
                           <span className="text-xs font-body text-foreground truncate">
-                            {c.title || "Untitled task"}
+                            {c.title || 'Untitled task'}
                           </span>
                         </div>
                         {styles && (
@@ -437,7 +436,7 @@ export default function SessionCompletedPage({
                   </div>
                   {(() => {
                     const firstSection = Object.entries(snapshot.content || {}).find(
-                      ([, v]) => typeof v === "string" && v.trim().length > 0
+                      ([, v]) => typeof v === 'string' && v.trim().length > 0,
                     );
                     if (!firstSection) return null;
                     const [slug, text] = firstSection;
@@ -461,7 +460,7 @@ export default function SessionCompletedPage({
                 href={`/projects/${projectId}/board`}
                 Icon={Kanban}
                 label="Open board"
-                description={taskCount ? `${taskCount} new tasks` : "View kanban"}
+                description={taskCount ? `${taskCount} new tasks` : 'View kanban'}
                 tone="primary"
               />
               <SummaryCard
@@ -546,20 +545,24 @@ function SummaryCard({
   Icon: typeof Kanban;
   label: string;
   description: string;
-  tone: "primary" | "default";
+  tone: 'primary' | 'default';
 }) {
   return (
     <Link
       href={href}
       className={`group rounded-lg border p-4 transition-colors flex items-start gap-3 ${
-        tone === "primary"
-          ? "border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10"
-          : "border-border bg-card hover:border-primary/30 hover:bg-card/80"
+        tone === 'primary'
+          ? 'border-primary/30 bg-primary/5 hover:border-primary/50 hover:bg-primary/10'
+          : 'border-border bg-card hover:border-primary/30 hover:bg-card/80'
       }`}
     >
-      <Icon className={`h-4 w-4 mt-0.5 ${tone === "primary" ? "text-primary" : "text-muted-foreground"}`} />
+      <Icon
+        className={`h-4 w-4 mt-0.5 ${tone === 'primary' ? 'text-primary' : 'text-muted-foreground'}`}
+      />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{label}</p>
+        <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+          {label}
+        </p>
         <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{description}</p>
       </div>
       <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
