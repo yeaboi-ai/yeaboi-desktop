@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { User, Palette, Sparkles } from 'lucide-react';
+import { User, Palette, Sparkles, Bird } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SETTINGS_TAB_IDS, type SettingsTab } from '@/hooks/use-settings-tab';
 
@@ -15,6 +15,7 @@ const TABS: TabMeta[] = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'ai', label: 'AI', icon: Sparkles },
+  { id: 'duck', label: 'Duck', icon: Bird },
 ];
 
 type SettingsTabBarProps = {

@@ -2,7 +2,9 @@
 //
 // A tiny state machine drives the duck along the bottom of the screen:
 //   WANDER  — pick a spot, walk toward it, then idle a beat, repeat
+//               (standing still when the "walk around" preference is off)
 //   FLEE    — cursor got close: bolt along the ground away from it
+//               (only when the "avoid the cursor" preference is on)
 //   STARTLE — cursor got TOO close (or you clicked): hop with a yelp
 //   DRAG    — you grabbed it: it follows the cursor until you let go
 //
@@ -12,6 +14,10 @@
 // physics (baseY + vy under gravity) handles walking, hops, climbs, drops and
 // drag-release falls. Cursor position is fed from main so the duck reacts to
 // your mouse anywhere on screen.
+//
+// Size, colour and both behaviour switches arrive as `pet:prefs`. Size is not
+// only a width: every distance and acceleration below is in pixels, so they
+// scale with the duck or a big one waddles like a toy.
 
 const walker = document.getElementById('duck-walker');
 const rig = document.getElementById('duck-rig');
@@ -21,12 +27,17 @@ const footFront = rig.querySelector('.d-foot-front');
 const footBack = rig.querySelector('.d-foot-back');
 
 // --- geometry -------------------------------------------------------------
-const DUCK_W = rig.offsetWidth || 72;
+let DUCK_W = rig.offsetWidth || 72;
 let RIGH = 72; // rig height, refined once the base sprite loads
 const FEET_FRAC = 0.975; // sprite's feet-bottom as a fraction of rig height (measured: 496/509)
-let SURFACE_RAISE = 20; // extra lift so it stands ON the surface, not sunk into it (tray-tunable)
+let SURFACE_RAISE = 20; // extra lift so it stands ON the surface, not sunk into it (pref)
 const FLOOR_MARGIN = 10; // desktop floor: feet this far above the screen's bottom (raises the side-floor)
-const HIT_PAD = 3; // grab hitbox padding — small, so nearly the whole sprite is grabbable
+const HIT_PAD = 3; // hitbox inset — small, so nearly the whole sprite counts
+// The window is click-through until the renderer says the cursor is over the
+// duck, and the cursor feed is a poll. Turning solid slightly BEFORE the
+// pointer arrives is what makes the first click land instead of falling through
+// to the app underneath. Small, because solid pixels steal those clicks.
+const SOLID_MARGIN = 8;
 
 // dock geometry (window-local), from main; floor-only until it arrives
 let dock = { present: false, x: 0, top: 0, w: 0, h: 0 };
@@ -71,9 +82,32 @@ let tvy = 0;
 let tumbling = false; // mid-throw: physics-only until it settles
 let gait = 0; // gait phase accumulator, advances with distance travelled
 
-const STRIDE = 24; // px travelled per full step cycle (bigger = slower cadence)
-const FOOT_LIFT = 5; // how high a foot lifts during its swing (px)
-const THROW_MIN = 6; // release speed above which a drop becomes a throw
+// Everything below is quoted for a scale-1 (72px) duck; applyPrefs() rescales.
+const BASE = {
+  stride: 24, // px travelled per full step cycle (bigger = slower cadence)
+  footLift: 5, // how high a foot lifts during its swing (px)
+  throwMin: 6, // release speed above which a drop becomes a throw
+  throwMax: 42, // release speed is clamped here, so a flick cannot launch it off-screen
+  walkSpeed: 0.9,
+  fleeSpeed: 3.4, // scurry speed — slow enough that a quick cursor can overtake and grab it
+  fleeRadius: 150,
+  fleeCeiling: 120, // a cursor higher above the duck than this is not a threat
+  gravity: 1.1, // px/frame^2
+  vmax: 18, // terminal fall speed
+  look: 26, // how far ahead the duck looks for a step-up
+  startleVy: -13,
+  startlePush: 5,
+  hopPush: 2.6,
+  hopClear: 18, // extra height a climb hop clears the step by
+  still: 0.15, // speeds below this are "not moving", for the gait and the walk class
+};
+
+let S = 1; // the size multiplier every distance above is measured in
+let STRIDE = BASE.stride;
+let FOOT_LIFT = BASE.footLift;
+let THROW_MIN = BASE.throwMin;
+let walkAbout = true; // wander, rather than standing where it was put
+let evadeCursor = false; // flee an approaching cursor
 
 let mx = -9999;
 let my = -9999;
@@ -96,29 +130,13 @@ function springTo(s, target, k, d) {
   s.p += s.v;
 }
 
-const WALK_SPEED = 0.9;
-const FLEE_SPEED = 3.4; // scurry speed — slow enough that a quick cursor can overtake and grab it
-const FLEE_RADIUS = 150;
-const G = 1.1; // gravity (px/frame^2)
-const VMAX = 18; // terminal fall speed
-const LOOK = 26; // how far ahead the duck looks for a step-up
 const now = () => performance.now();
 const rand = (a, b) => a + Math.random() * (b - a);
 
 // --- personality (ported from the landing mascot) -------------------------
-const TAUNTS = [
-  'catch me if you can!',
-  "you'll never catch me 🦆",
-  'too slow!',
-  "bet you can't catch me",
-  'nice try 😜',
-  'gotta be quicker than that!',
-  'over here! …nope 🦆',
-];
 const REACTIONS = ['whoa!', 'hey! 🦆', 'eek!', 'missed me!', 'nope!', 'rude! 🦆'];
 const IDLE_LINES = ['yeaboi!', 'just vibing 🦆', 'nice dock', '🦆', 'quack.', 'brb, waddling'];
 let sayIdx = 0;
-let tauntIdx = 0;
 let bubbleShown = false;
 let bubbleHideT = null;
 // A sticky line is a question yeaboi is waiting on an answer to (a ship gate).
@@ -163,8 +181,8 @@ function positionBubble() {
 // --- facing ---------------------------------------------------------------
 // Sprite is drawn facing LEFT. scaleX(1) keeps that; scaleX(-1) faces right.
 function applyFacing() {
-  if (vx > 0.2) dir = -1;
-  else if (vx < -0.2) dir = 1;
+  if (vx > 0.2 * S) dir = -1;
+  else if (vx < -0.2 * S) dir = 1;
 }
 
 // --- feet (procedural gait) -----------------------------------------------
@@ -184,8 +202,8 @@ function footOffset(p, front) {
 function driveFeet() {
   const spd = Math.abs(vx);
   const walkGait = grounded && !tumbling;
-  const amt = walkGait ? Math.min(1, spd / 0.8) : 0; // neutral feet when stopped / airborne
-  if (walkGait && spd > 0.15) gait += spd / STRIDE;
+  const amt = walkGait ? Math.min(1, spd / (0.8 * S)) : 0; // neutral feet when stopped / airborne
+  if (walkGait && spd > BASE.still * S) gait += spd / STRIDE;
   const front = vx >= 0 ? 1 : -1;
   const fF = footOffset(gait % 1, front);
   const fB = footOffset((gait + 0.5) % 1, front);
@@ -194,10 +212,14 @@ function driveFeet() {
 }
 
 // --- interaction ----------------------------------------------------------
-function overDuck() {
+// Is the cursor on the duck, give or take `pad`? This decides only whether the
+// window is solid; the click itself is bounded by .duck-rig's pointer-events.
+function overDuck(pad) {
   const cx = x + DUCK_W / 2;
   const cy = baseY + RIGH / 2;
-  return Math.abs(mx - cx) <= DUCK_W / 2 - HIT_PAD && Math.abs(my - cy) <= RIGH / 2 - HIT_PAD;
+  return (
+    Math.abs(mx - cx) <= DUCK_W / 2 - HIT_PAD + pad && Math.abs(my - cy) <= RIGH / 2 - HIT_PAD + pad
+  );
 }
 function setInteractive(on) {
   if (on === interactive) return;
@@ -210,7 +232,7 @@ function setInteractive(on) {
 window.pet.onCursor((p) => {
   mx = p.x;
   my = p.y;
-  setInteractive(dragging || overDuck());
+  setInteractive(dragging || overDuck(SOLID_MARGIN));
 });
 
 rig.addEventListener('mousedown', (e) => {
@@ -239,10 +261,11 @@ window.addEventListener('mouseup', () => {
     // stop (it arcs, hits the ground, bounces, bounces off the side walls).
     tumbling = true;
     mode = 'throw';
-    vx = Math.max(-42, Math.min(42, tvx));
-    vy = Math.max(-42, Math.min(42, tvy));
+    const cap = BASE.throwMax * S;
+    vx = Math.max(-cap, Math.min(cap, tvx));
+    vy = Math.max(-cap, Math.min(cap, tvy));
     grounded = false;
-    sway.v += Math.max(-16, Math.min(16, tvx)); // spin flair in the throw direction
+    sway.v += Math.max(-16, Math.min(16, tvx / S)); // spin flair in the throw direction
     walker.classList.add('airborne');
     if (Math.random() < 0.85)
       say(['wheee!', 'yeaboi!', 'wooo 🦆', 'aaah!', 'again!'][Math.floor(Math.random() * 5)]);
@@ -258,7 +281,7 @@ window.addEventListener('mouseup', () => {
 rig.addEventListener('click', () => {
   if (dragging) return;
   // While the duck is holding a question, a click answers it — it opens the
-  // page that resolves it rather than making him jump.
+  // page that resolves it rather than making him hop.
   if (stickyLine) {
     const route = noticeRoute;
     noticeRoute = '';
@@ -273,8 +296,8 @@ rig.addEventListener('click', () => {
 function startle(pushDir) {
   if (!grounded || now() < jumpCd) return;
   jumpCd = now() + 2000;
-  vy = -13;
-  vx += pushDir * 5;
+  vy = BASE.startleVy * S;
+  vx += pushDir * BASE.startlePush * S;
   grounded = false;
   walker.classList.add('startled', 'airborne');
   if (bubbleShown || Math.random() < 0.9) say(REACTIONS[sayIdx++ % REACTIONS.length]);
@@ -282,8 +305,8 @@ function startle(pushDir) {
 }
 // jump sized to clear a step of height `h`, with clearance
 function hopTo(h, pushDir) {
-  vy = -Math.sqrt(2 * G * (h + 18));
-  vx += pushDir * 2.6;
+  vy = -Math.sqrt(2 * BASE.gravity * S * (h + BASE.hopClear * S));
+  vx += pushDir * BASE.hopPush * S;
   grounded = false;
   jumpCd = now() + 700;
   walker.classList.add('airborne');
@@ -309,7 +332,8 @@ function step() {
   const t = now();
   const center = x + DUCK_W / 2;
   const gap = mx - center;
-  const near = Math.abs(gap) < FLEE_RADIUS && my > baseY - 120;
+  const near =
+    evadeCursor && Math.abs(gap) < BASE.fleeRadius * S && my > baseY - BASE.fleeCeiling * S;
 
   if (dragging) {
     const nx = Math.max(0, Math.min(window.innerWidth - DUCK_W, mx - dragDX));
@@ -329,31 +353,33 @@ function step() {
         // teleport-hop on proximity: that launched it out of reach every time.
         // You can grab it mid-scurry; clicking it still makes it hop.
         mode = 'flee';
-        const closeness = 1 - Math.abs(gap) / FLEE_RADIUS;
+        const closeness = 1 - Math.abs(gap) / (BASE.fleeRadius * S);
         const away = gap >= 0 ? -1 : 1;
-        desired = away * FLEE_SPEED * (0.45 + 0.55 * closeness);
+        desired = away * BASE.fleeSpeed * S * (0.45 + 0.55 * closeness);
         const atWall = (away < 0 && x < 8) || (away > 0 && x > window.innerWidth - DUCK_W - 8);
         if (atWall) startle(away); // only hop when cornered against a wall
-      } else if (t < idleUntil) {
+      } else if (!walkAbout || t < idleUntil) {
+        // Standing still is still physics: it falls when dropped and hops when
+        // clicked, it just never picks somewhere to be.
         mode = 'wander';
         desired = 0;
       } else {
         mode = 'wander';
         const d = targetX - x;
-        if (Math.abs(d) < 3) {
+        if (Math.abs(d) < 3 * S) {
           pickTarget();
           desired = 0;
         } else {
-          desired = Math.sign(d) * WALK_SPEED;
+          desired = Math.sign(d) * BASE.walkSpeed * S;
         }
       }
       vx += (desired - vx) * 0.15;
 
       // ---- step-up: climb onto the dock when there's a higher surface ahead ----
-      if (grounded && Math.abs(vx) > 0.2 && t > jumpCd) {
+      if (grounded && Math.abs(vx) > 0.2 * S && t > jumpCd) {
         const mvDir = vx >= 0 ? 1 : -1;
         const curSurf = surfaceAt(center);
-        const aheadSurf = surfaceAt(center + mvDir * LOOK);
+        const aheadSurf = surfaceAt(center + mvDir * BASE.look * S);
         if (aheadSurf < curSurf - 6) hopTo(curSurf - aheadSurf, mvDir);
       }
     }
@@ -373,8 +399,8 @@ function step() {
 
     // ---- vertical physics (gravity + landing on the surface under us) ----
     const gnd = groundBaseY(x + DUCK_W / 2);
-    vy += G;
-    if (vy > VMAX) vy = VMAX;
+    vy += BASE.gravity * S;
+    if (vy > BASE.vmax * S) vy = BASE.vmax * S;
     baseY += vy;
     if (baseY >= gnd && vy >= 0) {
       const impact = vy; // fall speed at the moment of touchdown
@@ -382,8 +408,8 @@ function step() {
       vy = 0;
       if (!grounded) {
         grounded = true;
-        bnc.v += Math.min(9, 1.5 + impact * 0.5); // small downward bounce, scaled by impact
-        if (tumbling && impact > 6) {
+        bnc.v += Math.min(9, 1.5 + (impact / S) * 0.5) * S; // small downward bounce, scaled by impact
+        if (tumbling && impact > 6 * S) {
           vy = -impact * 0.42; // bounce back up
           grounded = false;
           sway.v += (vx >= 0 ? 1 : -1) * 6;
@@ -403,18 +429,20 @@ function step() {
   }
 
   applyFacing();
-  const moving = !dragging && !tumbling && grounded && Math.abs(vx) > 0.18;
+  const moving = !dragging && !tumbling && grounded && Math.abs(vx) > 0.18 * S;
   walker.classList.toggle('walking', moving);
   driveFeet();
 
   // ---- secondary motion (no squash — bounce + lean + jelly sway) ----
   // turn/accel wobble: an impulse opposite the change in horizontal velocity
-  if (!dragging) sway.v += -(vx - prevVx) * 1.7;
+  // The springs are angles and a small offset, so they read the velocities in
+  // scale-1 units — a bigger duck leans the same amount, not twice as far.
+  if (!dragging) sway.v += (-(vx - prevVx) * 1.7) / S;
   prevVx = vx;
   springTo(bnc, 0, 0.2, 0.7); // vertical bounce settles back to rest
   const leanTarget = dragging
     ? 0
-    : -vx * 2.3 + (grounded ? 0 : Math.max(-9, Math.min(9, vy * 0.55)));
+    : (-vx * 2.3) / S + (grounded ? 0 : Math.max(-9, Math.min(9, (vy / S) * 0.55)));
   springTo(lean, leanTarget, 0.2, 0.75);
   springTo(sway, 0, 0.16, 0.78);
 
@@ -424,9 +452,43 @@ function step() {
   positionBubble();
 }
 
+// --- preferences ----------------------------------------------------------
+// Size is a CSS width plus a rescale of every distance and acceleration above;
+// colour is two filter variables; the two switches are read by the main loop.
+function applyPrefs(p) {
+  if (!p || typeof p !== 'object') return;
+  const style = document.documentElement.style;
+  if (typeof p.scale === 'number' && p.scale > 0) {
+    S = p.scale;
+    style.setProperty('--duck-w', (72 * S).toFixed(1) + 'px');
+    STRIDE = BASE.stride * S;
+    FOOT_LIFT = BASE.footLift * S;
+    THROW_MIN = BASE.throwMin * S;
+  }
+  if (typeof p.hue === 'number') style.setProperty('--duck-hue', p.hue.toFixed(0) + 'deg');
+  if (typeof p.vividness === 'number') style.setProperty('--duck-sat', p.vividness.toFixed(2));
+  if (typeof p.raise === 'number') SURFACE_RAISE = p.raise;
+  if (typeof p.walk === 'boolean') walkAbout = p.walk;
+  if (typeof p.evade === 'boolean') evadeCursor = p.evade;
+
+  // The new width has to reach layout before the rig can be measured, and the
+  // duck has to be re-seated on the ground or a resize leaves it floating.
+  measure();
+  x = Math.max(0, Math.min(window.innerWidth - DUCK_W, x));
+  if (grounded) baseY = groundBaseY(x + DUCK_W / 2);
+  if (walkAbout) pickTarget();
+}
+
+function measure() {
+  DUCK_W = rig.offsetWidth || DUCK_W;
+  RIGH = rig.offsetHeight || RIGH;
+}
+
+window.pet.onPrefs(applyPrefs);
+
 // --- boot -----------------------------------------------------------------
 function boot() {
-  RIGH = rig.offsetHeight || RIGH;
+  measure();
   x = window.innerWidth * 0.5 - DUCK_W / 2;
   baseY = groundBaseY(x + DUCK_W / 2);
   walker.classList.remove('unloaded');
@@ -441,11 +503,6 @@ else baseImg.addEventListener('load', boot);
 
 window.addEventListener('resize', () => {
   x = Math.min(x, window.innerWidth - DUCK_W);
-});
-
-window.pet.onNudge((d) => {
-  SURFACE_RAISE += d;
-  if (grounded) baseY = groundBaseY(x + DUCK_W / 2); // re-snap to the new height
 });
 
 // Awareness: something happened while nobody was looking. The main process

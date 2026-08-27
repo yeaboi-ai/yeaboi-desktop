@@ -77,6 +77,10 @@ export interface YeaboiBridge {
   setPetEnabled: (enabled: boolean) => Promise<{ enabled: boolean }>;
   /** App moments forwarded to the duck's speech bubble. */
   petNotify: (notice: PetNotice) => void;
+  getPetPrefs: () => Promise<unknown>;
+  setPetPrefs: (patch: unknown) => Promise<unknown>;
+  /** A native banner for a run that finished. Clamped in main. */
+  notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** Self-update: state, then the three steps a person drives. */
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
@@ -125,6 +129,9 @@ const bridge: YeaboiBridge = {
   getPetEnabled: () => ipcRenderer.invoke('pet:get-enabled'),
   setPetEnabled: (enabled) => ipcRenderer.invoke('pet:set-enabled', enabled),
   petNotify: (notice) => ipcRenderer.send('pet:notify', notice),
+  getPetPrefs: () => ipcRenderer.invoke('pet:get-prefs'),
+  setPetPrefs: (patch) => ipcRenderer.invoke('pet:set-prefs', patch),
+  notify: (banner) => ipcRenderer.send('app:notify', banner),
   onUpdateState: (callback) => {
     ipcRenderer.on('update:state', (_event, state: unknown) => callback(state));
   },

@@ -16,6 +16,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/renderer/*"],
+      "@shared/*": ["./src/shared/*"],
       "@design/*": ["./node_modules/@yeaboi-ai/design/design/*"],
       "next/navigation": ["./src/renderer/shims/next-navigation.ts"],
       "next/link": ["./src/renderer/shims/next-link.tsx"],

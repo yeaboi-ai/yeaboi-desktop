@@ -9,6 +9,11 @@
   --text: #e7e9ee;
   --border-strong: #333842;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Written by pet.js from the stored preferences. */
+  --duck-w: 72px;
+  --duck-hue: 0deg;
+  --duck-sat: 1;
 }
 
 * {
@@ -48,7 +53,7 @@ body {
   cursor: -webkit-grab;
   cursor: grab;
   position: relative;
-  width: 72px;
+  width: var(--duck-w);
 }
 .duck-rig.grabbing,
 .duck-rig.grabbing * {
@@ -72,11 +77,14 @@ body {
 }
 
 /* the body transform layer — squash/stretch pivots on the feet (bottom center)
-   so the duck compresses onto the ground and stretches upward on a hop */
+   so the duck compresses onto the ground and stretches upward on a hop.
+   The recolour rides here so it covers every sprite layer at once; the shades
+   and the drop shadow are near-black, which hue-rotate leaves alone. */
 .duck-body {
   position: relative;
   transform-origin: 50% 100%;
   will-change: transform;
+  filter: hue-rotate(var(--duck-hue)) saturate(var(--duck-sat));
 }
 .duck-rig img {
   display: block;
@@ -215,32 +223,6 @@ body {
   }
   75% {
     transform: translateY(-1.5px) rotate(1.2deg);
-  }
-}
-
-/* tap-jump: a self-contained hop played when the duck is clicked. `.hop` is
-   applied last / one-shot so it wins over `.walking`. */
-.duck-walker .duck-rig.hop {
-  animation: duck-hop 0.62s cubic-bezier(0.3, 1.1, 0.4, 1) 1;
-}
-@keyframes duck-hop {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  28% {
-    transform: translateY(-34px) rotate(-4deg);
-  }
-  46% {
-    transform: translateY(-38px) rotate(0deg);
-  }
-  70% {
-    transform: translateY(0) rotate(0deg);
-  }
-  82% {
-    transform: translateY(-5px) rotate(0deg);
-  }
-  100% {
-    transform: translateY(0) rotate(0deg);
   }
 }
 

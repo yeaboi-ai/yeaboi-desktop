@@ -16,6 +16,7 @@ import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import { DOCK_SCRIPT, type DockRect, dockConfig, parseDockRect } from './dock';
+import { PET_DEFAULTS, type PetPrefs } from '../shared/pet-prefs';
 
 /** Window-local cursor feed rate. 16ms is one frame at 60fps — the duck flees
  *  a moving pointer, so a slower feed reads as a stutter. */
@@ -46,6 +47,7 @@ function queryDockRect(callback: (rect: DockRect | null) => void): void {
 export class Pet {
   private window: BrowserWindow | null = null;
   private timers: NodeJS.Timeout[] = [];
+  private prefs: PetPrefs = PET_DEFAULTS;
   private enabled = false;
   /** Where a click on a duck holding a question should land. */
   private onOpen: (route: string) => void = () => undefined;
@@ -68,20 +70,33 @@ export class Pet {
     });
   }
 
+  /** The single entry point for what the duck is: size, colour, gait, and
+   *  whether it exists at all. Sent on to a live window; applied on load to a
+   *  new one. */
+  setPrefs(prefs: PetPrefs): void {
+    this.prefs = prefs;
+    this.enabled = prefs.enabled;
+    if (!prefs.enabled) {
+      this.hide();
+      return;
+    }
+    this.show();
+    this.sendPrefs();
+  }
+
   setEnabled(enabled: boolean): void {
-    this.enabled = enabled;
-    if (enabled) this.show();
-    else this.hide();
+    this.setPrefs({ ...this.prefs, enabled });
+  }
+
+  private sendPrefs(): void {
+    const window = this.window;
+    if (window && !window.isDestroyed()) window.webContents.send('pet:prefs', this.prefs);
   }
 
   /** Tell the duck about something that happened while nobody was looking. */
   notify(notice: PetNotice): void {
     const window = this.window;
     if (window && !window.isDestroyed()) window.webContents.send('pet:notice', notice);
-  }
-
-  nudge(delta: number): void {
-    this.window?.webContents.send('pet:nudge', delta);
   }
 
   recenter(): void {
@@ -149,7 +164,10 @@ export class Pet {
         });
       });
     };
-    window.webContents.once('did-finish-load', sendLayout);
+    window.webContents.once('did-finish-load', () => {
+      this.sendPrefs();
+      sendLayout();
+    });
     this.timers.push(setInterval(sendLayout, LAYOUT_POLL_MS));
 
     // The cursor is polled rather than taken from forwarded DOM events: those

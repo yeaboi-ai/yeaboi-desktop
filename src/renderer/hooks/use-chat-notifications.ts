@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { playChime, windowFocused } from '@/lib/chime';
 
 const STORAGE_KEY = 'chat_notifications_enabled';
 
@@ -29,47 +30,6 @@ function readEnabled(): boolean {
 function writeEnabled(v: boolean) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(STORAGE_KEY, v ? 'true' : 'false');
-}
-
-// Soft synthesized "ding" via Web Audio API. Avoids shipping an asset and
-// keeps cross-platform behaviour identical. Two short sine pulses, ~120ms.
-function playChime() {
-  try {
-    const Ctx =
-      (
-        window as unknown as {
-          AudioContext?: typeof AudioContext;
-          webkitAudioContext?: typeof AudioContext;
-        }
-      ).AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const now = ctx.currentTime;
-    const tone = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, now + start);
-      gain.gain.linearRampToValueAtTime(0.18, now + start + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + start);
-      osc.stop(now + start + duration + 0.02);
-    };
-    tone(880, 0, 0.12);
-    tone(1320, 0.08, 0.16);
-    setTimeout(() => ctx.close().catch(() => {}), 600);
-  } catch {
-    /* no-op — audio is a soft enhancement */
-  }
-}
-
-function isWindowFocused(): boolean {
-  if (typeof document === 'undefined') return true;
-  return !document.hidden && document.hasFocus();
 }
 
 /**
@@ -134,7 +94,7 @@ export function useChatNotifications({ messages, currentUserId }: UseChatNotific
     // background — otherwise it's redundant with the in-app badge + chime
     // and most browsers suppress it anyway when the page is focused.
     if (
-      !isWindowFocused() &&
+      !windowFocused() &&
       typeof window !== 'undefined' &&
       'Notification' in window &&
       Notification.permission === 'granted'

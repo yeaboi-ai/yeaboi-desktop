@@ -47,6 +47,9 @@ interface YeaboiBridge {
   getPetEnabled: () => Promise<boolean>;
   setPetEnabled: (enabled: boolean) => Promise<{ enabled: boolean }>;
   petNotify: (notice: { quip: string; sticky?: boolean; route?: string }) => void;
+  getPetPrefs: () => Promise<unknown>;
+  setPetPrefs: (patch: unknown) => Promise<unknown>;
+  notify: (banner: { title: string; body?: string; route?: string }) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
   checkForUpdate: () => Promise<unknown>;

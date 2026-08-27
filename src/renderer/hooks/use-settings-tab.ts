@@ -7,7 +7,7 @@
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 
-export const SETTINGS_TAB_IDS = ['profile', 'appearance', 'ai'] as const;
+export const SETTINGS_TAB_IDS = ['profile', 'appearance', 'ai', 'duck'] as const;
 
 export type SettingsTab = (typeof SETTINGS_TAB_IDS)[number];
 

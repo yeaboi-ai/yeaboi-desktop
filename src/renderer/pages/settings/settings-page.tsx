@@ -7,6 +7,7 @@ import { SettingsHeader } from '@/components/settings/settings-header';
 import { ProfileTab } from '@/components/settings/tabs/profile-tab';
 import { AppearanceTab } from '@/components/settings/tabs/appearance-tab';
 import { AITab } from '@/components/settings/tabs/ai-tab';
+import { DuckTab } from '@/components/settings/tabs/duck-tab';
 
 export default function SettingsPage() {
   const { tab, setTab } = useSettingsTab();
@@ -24,6 +25,7 @@ export default function SettingsPage() {
         {tab === 'profile' && <ProfileTab />}
         {tab === 'appearance' && <AppearanceTab />}
         {tab === 'ai' && <AITab />}
+        {tab === 'duck' && <DuckTab />}
       </div>
     </SettingsShell>
   );

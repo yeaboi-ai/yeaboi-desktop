@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router';
 import { onAmbientEvent, onNavigate } from '@/lib/yeaboi/api';
 import { getAmbience, loadQuips } from '@/lib/yeaboi/ambience';
 import { duckVoice } from '@/lib/duck-voice';
+import { notifyPrefs, setNotifyPrefs } from '@/lib/duck-events';
+import { PET_DEFAULTS, mergePetPrefs } from '@shared/pet-prefs';
 import { toast } from '@/components/ui/toast';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { ConsentModal } from './consent-modal';
@@ -28,6 +30,12 @@ export function AmbienceHost() {
   const [consentSignal, setConsentSignal] = useState(0);
 
   useEffect(() => {
+    // The duck's notification choices, read once. duck-events keeps them: it is
+    // where every notice is turned into words, here and on every page.
+    window.yeaboi
+      .getPetPrefs()
+      .then((stored) => setNotifyPrefs(mergePetPrefs(PET_DEFAULTS, stored)))
+      .catch(() => undefined);
     onNavigate((route) => {
       // Main asking the window to show a route — the tray, or a click on the
       // desktop duck holding a question.
@@ -46,7 +54,7 @@ export function AmbienceHost() {
       // is answered, everything else fades.
       if (event['sticky']) duckVoice().saySticky(quip);
       else duckVoice().say(quip);
-      if (TOASTED_KINDS.has(kind) && quip) {
+      if (TOASTED_KINDS.has(kind) && quip && notifyPrefs().notify.toast) {
         const failed = kind === 'ceremony_failed';
         toast.show({
           title: quip,
