@@ -3,8 +3,9 @@
 # platform's FastAPI (localhost in dev; packaging a backend is future work).
 
 appId: ai.yeaboi.desktop
-productName: yeaboi
-copyright: Copyright © yeaboi
+# productName is not repeated here: electron-builder reads it from
+# package.json, which is also where an unpackaged run gets app.getName().
+copyright: Copyright © yeaboi.ai
 
 directories:
   output: dist
@@ -95,7 +96,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   perMachine: false
   createDesktopShortcut: true
-  shortcutName: yeaboi
+  shortcutName: yeaboi.ai
 
 linux:
   icon: build/icons

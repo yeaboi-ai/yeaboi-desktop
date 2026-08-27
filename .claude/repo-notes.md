@@ -59,6 +59,18 @@ no Python environment here and this must not create one. `test/icons.test.ts` as
 in the ordinary lane with no Python at all, parsing the generator's own tables so the two cannot
 drift.
 
+**A dev run is not the app.** `npm run dev` executes node_modules' stock `Electron.app`, and macOS
+takes the Dock icon and the menu-bar title from *that* bundle — `app.setName()` reaches neither.
+`scripts/dev-bundle-name.mjs` (a `predev` step) stamps it with `productName` and `build/icon.icns`,
+then re-registers it with `lsregister`, without which the Dock keeps serving its cached "Electron".
+The bundle is gitignored and every failure there is a warning, never a broken `dev`.
+
+**The display name is `productName` in `package.json`, and only there.** `electron-builder.yml` does
+not repeat it, an unpackaged run reads the same key for `app.getName()`, and the tray labels are
+derived from it. `app.getPath('userData')` is deliberately pinned in `src/main/index.ts` so a rename
+never moves anyone's `settings.json`. `test/packaging.test.ts`'s `identity` block is what fails when
+half a rename lands.
+
 ## Releasing
 
 `.github/workflows/release.yml` on a `v*` tag or a dispatch. Two things to know:

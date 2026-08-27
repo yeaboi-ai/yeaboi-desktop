@@ -13,6 +13,7 @@
 // external link a card happens to contain — goes to the OS browser.
 
 import { BrowserWindow, ipcMain, shell } from 'electron';
+import iconPath from '../../build/icon.png?asset';
 import type { Sidecar } from './sidecar';
 
 const windows = new Map<string, BrowserWindow>();
@@ -70,6 +71,7 @@ function openWindow(boardId: string, board: BoardSnapshot, hostUrl: string): voi
     minWidth: 720,
     minHeight: 520,
     title: `${TITLES[board.kind] ?? 'Board'} — ${board.title}`,
+    icon: iconPath,
     backgroundColor: '#0e1013',
     webPreferences: {
       // No preload at all: a board page is the same document a teammate opens

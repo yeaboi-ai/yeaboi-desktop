@@ -17,7 +17,11 @@
 // is a window of its own.
 
 import { join } from 'node:path';
-import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
+import { BrowserWindow, app, ipcMain, nativeImage, session, shell } from 'electron';
+// The 1024px master of the committed icon set. macOS reads a packaged app's
+// icon from the bundle, so this is what dresses the dev run's Dock and what
+// Windows and Linux draw on the window itself.
+import iconPath from '../../build/icon.png?asset';
 import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
@@ -54,6 +58,10 @@ let tray: AppTray | null = null;
 // escape hatch for pointing the renderer at a hand-run planning server.
 const externalPlanningUrl = process.env['YEABOI_API_URL'] ?? '';
 
+// Storage is not branding: the display name is free to change without moving
+// anyone's settings.json, and the dev run keeps a directory of its own.
+app.setPath('userData', join(app.getPath('appData'), app.isPackaged ? 'yeaboi' : 'yeaboi-desktop'));
+
 registerAppScheme();
 
 function createMainWindow(): void {
@@ -63,6 +71,9 @@ function createMainWindow(): void {
     minWidth: 960,
     minHeight: 640,
     show: false,
+    icon: iconPath,
+    // What the window is called until index.html's own <title> loads.
+    title: app.getName(),
     backgroundColor: '#0a0a0a', // planning theme dark background — no white flash
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
@@ -133,6 +144,19 @@ if (!gotLock) {
 
   void app.whenReady().then(() => {
     settings.load();
+    // An unpackaged run lives inside node_modules' stock Electron.app, whose
+    // Info.plist is what the Dock reads; only this puts the duck there.
+    // scripts/dev-bundle-name.mjs handles the name beside it.
+    if (process.platform === 'darwin' && !app.isPackaged) {
+      app.dock?.setIcon(nativeImage.createFromPath(iconPath));
+    }
+    app.setAboutPanelOptions({
+      applicationName: app.getName(),
+      applicationVersion: app.getVersion(),
+      version: process.versions.electron,
+      copyright: 'Copyright © yeaboi.ai',
+      iconPath,
+    });
     // Machine secrets under ~/.yeaboi/planning: generated on first run. The
     // JWT secret main mints with must equal the NEXTAUTH_SECRET the local
     // planning sidecar runs under — same file, same value. An explicit

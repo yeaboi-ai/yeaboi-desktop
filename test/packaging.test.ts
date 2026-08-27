@@ -14,6 +14,7 @@ const ROOT = resolve(import.meta.dirname, '..');
 const read = (relative: string) => readFileSync(resolve(ROOT, relative), 'utf8');
 
 const builder = parse(read('electron-builder.yml'));
+const pkg = JSON.parse(read('package.json'));
 
 describe('signing', () => {
   it('the hardened runtime is on and notarized', () => {
@@ -87,5 +88,41 @@ describe('updates', () => {
     expect(builder.publish.provider).toBe('github');
     expect(builder.publish.owner).toBe('yeaboi-ai');
     expect(builder.publish.repo).toBe('yeaboi-desktop');
+  });
+});
+
+describe('identity', () => {
+  // Nothing else notices a half-done rename: the app menu, the bundle name and
+  // the installer filenames all derive from one key, and the pieces that quote
+  // it by hand are the ones that go stale.
+  it('the display name is declared once, in package.json', () => {
+    expect(pkg.productName).toBe('yeaboi.ai');
+    expect(builder.productName).toBeUndefined();
+  });
+
+  it('the windows shortcut carries the same name', () => {
+    expect(builder.nsis.shortcutName).toBe(pkg.productName);
+  });
+
+  it('the gatekeeper step finds the bundle by glob, not by name', () => {
+    // `find dist -name 'yeaboi.app'` returns nothing once productName moves,
+    // and `spctl` is then handed an empty path on a green run.
+    const release = read('.github/workflows/release.yml');
+    expect(release).toContain("-name '*.app'");
+  });
+
+  it('main dresses the app in the committed icon', () => {
+    // macOS reads a packaged bundle's icon itself; the dev run has nothing but
+    // this, and the About panel has nothing but this on any platform.
+    const main = read('src/main/index.ts');
+    expect(main).toContain('build/icon.png?asset');
+    expect(main).toContain('setAboutPanelOptions');
+    expect(main).toContain('dock?.setIcon');
+  });
+
+  it('settings do not move when the name does', () => {
+    // app.getPath('userData') is derived from app.getName(), so an unpinned
+    // path orphans an installed app's settings.json on every rename.
+    expect(read('src/main/index.ts')).toContain("app.setPath('userData'");
   });
 });

@@ -126,7 +126,9 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          app=$(find dist -maxdepth 3 -name 'yeaboi.app' | head -1)
+          # By glob, not by name: the bundle is named from productName and
+          # a rename must not quietly turn this step into a no-op.
+          app=$(find dist -maxdepth 3 -name '*.app' | head -1)
           echo "assessing $app"
           spctl --assess --type execute --verbose=4 "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
