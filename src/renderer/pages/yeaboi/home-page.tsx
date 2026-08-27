@@ -2,7 +2,7 @@
 
 // Home — the desktop's welcome screen: the same card inventory the TUI's
 // landing split renders (served verbatim from /api/meta/capabilities so it
-// can never drift from _MODE_CARDS), plus the rotating tips ticker and a
+// can never drift from _MODE_CARDS), plus the duck's tip companion and a
 // door into the planning workspace.
 
 import { useEffect, useState } from 'react';
@@ -10,7 +10,8 @@ import { useRouter } from 'next/navigation';
 import { Columns3, LayoutGrid } from 'lucide-react';
 import { apiGet } from '@/lib/yeaboi/api';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { Badge } from '@/components/ui/badge';
+import { TipCompanion } from '@/components/yeaboi/tip-companion';
+import { MODE_ROUTES, type Tip } from '@/lib/yeaboi/tips';
 
 interface ModeCard {
   key: string;
@@ -33,35 +34,6 @@ interface Capabilities {
   modes: ModeCard[];
   agents: ModeCard[];
 }
-
-interface Tip {
-  key: string;
-  text: string;
-  mode_key: string | null;
-  is_new: boolean;
-  is_beta: boolean;
-}
-
-const TIP_ROTATE_MS = 6_000;
-
-/** TUI mode keys → desktop routes. A key with no page yet still gets a card;
- *  the placeholder page says so honestly. */
-const MODE_ROUTES: Record<string, string> = {
-  analysis: '/humans/analysis',
-  planning: '/humans/planning',
-  standup: '/humans/standup',
-  retro: '/humans/retro',
-  poker: '/humans/poker',
-  performance: '/humans/performance',
-  reporting: '/humans/reporting',
-  ship: '/humans/ship',
-  usage: '/usage',
-  settings: '/settings/credentials',
-  'agent-usage': '/agents/usage',
-  'agent-advisor': '/agents/advisor',
-  'agent-standup': '/agents/standup',
-  'agent-security': '/agents/security',
-};
 
 function CardGrid({ cards, onOpen }: { cards: ModeCard[]; onOpen: (key: string) => void }) {
   return (
@@ -93,7 +65,6 @@ function HomeBody() {
   const router = useRouter();
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [tipIndex, setTipIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,12 +74,6 @@ function HomeBody() {
       () => undefined,
     );
   }, []);
-
-  useEffect(() => {
-    if (tips.length === 0) return;
-    const timer = setInterval(() => setTipIndex((i) => (i + 1) % tips.length), TIP_ROTATE_MS);
-    return () => clearInterval(timer);
-  }, [tips]);
 
   if (error)
     return (
@@ -120,7 +85,6 @@ function HomeBody() {
 
   const humans = caps.categories.find((c) => c.key === 'humans');
   const agents = caps.categories.find((c) => c.key === 'agents');
-  const tip = tips[tipIndex];
   const open = (key: string) => {
     const route = MODE_ROUTES[key];
     if (route) router.push(route);
@@ -173,16 +137,11 @@ function HomeBody() {
       </p>
       <CardGrid cards={caps.agents} onOpen={open} />
 
-      {tip && (
-        <div
-          className="mt-8 flex items-center gap-2 rounded-xl bg-secondary/50 px-4 py-2.5"
-          title="rotating tips — the same rotation as the TUI welcome screen"
-        >
-          <span className="text-[12px] text-muted-foreground">{tip.text}</span>
-          {tip.is_beta ? <Badge variant="outline">beta</Badge> : null}
-          {!tip.is_beta && tip.is_new ? <Badge variant="outline">new</Badge> : null}
-        </div>
-      )}
+      <TipCompanion
+        tips={tips}
+        cards={[...caps.modes, ...caps.agents]}
+        onNavigate={(route) => router.push(route)}
+      />
     </>
   );
 }
