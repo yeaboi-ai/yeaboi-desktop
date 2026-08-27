@@ -37,13 +37,22 @@ describe('signing', () => {
     expect(entitlements).toContain('com.apple.security.cs.allow-unsigned-executable-memory');
   });
 
-  it('talks to the backend but serves nothing', () => {
+  it('talks out, serves its own sidecars, and hears the room', () => {
     const entitlements = read('build/entitlements.mac.plist');
     expect(entitlements).toContain('com.apple.security.network.client');
-    expect(entitlements).not.toContain('com.apple.security.network.server');
-    // No dictation any more — a mic entitlement we do not use is a prompt
-    // (and a notarization question) we do not want.
-    expect(entitlements).not.toContain('com.apple.security.device.audio-input');
+    // The app bundles its backends now: the two Python sidecars and
+    // livekit-server all listen (loopback, and LAN for call participants).
+    expect(entitlements).toContain('com.apple.security.network.server');
+    // Dictation is back (on-device whisper) and sessions have voice/video
+    // calls — the mic and camera entitlements are used, so their prompts and
+    // notarization questions are earned.
+    expect(entitlements).toContain('com.apple.security.device.audio-input');
+    expect(entitlements).toContain('com.apple.security.device.camera');
+  });
+
+  it('the media prompts explain themselves', () => {
+    expect(builder.mac.extendInfo).toHaveProperty('NSMicrophoneUsageDescription');
+    expect(builder.mac.extendInfo).toHaveProperty('NSCameraUsageDescription');
   });
 
   it('the dock climb declares its apple events', () => {
