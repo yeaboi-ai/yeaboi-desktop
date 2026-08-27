@@ -113,7 +113,10 @@ function ScreenRow({
             onBlur={commitName}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitName();
-              if (e.key === 'Escape') { setDraftName(screen.name); setEditingName(false); }
+              if (e.key === 'Escape') {
+                setDraftName(screen.name);
+                setEditingName(false);
+              }
             }}
             style={{
               width: '100%',
@@ -145,7 +148,9 @@ function ScreenRow({
             {screen.name}
           </div>
         )}
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, lineHeight: 1.35 }}>
+        <div
+          style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2, lineHeight: 1.35 }}
+        >
           {screen.intent}
         </div>
       </div>
@@ -281,7 +286,6 @@ function StatusPill({ screen }: { screen: PlanScreen }) {
   return <div />;
 }
 
-
 function removeBtnStyle(_kind: 'remove' | 'restore'): React.CSSProperties {
   const base: React.CSSProperties = {
     width: 24,
@@ -322,10 +326,7 @@ function TierSection({
   // driven auto-expansion runs hero in the background while the plan
   // card stupidly says "Generate Hero" still clickable.
   const anyApproved = active.some((s) => s.status === 'approved');
-  const isGenerating =
-    generatingTier === tier
-    || generatingTier === 'all'
-    || anyApproved;
+  const isGenerating = generatingTier === tier || generatingTier === 'all' || anyApproved;
   const allGenerated = active.length > 0 && active.every((s) => s.status === 'generated');
   return (
     <div style={{ marginBottom: 18 }}>
@@ -346,9 +347,11 @@ function TierSection({
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
             color:
-              tier === 'hero' ? 'rgba(229,166,48,0.85)' :
-              tier === 'secondary' ? 'var(--muted-foreground)' :
-              'var(--muted-foreground)',
+              tier === 'hero'
+                ? 'rgba(229,166,48,0.85)'
+                : tier === 'secondary'
+                  ? 'var(--muted-foreground)'
+                  : 'var(--muted-foreground)',
           }}
         >
           {TIER_LABEL[tier]} · {active.length}
@@ -375,7 +378,11 @@ function TierSection({
               opacity: allGenerated ? 0.4 : 1,
             }}
           >
-            {allGenerated ? 'Generated' : isGenerating ? 'Generating…' : `Generate ${TIER_LABEL[tier]}`}
+            {allGenerated
+              ? 'Generated'
+              : isGenerating
+                ? 'Generating…'
+                : `Generate ${TIER_LABEL[tier]}`}
           </button>
         )}
       </div>
@@ -396,14 +403,13 @@ interface WireframePlanPanelProps extends WireframePlanActions {
   embedded?: boolean;
 }
 
-const PULSE_KEYFRAMES_ID = "wf-plan-pulse-keyframes";
+const PULSE_KEYFRAMES_ID = 'wf-plan-pulse-keyframes';
 function injectPulseKeyframes() {
-  if (typeof document === "undefined") return;
+  if (typeof document === 'undefined') return;
   if (document.getElementById(PULSE_KEYFRAMES_ID)) return;
-  const style = document.createElement("style");
+  const style = document.createElement('style');
   style.id = PULSE_KEYFRAMES_ID;
-  style.textContent =
-    "@keyframes wf-plan-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }";
+  style.textContent = '@keyframes wf-plan-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }';
   document.head.appendChild(style);
 }
 
@@ -421,9 +427,7 @@ export function WireframePlanPanel({
   const grouped: Record<ScreenTier, PlanScreen[]> = { hero: [], secondary: [], optional: [] };
   for (const s of plan.screens) grouped[s.tier].push(s);
 
-  const archetypeBadges = (plan.archetypes || [])
-    .filter(([, conf]) => conf >= 0.3)
-    .slice(0, 3);
+  const archetypeBadges = (plan.archetypes || []).filter(([, conf]) => conf >= 0.3).slice(0, 3);
 
   return (
     <div
@@ -437,7 +441,14 @@ export function WireframePlanPanel({
         boxShadow: embedded ? 'none' : '0 4px 24px rgba(0,0,0,0.25)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 14,
+        }}
+      >
         <div>
           <div
             style={{
@@ -461,7 +472,9 @@ export function WireframePlanPanel({
                 return (
                   <>
                     {active.length} screens ·{' '}
-                    <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: 13 }}>
+                    <span
+                      style={{ fontWeight: 500, color: 'rgba(255,255,255,0.55)', fontSize: 13 }}
+                    >
                       edit before generating
                     </span>
                   </>
@@ -471,7 +484,14 @@ export function WireframePlanPanel({
                 <>
                   {generated} / {active.length} screens
                   {failed > 0 && (
-                    <span style={{ fontWeight: 500, color: 'rgba(248,113,113,0.85)', fontSize: 13, marginLeft: 8 }}>
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        color: 'rgba(248,113,113,0.85)',
+                        fontSize: 13,
+                        marginLeft: 8,
+                      }}
+                    >
                       · {failed} failed
                     </span>
                   )}
@@ -480,7 +500,15 @@ export function WireframePlanPanel({
             })()}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 240 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 4,
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            maxWidth: 240,
+          }}
+        >
           {archetypeBadges.map(([name, conf]) => (
             <div
               key={name}

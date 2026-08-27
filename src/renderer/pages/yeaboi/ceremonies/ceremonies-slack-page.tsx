@@ -252,8 +252,8 @@ function CeremoniesSlackBody() {
 
           <Section title="What Slack asked for">
             <p className="text-[12px] text-muted-foreground mb-3">
-              Every event the lane considered, including the refused ones — &quot;you are not on
-              the list&quot;, &quot;I could not tell what you meant&quot; and &quot;the write said
+              Every event the lane considered, including the refused ones — &quot;you are not on the
+              list&quot;, &quot;I could not tell what you meant&quot; and &quot;the write said
               no&quot; are different problems.
             </p>
             <Table

@@ -158,7 +158,10 @@ function HomeBody() {
         </button>
       </div>
 
-      <p className="text-[11px] font-body uppercase tracking-wide mb-3" style={{ color: humans?.color }}>
+      <p
+        className="text-[11px] font-body uppercase tracking-wide mb-3"
+        style={{ color: humans?.color }}
+      >
         Humans — {humans?.verb}
       </p>
       <CardGrid cards={caps.modes} onOpen={open} />

@@ -450,7 +450,10 @@ function CardBody({
         <Section
           title="Transcript Review"
           actions={
-            <Link href="/humans/standup/review" className="text-[12px] text-primary hover:underline">
+            <Link
+              href="/humans/standup/review"
+              className="text-[12px] text-primary hover:underline"
+            >
               Open
             </Link>
           }

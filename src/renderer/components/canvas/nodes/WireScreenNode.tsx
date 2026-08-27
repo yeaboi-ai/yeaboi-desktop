@@ -13,7 +13,11 @@ function luminance(hex: string): number {
   const m = hex.match(/^#?([0-9a-f]{3,8})$/i);
   if (!m) return 0.5;
   let h = m[1];
-  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
   if (h.length === 8) h = h.slice(0, 6);
   if (h.length !== 6) return 0.5;
   const r = parseInt(h.slice(0, 2), 16) / 255;
@@ -86,8 +90,9 @@ function buildTokenVars(sessionId: string | undefined): string {
     const pick = (key: string, fallback: string): string => {
       const v = rawColors[key];
       if (!v) return fallback;
-      if (typeof v === "string") return v;
-      if (typeof v === "object" && v !== null && typeof (v as any).hex === "string") return (v as any).hex;
+      if (typeof v === 'string') return v;
+      if (typeof v === 'object' && v !== null && typeof (v as any).hex === 'string')
+        return (v as any).hex;
       return fallback;
     };
     const typography = (ds.typography || {}) as Record<string, unknown>;
@@ -97,24 +102,37 @@ function buildTokenVars(sessionId: string | undefined): string {
     // serif placeholders rather than considered design choices. If the
     // design system picks any of these, swap for a clean system sans.
     const BANNED_FONTS = [
-      "times", "times new roman",
-      "georgia", "garamond", "eb garamond",
-      "bodoni", "didot",
-      "playfair", "playfair display",
-      "lora", "merriweather",
-      "pt serif", "source serif",
-      "crimson", "crimson text",
-      "iowan", "iowan old style",
-      "cormorant", "libre baskerville",
-      "noto serif", "roboto serif",
-      "spectral",
-      "palatino", "palatino linotype",
-      "book antiqua", "baskerville",
+      'times',
+      'times new roman',
+      'georgia',
+      'garamond',
+      'eb garamond',
+      'bodoni',
+      'didot',
+      'playfair',
+      'playfair display',
+      'lora',
+      'merriweather',
+      'pt serif',
+      'source serif',
+      'crimson',
+      'crimson text',
+      'iowan',
+      'iowan old style',
+      'cormorant',
+      'libre baskerville',
+      'noto serif',
+      'roboto serif',
+      'spectral',
+      'palatino',
+      'palatino linotype',
+      'book antiqua',
+      'baskerville',
     ];
     const sanitizeFontFamily = (raw: string): string => {
       const cleaned = raw.trim();
       if (!cleaned) return SYSTEM_SANS;
-      const head = cleaned.split(",")[0].replace(/['"]/g, "").trim().toLowerCase();
+      const head = cleaned.split(',')[0].replace(/['"]/g, '').trim().toLowerCase();
       if (!head) return SYSTEM_SANS;
       // Treat any value containing "serif" but not "sans-serif" as banned.
       const looksSerif = /\bserif\b/.test(head) && !/sans-?serif/.test(head);
@@ -127,27 +145,27 @@ function buildTokenVars(sessionId: string | undefined): string {
       return /sans-?serif/i.test(cleaned) ? cleaned : `${cleaned}, ${SYSTEM_SANS}`;
     };
     const fontFamily = sanitizeFontFamily(
-      ((typography.bodyFont as string) ||
+      (typography.bodyFont as string) ||
         (typography.body as string) ||
         (typography.family as string) ||
-        ""),
+        '',
     );
 
-    const bg = pick("background", "var(--background)");
-    const surface = pick("surface", "var(--card)");
+    const bg = pick('background', 'var(--background)');
+    const surface = pick('surface', 'var(--card)');
     // Guard text contrast — design lib sometimes emits palettes where text
     // is barely distinguishable from bg, which renders wireframes as nearly
     // invisible content on dark backgrounds.
-    const text = ensureContrast(pick("text", "var(--foreground)"), bg, 4.5);
+    const text = ensureContrast(pick('text', 'var(--foreground)'), bg, 4.5);
     // Muted is meant to be lower-contrast but not invisible — enforce ≥3:1.
-    const mutedRaw = pick("muted", "var(--muted-foreground)");
-    const muted = mutedRaw.startsWith("#") ? ensureContrast(mutedRaw, bg, 3) : mutedRaw;
-    const accent = pick("accent", pick("primary", "var(--primary)"));
-    const primary = pick("primary", accent);
-    const border = pick("border", "rgba(255,255,255,0.12)");
-    const success = pick("success", "#22c55e");
-    const warning = pick("warning", "#f59e0b");
-    const error = pick("error", "#ef4444");
+    const mutedRaw = pick('muted', 'var(--muted-foreground)');
+    const muted = mutedRaw.startsWith('#') ? ensureContrast(mutedRaw, bg, 3) : mutedRaw;
+    const accent = pick('accent', pick('primary', 'var(--primary)'));
+    const primary = pick('primary', accent);
+    const border = pick('border', 'rgba(255,255,255,0.12)');
+    const success = pick('success', '#22c55e');
+    const warning = pick('warning', '#f59e0b');
+    const error = pick('error', '#ef4444');
     const onAccent = ensureContrast(bg, accent, 3);
     return `
       :root {
@@ -178,50 +196,51 @@ function buildTokenVars(sessionId: string | undefined): string {
 function resolveTokenRef(ref: string, ds: Record<string, unknown>): string {
   const m = /^\{([^}]+)\}$/.exec(ref);
   if (!m) return ref;
-  const path = m[1].split(".");
+  const path = m[1].split('.');
   let cur: unknown = ds;
   for (const part of path) {
-    if (cur && typeof cur === "object" && part in (cur as Record<string, unknown>)) {
+    if (cur && typeof cur === 'object' && part in (cur as Record<string, unknown>)) {
       cur = (cur as Record<string, unknown>)[part];
     } else {
       return ref;
     }
   }
-  if (typeof cur === "string" || typeof cur === "number") return String(cur);
+  if (typeof cur === 'string' || typeof cur === 'number') return String(cur);
   // Tolerate {colors.accent} shorthand → resolves to .hex
-  if (cur && typeof cur === "object" && typeof (cur as any).hex === "string") return (cur as any).hex;
+  if (cur && typeof cur === 'object' && typeof (cur as any).hex === 'string')
+    return (cur as any).hex;
   return ref;
 }
 
 // Standard CSS property names for component-bundle keys. Anything not in
 // the map is treated as already-CSS (e.g. `padding`, `color`).
 const COMPONENT_KEY_TO_CSS: Record<string, string> = {
-  background: "background",
-  color: "color",
-  text: "color",
-  textColor: "color",
-  rounded: "border-radius",
-  border: "border",
-  borderColor: "border-color",
-  borderWidth: "border-width",
-  padding: "padding",
-  margin: "margin",
-  fontWeight: "font-weight",
-  fontSize: "font-size",
-  fontFamily: "font-family",
-  letterSpacing: "letter-spacing",
-  lineHeight: "line-height",
-  textTransform: "text-transform",
-  opacity: "opacity",
-  boxShadow: "box-shadow",
+  background: 'background',
+  color: 'color',
+  text: 'color',
+  textColor: 'color',
+  rounded: 'border-radius',
+  border: 'border',
+  borderColor: 'border-color',
+  borderWidth: 'border-width',
+  padding: 'padding',
+  margin: 'margin',
+  fontWeight: 'font-weight',
+  fontSize: 'font-size',
+  fontFamily: 'font-family',
+  letterSpacing: 'letter-spacing',
+  lineHeight: 'line-height',
+  textTransform: 'text-transform',
+  opacity: 'opacity',
+  boxShadow: 'box-shadow',
 };
 
 // Pseudo-class suffixes that map to CSS pseudo-classes on the BASE component
 // rather than emitting a standalone rule.
 const PSEUDO_SUFFIXES: Record<string, string> = {
-  "-hover": ":hover",
-  "-pressed": ":active",
-  "-disabled": ":disabled",
+  '-hover': ':hover',
+  '-pressed': ':active',
+  '-disabled': ':disabled',
 };
 
 // Walk design_system.components and emit a CSS block targeting
@@ -230,22 +249,22 @@ const PSEUDO_SUFFIXES: Record<string, string> = {
 // base exists; otherwise they ship as their own selector (e.g.
 // `tab-bar-item-active` is a separate component, not a state).
 function buildComponentCss(sessionId: string | undefined): string {
-  if (!sessionId || typeof window === "undefined") return "";
+  if (!sessionId || typeof window === 'undefined') return '';
   try {
     const raw = localStorage.getItem(`design-system-${sessionId}`);
-    if (!raw) return "";
+    if (!raw) return '';
     const parsed = JSON.parse(raw) as { design_system?: Record<string, unknown> };
     const ds = parsed?.design_system as Record<string, unknown> | undefined;
-    if (!ds) return "";
+    if (!ds) return '';
     const components = (ds.components || {}) as Record<string, unknown>;
-    if (typeof components !== "object" || !components) return "";
+    if (typeof components !== 'object' || !components) return '';
 
     const componentNames = Object.keys(components);
     const rules: string[] = [];
 
     for (const name of componentNames) {
       const props = components[name];
-      if (!props || typeof props !== "object") continue;
+      if (!props || typeof props !== 'object') continue;
 
       // Determine selector: pseudo-class on parent if suffix matches AND
       // the parent component exists; otherwise a standalone selector.
@@ -262,25 +281,38 @@ function buildComponentCss(sessionId: string | undefined): string {
 
       const decls: string[] = [];
       for (const [key, value] of Object.entries(props as Record<string, unknown>)) {
-        if (typeof value !== "string" && typeof value !== "number") continue;
+        if (typeof value !== 'string' && typeof value !== 'number') continue;
         const cssProp = COMPONENT_KEY_TO_CSS[key] || key;
-        const resolved = typeof value === "string" ? resolveTokenRef(value, ds) : String(value);
+        const resolved = typeof value === 'string' ? resolveTokenRef(value, ds) : String(value);
         decls.push(`${cssProp}: ${resolved};`);
       }
       if (decls.length === 0) continue;
-      rules.push(`${selector} { ${decls.join(" ")} }`);
+      rules.push(`${selector} { ${decls.join(' ')} }`);
     }
-    return rules.join("\n");
+    return rules.join('\n');
   } catch {
-    return "";
+    return '';
   }
 }
 
 // System fonts already on every device — no need to fetch.
 const SYSTEM_FONTS = new Set([
-  "system-ui", "-apple-system", "blinkmacsystemfont", "segoe ui", "roboto",
-  "helvetica", "arial", "sans-serif", "serif", "monospace", "georgia",
-  "times new roman", "courier new", "menlo", "monaco", "consolas",
+  'system-ui',
+  '-apple-system',
+  'blinkmacsystemfont',
+  'segoe ui',
+  'roboto',
+  'helvetica',
+  'arial',
+  'sans-serif',
+  'serif',
+  'monospace',
+  'georgia',
+  'times new roman',
+  'courier new',
+  'menlo',
+  'monaco',
+  'consolas',
 ]);
 
 // Build a Google Fonts <link> URL covering the heading + body fonts the
@@ -288,34 +320,55 @@ const SYSTEM_FONTS = new Set([
 // keeps the URL bounded to two families with sensible weight ranges so
 // the iframe load stays under ~50KB.
 function buildFontsLink(designSystem: Record<string, unknown> | undefined): string {
-  if (!designSystem) return "";
+  if (!designSystem) return '';
   const typography = (designSystem.typography || {}) as Record<string, unknown>;
   // Banned families — never preload these from Google Fonts. Mirrors
   // the sanitizer in buildTokenVars so we don't fetch a serif we'd
   // immediately swap out anyway.
   const BANNED_FONTS = new Set([
-    "times", "times new roman",
-    "georgia", "garamond", "eb garamond",
-    "bodoni", "didot",
-    "playfair", "playfair display",
-    "lora", "merriweather",
-    "pt serif", "source serif",
-    "crimson", "crimson text",
-    "iowan", "iowan old style",
-    "cormorant", "libre baskerville",
-    "noto serif", "roboto serif",
-    "spectral",
-    "palatino", "palatino linotype",
-    "book antiqua", "baskerville",
-    "instrument serif",
+    'times',
+    'times new roman',
+    'georgia',
+    'garamond',
+    'eb garamond',
+    'bodoni',
+    'didot',
+    'playfair',
+    'playfair display',
+    'lora',
+    'merriweather',
+    'pt serif',
+    'source serif',
+    'crimson',
+    'crimson text',
+    'iowan',
+    'iowan old style',
+    'cormorant',
+    'libre baskerville',
+    'noto serif',
+    'roboto serif',
+    'spectral',
+    'palatino',
+    'palatino linotype',
+    'book antiqua',
+    'baskerville',
+    'instrument serif',
   ]);
   const candidates: string[] = [];
-  for (const key of ["headingFont", "bodyFont", "displayFont", "monoFont", "heading", "body", "family"]) {
+  for (const key of [
+    'headingFont',
+    'bodyFont',
+    'displayFont',
+    'monoFont',
+    'heading',
+    'body',
+    'family',
+  ]) {
     const v = typography[key];
-    if (typeof v !== "string") continue;
+    if (typeof v !== 'string') continue;
     // Strip surrounding quotes + fallback chain — we only fetch the first
     // font in a stack (e.g. "Instrument Serif, Georgia, serif" → "Instrument Serif").
-    const first = v.split(",")[0].trim().replace(/['"]/g, "");
+    const first = v.split(',')[0].trim().replace(/['"]/g, '');
     if (!first) continue;
     const firstLc = first.toLowerCase();
     if (SYSTEM_FONTS.has(firstLc)) continue;
@@ -324,13 +377,13 @@ function buildFontsLink(designSystem: Record<string, unknown> | undefined): stri
     if (/\bserif\b/.test(firstLc) && !/sans-?serif/.test(firstLc)) continue;
     if (!candidates.includes(first)) candidates.push(first);
   }
-  if (candidates.length === 0) return "";
+  if (candidates.length === 0) return '';
   // Build family params: family=Name+With+Spaces:wght@300;400;500;600;700
   const families = candidates.slice(0, 2).map((name) => {
-    const param = name.replace(/\s+/g, "+");
+    const param = name.replace(/\s+/g, '+');
     return `family=${param}:wght@300;400;500;600;700`;
   });
-  const href = `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`;
+  const href = `https://fonts.googleapis.com/css2?${families.join('&')}&display=swap`;
   return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="${href}" rel="stylesheet">`;
 }
 
@@ -417,7 +470,9 @@ function LiveTokenIframe({
       if (stripped !== original) s.textContent = stripped;
     });
     if (doc.head) {
-      const old = Array.from(doc.head.querySelectorAll('link[data-ds="font"]')) as HTMLLinkElement[];
+      const old = Array.from(
+        doc.head.querySelectorAll('link[data-ds="font"]'),
+      ) as HTMLLinkElement[];
       old.forEach((l) => l.remove());
       if (liveRef.current.fontsLink) {
         const wrap = doc.createElement('div');
@@ -514,25 +569,65 @@ function getElementStyle(type: string, variant?: string): React.CSSProperties {
     case 'button':
       return {
         ...base,
-        background: variant === 'primary' ? 'var(--primary)' : variant === 'secondary' ? 'color-mix(in srgb, var(--foreground) 8%, transparent)' : 'color-mix(in srgb, var(--foreground) 5%, transparent)',
+        background:
+          variant === 'primary'
+            ? 'var(--primary)'
+            : variant === 'secondary'
+              ? 'color-mix(in srgb, var(--foreground) 8%, transparent)'
+              : 'color-mix(in srgb, var(--foreground) 5%, transparent)',
         color: variant === 'primary' ? 'var(--background)' : 'var(--muted-foreground)',
         borderRadius: 8,
         fontWeight: 500,
       };
-    case 'input': case 'textarea':
-      return { ...base, border: '1px solid rgba(255,255,255,0.1)', background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', padding: '0 10px' };
+    case 'input':
+    case 'textarea':
+      return {
+        ...base,
+        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'color-mix(in srgb, var(--foreground) 2%, transparent)',
+        padding: '0 10px',
+      };
     case 'card':
-      return { ...base, background: 'color-mix(in srgb, var(--foreground) 4%, transparent)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, flexDirection: 'column', padding: 12 };
-    case 'header': case 'footer': case 'nav':
-      return { ...base, background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' };
+      return {
+        ...base,
+        background: 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 10,
+        flexDirection: 'column',
+        padding: 12,
+      };
+    case 'header':
+    case 'footer':
+    case 'nav':
+      return {
+        ...base,
+        background: 'rgba(255,255,255,0.03)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+      };
     case 'image':
-      return { ...base, background: 'color-mix(in srgb, var(--foreground) 4%, transparent)', border: '1px dashed rgba(255,255,255,0.08)' };
-    case 'list': case 'table':
-      return { ...base, background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', border: '1px solid rgba(255,255,255,0.06)', flexDirection: 'column', alignItems: 'flex-start', padding: 8 };
+      return {
+        ...base,
+        background: 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+        border: '1px dashed rgba(255,255,255,0.08)',
+      };
+    case 'list':
+    case 'table':
+      return {
+        ...base,
+        background: 'color-mix(in srgb, var(--foreground) 2%, transparent)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        padding: 8,
+      };
     case 'tabs':
       return { ...base, borderBottom: '2px solid rgba(255,255,255,0.1)' };
     default:
-      return { ...base, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' };
+      return {
+        ...base,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+      };
   }
 }
 
@@ -545,8 +640,14 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
   // Logs only when thinking is non-empty so it doesn't spam.
   if (nodeData._thinking) {
     // eslint-disable-next-line no-console
-    console.log('[WireScreenNode]', id, 'render — _filled:', nodeData._filled,
-      '_thinking len:', (nodeData._thinking as string).length);
+    console.log(
+      '[WireScreenNode]',
+      id,
+      'render — _filled:',
+      nodeData._filled,
+      '_thinking len:',
+      (nodeData._thinking as string).length,
+    );
   }
   const elements = Array.isArray(nodeData.elements) ? nodeData.elements : [];
   const fidelity = (nodeData.fidelity ?? 'high') as 'low' | 'high';
@@ -566,7 +667,9 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
       if (!raw) return '';
       const parsed = JSON.parse(raw) as { design_system?: Record<string, unknown> };
       return buildFontsLink(parsed?.design_system);
-    } catch { return ''; }
+    } catch {
+      return '';
+    }
   });
   const [restyling, setRestyling] = useState(false);
   // True when a flow node linked to this screen is being hovered.
@@ -589,10 +692,15 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
     const refreshFonts = () => {
       try {
         const raw = localStorage.getItem(`design-system-${sessionId}`);
-        if (!raw) { setFontsLink(''); return; }
+        if (!raw) {
+          setFontsLink('');
+          return;
+        }
         const parsed = JSON.parse(raw) as { design_system?: Record<string, unknown> };
         setFontsLink(buildFontsLink(parsed?.design_system));
-      } catch { setFontsLink(''); }
+      } catch {
+        setFontsLink('');
+      }
     };
     refreshFonts();
     const refresh = (e: Event) => {
@@ -606,7 +714,8 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
       // forever after Regenerate.
     };
     const onRestyling = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { sessionId?: string; active?: boolean } | undefined;
+      const detail = (e as CustomEvent).detail as
+        { sessionId?: string; active?: boolean } | undefined;
       if (!detail || detail.sessionId !== sessionId) return;
       setRestyling(!!detail.active);
     };
@@ -671,38 +780,46 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {label}
+          </span>
           {isOverlay && (
-            <span style={{
-              padding: '1px 6px',
-              fontSize: 8,
-              letterSpacing: '0.12em',
-              background: 'rgba(229,166,48,0.12)',
-              border: '1px solid rgba(229,166,48,0.28)',
-              color: 'rgba(229,166,48,0.85)',
-              borderRadius: 4,
-              fontWeight: 600,
-              flexShrink: 0,
-            }}>{kind.toUpperCase()}</span>
+            <span
+              style={{
+                padding: '1px 6px',
+                fontSize: 8,
+                letterSpacing: '0.12em',
+                background: 'rgba(229,166,48,0.12)',
+                border: '1px solid rgba(229,166,48,0.28)',
+                color: 'rgba(229,166,48,0.85)',
+                borderRadius: 4,
+                fontWeight: 600,
+                flexShrink: 0,
+              }}
+            >
+              {kind.toUpperCase()}
+            </span>
           )}
           {isOverlay && (nodeData as any).triggerFrom && (
-            <span style={{
-              padding: '1px 6px',
-              fontSize: 8,
-              letterSpacing: '0.06em',
-              background: 'color-mix(in srgb, var(--foreground) 4%, transparent)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.55)',
-              borderRadius: 4,
-              fontWeight: 500,
-              textTransform: 'none',
-              flexShrink: 1,
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={(nodeData as any).triggerFrom as string}>
+            <span
+              style={{
+                padding: '1px 6px',
+                fontSize: 8,
+                letterSpacing: '0.06em',
+                background: 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.55)',
+                borderRadius: 4,
+                fontWeight: 500,
+                textTransform: 'none',
+                flexShrink: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={(nodeData as any).triggerFrom as string}
+            >
               ← {(nodeData as any).triggerFrom as string}
             </span>
           )}
@@ -753,7 +870,13 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
             }}
           >
             <svg width={9} height={9} viewBox="0 0 16 16" fill="none">
-              <path d="M14 8a6 6 0 1 1-1.76-4.24M14 3v3h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M14 8a6 6 0 1 1-1.76-4.24M14 3v3h-3"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             Redesign
           </button>
@@ -806,7 +929,9 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
             <div
               style={{
                 position: 'absolute',
-                top: 0, left: 0, right: 0,
+                top: 0,
+                left: 0,
+                right: 0,
                 height: 44,
                 zIndex: 3,
                 display: 'flex',
@@ -821,11 +946,45 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
             >
               <span>9:41</span>
               {/* Dynamic island */}
-              <div style={{ width: 110, height: 30, background: 'var(--primary-foreground)', borderRadius: 20 }} />
+              <div
+                style={{
+                  width: 110,
+                  height: 30,
+                  background: 'var(--primary-foreground)',
+                  borderRadius: 20,
+                }}
+              />
               <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11 }}>
                 <span>●●●●</span>
-                <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M1 4.5l2-1 2 1.5 2-2 2 2 2-1.5 2 1 2 .5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-                <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" rx="2" stroke="currentColor" opacity="0.4"/><rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor"/><rect x="21" y="3.5" width="1.5" height="4" rx="0.5" fill="currentColor" opacity="0.4"/></svg>
+                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path
+                    d="M1 4.5l2-1 2 1.5 2-2 2 2 2-1.5 2 1 2 .5"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <svg width="24" height="11" viewBox="0 0 24 11" fill="none">
+                  <rect
+                    x="0.5"
+                    y="0.5"
+                    width="20"
+                    height="10"
+                    rx="2"
+                    stroke="currentColor"
+                    opacity="0.4"
+                  />
+                  <rect x="2" y="2" width="17" height="7" rx="1" fill="currentColor" />
+                  <rect
+                    x="21"
+                    y="3.5"
+                    width="1.5"
+                    height="4"
+                    rx="0.5"
+                    fill="currentColor"
+                    opacity="0.4"
+                  />
+                </svg>
               </span>
             </div>
           )}
@@ -835,9 +994,12 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
             <div
               style={{
                 position: 'absolute',
-                bottom: 8, left: '50%',
+                bottom: 8,
+                left: '50%',
                 transform: 'translateX(-50%)',
-                width: 134, height: 5, borderRadius: 3,
+                width: 134,
+                height: 5,
+                borderRadius: 3,
                 background: 'var(--color-text, #e8e8e8)',
                 opacity: 0.6,
                 zIndex: 3,
@@ -846,7 +1008,6 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
             />
           )}
 
-
           {/* Screen content — iframe or box layout */}
           {htmlContent && fidelity !== 'low' ? (
             <>
@@ -854,7 +1015,13 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
                   when the node is selected so the iframe content becomes scrollable. */}
               {!selected && (
                 <div
-                  style={{ position: 'absolute', inset: 0, zIndex: 1, cursor: 'grab', pointerEvents: 'auto' }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    zIndex: 1,
+                    cursor: 'grab',
+                    pointerEvents: 'auto',
+                  }}
                 />
               )}
               {/* Drag overlay used to swap to a label placeholder, which
@@ -862,14 +1029,57 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
                   visible during drag — the label-only fallback is more
                   jarring than the slight jitter from moving an iframe. */}
               {!iframeLoaded && (
-                <div style={{
-                  position: 'absolute', inset: 0, padding: 16, paddingTop: isMobile ? 56 : 16,
-                  display: 'flex', flexDirection: 'column', gap: 12, zIndex: 0,
-                }}>
-                  <div style={{ width: '60%', height: 20, background: 'color-mix(in srgb, var(--foreground) 4%, transparent)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                  <div style={{ width: '100%', height: 40, background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.1s' }} />
-                  <div style={{ width: '100%', height: 40, background: 'rgba(255,255,255,0.03)', borderRadius: 6, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.2s' }} />
-                  <div style={{ width: '80%', height: 120, background: 'color-mix(in srgb, var(--foreground) 2%, transparent)', borderRadius: 8, animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.3s' }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    padding: 16,
+                    paddingTop: isMobile ? 56 : 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    zIndex: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '60%',
+                      height: 20,
+                      background: 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+                      borderRadius: 4,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 40,
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: 6,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                      animationDelay: '0.1s',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '100%',
+                      height: 40,
+                      background: 'rgba(255,255,255,0.03)',
+                      borderRadius: 6,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                      animationDelay: '0.2s',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '80%',
+                      height: 120,
+                      background: 'color-mix(in srgb, var(--foreground) 2%, transparent)',
+                      borderRadius: 8,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                      animationDelay: '0.3s',
+                    }}
+                  />
                   <style>{`@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
                 </div>
               )}
@@ -878,54 +1088,72 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
                   Streamed token-by-token from the backend so the user sees
                   what's being designed rather than a frozen shimmer. */}
               {((!nodeData._filled && nodeData._thinking) || (nodeData as any)._regenerating) && (
-                <div style={{
-                  position: 'absolute',
-                  left: 16, right: 16,
-                  bottom: 16,
-                  zIndex: 5,
-                  padding: '14px 18px',
-                  background: 'rgba(10,10,10,0.82)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(229,166,48,0.18)',
-                  borderRadius: 10,
-                  pointerEvents: 'none',
-                  maxHeight: '40%',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(229,166,48,0.8)',
-                    marginBottom: 10,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}>
-                    <span style={{
-                      display: 'inline-block', width: 6, height: 6, borderRadius: 999,
-                      background: 'rgba(229,166,48,0.9)',
-                      animation: 'pulse 1.2s ease-in-out infinite',
-                    }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 16,
+                    right: 16,
+                    bottom: 16,
+                    zIndex: 5,
+                    padding: '14px 18px',
+                    background: 'rgba(10,10,10,0.82)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(229,166,48,0.18)',
+                    borderRadius: 10,
+                    pointerEvents: 'none',
+                    maxHeight: '40%',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 500,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(229,166,48,0.8)',
+                      marginBottom: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: 'rgba(229,166,48,0.9)',
+                        animation: 'pulse 1.2s ease-in-out infinite',
+                      }}
+                    />
                     {(nodeData as any)._regenerating ? 'Redesigning' : 'Designing'} · {label}
                   </div>
-                  <div style={{
-                    fontFamily: '"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif',
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                    color: 'rgba(255,255,255,0.78)',
-                    fontStyle: 'italic',
-                  }}>
-                    {nodeData._thinking || ((nodeData as any)._regenerating ? 'Picking a fresh layout that stays consistent with the rest of the app…' : '')}
-                    <span style={{
-                      display: 'inline-block',
-                      width: 6, height: 17,
-                      marginLeft: 3,
-                      verticalAlign: 'text-bottom',
-                      background: 'rgba(229,166,48,0.7)',
-                      animation: 'caret 0.9s steps(1) infinite',
-                    }} />
+                  <div
+                    style={{
+                      fontFamily: '"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      color: 'rgba(255,255,255,0.78)',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    {nodeData._thinking ||
+                      ((nodeData as any)._regenerating
+                        ? 'Picking a fresh layout that stays consistent with the rest of the app…'
+                        : '')}
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 6,
+                        height: 17,
+                        marginLeft: 3,
+                        verticalAlign: 'text-bottom',
+                        background: 'rgba(229,166,48,0.7)',
+                        animation: 'caret 0.9s steps(1) infinite',
+                      }}
+                    />
                   </div>
                   <style>{`@keyframes caret { 50% { opacity: 0 } } @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }`}</style>
                 </div>
@@ -944,36 +1172,45 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
                 onLoaded={() => setIframeLoaded(true)}
               />
               {restyling && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.55)',
-                  backdropFilter: 'blur(2px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 10,
-                  pointerEvents: 'none',
-                }}>
-                  <div style={{
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.55)',
+                    backdropFilter: 'blur(2px)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 14px',
-                    background: 'rgba(0,0,0,0.85)',
-                    border: '1px solid rgba(229,166,48,0.4)',
-                    borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(229,166,48,0.95)',
-                  }}>
-                    <span style={{
-                      display: 'inline-block', width: 6, height: 6, borderRadius: 999,
-                      background: 'rgba(229,166,48,0.9)',
-                      animation: 'pulse 1.2s ease-in-out infinite',
-                    }} />
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 14px',
+                      background: 'rgba(0,0,0,0.85)',
+                      border: '1px solid rgba(229,166,48,0.4)',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: 'rgba(229,166,48,0.95)',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: 'rgba(229,166,48,0.9)',
+                        animation: 'pulse 1.2s ease-in-out infinite',
+                      }}
+                    />
                     Restyling · {label}
                   </div>
                   <style>{`@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }`}</style>
@@ -981,7 +1218,14 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
               )}
             </>
           ) : (
-            <div style={{ position: 'absolute', inset: 0, paddingTop: isMobile ? 44 : 0, paddingBottom: isMobile ? 24 : 0 }}>
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                paddingTop: isMobile ? 44 : 0,
+                paddingBottom: isMobile ? 24 : 0,
+              }}
+            >
               {renderElements.map((el) => (
                 <div
                   key={el.id}
@@ -994,7 +1238,9 @@ function WireScreenNodeComponent({ data, selected, dragging, id }: NodeProps) {
                     ...getElementStyle(el.type, el.variant),
                   }}
                 >
-                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)', userSelect: 'none' }}>
+                  <span
+                    style={{ fontSize: 11, color: 'var(--muted-foreground)', userSelect: 'none' }}
+                  >
                     {el.label || el.placeholder || el.type}
                   </span>
                 </div>

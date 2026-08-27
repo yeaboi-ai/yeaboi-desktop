@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useLiveKitTranscript } from "@/hooks/use-livekit-transcript";
+import { useEffect } from 'react';
+import { useLiveKitTranscript } from '@/hooks/use-livekit-transcript';
 
 interface TranscriptEntry {
   id: string;
@@ -21,7 +21,7 @@ interface Props {
  * LiveKit-streamed agent transcription up to the session page state.
  */
 export function AgentTranscriptBridge({ fallbackSpeakerName, onEntries }: Props) {
-  const { entries } = useLiveKitTranscript(fallbackSpeakerName ?? "AI Facilitator");
+  const { entries } = useLiveKitTranscript(fallbackSpeakerName ?? 'AI Facilitator');
 
   useEffect(() => {
     onEntries(entries);

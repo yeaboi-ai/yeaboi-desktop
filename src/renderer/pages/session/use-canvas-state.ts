@@ -73,7 +73,9 @@ export function useCanvasState({
     const { nodes: zoneNodes, edges: zoneEdges } = await parseAndLayout(diagram);
     const stamped = stampZone(zoneNodes, zone);
     setNodes((prior) => {
-      const kept = prior.filter((node) => (node.data as { _zoneType?: string })?._zoneType !== zone);
+      const kept = prior.filter(
+        (node) => (node.data as { _zoneType?: string })?._zoneType !== zone,
+      );
       // New zones land to the right of what exists, so two zones never overlap.
       let offsetX = 0;
       for (const node of kept) {
@@ -84,7 +86,10 @@ export function useCanvasState({
         ? stamped.map((node) =>
             node.parentId
               ? node
-              : { ...node, position: { x: (node.position?.x ?? 0) + offsetX, y: node.position?.y ?? 0 } },
+              : {
+                  ...node,
+                  position: { x: (node.position?.x ?? 0) + offsetX, y: node.position?.y ?? 0 },
+                },
           )
         : stamped;
       return [...kept, ...shifted];

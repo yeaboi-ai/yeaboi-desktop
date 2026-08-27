@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Ear, Mic, MicOff } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { Ear, Mic, MicOff } from 'lucide-react';
 
 import {
   Sheet,
@@ -9,8 +9,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
+} from '@/components/ui/sheet';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface InterimEntry {
   id: string;
@@ -83,13 +83,13 @@ export function AIListeningSheet({
             raf = requestAnimationFrame(draw);
             return;
           }
-          const c2d = canvas.getContext("2d");
+          const c2d = canvas.getContext('2d');
           if (!c2d) return;
           const w = canvas.width;
           const h = canvas.height;
           analyser.getByteTimeDomainData(data);
           c2d.clearRect(0, 0, w, h);
-          c2d.strokeStyle = "rgba(94, 234, 212, 0.85)";
+          c2d.strokeStyle = 'rgba(94, 234, 212, 0.85)';
           c2d.lineWidth = 1.5;
           c2d.beginPath();
           const slice = w / data.length;
@@ -106,7 +106,7 @@ export function AIListeningSheet({
         draw();
       } catch (err) {
         if (!cancelled) {
-          setStreamError(err instanceof Error ? err.message : "Microphone access failed");
+          setStreamError(err instanceof Error ? err.message : 'Microphone access failed');
         }
       }
     })();
@@ -120,10 +120,10 @@ export function AIListeningSheet({
   }, [open, reducedMotion, inCall, micMuted]);
 
   const status: { tone: string; icon: typeof Mic; label: string } = !inCall
-    ? { tone: "text-muted-foreground/70", icon: MicOff, label: "Not in a call" }
+    ? { tone: 'text-muted-foreground/70', icon: MicOff, label: 'Not in a call' }
     : micMuted
-      ? { tone: "text-warning", icon: MicOff, label: "Mic muted — agent isn't hearing you" }
-      : { tone: "text-success", icon: Mic, label: "Listening" };
+      ? { tone: 'text-warning', icon: MicOff, label: "Mic muted — agent isn't hearing you" }
+      : { tone: 'text-success', icon: Mic, label: 'Listening' };
   const StatusIcon = status.icon;
 
   return (
@@ -178,7 +178,7 @@ export function AIListeningSheet({
               {display ? (
                 <p
                   className={`text-[14px] leading-snug ${
-                    display.is_final ? "text-foreground/80" : "text-foreground italic"
+                    display.is_final ? 'text-foreground/80' : 'text-foreground italic'
                   }`}
                 >
                   {display.speaker_name && (
@@ -210,7 +210,9 @@ export function AIListeningSheet({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground/70">Mic</dt>
-                <dd className={`${status.tone} font-medium`}>{micMuted ? "Muted" : inCall ? "Open" : "Idle"}</dd>
+                <dd className={`${status.tone} font-medium`}>
+                  {micMuted ? 'Muted' : inCall ? 'Open' : 'Idle'}
+                </dd>
               </div>
             </dl>
           </section>

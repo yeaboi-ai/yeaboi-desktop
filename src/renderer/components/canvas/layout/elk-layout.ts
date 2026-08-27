@@ -39,10 +39,7 @@ function getNodeDimensions(node: Node): { width: number; height: number } {
  * expressed via React Flow's `parentId` field. Top-level nodes (no parent)
  * live at the root of the returned array.
  */
-function buildElkHierarchy(
-  nodes: Node[],
-  layoutOptions: Record<string, string>,
-): ElkNode[] {
+function buildElkHierarchy(nodes: Node[], layoutOptions: Record<string, string>): ElkNode[] {
   // Index children by parentId
   const childrenByParent = new Map<string, Node[]>();
   const topLevel: Node[] = [];
@@ -226,8 +223,8 @@ export async function layoutDiagram(
 
   // For flow diagrams: remove backward edges (source below target)
   if (isVerticalFlow) {
-    const posMap = new Map(layoutedNodes.map(n => [n.id, n.position]));
-    layoutedEdges = layoutedEdges.filter(e => {
+    const posMap = new Map(layoutedNodes.map((n) => [n.id, n.position]));
+    layoutedEdges = layoutedEdges.filter((e) => {
       const sp = posMap.get(e.source);
       const tp = posMap.get(e.target);
       if (!sp || !tp) return true;
@@ -238,7 +235,7 @@ export async function layoutDiagram(
   // For flow diagrams: reposition disconnected sub-flows to the right
   if (isVerticalFlow && layoutedNodes.length > 1) {
     // Find connected components
-    const nodeIds = new Set(layoutedNodes.map(n => n.id));
+    const nodeIds = new Set(layoutedNodes.map((n) => n.id));
     const adj = new Map<string, Set<string>>();
     for (const id of nodeIds) adj.set(id, new Set());
     for (const e of layoutedEdges) {
@@ -288,7 +285,9 @@ export async function layoutDiagram(
         const w = (n.style as any)?.width ?? getNodeDimensions(n).width;
         mainMaxX = Math.max(mainMaxX, n.position.x + w);
       }
-      const mainMinY = Math.min(...layoutedNodes.filter(n => mainIds.has(n.id)).map(n => n.position.y));
+      const mainMinY = Math.min(
+        ...layoutedNodes.filter((n) => mainIds.has(n.id)).map((n) => n.position.y),
+      );
 
       // Shift each sub-flow component to the right and add title
       const SUB_GAP = 200;
@@ -296,10 +295,14 @@ export async function layoutDiagram(
       let curX = mainMaxX + SUB_GAP;
       for (let c = 1; c < components.length; c++) {
         const compIds = new Set(components[c]);
-        const compNodes = layoutedNodes.filter(n => compIds.has(n.id));
-        const compMinX = Math.min(...compNodes.map(n => n.position.x));
-        const compMinY = Math.min(...compNodes.map(n => n.position.y));
-        const compMaxX = Math.max(...compNodes.map(n => n.position.x + ((n.style as any)?.width ?? getNodeDimensions(n).width)));
+        const compNodes = layoutedNodes.filter((n) => compIds.has(n.id));
+        const compMinX = Math.min(...compNodes.map((n) => n.position.x));
+        const compMinY = Math.min(...compNodes.map((n) => n.position.y));
+        const compMaxX = Math.max(
+          ...compNodes.map(
+            (n) => n.position.x + ((n.style as any)?.width ?? getNodeDimensions(n).width),
+          ),
+        );
         const shiftX = curX - compMinX;
         const shiftY = mainMinY - compMinY;
         for (const n of layoutedNodes) {
@@ -335,7 +338,7 @@ export async function layoutDiagram(
           },
         } as Node);
 
-        curX += (compMaxX - compMinX) + SUB_GAP;
+        curX += compMaxX - compMinX + SUB_GAP;
       }
     }
   }

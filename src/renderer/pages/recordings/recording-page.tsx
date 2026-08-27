@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import { Calendar, Clock, Copy, Film, Loader2, Share2, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Calendar, Clock, Copy, Film, Loader2, Share2, Trash2, X } from 'lucide-react';
 
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { useConfirm } from "@/components/ui/confirm-dialog";
-import { toast } from "@/components/ui/toast";
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { toast } from '@/components/ui/toast';
 
 interface RecordingDetail {
   id: string;
@@ -24,14 +24,14 @@ interface RecordingDetail {
 }
 
 function formatDuration(s: number | null): string {
-  if (s == null || s < 0) return "—";
+  if (s == null || s < 0) return '—';
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 function isoToDateInput(iso: string | null): string {
-  if (!iso) return "";
+  if (!iso) return '';
   return new Date(iso).toISOString().slice(0, 10);
 }
 
@@ -47,11 +47,14 @@ export default function RecordingPlayerPage() {
   const confirm = useConfirm();
   const [rec, setRec] = useState<RecordingDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<{ kind: "expired" | "missing" | "generic"; message: string } | null>(null);
+  const [error, setError] = useState<{
+    kind: 'expired' | 'missing' | 'generic';
+    message: string;
+  } | null>(null);
 
   // Track when the user is editing the expiry to keep the date input
   // controlled cleanly even when the API echoes back the persisted value.
-  const [expiryDraft, setExpiryDraft] = useState<string>("");
+  const [expiryDraft, setExpiryDraft] = useState<string>('');
   const [savingExpiry, setSavingExpiry] = useState(false);
 
   // Used to skip the abort guard when re-fetching after a mutation.
@@ -63,15 +66,18 @@ export default function RecordingPlayerPage() {
     try {
       const resp = await authFetch(`/api/recordings/${recId}`);
       if (resp.status === 404) {
-        setError({ kind: "missing", message: "This recording doesn't exist or was deleted." });
+        setError({ kind: 'missing', message: "This recording doesn't exist or was deleted." });
         return;
       }
       if (resp.status === 410) {
-        setError({ kind: "expired", message: "This recording has expired and is no longer available." });
+        setError({
+          kind: 'expired',
+          message: 'This recording has expired and is no longer available.',
+        });
         return;
       }
       if (!resp.ok) {
-        setError({ kind: "generic", message: `Couldn't load recording (${resp.status}).` });
+        setError({ kind: 'generic', message: `Couldn't load recording (${resp.status}).` });
         return;
       }
       const data = (await resp.json()) as RecordingDetail;
@@ -79,7 +85,7 @@ export default function RecordingPlayerPage() {
       setExpiryDraft(isoToDateInput(data.expires_at));
       lastFetchedId.current = recId;
     } catch {
-      setError({ kind: "generic", message: "Couldn't load recording." });
+      setError({ kind: 'generic', message: "Couldn't load recording." });
     } finally {
       setLoading(false);
     }
@@ -118,9 +124,9 @@ export default function RecordingPlayerPage() {
   }
   if (!rec) return null;
 
-  const isReady = rec.status === "completed" && !!rec.playback_url;
+  const isReady = rec.status === 'completed' && !!rec.playback_url;
   const shareLink = rec.share_token
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/recording/${rec.share_token}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/recording/${rec.share_token}`
     : null;
 
   const saveExpiry = async () => {
@@ -130,18 +136,21 @@ export default function RecordingPlayerPage() {
       // Convert YYYY-MM-DD into an ISO datetime at end-of-day UTC.
       const iso = new Date(`${expiryDraft}T23:59:59Z`).toISOString();
       const resp = await authFetch(`/api/recordings/${rec.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expires_at: iso }),
       });
       if (!resp.ok) {
         const detail = await resp.json().catch(() => ({}));
-        toast.warning({ title: "Couldn't update expiry", description: detail.detail ?? `${resp.status}` });
+        toast.warning({
+          title: "Couldn't update expiry",
+          description: detail.detail ?? `${resp.status}`,
+        });
         return;
       }
       const data = (await resp.json()) as RecordingDetail;
       setRec((prev) => (prev ? { ...prev, expires_at: data.expires_at } : prev));
-      toast.success({ title: "Expiry updated" });
+      toast.success({ title: 'Expiry updated' });
     } finally {
       setSavingExpiry(false);
     }
@@ -149,28 +158,30 @@ export default function RecordingPlayerPage() {
 
   const toggleShare = async () => {
     if (rec.share_token) {
-      const resp = await authFetch(`/api/recordings/${rec.id}/share`, { method: "DELETE" });
+      const resp = await authFetch(`/api/recordings/${rec.id}/share`, { method: 'DELETE' });
       if (resp.status === 204) {
         setRec((prev) => (prev ? { ...prev, share_token: null, share_url: null } : prev));
-        toast.success({ title: "Share link revoked" });
+        toast.success({ title: 'Share link revoked' });
       } else {
         toast.warning({ title: "Couldn't revoke link", description: `${resp.status}` });
       }
       return;
     }
-    const resp = await authFetch(`/api/recordings/${rec.id}/share`, { method: "POST" });
+    const resp = await authFetch(`/api/recordings/${rec.id}/share`, { method: 'POST' });
     if (resp.status !== 201) {
       toast.warning({ title: "Couldn't create link", description: `${resp.status}` });
       return;
     }
     const data = (await resp.json()) as { share_token: string; share_url: string };
-    setRec((prev) => (prev ? { ...prev, share_token: data.share_token, share_url: data.share_url } : prev));
+    setRec((prev) =>
+      prev ? { ...prev, share_token: data.share_token, share_url: data.share_url } : prev,
+    );
     const fullUrl = `${window.location.origin}${data.share_url}`;
     try {
       await navigator.clipboard.writeText(fullUrl);
-      toast.success({ title: "Share link copied", description: fullUrl });
+      toast.success({ title: 'Share link copied', description: fullUrl });
     } catch {
-      toast.success({ title: "Share link created", description: fullUrl });
+      toast.success({ title: 'Share link created', description: fullUrl });
     }
   };
 
@@ -178,7 +189,7 @@ export default function RecordingPlayerPage() {
     if (!shareLink) return;
     try {
       await navigator.clipboard.writeText(shareLink);
-      toast.success({ title: "Link copied" });
+      toast.success({ title: 'Link copied' });
     } catch {
       toast.warning({ title: "Couldn't copy", description: shareLink });
     }
@@ -186,15 +197,15 @@ export default function RecordingPlayerPage() {
 
   const deleteRecording = async () => {
     const ok = await confirm({
-      title: "Delete this recording?",
-      message: "This permanently removes the file and any share link.",
-      confirmLabel: "Delete",
-      variant: "danger",
+      title: 'Delete this recording?',
+      message: 'This permanently removes the file and any share link.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
     });
     if (!ok) return;
-    const resp = await authFetch(`/api/recordings/${rec.id}`, { method: "DELETE" });
+    const resp = await authFetch(`/api/recordings/${rec.id}`, { method: 'DELETE' });
     if (resp.status === 204) {
-      toast.success({ title: "Recording deleted" });
+      toast.success({ title: 'Recording deleted' });
       window.close();
     } else {
       toast.warning({ title: "Couldn't delete", description: `${resp.status}` });
@@ -235,10 +246,10 @@ export default function RecordingPlayerPage() {
             <div className="text-center text-white/55 space-y-2">
               <Film className="h-10 w-10 mx-auto text-white/30" />
               <p className="text-sm">
-                {rec.status === "starting" || rec.status === "active"
-                  ? "Recording is still in progress — check back when the call ends."
-                  : rec.status === "failed"
-                    ? `Recording failed${rec.error ? `: ${rec.error}` : "."}`
+                {rec.status === 'starting' || rec.status === 'active'
+                  ? 'Recording is still in progress — check back when the call ends.'
+                  : rec.status === 'failed'
+                    ? `Recording failed${rec.error ? `: ${rec.error}` : '.'}`
                     : "Recording isn't available."}
               </p>
             </div>
@@ -251,7 +262,7 @@ export default function RecordingPlayerPage() {
               Recorded
             </p>
             <p className="text-[13px] text-white/85">
-              {rec.started_at ? new Date(rec.started_at).toLocaleString() : "—"}
+              {rec.started_at ? new Date(rec.started_at).toLocaleString() : '—'}
             </p>
           </div>
 
@@ -270,7 +281,9 @@ export default function RecordingPlayerPage() {
               <button
                 type="button"
                 onClick={saveExpiry}
-                disabled={savingExpiry || !expiryDraft || expiryDraft === isoToDateInput(rec.expires_at)}
+                disabled={
+                  savingExpiry || !expiryDraft || expiryDraft === isoToDateInput(rec.expires_at)
+                }
                 className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-white/5 hover:bg-white/10 text-white/65 hover:text-white/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Save
@@ -332,9 +345,7 @@ export default function RecordingPlayerPage() {
               </p>
             )}
             {rec.file_size_bytes != null && (
-              <p>
-                {(rec.file_size_bytes / 1_048_576).toFixed(1)} MB
-              </p>
+              <p>{(rec.file_size_bytes / 1_048_576).toFixed(1)} MB</p>
             )}
           </div>
 

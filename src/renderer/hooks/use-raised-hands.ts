@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { useLiveKitDataChannel } from "./use-livekit-data-channel";
+import { useLiveKitDataChannel } from './use-livekit-data-channel';
 
 export interface RaisedHandInfo {
   /** LiveKit identity. */
@@ -44,11 +44,11 @@ interface Result {
 export function useRaisedHands(myName: string | null = null): Result {
   const [raised, setRaised] = useState<Map<string, RaisedHandInfo>>(new Map());
 
-  const { send, me } = useLiveKitDataChannel<"hands">({
-    topic: "hands",
+  const { send, me } = useLiveKitDataChannel<'hands'>({
+    topic: 'hands',
     includeLocalEcho: true,
     onEvent: (event) => {
-      if (event.type !== "hand") return;
+      if (event.type !== 'hand') return;
       const p = event.payload as RaisedHandPayload;
       setRaised((prev) => {
         const next = new Map(prev);
@@ -71,7 +71,7 @@ export function useRaisedHands(myName: string | null = null): Result {
   const iAmRaised = raised.has(me);
 
   const toggle = () => {
-    send<RaisedHandPayload>("hand", { raised: !iAmRaised, name: myName });
+    send<RaisedHandPayload>('hand', { raised: !iAmRaised, name: myName });
   };
 
   // Lower someone else's hand by impersonating their identity in the
@@ -79,7 +79,7 @@ export function useRaisedHands(myName: string | null = null): Result {
   // surface this control. Backend enforcement isn't in scope yet.
   const lower = (who: string) => {
     if (who === me) {
-      send<RaisedHandPayload>("hand", { raised: false, name: myName });
+      send<RaisedHandPayload>('hand', { raised: false, name: myName });
     } else {
       // We can't truly "lower" someone else's hand via the data channel
       // (events are scoped to the sender's identity). Optimistically remove

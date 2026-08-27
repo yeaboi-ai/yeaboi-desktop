@@ -61,29 +61,18 @@ export function registerVoicePack(): void {
     return await new Promise((resolve) => {
       const child = spawn(
         python,
-        [
-          '-m',
-          'pip',
-          'install',
-          '--only-binary=:all:',
-          '--target',
-          SITE(),
-          `${wheel}[voice]`,
-        ],
+        ['-m', 'pip', 'install', '--only-binary=:all:', '--target', SITE(), `${wheel}[voice]`],
         { stdio: ['ignore', 'pipe', 'pipe'] },
       );
       const relay = (chunk: Buffer) => {
-        if (!event.sender.isDestroyed())
-          event.sender.send('voice-pack:progress', chunk.toString());
+        if (!event.sender.isDestroyed()) event.sender.send('voice-pack:progress', chunk.toString());
       };
       child.stdout?.on('data', relay);
       child.stderr?.on('data', relay);
       child.on('error', (error) => resolve({ ok: false, error: error.message }));
       child.on('exit', (code) =>
         resolve(
-          code === 0
-            ? { ok: true }
-            : { ok: false, error: `pip exited with code ${String(code)}` },
+          code === 0 ? { ok: true } : { ok: false, error: `pip exited with code ${String(code)}` },
         ),
       );
     });

@@ -10,7 +10,8 @@ import {
 } from 'react';
 import { useReactFlow, useViewport } from '@xyflow/react';
 
-export type CanvasMode = 'select' | 'boxSelect' | 'lasso' | 'draw' | 'line' | 'laser' | 'sticky' | 'eraser';
+export type CanvasMode =
+  'select' | 'boxSelect' | 'lasso' | 'draw' | 'line' | 'laser' | 'sticky' | 'eraser';
 
 interface Point {
   x: number;
@@ -148,15 +149,12 @@ export default function FreehandLayer({
 
   // Return screen-relative coords (relative to the SVG element) for drawing.
   // Flow coord conversion happens only when creating the React Flow node.
-  const toScreenCoords = useCallback(
-    (e: ReactPointerEvent<SVGSVGElement>): Point => {
-      const rect = svgRef.current?.getBoundingClientRect();
-      const x = e.clientX - (rect?.left ?? 0);
-      const y = e.clientY - (rect?.top ?? 0);
-      return { x, y };
-    },
-    [],
-  );
+  const toScreenCoords = useCallback((e: ReactPointerEvent<SVGSVGElement>): Point => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    const x = e.clientX - (rect?.left ?? 0);
+    const y = e.clientY - (rect?.top ?? 0);
+    return { x, y };
+  }, []);
 
   const screenToFlow = useCallback(
     (pt: Point): Point => {
@@ -372,8 +370,7 @@ export default function FreehandLayer({
         e.preventDefault();
         e.stopPropagation();
         setIsDrawing(true);
-      }
-      else if (mode === 'line') handleLineClick(e);
+      } else if (mode === 'line') handleLineClick(e);
     },
     [mode, handleDrawPointerDown, handleLassoPointerDown, handleBoxPointerDown, handleLineClick],
   );
@@ -407,7 +404,12 @@ export default function FreehandLayer({
     else if (mode === 'laser') setIsDrawing(false);
   }, [mode, handleDrawPointerUp, handleLassoPointerUp, handleBoxPointerUp]);
 
-  const isActive = mode === 'draw' || mode === 'laser' || mode === 'line' || mode === 'lasso' || mode === 'boxSelect';
+  const isActive =
+    mode === 'draw' ||
+    mode === 'laser' ||
+    mode === 'line' ||
+    mode === 'lasso' ||
+    mode === 'boxSelect';
 
   // No viewport transform needed — we draw in screen coords, convert to flow on complete
 
@@ -422,7 +424,7 @@ export default function FreehandLayer({
     if (laserPoints.length < 2 || laserNow === 0) return null;
 
     // Build a smooth SVG path from all visible points
-    const pts = laserPoints.filter(p => laserNow - p.timestamp < LASER_LIFETIME_MS);
+    const pts = laserPoints.filter((p) => laserNow - p.timestamp < LASER_LIFETIME_MS);
     if (pts.length < 2) return null;
 
     let d = `M ${pts[0].x} ${pts[0].y}`;
@@ -440,11 +442,33 @@ export default function FreehandLayer({
     return (
       <>
         {/* Glow */}
-        <path d={d} fill="none" stroke="var(--primary)" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" opacity={trailOpacity * 0.3} />
+        <path
+          d={d}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth={6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={trailOpacity * 0.3}
+        />
         {/* Core line */}
-        <path d={d} fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" opacity={trailOpacity} />
+        <path
+          d={d}
+          fill="none"
+          stroke="var(--primary)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={trailOpacity}
+        />
         {/* Cursor dot */}
-        <circle cx={pts[pts.length - 1].x} cy={pts[pts.length - 1].y} r={4} fill="var(--primary)" opacity={0.8} />
+        <circle
+          cx={pts[pts.length - 1].x}
+          cy={pts[pts.length - 1].y}
+          r={4}
+          fill="var(--primary)"
+          opacity={0.8}
+        />
       </>
     );
   })();
@@ -454,13 +478,18 @@ export default function FreehandLayer({
       ref={svgRef}
       style={{
         position: 'absolute',
-        top: 60,  // leave toolbar area clickable
+        top: 60, // leave toolbar area clickable
         left: 0,
         width: '100%',
         height: 'calc(100% - 60px)',
         pointerEvents: isActive ? 'all' : 'none',
         zIndex: 10,
-        cursor: mode === 'draw' || mode === 'lasso' || mode === 'boxSelect' || mode === 'line' ? 'crosshair' : mode === 'laser' ? 'none' : 'default',
+        cursor:
+          mode === 'draw' || mode === 'lasso' || mode === 'boxSelect' || mode === 'line'
+            ? 'crosshair'
+            : mode === 'laser'
+              ? 'none'
+              : 'default',
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}

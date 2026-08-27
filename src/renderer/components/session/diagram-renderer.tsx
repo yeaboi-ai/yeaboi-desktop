@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Renders structured diagram JSON as beautiful styled nodes and edges.
@@ -33,17 +33,17 @@ interface DiagramData {
 }
 
 const NODE_COLORS: Record<string, { bg: string; border: string; icon: string }> = {
-  frontend: { bg: "bg-blue-500/15", border: "border-blue-500/30", icon: "🖥" },
-  service: { bg: "bg-success/15", border: "border-success/30", icon: "⚙️" },
-  database: { bg: "bg-amber-500/15", border: "border-amber-500/30", icon: "🗄" },
-  user: { bg: "bg-violet-500/15", border: "border-violet-500/30", icon: "👤" },
-  screen: { bg: "bg-cyan-500/15", border: "border-cyan-500/30", icon: "📱" },
-  entity: { bg: "bg-rose-500/15", border: "border-rose-500/30", icon: "📦" },
-  api: { bg: "bg-orange-500/15", border: "border-orange-500/30", icon: "🔌" },
-  queue: { bg: "bg-pink-500/15", border: "border-pink-500/30", icon: "📨" },
-  cache: { bg: "bg-red-500/15", border: "border-red-500/30", icon: "⚡" },
-  storage: { bg: "bg-yellow-500/15", border: "border-yellow-500/30", icon: "📁" },
-  default: { bg: "bg-foreground/[0.10]", border: "border-border", icon: "◆" },
+  frontend: { bg: 'bg-blue-500/15', border: 'border-blue-500/30', icon: '🖥' },
+  service: { bg: 'bg-success/15', border: 'border-success/30', icon: '⚙️' },
+  database: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', icon: '🗄' },
+  user: { bg: 'bg-violet-500/15', border: 'border-violet-500/30', icon: '👤' },
+  screen: { bg: 'bg-cyan-500/15', border: 'border-cyan-500/30', icon: '📱' },
+  entity: { bg: 'bg-rose-500/15', border: 'border-rose-500/30', icon: '📦' },
+  api: { bg: 'bg-orange-500/15', border: 'border-orange-500/30', icon: '🔌' },
+  queue: { bg: 'bg-pink-500/15', border: 'border-pink-500/30', icon: '📨' },
+  cache: { bg: 'bg-red-500/15', border: 'border-red-500/30', icon: '⚡' },
+  storage: { bg: 'bg-yellow-500/15', border: 'border-yellow-500/30', icon: '📁' },
+  default: { bg: 'bg-foreground/[0.10]', border: 'border-border', icon: '◆' },
 };
 
 function getNodeStyle(type: string) {
@@ -81,9 +81,7 @@ export function DiagramRenderer({ data }: { data: DiagramData }) {
 
             return (
               <div key={node.id} className="relative">
-                <div
-                  className={`${style.bg} ${style.border} border rounded-lg p-3 text-center`}
-                >
+                <div className={`${style.bg} ${style.border} border rounded-lg p-3 text-center`}>
                   <span className="text-lg block mb-1">{style.icon}</span>
                   <span className="text-xs font-semibold text-foreground/90 block">
                     {node.label}
@@ -145,6 +143,6 @@ export function parseDiagramFromMessage(content: string): DiagramData | null {
  * Get the text content of a message without diagram blocks.
  */
 export function getMessageTextWithoutDiagram(content: string): string {
-  if (!content) return "";
-  return content.replace(/```diagram\s*\n?[\s\S]*?```/g, "").trim();
+  if (!content) return '';
+  return content.replace(/```diagram\s*\n?[\s\S]*?```/g, '').trim();
 }

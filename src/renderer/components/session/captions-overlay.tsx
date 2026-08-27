@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Captions, X } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Captions, X } from 'lucide-react';
 
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface CaptionEntry {
   id: string;
@@ -79,7 +79,7 @@ export function CaptionsOverlay({
     <div className="pointer-events-none fixed bottom-24 left-1/2 -translate-x-1/2 z-[210] w-[min(720px,calc(100vw-3rem))]">
       <div
         className={`pointer-events-auto rounded-2xl bg-background/85 backdrop-blur-md ring-1 ring-border/70 px-5 py-3 ${
-          reducedMotion ? "" : "transition-all duration-200"
+          reducedMotion ? '' : 'transition-all duration-200'
         }`}
         role="region"
         aria-label="Live captions"
@@ -103,7 +103,9 @@ export function CaptionsOverlay({
           {showFinal && lastFinal && (
             <p className="text-muted-foreground">
               {lastFinal.speaker_name && (
-                <span className="text-muted-foreground/60 mr-2 text-[12px]">{lastFinal.speaker_name}:</span>
+                <span className="text-muted-foreground/60 mr-2 text-[12px]">
+                  {lastFinal.speaker_name}:
+                </span>
               )}
               {lastFinal.text}
             </p>
@@ -111,7 +113,9 @@ export function CaptionsOverlay({
           {interim && (
             <p className="text-foreground italic">
               {interim.speaker_name && (
-                <span className="text-muted-foreground mr-2 text-[12px] not-italic">{interim.speaker_name}:</span>
+                <span className="text-muted-foreground mr-2 text-[12px] not-italic">
+                  {interim.speaker_name}:
+                </span>
               )}
               {interim.text}
             </p>

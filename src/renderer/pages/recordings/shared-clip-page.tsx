@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
 interface ClipLine {
   ts: string | null;
@@ -21,9 +21,11 @@ interface ClipData {
 // The desktop's backend origin comes from main via the auth payload —
 // there is no build-time env. These pages are share-token authed, so the
 // origin is all they need.
-import { getAuth } from "@/lib/api-base";
-let API_BASE = "";
-void getAuth().then((auth) => { if (auth) API_BASE = auth.apiUrl; });
+import { getAuth } from '@/lib/api-base';
+let API_BASE = '';
+void getAuth().then((auth) => {
+  if (auth) API_BASE = auth.apiUrl;
+});
 
 /**
  * W6.6.2 — Public clip viewer. The share token is the only auth.
@@ -44,7 +46,11 @@ export default function PublicClipPage() {
         const resp = await fetch(`${auth?.apiUrl ?? API_BASE}/api/clips/${token}`);
         if (cancelled) return;
         if (!resp.ok) {
-          setError(resp.status === 404 ? "This clip doesn't exist or was removed." : `Error ${resp.status}`);
+          setError(
+            resp.status === 404
+              ? "This clip doesn't exist or was removed."
+              : `Error ${resp.status}`,
+          );
           return;
         }
         const data = (await resp.json()) as ClipData;
@@ -82,10 +88,11 @@ export default function PublicClipPage() {
         <p className="text-[10px] uppercase tracking-[0.18em] text-white/40 font-medium mb-2">
           Shared clip
         </p>
-        <h1 className="text-xl font-semibold mb-1">{clip.title ?? "Session clip"}</h1>
+        <h1 className="text-xl font-semibold mb-1">{clip.title ?? 'Session clip'}</h1>
         {clip.start_ts && clip.end_ts && (
           <p className="text-[12px] text-white/40 mb-6 tabular-nums">
-            {new Date(clip.start_ts).toLocaleString()} → {new Date(clip.end_ts).toLocaleTimeString()}
+            {new Date(clip.start_ts).toLocaleString()} →{' '}
+            {new Date(clip.end_ts).toLocaleTimeString()}
           </p>
         )}
         <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 space-y-2">

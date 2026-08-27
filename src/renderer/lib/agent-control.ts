@@ -13,9 +13,9 @@
  */
 
 type AgentControlMessage =
-  | { action: "set_camera"; enabled: boolean }
-  | { action: "swap_avatar" }
-  | { action: "detach"; say_goodbye?: boolean };
+  | { action: 'set_camera'; enabled: boolean }
+  | { action: 'swap_avatar' }
+  | { action: 'detach'; say_goodbye?: boolean };
 
 type Publisher = (msg: AgentControlMessage) => void;
 

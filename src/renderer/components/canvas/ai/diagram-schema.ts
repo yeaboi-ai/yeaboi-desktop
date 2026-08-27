@@ -79,10 +79,10 @@ export interface SwimLane {
 }
 
 export interface FlowNodeTechnical {
-  method?: string;       // GET, POST, PUT, DELETE
-  endpoint?: string;     // /api/follows
-  service?: string;      // user-service
-  notes?: string;        // triggers welcome email webhook
+  method?: string; // GET, POST, PUT, DELETE
+  endpoint?: string; // /api/follows
+  service?: string; // user-service
+  notes?: string; // triggers welcome email webhook
 }
 
 export interface FlowNode {
@@ -90,9 +90,9 @@ export interface FlowNode {
   label: string;
   shape: 'process' | 'decision' | 'start' | 'end' | 'io' | 'database' | 'subprocess';
   laneId?: string;
-  subflowIds?: string[];  // IDs of nodes in a detailed sub-flow for this step
-  screenId?: string;      // ID of the associated wireframe screen
-  technical?: FlowNodeTechnical;  // API/implementation detail, shown in technical view
+  subflowIds?: string[]; // IDs of nodes in a detailed sub-flow for this step
+  screenId?: string; // ID of the associated wireframe screen
+  technical?: FlowNodeTechnical; // API/implementation detail, shown in technical view
 }
 
 export interface FlowEdge {
@@ -175,10 +175,6 @@ export interface WireframeDiagram {
 // Union types
 // --------------------------------------------------------------------------
 
-export type DiagramData =
-  | ArchitectureDiagram
-  | ERDDiagram
-  | FlowchartDiagram
-  | WireframeDiagram;
+export type DiagramData = ArchitectureDiagram | ERDDiagram | FlowchartDiagram | WireframeDiagram;
 
 export type DiagramType = DiagramData['type'];

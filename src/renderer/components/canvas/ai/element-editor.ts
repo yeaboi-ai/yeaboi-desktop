@@ -11,9 +11,7 @@ export function buildEditContext(
   allEdges: Edge[],
 ): { element: any; connections: any[]; context: string } {
   // Find connected nodes via edges
-  const connectedEdges = allEdges.filter(
-    (e) => e.source === nodeId || e.target === nodeId,
-  );
+  const connectedEdges = allEdges.filter((e) => e.source === nodeId || e.target === nodeId);
 
   const connections = connectedEdges.map((edge) => {
     const isSource = edge.source === nodeId;
@@ -59,11 +57,7 @@ export function buildEditContext(
  * Parse AI response into updated node data.
  * Expects the response to contain a JSON block with the new data fields.
  */
-export function parseEditResponse(
-  response: string,
-  originalData: any,
-  _nodeType: string,
-): any {
+export function parseEditResponse(response: string, originalData: any, _nodeType: string): any {
   // Try to extract JSON from the response
   let jsonStr = response.trim();
 

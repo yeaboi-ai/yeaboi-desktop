@@ -349,14 +349,14 @@ function UsageView({ report }: { report: Report }) {
       <Section title="By model">
         <Table
           empty="No model activity in the window."
-          columns={[{ header: 'Model' }, { header: 'Calls', numeric: true }, { header: 'Cost', numeric: true }]}
+          columns={[
+            { header: 'Model' },
+            { header: 'Calls', numeric: true },
+            { header: 'Cost', numeric: true },
+          ]}
           rows={rows(report, 'by_model').map((row) => ({
             key: String(row['model']),
-            cells: [
-              String(row['model']),
-              Number(row['calls']),
-              money(Number(row['cost_usd'])),
-            ],
+            cells: [String(row['model']), Number(row['calls']), money(Number(row['cost_usd']))],
           }))}
         />
       </Section>
@@ -370,11 +370,7 @@ function UsageView({ report }: { report: Report }) {
           ]}
           rows={rows(report, 'by_project').map((row) => ({
             key: String(row['key']),
-            cells: [
-              String(row['key']),
-              Number(row['sessions']),
-              money(Number(row['cost_usd'])),
-            ],
+            cells: [String(row['key']), Number(row['sessions']), money(Number(row['cost_usd']))],
           }))}
         />
       </Section>

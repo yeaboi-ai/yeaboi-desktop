@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Smile, X } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { Smile, X } from 'lucide-react';
 
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { useLiveKitDataChannel } from "@/hooks/use-livekit-data-channel";
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useLiveKitDataChannel } from '@/hooks/use-livekit-data-channel';
 
-const EMOJIS = ["👍", "❤️", "🎉", "😂", "🙏", "🔥"] as const;
+const EMOJIS = ['👍', '❤️', '🎉', '😂', '🙏', '🔥'] as const;
 type Emoji = (typeof EMOJIS)[number];
 
 interface ReactionPayload {
@@ -86,13 +86,13 @@ export function ReactionsOverlay() {
       setPickerOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPickerOpen(false);
+      if (e.key === 'Escape') setPickerOpen(false);
     };
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKey);
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKey);
     };
   }, [pickerOpen]);
 
@@ -107,11 +107,11 @@ export function ReactionsOverlay() {
   // immediate haptic-style feedback even while the burst is still animating.
   const [triggerPulse, setTriggerPulse] = useState(false);
 
-  const { send, me } = useLiveKitDataChannel<"reactions">({
-    topic: "reactions",
+  const { send, me } = useLiveKitDataChannel<'reactions'>({
+    topic: 'reactions',
     includeLocalEcho: true,
     onEvent: (event) => {
-      if (event.type !== "reaction") return;
+      if (event.type !== 'reaction') return;
       const p = event.payload as ReactionPayload;
       if (!EMOJIS.includes(p.emoji)) return;
       const now = Date.now();
@@ -156,7 +156,10 @@ export function ReactionsOverlay() {
       {/* Collapsed trigger anchored bottom-right of the video tile.
           The picker pops up *above* this trigger as a separate row, so it
           never collides with the raise-hand button to its left. */}
-      <div ref={wrapperRef} className="pointer-events-auto absolute bottom-3 right-3 z-[5] flex flex-col items-end gap-2">
+      <div
+        ref={wrapperRef}
+        className="pointer-events-auto absolute bottom-3 right-3 z-[5] flex flex-col items-end gap-2"
+      >
         {pickerOpen && (
           <div
             className="flex items-center gap-1 px-1.5 py-1 rounded-full bg-background/85 backdrop-blur-md ring-1 ring-border shadow-lg"
@@ -170,7 +173,7 @@ export function ReactionsOverlay() {
                 key={e}
                 type="button"
                 onClick={() => {
-                  send<ReactionPayload>("reaction", { emoji: e });
+                  send<ReactionPayload>('reaction', { emoji: e });
                   scheduleAutoClose(AUTO_CLOSE_AFTER_PICK_MS);
                 }}
                 aria-label={`React with ${e}`}
@@ -195,13 +198,13 @@ export function ReactionsOverlay() {
             cancelAutoClose();
             setPickerOpen((v) => !v);
           }}
-          aria-label={pickerOpen ? "Close reactions" : "Open reactions"}
+          aria-label={pickerOpen ? 'Close reactions' : 'Open reactions'}
           aria-expanded={pickerOpen}
           className={`p-2 rounded-full ring-1 transition-colors backdrop-blur-md ${
             pickerOpen
-              ? "bg-foreground/[0.10] text-foreground ring-white/20"
-              : "bg-background/80 text-foreground/80 ring-border hover:text-foreground"
-          } ${triggerPulse && !reducedMotion ? "reaction-trigger-pulse" : ""}`}
+              ? 'bg-foreground/[0.10] text-foreground ring-white/20'
+              : 'bg-background/80 text-foreground/80 ring-border hover:text-foreground'
+          } ${triggerPulse && !reducedMotion ? 'reaction-trigger-pulse' : ''}`}
         >
           <Smile className="h-4 w-4" />
         </button>
@@ -213,25 +216,25 @@ export function ReactionsOverlay() {
           {floats.map((f) => (
             <span
               key={f.id}
-              className={reducedMotion ? "reaction-float-static" : "reaction-particle"}
+              className={reducedMotion ? 'reaction-float-static' : 'reaction-particle'}
               style={
                 reducedMotion
                   ? {
-                      position: "absolute",
+                      position: 'absolute',
                       left: `${f.offsetX}px`,
                       transform: `translate(-50%, ${f.driftY / 2}px)`,
                       fontSize: `${Math.round(28 * f.scale)}px`,
                     }
                   : ({
-                      position: "absolute",
+                      position: 'absolute',
                       left: `${f.offsetX}px`,
                       fontSize: `${Math.round(36 * f.scale)}px`,
-                      filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.35))",
+                      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))',
                       // Custom properties consumed by the keyframes below.
-                      ["--rx-drift-x" as string]: `${f.driftX}px`,
-                      ["--rx-drift-y" as string]: `${f.driftY}px`,
-                      ["--rx-rotate" as string]: `${f.rotation}deg`,
-                      ["--rx-scale" as string]: f.scale,
+                      ['--rx-drift-x' as string]: `${f.driftX}px`,
+                      ['--rx-drift-y' as string]: `${f.driftY}px`,
+                      ['--rx-rotate' as string]: `${f.rotation}deg`,
+                      ['--rx-scale' as string]: f.scale,
                       animationDelay: `${f.delay}ms`,
                     } as React.CSSProperties)
               }

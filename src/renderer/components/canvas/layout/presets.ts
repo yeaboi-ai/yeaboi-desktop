@@ -11,15 +11,15 @@ export type DiagramType = 'architecture' | 'erd' | 'flow' | 'wireframe';
 // --------------------------------------------------------------------------
 
 export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  service:    { width: 280, height: 80  },
-  zone:       { width: 100, height: 80 },  // minimum — ELK grows to fit children
-  database:   { width: 280, height: 200 },
-  process:    { width: 220, height: 70  },
-  decision:   { width: 140, height: 140 },
-  swimlane:   { width: 400, height: 600 },
+  service: { width: 280, height: 80 },
+  zone: { width: 100, height: 80 }, // minimum — ELK grows to fit children
+  database: { width: 280, height: 200 },
+  process: { width: 220, height: 70 },
+  decision: { width: 140, height: 140 },
+  swimlane: { width: 400, height: 600 },
   wirescreen: { width: 390, height: 844 },
-  sticky:     { width: 200, height: 150 },
-  annotation: { width: 200, height: 40  },
+  sticky: { width: 200, height: 150 },
+  annotation: { width: 200, height: 40 },
   inventory: { width: 500, height: 300 },
 };
 

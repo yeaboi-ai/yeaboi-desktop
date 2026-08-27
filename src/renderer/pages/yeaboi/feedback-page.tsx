@@ -122,8 +122,8 @@ function FeedbackBody() {
   return (
     <div className="rounded-2xl bg-card ring-1 ring-border/60 p-5 space-y-4">
       <p className="text-[12px] text-muted-foreground">
-        Files an issue on <code className="font-mono text-foreground">{options.repo}</code>.
-        Nothing is sent until you press Submit.
+        Files an issue on <code className="font-mono text-foreground">{options.repo}</code>. Nothing
+        is sent until you press Submit.
       </p>
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide w-16 shrink-0">

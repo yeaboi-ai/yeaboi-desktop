@@ -19,9 +19,7 @@ const rendered = `${JSON.stringify(registry, null, 2)}\n`;
 if (process.argv.includes('--check')) {
   const committed = readFileSync(target, 'utf-8');
   if (committed !== rendered) {
-    console.error(
-      `stale manifest: ${target}\nrun \`npm run gen-manifest\` and commit the result`,
-    );
+    console.error(`stale manifest: ${target}\nrun \`npm run gen-manifest\` and commit the result`);
     exit(1);
   }
   console.log('routes manifest is current');

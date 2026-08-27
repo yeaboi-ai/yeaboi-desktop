@@ -433,7 +433,9 @@ function ResultCard({
 function ContributorList({ examples }: { examples: Record<string, any> }) {
   const contributors: Profile[] = examples?.contributors ?? examples?.member_activity ?? [];
   if (!contributors.length) {
-    return <p className="text-[13px] text-muted-foreground">No per-person breakdown in this run.</p>;
+    return (
+      <p className="text-[13px] text-muted-foreground">No per-person breakdown in this run.</p>
+    );
   }
   return (
     <ul className="space-y-1.5">

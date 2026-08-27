@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Mail, X } from "lucide-react";
-import { useFeedback } from "@/hooks/use-feedback";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
-import { toast } from "@/components/ui/toast";
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Mail, X } from 'lucide-react';
+import { useFeedback } from '@/hooks/use-feedback';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { toast } from '@/components/ui/toast';
 
 interface CallRatingDialogProps {
   open: boolean;
@@ -18,18 +18,18 @@ interface CallRatingDialogProps {
 type Score = 1 | 2 | 3 | 4 | 5;
 
 const SCORES: ReadonlyArray<{ score: Score; emoji: string; label: string }> = [
-  { score: 1, emoji: "😞", label: "Bad" },
-  { score: 2, emoji: "😕", label: "Meh" },
-  { score: 3, emoji: "😐", label: "OK" },
-  { score: 4, emoji: "🙂", label: "Good" },
-  { score: 5, emoji: "🤩", label: "Great" },
+  { score: 1, emoji: '😞', label: 'Bad' },
+  { score: 2, emoji: '😕', label: 'Meh' },
+  { score: 3, emoji: '😐', label: 'OK' },
+  { score: 4, emoji: '🙂', label: 'Good' },
+  { score: 5, emoji: '🤩', label: 'Great' },
 ] as const;
 
 function formatDuration(seconds?: number) {
   if (seconds === undefined || seconds < 0) return null;
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 export function CallRatingDialog({
@@ -42,7 +42,7 @@ export function CallRatingDialog({
   const { submitFeedback } = useFeedback(sessionId);
   const { authFetch } = useAuthFetch();
   const [selectedLow, setSelectedLow] = useState<Score | null>(null);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState('');
   const [emailRecap, setEmailRecap] = useState(true); // default on
   const [emailSending, setEmailSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -50,10 +50,10 @@ export function CallRatingDialog({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
   useEffect(() => {
@@ -62,17 +62,17 @@ export function CallRatingDialog({
     }
   }, [selectedLow]);
 
-  if (!open || typeof window === "undefined") return null;
+  if (!open || typeof window === 'undefined') return null;
 
   const submit = async (score: Score, commentText?: string) => {
-    const rating = score >= 4 ? "thumbs_up" : "thumbs_down";
+    const rating = score >= 4 ? 'thumbs_up' : 'thumbs_down';
     submitFeedback({
-      targetType: "session",
+      targetType: 'session',
       targetId: callId,
       sessionId,
-      agentType: "voice",
+      agentType: 'voice',
       rating,
-      comment: rating === "thumbs_down" ? commentText?.trim() || undefined : undefined,
+      comment: rating === 'thumbs_down' ? commentText?.trim() || undefined : undefined,
       context: {
         score,
         duration_seconds: durationSeconds,
@@ -83,19 +83,22 @@ export function CallRatingDialog({
     // the slow path (Resend); we close the dialog immediately.
     if (emailRecap) {
       setEmailSending(true);
-      authFetch(`/api/sessions/${sessionId}/recap-email`, { method: "POST" })
+      authFetch(`/api/sessions/${sessionId}/recap-email`, { method: 'POST' })
         .then(async (resp) => {
           if (!resp.ok) {
-            toast.warning({ title: "Recap email failed", description: `${resp.status}` });
+            toast.warning({ title: 'Recap email failed', description: `${resp.status}` });
             return;
           }
-          const data = (await resp.json().catch(() => ({}))) as { sent?: number; recipients?: number };
+          const data = (await resp.json().catch(() => ({}))) as {
+            sent?: number;
+            recipients?: number;
+          };
           toast.success({
-            title: "Recap email sent",
-            description: `Delivered to ${data.sent ?? 0}${typeof data.recipients === "number" ? `/${data.recipients}` : ""} participants`,
+            title: 'Recap email sent',
+            description: `Delivered to ${data.sent ?? 0}${typeof data.recipients === 'number' ? `/${data.recipients}` : ''} participants`,
           });
         })
-        .catch(() => toast.warning({ title: "Recap email failed", description: "Network error" }))
+        .catch(() => toast.warning({ title: 'Recap email failed', description: 'Network error' }))
         .finally(() => setEmailSending(false));
     }
     onClose();
@@ -134,7 +137,9 @@ export function CallRatingDialog({
             <div>
               <h3 className="text-sm font-semibold text-foreground">How was the call?</h3>
               {durationLabel && (
-                <p className="text-xs text-muted-foreground/70 mt-0.5">Call ended · {durationLabel}</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">
+                  Call ended · {durationLabel}
+                </p>
               )}
             </div>
             <button
@@ -159,8 +164,8 @@ export function CallRatingDialog({
                     aria-label={`${label} (${score} of 5)`}
                     className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-colors group ${
                       isSelected
-                        ? "bg-foreground/[0.10] ring-1 ring-white/15"
-                        : "hover:bg-foreground/[0.05]"
+                        ? 'bg-foreground/[0.10] ring-1 ring-white/15'
+                        : 'hover:bg-foreground/[0.05]'
                     }`}
                   >
                     <span className="text-3xl leading-none transition-transform motion-safe:group-hover:scale-110">
@@ -168,7 +173,9 @@ export function CallRatingDialog({
                     </span>
                     <span
                       className={`text-[10px] transition-colors ${
-                        isSelected ? "text-foreground/90" : "text-muted-foreground/70 group-hover:text-foreground/80"
+                        isSelected
+                          ? 'text-foreground/90'
+                          : 'text-muted-foreground/70 group-hover:text-foreground/80'
                       }`}
                     >
                       {label}

@@ -16,13 +16,7 @@ interface ElementContextMenuProps {
 }
 
 const SparkleIcon = () => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 16 16"
-    fill="none"
-    style={{ flexShrink: 0 }}
-  >
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
     <path
       d="M8 0L9.79 6.21L16 8L9.79 9.79L8 16L6.21 9.79L0 8L6.21 6.21L8 0Z"
       fill="var(--primary)"
@@ -45,8 +39,7 @@ const menuStyles = {
     width: 180,
     padding: '4px 0',
     boxShadow: '0 8px 30px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   item: {
     display: 'flex',

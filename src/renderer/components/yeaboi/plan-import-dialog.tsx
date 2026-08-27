@@ -9,12 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
-import {
-  type ImportPreview,
-  mapPlan,
-  previewImport,
-  runImport,
-} from '@/lib/yeaboi/board-bridge';
+import { type ImportPreview, mapPlan, previewImport, runImport } from '@/lib/yeaboi/board-bridge';
 import type { Plan } from '@/lib/yeaboi/plan';
 import { duckQuip } from '@/lib/duck-events';
 import { toast } from '@/components/ui/toast';
@@ -55,9 +50,7 @@ export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
     if (!projectId || !ready) return;
     setPreview(null);
     setError('');
-    previewImport(authFetch, projectId, mapped).then(setPreview, (e: Error) =>
-      setError(e.message),
-    );
+    previewImport(authFetch, projectId, mapped).then(setPreview, (e: Error) => setError(e.message));
     // mapped is derived from a stable plan prop — the project is the input.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, ready]);
@@ -133,7 +126,11 @@ export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
           <Button variant="outline" size="sm" disabled={busy} onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" disabled={busy || !preview || !mapped.length} onClick={() => void run()}>
+          <Button
+            size="sm"
+            disabled={busy || !preview || !mapped.length}
+            onClick={() => void run()}
+          >
             {busy ? 'Sending…' : 'Send to board'}
           </Button>
         </div>

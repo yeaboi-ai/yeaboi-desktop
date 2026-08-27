@@ -247,8 +247,7 @@ function PokerSetupBody() {
                   className="mt-0.5 accent-[var(--primary)]"
                 />
                 <span className="text-[13px] text-foreground">
-                  {type.label}{' '}
-                  <span className="text-[11px] text-muted-foreground">{type.sub}</span>
+                  {type.label} <span className="text-[11px] text-muted-foreground">{type.sub}</span>
                 </span>
               </label>
             ))}

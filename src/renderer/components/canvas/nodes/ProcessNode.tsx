@@ -72,70 +72,89 @@ function ProcessNodeComponent({ data, selected }: NodeProps) {
   const viewMode = useDiagramView();
   const { setCenter, getNode, setNodes } = useReactFlow();
 
-  const handleInfraClick = useCallback((ids: string[]) => {
-    if (ids.length === 0) return;
+  const handleInfraClick = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
 
-    const tryPan = (attempt: number) => {
-      const targets = ids.map((id) => getNode(id)).filter(Boolean);
-      if (targets.length === 0) {
-        if (attempt < 12) {
-          // Wirescreen the user clicked toward might still be generating.
-          // Retry every 500ms for up to 6s before giving up.
-          setTimeout(() => tryPan(attempt + 1), 500);
+      const tryPan = (attempt: number) => {
+        const targets = ids.map((id) => getNode(id)).filter(Boolean);
+        if (targets.length === 0) {
+          if (attempt < 12) {
+            // Wirescreen the user clicked toward might still be generating.
+            // Retry every 500ms for up to 6s before giving up.
+            setTimeout(() => tryPan(attempt + 1), 500);
+            return;
+          }
+          console.warn(
+            '[ProcessNode] no node found for ids',
+            ids,
+            '— current wirescreen ids:',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).__rf?.nodes
+              ?.filter?.((n: any) => n.type === 'wirescreen')
+              .map((n: any) => n.id),
+          );
           return;
         }
-        console.warn('[ProcessNode] no node found for ids', ids,
-          '— current wirescreen ids:',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (window as any).__rf?.nodes?.filter?.((n: any) => n.type === 'wirescreen').map((n: any) => n.id));
-        return;
-      }
 
-      // Compute absolute positions by walking the parent chain
-      const absolutePositions = targets.map((t) => {
-        let absX = t!.position.x;
-        let absY = t!.position.y;
-        let parentId = (t as any).parentId;
-        while (parentId) {
-          const parent = getNode(parentId);
-          if (!parent) break;
-          absX += parent.position.x;
-          absY += parent.position.y;
-          parentId = (parent as any).parentId;
-        }
-        return { absX, absY };
-      });
+        // Compute absolute positions by walking the parent chain
+        const absolutePositions = targets.map((t) => {
+          let absX = t!.position.x;
+          let absY = t!.position.y;
+          let parentId = (t as any).parentId;
+          while (parentId) {
+            const parent = getNode(parentId);
+            if (!parent) break;
+            absX += parent.position.x;
+            absY += parent.position.y;
+            parentId = (parent as any).parentId;
+          }
+          return { absX, absY };
+        });
 
-      // Compute bounding box using absolute positions
-      const minX = Math.min(...absolutePositions.map((p) => p.absX));
-      const maxX = Math.max(...absolutePositions.map((p) => p.absX));
-      const minY = Math.min(...absolutePositions.map((p) => p.absY));
-      const maxY = Math.max(...absolutePositions.map((p) => p.absY));
+        // Compute bounding box using absolute positions
+        const minX = Math.min(...absolutePositions.map((p) => p.absX));
+        const maxX = Math.max(...absolutePositions.map((p) => p.absX));
+        const minY = Math.min(...absolutePositions.map((p) => p.absY));
+        const maxY = Math.max(...absolutePositions.map((p) => p.absY));
 
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-      const firstTarget = targets[0]!;
-      const tw = (firstTarget.width as number | undefined) ?? ((firstTarget.style as any)?.width as number | undefined) ?? 200;
-      const th = (firstTarget.height as number | undefined) ?? ((firstTarget.style as any)?.height as number | undefined) ?? 200;
-      setCenter(centerX + tw / 2, centerY + th / 2, { duration: 600, zoom: 0.4 });
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const firstTarget = targets[0]!;
+        const tw =
+          (firstTarget.width as number | undefined) ??
+          ((firstTarget.style as any)?.width as number | undefined) ??
+          200;
+        const th =
+          (firstTarget.height as number | undefined) ??
+          ((firstTarget.style as any)?.height as number | undefined) ??
+          200;
+        setCenter(centerX + tw / 2, centerY + th / 2, { duration: 600, zoom: 0.4 });
 
-      // Highlight the target nodes temporarily
-      const highlightIds = new Set(ids);
-      setNodes((nodes) => nodes.map((n) =>
-        highlightIds.has(n.id) ? { ...n, data: { ...n.data, _highlighted: true } } : n
-      ));
-      setTimeout(() => {
-        setNodes((nodes) => nodes.map((n) =>
-          highlightIds.has(n.id) ? { ...n, data: { ...n.data, _highlighted: false } } : n
-        ));
-      }, 2500);
-    };
-    tryPan(0);
-  }, [getNode, setCenter, setNodes]);
+        // Highlight the target nodes temporarily
+        const highlightIds = new Set(ids);
+        setNodes((nodes) =>
+          nodes.map((n) =>
+            highlightIds.has(n.id) ? { ...n, data: { ...n.data, _highlighted: true } } : n,
+          ),
+        );
+        setTimeout(() => {
+          setNodes((nodes) =>
+            nodes.map((n) =>
+              highlightIds.has(n.id) ? { ...n, data: { ...n.data, _highlighted: false } } : n,
+            ),
+          );
+        }, 2500);
+      };
+      tryPan(0);
+    },
+    [getNode, setCenter, setNodes],
+  );
 
   const hasSubflow = nodeData.subflowIds && nodeData.subflowIds.length > 0;
   const tech = nodeData.technical;
-  const showTech = viewMode === 'technical' && tech && (tech.method || tech.endpoint || tech.service);
+  const showTech =
+    viewMode === 'technical' && tech && (tech.method || tech.endpoint || tech.service);
 
   // Notify wirescreens when this flow node is hovered so the linked
   // mockup can highlight itself. Plain CustomEvent avoids prop-drilling
@@ -184,61 +203,71 @@ function ProcessNodeComponent({ data, selected }: NodeProps) {
       style={{
         ...styles.wrapper,
         ...(selected ? styles.wrapperSelected : {}),
-        ...(hasSubflow ? { borderColor: 'rgba(229,166,48,0.4)', borderStyle: 'dashed' as const } : {}),
+        ...(hasSubflow
+          ? { borderColor: 'rgba(229,166,48,0.4)', borderStyle: 'dashed' as const }
+          : {}),
         ...(showTech ? { minWidth: 220 } : {}),
         ...(nodeData.screenId ? { cursor: 'pointer' } : {}),
       }}
     >
       <div style={styles.label}>{label}</div>
-      {nodeData.description && (
-        <div style={styles.description}>{nodeData.description}</div>
-      )}
+      {nodeData.description && <div style={styles.description}>{nodeData.description}</div>}
 
       {/* Technical overlay */}
       {showTech && (
-        <div style={{
-          marginTop: 8,
-          paddingTop: 8,
-          borderTop: '1px solid var(--canvas-node-border)',
-          textAlign: 'left' as const,
-        }}>
+        <div
+          style={{
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: '1px solid var(--canvas-node-border)',
+            textAlign: 'left' as const,
+          }}
+        >
           {tech.method && tech.endpoint && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <span style={{
-                fontSize: 9,
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: METHOD_COLORS[tech.method.toUpperCase()] ?? 'var(--muted-foreground)',
-                letterSpacing: '0.03em',
-              }}>
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  color: METHOD_COLORS[tech.method.toUpperCase()] ?? 'var(--muted-foreground)',
+                  letterSpacing: '0.03em',
+                }}
+              >
                 {tech.method.toUpperCase()}
               </span>
-              <span style={{
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: 'var(--muted-foreground)',
-              }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  color: 'var(--muted-foreground)',
+                }}
+              >
                 {tech.endpoint}
               </span>
             </div>
           )}
           {tech.service && (
-            <div style={{
-              fontSize: 9,
-              fontFamily: 'monospace',
-              color: 'var(--muted-foreground)',
-              marginBottom: tech.notes ? 3 : 0,
-            }}>
+            <div
+              style={{
+                fontSize: 9,
+                fontFamily: 'monospace',
+                color: 'var(--muted-foreground)',
+                marginBottom: tech.notes ? 3 : 0,
+              }}
+            >
               {tech.service}
             </div>
           )}
           {tech.notes && (
-            <div style={{
-              fontSize: 9,
-              color: 'var(--muted-foreground)',
-              fontStyle: 'italic',
-              lineHeight: '13px',
-            }}>
+            <div
+              style={{
+                fontSize: 9,
+                color: 'var(--muted-foreground)',
+                fontStyle: 'italic',
+                lineHeight: '13px',
+              }}
+            >
               {tech.notes}
             </div>
           )}
@@ -279,7 +308,13 @@ function ProcessNodeComponent({ data, selected }: NodeProps) {
           title="View detailed sub-flow"
         >
           <svg width={12} height={12} viewBox="0 0 16 16" fill="none">
-            <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M6 4l4 4-4 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       )}

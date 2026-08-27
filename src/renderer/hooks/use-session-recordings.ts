@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useAuthFetch } from "@/hooks/use-auth-fetch";
+import { useEffect, useState } from 'react';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 export interface SessionRecording {
   id: string;
   session_id: string;
-  status: "starting" | "active" | "completed" | "failed" | "expired";
+  status: 'starting' | 'active' | 'completed' | 'failed' | 'expired';
   duration_seconds: number | null;
   file_size_bytes: number | null;
   started_at: string | null;
@@ -53,7 +53,7 @@ export function useSessionRecordings(
           setError(null);
         }
       } catch {
-        if (!cancelled) setError("network");
+        if (!cancelled) setError('network');
       } finally {
         if (!cancelled && pollMs > 0) {
           timer = setTimeout(tick, pollMs);
@@ -68,6 +68,6 @@ export function useSessionRecordings(
     };
   }, [ready, sessionId, authFetch, pollMs]);
 
-  const isRecording = !!rows?.some((r) => r.status === "active" || r.status === "starting");
+  const isRecording = !!rows?.some((r) => r.status === 'active' || r.status === 'starting');
   return { rows, isRecording, error };
 }

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
-import { type DrawPoint, type DrawStroke, STROKE_TTL_MS } from "@/hooks/use-screen-draw";
+import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { type DrawPoint, type DrawStroke, STROKE_TTL_MS } from '@/hooks/use-screen-draw';
 
 interface ScreenDrawCanvasProps {
   /** When true, capture pointer input and let the user draw. Otherwise the
@@ -12,8 +12,8 @@ interface ScreenDrawCanvasProps {
   pruneExpired: () => void;
 }
 
-const INK = "rgb(255, 64, 64)";
-const INK_GLOW = "rgba(255, 64, 64, 0.55)";
+const INK = 'rgb(255, 64, 64)';
+const INK_GLOW = 'rgba(255, 64, 64, 0.55)';
 
 /**
  * Transparent canvas overlay for the shared-screen tile. In `active` mode the
@@ -22,7 +22,12 @@ const INK_GLOW = "rgba(255, 64, 64, 0.55)";
  * AI by the hook). Renders both local and remote strokes with an age-based
  * fade in a requestAnimationFrame loop.
  */
-export function ScreenDrawCanvas({ active, strokes, onStroke, pruneExpired }: ScreenDrawCanvasProps) {
+export function ScreenDrawCanvas({
+  active,
+  strokes,
+  onStroke,
+  pruneExpired,
+}: ScreenDrawCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentRef = useRef<DrawPoint[]>([]);
   const drawingRef = useRef(false);
@@ -53,12 +58,12 @@ export function ScreenDrawCanvas({ active, strokes, onStroke, pruneExpired }: Sc
     let raf = 0;
     const tick = () => {
       const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
+      const ctx = canvas?.getContext('2d');
       if (canvas && ctx) {
         const { width: w, height: h } = canvas;
         ctx.clearRect(0, 0, w, h);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         const now = Date.now();
         const paint = (pts: DrawPoint[], alpha: number) => {
           if (pts.length === 0 || alpha <= 0) return;
@@ -136,7 +141,7 @@ export function ScreenDrawCanvas({ active, strokes, onStroke, pruneExpired }: Sc
     <canvas
       ref={canvasRef}
       data-testid="screen-draw-canvas"
-      className={`absolute inset-0 z-10 h-full w-full ${active ? "cursor-crosshair" : "pointer-events-none"}`}
+      className={`absolute inset-0 z-10 h-full w-full ${active ? 'cursor-crosshair' : 'pointer-events-none'}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endStroke}

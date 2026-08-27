@@ -129,7 +129,8 @@ export class LivekitSidecar {
       // and then die on 7881; saying why beats a cryptic exit code 0.
       this.setState({
         kind: 'down',
-        reason: 'port 7881 is in use by another LiveKit — stop it (e.g. the docker stack) to use the bundled server',
+        reason:
+          'port 7881 is in use by another LiveKit — stop it (e.g. the docker stack) to use the bundled server',
       });
       return;
     }

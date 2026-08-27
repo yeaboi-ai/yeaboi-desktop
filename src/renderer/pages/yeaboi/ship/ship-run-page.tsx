@@ -89,7 +89,9 @@ function RunBody({ runKey, cardId }: { runKey: string; cardId: string }) {
   }, [cardId, ready, run, authFetch]);
 
   if (!runKey)
-    return <p className="text-[13px] text-muted-foreground">No run — launch one from Ship first.</p>;
+    return (
+      <p className="text-[13px] text-muted-foreground">No run — launch one from Ship first.</p>
+    );
   if (error && !run)
     return <p className="text-[13px] text-destructive">Could not read the run: {error}</p>;
   if (!run) return <p className="text-[13px] text-muted-foreground">Loading…</p>;

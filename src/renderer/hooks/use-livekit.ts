@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
 
@@ -23,7 +23,7 @@ export function useLiveKit(sessionId: string, fetchFn?: FetchFn) {
     setError(null);
     try {
       const resp = await fetchFnRef.current(`/api/sessions/${sessionId}/livekit-token`, {
-        method: "POST",
+        method: 'POST',
       });
       if (!resp.ok) {
         throw new Error(`Failed to get token: ${resp.status}`);
@@ -33,7 +33,7 @@ export function useLiveKit(sessionId: string, fetchFn?: FetchFn) {
       setUrl(data.url);
       setParticipantName(data.participant_name ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to connect");
+      setError(e instanceof Error ? e.message : 'Failed to connect');
     } finally {
       setIsConnecting(false);
     }

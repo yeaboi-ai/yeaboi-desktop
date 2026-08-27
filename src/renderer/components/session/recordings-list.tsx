@@ -1,30 +1,33 @@
-"use client";
+'use client';
 
-import { Clock, Film, Loader2 } from "lucide-react";
+import { Clock, Film, Loader2 } from 'lucide-react';
 
-import { useSessionRecordings, type SessionRecording as RecordingRow } from "@/hooks/use-session-recordings";
+import {
+  useSessionRecordings,
+  type SessionRecording as RecordingRow,
+} from '@/hooks/use-session-recordings';
 
 interface RecordingsListProps {
   sessionId: string;
   /** Layout style: `strip` for inline session use, `grid` for the recap rail. */
-  layout?: "strip" | "grid";
+  layout?: 'strip' | 'grid';
 }
 
 function formatDuration(s: number | null): string {
-  if (s == null || s < 0) return "—";
+  if (s == null || s < 0) return '—';
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return '—';
   const d = new Date(iso);
   return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
   });
 }
 
@@ -32,22 +35,22 @@ function formatExpiry(iso: string | null): string | null {
   if (!iso) return null;
   const expires = new Date(iso).getTime();
   const days = Math.round((expires - Date.now()) / 86_400_000);
-  if (days < 0) return "Expired";
-  if (days === 0) return "Expires today";
-  if (days === 1) return "Expires tomorrow";
+  if (days < 0) return 'Expired';
+  if (days === 0) return 'Expires today';
+  if (days === 1) return 'Expires tomorrow';
   if (days <= 14) return `Expires in ${days}d`;
-  return `Expires ${new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  return `Expires ${new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
 }
 
-const STATUS_LABEL: Record<RecordingRow["status"], string> = {
-  starting: "Starting",
-  active: "Recording",
-  completed: "Ready",
-  failed: "Failed",
-  expired: "Expired",
+const STATUS_LABEL: Record<RecordingRow['status'], string> = {
+  starting: 'Starting',
+  active: 'Recording',
+  completed: 'Ready',
+  failed: 'Failed',
+  expired: 'Expired',
 };
 
-export function RecordingsList({ sessionId, layout = "strip" }: RecordingsListProps) {
+export function RecordingsList({ sessionId, layout = 'strip' }: RecordingsListProps) {
   const { rows, error } = useSessionRecordings(sessionId);
 
   if (rows === null && !error) {
@@ -66,9 +69,7 @@ export function RecordingsList({ sessionId, layout = "strip" }: RecordingsListPr
   }
 
   const containerClass =
-    layout === "grid"
-      ? "grid grid-cols-1 gap-2"
-      : "flex gap-2 overflow-x-auto -mx-1 px-1 py-1";
+    layout === 'grid' ? 'grid grid-cols-1 gap-2' : 'flex gap-2 overflow-x-auto -mx-1 px-1 py-1';
 
   return (
     <div className="space-y-2">
@@ -85,20 +86,20 @@ export function RecordingsList({ sessionId, layout = "strip" }: RecordingsListPr
 }
 
 function RecordingCard({ recording }: { recording: RecordingRow }) {
-  const isReady = recording.status === "completed";
+  const isReady = recording.status === 'completed';
   const expiry = formatExpiry(recording.expires_at);
-  const expired = recording.status === "expired" || expiry === "Expired";
-  const inFlight = recording.status === "starting" || recording.status === "active";
+  const expired = recording.status === 'expired' || expiry === 'Expired';
+  const inFlight = recording.status === 'starting' || recording.status === 'active';
 
   const playerHref = `/recordings/${recording.id}`;
   const card = (
     <div
       className={`shrink-0 w-64 rounded-xl ring-1 transition-colors ${
         expired
-          ? "bg-foreground/[0.02] ring-border/40 opacity-60"
+          ? 'bg-foreground/[0.02] ring-border/40 opacity-60'
           : isReady
-            ? "bg-foreground/[0.05] ring-border/70 hover:bg-foreground/[0.08]"
-            : "bg-foreground/[0.04] ring-border/60"
+            ? 'bg-foreground/[0.05] ring-border/70 hover:bg-foreground/[0.08]'
+            : 'bg-foreground/[0.04] ring-border/60'
       }`}
     >
       <div className="aspect-video rounded-t-xl bg-background/60 flex items-center justify-center">
@@ -122,10 +123,10 @@ function RecordingCard({ recording }: { recording: RecordingRow }) {
           <span
             className={`text-[10px] px-1.5 py-0.5 rounded ${
               isReady
-                ? "bg-success/15 text-success"
-                : recording.status === "failed"
-                  ? "bg-destructive/15 text-destructive"
-                  : "bg-foreground/[0.06] text-muted-foreground"
+                ? 'bg-success/15 text-success'
+                : recording.status === 'failed'
+                  ? 'bg-destructive/15 text-destructive'
+                  : 'bg-foreground/[0.06] text-muted-foreground'
             }`}
           >
             {STATUS_LABEL[recording.status]}

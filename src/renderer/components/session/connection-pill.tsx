@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useConnectionQualityIndicator, useLocalParticipant } from "@livekit/components-react";
-import { ConnectionQuality, LocalAudioTrack } from "livekit-client";
-import { Wifi, WifiOff } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { useConnectionQualityIndicator, useLocalParticipant } from '@livekit/components-react';
+import { ConnectionQuality, LocalAudioTrack } from 'livekit-client';
+import { Wifi, WifiOff } from 'lucide-react';
 
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 const QUALITY_TONE: Record<ConnectionQuality, { label: string; color: string }> = {
-  [ConnectionQuality.Excellent]: { label: "Excellent", color: "text-success" },
-  [ConnectionQuality.Good]: { label: "Good", color: "text-success" },
-  [ConnectionQuality.Poor]: { label: "Poor", color: "text-warning" },
-  [ConnectionQuality.Lost]: { label: "Lost", color: "text-destructive" },
-  [ConnectionQuality.Unknown]: { label: "Unknown", color: "text-muted-foreground" },
+  [ConnectionQuality.Excellent]: { label: 'Excellent', color: 'text-success' },
+  [ConnectionQuality.Good]: { label: 'Good', color: 'text-success' },
+  [ConnectionQuality.Poor]: { label: 'Poor', color: 'text-warning' },
+  [ConnectionQuality.Lost]: { label: 'Lost', color: 'text-destructive' },
+  [ConnectionQuality.Unknown]: { label: 'Unknown', color: 'text-muted-foreground' },
 };
 
 /**
@@ -102,7 +102,7 @@ export function ConnectionPill() {
                       barRefs.current[i] = el;
                     }}
                     className="w-[2px] rounded-sm bg-current"
-                    style={{ height: "3px" }}
+                    style={{ height: '3px' }}
                   />
                 ))}
               </span>
@@ -111,8 +111,8 @@ export function ConnectionPill() {
         />
         <TooltipContent>
           {tone.label} connection
-          {quality === ConnectionQuality.Poor && " — expect choppy audio"}
-          {quality === ConnectionQuality.Lost && " — reconnecting..."}
+          {quality === ConnectionQuality.Poor && ' — expect choppy audio'}
+          {quality === ConnectionQuality.Lost && ' — reconnecting...'}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

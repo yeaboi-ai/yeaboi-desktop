@@ -127,12 +127,8 @@ function DatabaseNodeComponent({ data, selected }: NodeProps) {
           />
 
           <div style={styles.columnLeft}>
-            {col.pk && (
-              <span style={{ ...styles.badge, ...styles.pkBadge }}>PK</span>
-            )}
-            {col.fk && (
-              <span style={{ ...styles.badge, ...styles.fkBadge }}>FK</span>
-            )}
+            {col.pk && <span style={{ ...styles.badge, ...styles.pkBadge }}>PK</span>}
+            {col.fk && <span style={{ ...styles.badge, ...styles.fkBadge }}>FK</span>}
             <span style={styles.columnName}>{col.name}</span>
           </div>
 

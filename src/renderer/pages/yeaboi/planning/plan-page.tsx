@@ -117,10 +117,15 @@ function PlanBody({ sessionId }: { sessionId: string }) {
               key={`${sprint.name ?? 'sprint'}-${index}`}
               title={sprint.name || `Sprint ${index + 1}`}
             >
-              {sprint.goal && <p className="text-[12px] text-muted-foreground mb-2">{sprint.goal}</p>}
+              {sprint.goal && (
+                <p className="text-[12px] text-muted-foreground mb-2">{sprint.goal}</p>
+              )}
               <ul className="space-y-1.5">
                 {storiesOf(plan, sprint).map((story) => (
-                  <li key={story.id} className="flex items-center gap-2 text-[13px] text-foreground">
+                  <li
+                    key={story.id}
+                    className="flex items-center gap-2 text-[13px] text-foreground"
+                  >
                     <Badge variant="outline">{story.story_points ?? 0}</Badge>
                     {story.title || story.id}
                   </li>

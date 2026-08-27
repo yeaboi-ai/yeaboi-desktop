@@ -15,9 +15,7 @@ import { app } from 'electron';
 import { loadMachineSecrets, loadSharedEnv, yeaboiHome } from './secrets';
 
 export type PlanningState =
-  | { kind: 'starting' }
-  | { kind: 'ready'; url: string }
-  | { kind: 'down'; reason: string };
+  { kind: 'starting' } | { kind: 'ready'; url: string } | { kind: 'down'; reason: string };
 
 const HEALTH_TIMEOUT_MS = 30_000;
 const HEALTH_POLL_MS = 500;
@@ -60,8 +58,7 @@ export function resolvePlanningCommand(port: number): {
       args: ['-m', ...uvicornArgs('app.main')],
     };
   }
-  const repo =
-    process.env['YEABOI_PLANNING_REPO'] ?? resolve(import.meta.dirname, '../../backend');
+  const repo = process.env['YEABOI_PLANNING_REPO'] ?? resolve(import.meta.dirname, '../../backend');
   return { command: 'uv', args: ['run', ...uvicornArgs('src.app.main')], cwd: repo };
 }
 
@@ -199,7 +196,10 @@ export class PlanningSidecar {
       };
       child.once('error', (error) => finish(false, new Error(`could not spawn: ${error.message}`)));
       child.once('exit', (code) =>
-        finish(false, new Error(`exited during startup (code ${String(code)}) — see ${this.logFile}`)),
+        finish(
+          false,
+          new Error(`exited during startup (code ${String(code)}) — see ${this.logFile}`),
+        ),
       );
       const poll = async () => {
         if (settled) return;

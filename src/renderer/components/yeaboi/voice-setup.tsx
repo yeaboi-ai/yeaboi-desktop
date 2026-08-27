@@ -37,7 +37,9 @@ export function VoiceSetup({ status, onClose }: VoiceSetupProps) {
   if (status.state === 'unsupported' || status.install.blocked) {
     return (
       <Shell title="Dictation can't run here">
-        <p className="text-[13px] text-muted-foreground">{status.install.blocked || status.detail}</p>
+        <p className="text-[13px] text-muted-foreground">
+          {status.install.blocked || status.detail}
+        </p>
         <div className="mt-4 flex justify-end">
           <Button size="sm" onClick={() => onClose(false, '')}>
             Close
@@ -80,7 +82,11 @@ export function VoiceSetup({ status, onClose }: VoiceSetupProps) {
             className={`block h-full rounded-full bg-primary transition-[width] ${
               fraction === null ? 'w-1/3 animate-pulse' : ''
             }`}
-            style={fraction === null ? {} : { width: `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%` }}
+            style={
+              fraction === null
+                ? {}
+                : { width: `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}%` }
+            }
           />
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground/70">

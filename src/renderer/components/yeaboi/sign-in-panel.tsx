@@ -101,8 +101,8 @@ export function SignInPanel({ onClose }: { onClose: (saved: boolean, message: st
   return (
     <Shell>
       <p className="text-[13px] text-muted-foreground leading-snug">
-        Sign in with your Claude subscription. A browser window opens; approve the request and
-        paste the code back here if asked.
+        Sign in with your Claude subscription. A browser window opens; approve the request and paste
+        the code back here if asked.
       </p>
       {status?.url ? (
         <p className="mt-3 flex items-center gap-2">

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
-const STORAGE_KEY = "planr-ptt-enabled";
-const EVENT = "planr-ptt-change";
+const STORAGE_KEY = 'planr-ptt-enabled';
+const EVENT = 'planr-ptt-change';
 
 function subscribe(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", callback);
+  if (typeof window === 'undefined') return () => {};
+  window.addEventListener('storage', callback);
   window.addEventListener(EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener('storage', callback);
     window.removeEventListener(EVENT, callback);
   };
 }
 
 function getSnapshot(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(STORAGE_KEY) === "1";
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(STORAGE_KEY) === '1';
 }
 
 function getServerSnapshot(): boolean {
@@ -28,8 +28,8 @@ function getServerSnapshot(): boolean {
 export function usePushToTalkPreference(): [boolean, (next: boolean) => void] {
   const enabled = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const update = useCallback((next: boolean) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
     window.dispatchEvent(new Event(EVENT));
   }, []);
   return [enabled, update];
@@ -38,7 +38,7 @@ export function usePushToTalkPreference(): [boolean, (next: boolean) => void] {
 function isInputTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
   if (target.isContentEditable) return true;
   return false;
 }
@@ -72,7 +72,7 @@ export function usePushToTalk({ enabled, active, setMicMuted }: PushToTalkOption
     let pressed = false;
 
     const onDown = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
+      if (e.code !== 'Space') return;
       if (isInputTarget(e.target)) return;
       if (pressed) return; // ignore key auto-repeat
       pressed = true;
@@ -81,7 +81,7 @@ export function usePushToTalk({ enabled, active, setMicMuted }: PushToTalkOption
     };
 
     const onUp = (e: KeyboardEvent) => {
-      if (e.code !== "Space") return;
+      if (e.code !== 'Space') return;
       if (!pressed) return;
       pressed = false;
       e.preventDefault();
@@ -96,13 +96,13 @@ export function usePushToTalk({ enabled, active, setMicMuted }: PushToTalkOption
       }
     };
 
-    window.addEventListener("keydown", onDown);
-    window.addEventListener("keyup", onUp);
-    window.addEventListener("blur", onBlur);
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    window.addEventListener('blur', onBlur);
     return () => {
-      window.removeEventListener("keydown", onDown);
-      window.removeEventListener("keyup", onUp);
-      window.removeEventListener("blur", onBlur);
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+      window.removeEventListener('blur', onBlur);
     };
   }, [enabled, active, setMicMuted]);
 }

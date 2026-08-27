@@ -229,10 +229,7 @@ function PokerBoardBody({ boardId }: { boardId: string }) {
       >
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat label="Ticket" value={`${state.ticket_index + 1} / ${state.ticket_count}`} />
-          <Stat
-            label="Estimated"
-            value={`${state.progress.estimated} / ${state.progress.total}`}
-          />
+          <Stat label="Estimated" value={`${state.progress.estimated} / ${state.progress.total}`} />
           <Stat label="At the table" value={String(state.presence.length)} />
           <Stat label="Phase" value={voting ? 'voting' : 'revealed'} />
         </div>

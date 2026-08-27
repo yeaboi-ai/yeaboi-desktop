@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef } from "react";
-import { useLiveKitDataChannel } from "./use-livekit-data-channel";
+import { useCallback, useEffect, useRef } from 'react';
+import { useLiveKitDataChannel } from './use-livekit-data-channel';
 
-export type SteeringAction = "interrupt" | "wait" | "dig";
+export type SteeringAction = 'interrupt' | 'wait' | 'dig';
 
 interface SteeringPayload {
   /** Empty for now — kept for forward compat (per-action options). */
@@ -22,7 +22,7 @@ interface SteeringPayload {
  * is rebuilt.
  */
 export function useAgentSteering() {
-  const { send } = useLiveKitDataChannel<"agent_steering">({ topic: "agent_steering" });
+  const { send } = useLiveKitDataChannel<'agent_steering'>({ topic: 'agent_steering' });
   const sendRef = useRef(send);
   sendRef.current = send;
 

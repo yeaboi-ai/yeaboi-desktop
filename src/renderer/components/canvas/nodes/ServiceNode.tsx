@@ -140,18 +140,14 @@ function ServiceNodeComponent({ data, selected }: NodeProps) {
       {/* Icon */}
       <div style={styles.iconContainer}>
         {nodeData.iconUrl ? (
-          <img
-            src={nodeData.iconUrl}
-            alt={label}
-            style={styles.icon}
-            draggable={false}
-          />
+          <img src={nodeData.iconUrl} alt={label} style={styles.icon} draggable={false} />
         ) : (
           <div
             style={{
               ...styles.fallbackIcon,
               background: `${providerColor}22`,
-              color: providerColor === 'var(--primary-foreground)' ? 'var(--foreground)' : providerColor,
+              color:
+                providerColor === 'var(--primary-foreground)' ? 'var(--foreground)' : providerColor,
             }}
           >
             {firstLetter}
@@ -162,9 +158,7 @@ function ServiceNodeComponent({ data, selected }: NodeProps) {
       {/* Text */}
       <div style={styles.textContainer}>
         <div style={styles.label}>{label}</div>
-        {nodeData.description && (
-          <div style={styles.description}>{nodeData.description}</div>
-        )}
+        {nodeData.description && <div style={styles.description}>{nodeData.description}</div>}
       </div>
 
       {/* Handles */}

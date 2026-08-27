@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useConnectionQualityIndicator, useLocalParticipant } from "@livekit/components-react";
-import { ConnectionQuality } from "livekit-client";
-import { Captions, CircleDot, Ear, EarOff, Wifi, WifiOff } from "lucide-react";
+import { useConnectionQualityIndicator, useLocalParticipant } from '@livekit/components-react';
+import { ConnectionQuality } from 'livekit-client';
+import { Captions, CircleDot, Ear, EarOff, Wifi, WifiOff } from 'lucide-react';
 
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useProviderHealth } from "@/hooks/use-provider-health";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useProviderHealth } from '@/hooks/use-provider-health';
 
 interface VideoTileStatusProps {
   /** AI listening state (STT gate). Truthy = paused. */
@@ -30,44 +30,46 @@ interface VideoTileStatusProps {
  *
  * Order (left → right): AI listening · CC · REC · Connection.
  */
-export function VideoTileStatus({ micMuted, pushToTalk, captionsOn, isRecording, agentInCall }: VideoTileStatusProps) {
+export function VideoTileStatus({
+  micMuted,
+  pushToTalk,
+  captionsOn,
+  isRecording,
+  agentInCall,
+}: VideoTileStatusProps) {
   const { localParticipant } = useLocalParticipant();
   const { quality } = useConnectionQualityIndicator({ participant: localParticipant });
   const { voice: voiceHealth } = useProviderHealth();
   const aiUnavailable = !voiceHealth.available;
 
   const networkLabel: Record<ConnectionQuality, string> = {
-    [ConnectionQuality.Excellent]: "Excellent connection",
-    [ConnectionQuality.Good]: "Good connection",
-    [ConnectionQuality.Poor]: "Poor connection — expect choppy audio",
-    [ConnectionQuality.Lost]: "Connection lost",
-    [ConnectionQuality.Unknown]: "Connection unknown",
+    [ConnectionQuality.Excellent]: 'Excellent connection',
+    [ConnectionQuality.Good]: 'Good connection',
+    [ConnectionQuality.Poor]: 'Poor connection — expect choppy audio',
+    [ConnectionQuality.Lost]: 'Connection lost',
+    [ConnectionQuality.Unknown]: 'Connection unknown',
   };
   const networkTone: Record<ConnectionQuality, string> = {
-    [ConnectionQuality.Excellent]: "text-success",
-    [ConnectionQuality.Good]: "text-success",
-    [ConnectionQuality.Poor]: "text-warning",
-    [ConnectionQuality.Lost]: "text-destructive",
-    [ConnectionQuality.Unknown]: "text-muted-foreground/70",
+    [ConnectionQuality.Excellent]: 'text-success',
+    [ConnectionQuality.Good]: 'text-success',
+    [ConnectionQuality.Poor]: 'text-warning',
+    [ConnectionQuality.Lost]: 'text-destructive',
+    [ConnectionQuality.Unknown]: 'text-muted-foreground/70',
   };
 
   // Treat the AI as not-listening whenever an upstream provider (Anthropic /
   // Deepgram / ElevenLabs) is unhealthy, regardless of the mic state.
   const listening = !micMuted && !aiUnavailable;
-  const aiTone = aiUnavailable
-    ? "text-destructive"
-    : listening
-      ? "text-success"
-      : "text-warning";
+  const aiTone = aiUnavailable ? 'text-destructive' : listening ? 'text-success' : 'text-warning';
   const aiLabel = aiUnavailable
-    ? `AI listening unavailable: ${voiceHealth.message ?? "an upstream provider is failing."}`
+    ? `AI listening unavailable: ${voiceHealth.message ?? 'an upstream provider is failing.'}`
     : pushToTalk
       ? listening
-        ? "AI listening (Space held)"
-        : "AI paused — hold Space to speak"
+        ? 'AI listening (Space held)'
+        : 'AI paused — hold Space to speak'
       : listening
-        ? "AI is transcribing your voice"
-        : "AI listening paused — others still hear you";
+        ? 'AI is transcribing your voice'
+        : 'AI listening paused — others still hear you';
 
   return (
     <TooltipProvider>
@@ -105,14 +107,19 @@ export function VideoTileStatus({ micMuted, pushToTalk, captionsOn, isRecording,
           <Tooltip>
             <TooltipTrigger
               render={
-                <span className="flex items-center text-destructive" aria-label="Recording — audio and video are being captured">
+                <span
+                  className="flex items-center text-destructive"
+                  aria-label="Recording — audio and video are being captured"
+                >
                   <CircleDot className="h-4 w-4 animate-pulse" />
                 </span>
               }
             />
             <TooltipContent>
-              Recording in progress — audio and video are being captured.{" "}
-              <a href="/docs" className="underline">Data retention</a>
+              Recording in progress — audio and video are being captured.{' '}
+              <a href="/docs" className="underline">
+                Data retention
+              </a>
             </TooltipContent>
           </Tooltip>
         )}
@@ -120,8 +127,15 @@ export function VideoTileStatus({ micMuted, pushToTalk, captionsOn, isRecording,
         <Tooltip>
           <TooltipTrigger
             render={
-              <span className={`flex items-center ${networkTone[quality]}`} aria-label={networkLabel[quality]}>
-                {quality === ConnectionQuality.Lost ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />}
+              <span
+                className={`flex items-center ${networkTone[quality]}`}
+                aria-label={networkLabel[quality]}
+              >
+                {quality === ConnectionQuality.Lost ? (
+                  <WifiOff className="h-4 w-4" />
+                ) : (
+                  <Wifi className="h-4 w-4" />
+                )}
               </span>
             }
           />

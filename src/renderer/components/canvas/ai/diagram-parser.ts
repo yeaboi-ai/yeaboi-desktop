@@ -32,7 +32,7 @@ function parseArchitecture(diagram: ArchitectureDiagram): { nodes: Node[]; edges
 
   // Build a lookup of nodeId -> zoneId from both node.zoneId AND zone.children
   const nodeZoneMap = new Map<string, string>();
-  for (const zone of (diagram.zones || [])) {
+  for (const zone of diagram.zones || []) {
     if (Array.isArray((zone as any).children)) {
       for (const childId of (zone as any).children) {
         nodeZoneMap.set(childId, zone.id);
@@ -44,7 +44,7 @@ function parseArchitecture(diagram: ArchitectureDiagram): { nodes: Node[]; edges
   }
 
   // Zones become parent group nodes
-  for (const zone of (diagram.zones || [])) {
+  for (const zone of diagram.zones || []) {
     nodes.push({
       id: zone.id,
       type: 'zone',
@@ -74,7 +74,7 @@ function parseArchitecture(diagram: ArchitectureDiagram): { nodes: Node[]; edges
         iconUrl,
         description: n.description,
       },
-      ...((n.zoneId || nodeZoneMap.get(n.id)) ? { parentId: n.zoneId || nodeZoneMap.get(n.id) } : {}),
+      ...(n.zoneId || nodeZoneMap.get(n.id) ? { parentId: n.zoneId || nodeZoneMap.get(n.id) } : {}),
       style: {
         width: NODE_DIMENSIONS.service.width,
         height: NODE_DIMENSIONS.service.height,
@@ -130,9 +130,7 @@ function parseERD(diagram: ERDDiagram): { nodes: Node[]; edges: Edge[] } {
       'many-to-many': 'N:M',
     }[rel.type];
 
-    const label = rel.label
-      ? `${rel.label} (${cardinalityLabel})`
-      : cardinalityLabel;
+    const label = rel.label ? `${rel.label} (${cardinalityLabel})` : cardinalityLabel;
 
     edges.push({
       id: nextEdgeId(),
@@ -153,12 +151,12 @@ function parseERD(diagram: ERDDiagram): { nodes: Node[]; edges: Edge[] } {
 
 /** Map AI schema shapes to React Flow node types */
 const FLOW_SHAPE_MAP: Record<string, string> = {
-  process:    'process',
-  decision:   'decision',
-  start:      'process',
-  end:        'process',
-  io:         'process',
-  database:   'database',
+  process: 'process',
+  decision: 'decision',
+  start: 'process',
+  end: 'process',
+  io: 'process',
+  database: 'database',
   subprocess: 'process',
 };
 
@@ -227,8 +225,8 @@ function parseFlow(diagram: FlowchartDiagram): { nodes: Node[]; edges: Edge[] } 
 // --------------------------------------------------------------------------
 
 const DEVICE_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  mobile:  { width: 390, height: 844 },
-  tablet:  { width: 820, height: 1180 },
+  mobile: { width: 390, height: 844 },
+  tablet: { width: 820, height: 1180 },
   desktop: { width: 1440, height: 900 },
 };
 

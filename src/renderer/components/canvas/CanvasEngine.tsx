@@ -94,7 +94,12 @@ function CanvasEngineInner({
   const [aiEdit, setAiEdit] = useState<AIEditState | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [selectionBounds, setSelectionBounds] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [selectionBounds, setSelectionBounds] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // ── Undo / Redo ──
   const MAX_HISTORY = 50;
@@ -155,7 +160,9 @@ function CanvasEngineInner({
     setEdges(snap.edges);
     if (onNodesChangeCallback) setTimeout(() => onNodesChangeCallback(snap.nodes), 0);
     if (onEdgesChangeCallback) setTimeout(() => onEdgesChangeCallback(snap.edges), 0);
-    setTimeout(() => { isUndoRedoRef.current = false; }, 50);
+    setTimeout(() => {
+      isUndoRedoRef.current = false;
+    }, 50);
   }, [setNodes, setEdges, onNodesChangeCallback, onEdgesChangeCallback]);
 
   const redo = useCallback(() => {
@@ -167,36 +174,52 @@ function CanvasEngineInner({
     setEdges(snap.edges);
     if (onNodesChangeCallback) setTimeout(() => onNodesChangeCallback(snap.nodes), 0);
     if (onEdgesChangeCallback) setTimeout(() => onEdgesChangeCallback(snap.edges), 0);
-    setTimeout(() => { isUndoRedoRef.current = false; }, 50);
+    setTimeout(() => {
+      isUndoRedoRef.current = false;
+    }, 50);
   }, [setNodes, setEdges, onNodesChangeCallback, onEdgesChangeCallback]);
 
-  const { screenToFlowPosition, getNodes, getEdges, fitView, getNodesBounds, setViewport } = useReactFlow();
+  const { screenToFlowPosition, getNodes, getEdges, fitView, getNodesBounds, setViewport } =
+    useReactFlow();
   const viewport = useViewport();
 
   // fitView that accounts for open drawers — single pan, no correction
-  const drawerAwareFitView = useCallback((duration = 400) => {
-    const leftInset = chatOpen ? 380 : 0;
-    const rightInset = blueprintOpen ? 420 : 0;
-    if (!leftInset && !rightInset) {
-      fitView({ padding: 0.15, duration });
-      return;
-    }
-    const container = document.querySelector('.react-flow') as HTMLElement | null;
-    if (!container) { fitView({ padding: 0.15, duration }); return; }
-    const allNodes = getNodes();
-    if (allNodes.length === 0) { fitView({ padding: 0.15, duration }); return; }
-    const bounds = getNodesBounds(allNodes);
-    const totalW = container.clientWidth;
-    const totalH = container.clientHeight;
-    const visibleW = totalW - leftInset - rightInset;
-    const pad = 0.12;
-    const zoom = Math.min(visibleW * (1 - pad * 2) / Math.max(bounds.width, 1), totalH * (1 - pad * 2) / Math.max(bounds.height, 1), 1);
-    const cx = leftInset + visibleW / 2;
-    const cy = totalH / 2;
-    const x = cx - (bounds.x + bounds.width / 2) * zoom;
-    const y = cy - (bounds.y + bounds.height / 2) * zoom;
-    setViewport({ x, y, zoom }, { duration });
-  }, [chatOpen, blueprintOpen, fitView, getNodes, getNodesBounds, setViewport]);
+  const drawerAwareFitView = useCallback(
+    (duration = 400) => {
+      const leftInset = chatOpen ? 380 : 0;
+      const rightInset = blueprintOpen ? 420 : 0;
+      if (!leftInset && !rightInset) {
+        fitView({ padding: 0.15, duration });
+        return;
+      }
+      const container = document.querySelector('.react-flow') as HTMLElement | null;
+      if (!container) {
+        fitView({ padding: 0.15, duration });
+        return;
+      }
+      const allNodes = getNodes();
+      if (allNodes.length === 0) {
+        fitView({ padding: 0.15, duration });
+        return;
+      }
+      const bounds = getNodesBounds(allNodes);
+      const totalW = container.clientWidth;
+      const totalH = container.clientHeight;
+      const visibleW = totalW - leftInset - rightInset;
+      const pad = 0.12;
+      const zoom = Math.min(
+        (visibleW * (1 - pad * 2)) / Math.max(bounds.width, 1),
+        (totalH * (1 - pad * 2)) / Math.max(bounds.height, 1),
+        1,
+      );
+      const cx = leftInset + visibleW / 2;
+      const cy = totalH / 2;
+      const x = cx - (bounds.x + bounds.width / 2) * zoom;
+      const y = cy - (bounds.y + bounds.height / 2) * zoom;
+      setViewport({ x, y, zoom }, { duration });
+    },
+    [chatOpen, blueprintOpen, fitView, getNodes, getNodesBounds, setViewport],
+  );
 
   // Auto-save canvas to backend (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,12 +235,14 @@ function CanvasEngineInner({
         return { ...n, style: cleanStyle as React.CSSProperties | undefined };
       });
       authFetch(`/api/sessions/${sessionId}/canvas`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes: cleanNodes, edges }),
-      }).catch(() => logger.warn("Canvas operation failed"));
+      }).catch(() => logger.warn('Canvas operation failed'));
     }, 3000);
-    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [nodes, edges, sessionId, authFetch]);
 
   // Keep refs in sync for callbacks
@@ -237,12 +262,15 @@ function CanvasEngineInner({
   const diagramAnimatingRef = useRef(false);
 
   useEffect(() => {
-    const nodeIds = initialNodes.map(n => n.id).sort().join(',');
+    const nodeIds = initialNodes
+      .map((n) => n.id)
+      .sort()
+      .join(',');
     if (nodeIds !== prevNodeIdsRef.current) {
       prevNodeIdsRef.current = nodeIds;
 
       // Detect which nodes are NEW (not seen before)
-      const currentIds = new Set(initialNodes.map(n => n.id));
+      const currentIds = new Set(initialNodes.map((n) => n.id));
       const newIds = new Set<string>();
       for (const id of currentIds) {
         if (!knownNodeIds.current.has(id)) newIds.add(id);
@@ -251,54 +279,65 @@ function CanvasEngineInner({
       if (newIds.size > 0) {
         // Skip animation for user-drawn nodes (freehand, sticky) — they should appear instantly
         const USER_DRAW_TYPES = new Set(['freehand', 'sticky']);
-        const diagramNewIds = new Set([...newIds].filter(id => {
-          const n = initialNodes.find(node => node.id === id);
-          return n && !USER_DRAW_TYPES.has(n.type || '');
-        }));
+        const diagramNewIds = new Set(
+          [...newIds].filter((id) => {
+            const n = initialNodes.find((node) => node.id === id);
+            return n && !USER_DRAW_TYPES.has(n.type || '');
+          }),
+        );
 
         if (diagramNewIds.size > 0) {
-        diagramAnimatingRef.current = true;
-        // Sort new diagram nodes by Y position for staggered reveal
-        const newNodes = initialNodes.filter(n => diagramNewIds.has(n.id));
-        const sorted = [...newNodes].sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0));
-        // Stagger reveal, but cap the total so a large sub-flow batch doesn't
-        // produce a multi-second (and janky) entrance — beyond the cap nodes
-        // fade in together.
-        const STAGGER_MS = 80;
-        const STAGGER_CAP_MS = 1200;
-        const delayMap = new Map<string, number>();
-        sorted.forEach((n, i) => delayMap.set(n.id, Math.min(i * STAGGER_MS, STAGGER_CAP_MS)));
+          diagramAnimatingRef.current = true;
+          // Sort new diagram nodes by Y position for staggered reveal
+          const newNodes = initialNodes.filter((n) => diagramNewIds.has(n.id));
+          const sorted = [...newNodes].sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0));
+          // Stagger reveal, but cap the total so a large sub-flow batch doesn't
+          // produce a multi-second (and janky) entrance — beyond the cap nodes
+          // fade in together.
+          const STAGGER_MS = 80;
+          const STAGGER_CAP_MS = 1200;
+          const delayMap = new Map<string, number>();
+          sorted.forEach((n, i) => delayMap.set(n.id, Math.min(i * STAGGER_MS, STAGGER_CAP_MS)));
 
-        // Inject animation directly via inline style
-        const animated = initialNodes.map(n => {
-          if (!diagramNewIds.has(n.id)) return n;
-          const delay = delayMap.get(n.id) || 0;
-          return {
-            ...n,
-            style: {
-              ...(n.style || {}),
-              opacity: 0,
-              animation: `nodeEnter 0.35s ease-out ${delay}ms forwards`,
-            },
-          };
-        });
-        setNodes(animated);
-
-        // After all animations complete, strip animation styles. Matches the
-        // capped stagger above (+500ms covers the 0.35s fade + buffer).
-        const maxDelay = Math.min(sorted.length * STAGGER_MS, STAGGER_CAP_MS) + 500;
-        if (animCleanupTimer.current) clearTimeout(animCleanupTimer.current);
-        animCleanupTimer.current = setTimeout(() => {
-          diagramAnimatingRef.current = false;
-          setNodes(nds => nds.map(n => {
+          // Inject animation directly via inline style
+          const animated = initialNodes.map((n) => {
             if (!diagramNewIds.has(n.id)) return n;
-            if (n.style) {
-              const { opacity, animation, animationDelay, ...rest } = n.style as Record<string, unknown>;
-              return { ...n, style: (Object.keys(rest).length > 0 ? rest : undefined) as React.CSSProperties | undefined };
-            }
-            return n;
-          }));
-        }, maxDelay);
+            const delay = delayMap.get(n.id) || 0;
+            return {
+              ...n,
+              style: {
+                ...(n.style || {}),
+                opacity: 0,
+                animation: `nodeEnter 0.35s ease-out ${delay}ms forwards`,
+              },
+            };
+          });
+          setNodes(animated);
+
+          // After all animations complete, strip animation styles. Matches the
+          // capped stagger above (+500ms covers the 0.35s fade + buffer).
+          const maxDelay = Math.min(sorted.length * STAGGER_MS, STAGGER_CAP_MS) + 500;
+          if (animCleanupTimer.current) clearTimeout(animCleanupTimer.current);
+          animCleanupTimer.current = setTimeout(() => {
+            diagramAnimatingRef.current = false;
+            setNodes((nds) =>
+              nds.map((n) => {
+                if (!diagramNewIds.has(n.id)) return n;
+                if (n.style) {
+                  const { opacity, animation, animationDelay, ...rest } = n.style as Record<
+                    string,
+                    unknown
+                  >;
+                  return {
+                    ...n,
+                    style: (Object.keys(rest).length > 0 ? rest : undefined) as
+                      React.CSSProperties | undefined,
+                  };
+                }
+                return n;
+              }),
+            );
+          }, maxDelay);
         } else {
           // Only user-drawn nodes are new — render immediately, no animation
           setNodes(initialNodes);
@@ -314,12 +353,14 @@ function CanvasEngineInner({
 
       // FitView only when diagram nodes are added (not freehand/sticky/line)
       const USER_TYPES = new Set(['freehand', 'sticky']);
-      const hasDiagramNodes = [...newIds].some(id => {
-        const n = initialNodes.find(node => node.id === id);
+      const hasDiagramNodes = [...newIds].some((id) => {
+        const n = initialNodes.find((node) => node.id === id);
         return n && !USER_TYPES.has(n.type || '');
       });
       if (hasDiagramNodes && initialNodes.length > 0) {
-        setTimeout(() => { drawerAwareFitView(400); }, 150);
+        setTimeout(() => {
+          drawerAwareFitView(400);
+        }, 150);
       }
     }
   }, [initialNodes, setNodes, drawerAwareFitView]);
@@ -344,12 +385,15 @@ function CanvasEngineInner({
   }, [initialNodes, setNodes]);
   const knownEdgeIds = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const edgeIds = initialEdges.map(e => e.id).sort().join(',');
+    const edgeIds = initialEdges
+      .map((e) => e.id)
+      .sort()
+      .join(',');
     if (edgeIds !== prevEdgeIdsRef.current) {
       prevEdgeIdsRef.current = edgeIds;
 
       // Detect new edges
-      const currentEIds = new Set(initialEdges.map(e => e.id));
+      const currentEIds = new Set(initialEdges.map((e) => e.id));
       const newEIds = new Set<string>();
       for (const id of currentEIds) {
         if (!knownEdgeIds.current.has(id)) newEIds.add(id);
@@ -365,30 +409,37 @@ function CanvasEngineInner({
 
       if (newEIds.size > 0 && diagramAnimatingRef.current && _hadEdges) {
         // Diagram edges — stagger with draw-in animation after node animation
-        const existingEdges = initialEdges.filter(e => !newEIds.has(e.id));
+        const existingEdges = initialEdges.filter((e) => !newEIds.has(e.id));
         setEdges(existingEdges);
 
         const nodeAnimDuration = Math.min(initialNodes.length * 80, 1200) + 600;
-        const newEdges = initialEdges.filter(e => newEIds.has(e.id));
+        const newEdges = initialEdges.filter((e) => newEIds.has(e.id));
         newEdges.forEach((edge, i) => {
-          setTimeout(() => {
-            setEdges(eds => {
-              if (eds.some(e => e.id === edge.id)) return eds;
-              return [...eds, { ...edge, className: 'edge-draw-in' }];
-            });
-            setTimeout(() => {
-              setEdges(eds => eds.map(e => e.id === edge.id ? { ...e, className: '' } : e));
-            }, 700);
-          }, nodeAnimDuration + i * 60);
+          setTimeout(
+            () => {
+              setEdges((eds) => {
+                if (eds.some((e) => e.id === edge.id)) return eds;
+                return [...eds, { ...edge, className: 'edge-draw-in' }];
+              });
+              setTimeout(() => {
+                setEdges((eds) => eds.map((e) => (e.id === edge.id ? { ...e, className: '' } : e)));
+              }, 700);
+            },
+            nodeAnimDuration + i * 60,
+          );
         });
         // Take initial history snapshot after all animations complete
         const totalAnimMs = nodeAnimDuration + newEdges.length * 60 + 800;
         setTimeout(() => {
           if (historyRef.current.length === 0) {
-            historyRef.current = [{
-              nodes: structuredClone(nodesRef.current.map((n) => ({ ...n, data: stripNonCloneable(n.data) }))),
-              edges: structuredClone(edgesRef.current),
-            }];
+            historyRef.current = [
+              {
+                nodes: structuredClone(
+                  nodesRef.current.map((n) => ({ ...n, data: stripNonCloneable(n.data) })),
+                ),
+                edges: structuredClone(edgesRef.current),
+              },
+            ];
             historyIndexRef.current = 0;
           }
         }, totalAnimMs);
@@ -397,10 +448,14 @@ function CanvasEngineInner({
         // Take initial snapshot if no edge animation needed
         if (historyRef.current.length === 0) {
           setTimeout(() => {
-            historyRef.current = [{
-              nodes: structuredClone(nodesRef.current.map((n) => ({ ...n, data: stripNonCloneable(n.data) }))),
-              edges: structuredClone(edgesRef.current),
-            }];
+            historyRef.current = [
+              {
+                nodes: structuredClone(
+                  nodesRef.current.map((n) => ({ ...n, data: stripNonCloneable(n.data) })),
+                ),
+                edges: structuredClone(edgesRef.current),
+              },
+            ];
             historyIndexRef.current = 0;
           }, 300);
         }
@@ -418,14 +473,18 @@ function CanvasEngineInner({
       // Undo / Redo
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        if (e.shiftKey) { redo(); } else { undo(); }
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
         return;
       }
 
       switch (e.key.toLowerCase()) {
         case 'escape':
-          setNodes(nds => nds.map(n => n.selected ? { ...n, selected: false } : n));
-          setEdges(eds => eds.map(e => e.selected ? { ...e, selected: false } : e));
+          setNodes((nds) => nds.map((n) => (n.selected ? { ...n, selected: false } : n)));
+          setEdges((eds) => eds.map((e) => (e.selected ? { ...e, selected: false } : e)));
           setSelectionBounds(null);
           setMode('select');
           break;
@@ -498,9 +557,15 @@ function CanvasEngineInner({
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
       setEdges((eds) => {
-        const updated = eds.map(e => {
+        const updated = eds.map((e) => {
           if (e.id !== oldEdge.id) return e;
-          return { ...e, source: newConnection.source, target: newConnection.target, sourceHandle: newConnection.sourceHandle, targetHandle: newConnection.targetHandle };
+          return {
+            ...e,
+            source: newConnection.source,
+            target: newConnection.target,
+            sourceHandle: newConnection.sourceHandle,
+            targetHandle: newConnection.targetHandle,
+          };
         });
         if (onEdgesChangeCallback) setTimeout(() => onEdgesChangeCallback(updated), 0);
         return updated;
@@ -619,19 +684,16 @@ function CanvasEngineInner({
   );
 
   // ── Right-click context menu on nodes ──
-  const handleNodeContextMenu = useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      event.preventDefault();
-      event.stopPropagation();
-      setContextMenu({
-        nodeId: node.id,
-        nodeType: node.type || 'unknown',
-        nodeData: node.data,
-        position: { x: event.clientX, y: event.clientY },
-      });
-    },
-    [],
-  );
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu({
+      nodeId: node.id,
+      nodeType: node.type || 'unknown',
+      nodeData: node.data,
+      position: { x: event.clientX, y: event.clientY },
+    });
+  }, []);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null);
@@ -641,9 +703,7 @@ function CanvasEngineInner({
   const handleNodeUpdate = useCallback(
     (nodeId: string, newData: Record<string, unknown>) => {
       setNodes((nds) =>
-        nds.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n,
-        ),
+        nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n)),
       );
       if (onNodesChangeCallback) {
         setTimeout(() => onNodesChangeCallback(nodesRef.current), 0);
@@ -657,9 +717,7 @@ function CanvasEngineInner({
     (nodeId: string) => {
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       // Also remove connected edges
-      setEdges((eds) =>
-        eds.filter((e) => e.source !== nodeId && e.target !== nodeId),
-      );
+      setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
       setContextMenu(null);
       if (onNodesChangeCallback) {
         setTimeout(() => onNodesChangeCallback(nodesRef.current), 0);
@@ -699,22 +757,19 @@ function CanvasEngineInner({
   );
 
   // ── Inline text editing ──
-  const handleEditText = useCallback(
-    (nodeId: string) => {
-      setContextMenu(null);
-      const nodeEl = document.querySelector(`[data-id="${nodeId}"]`);
-      if (!nodeEl) return;
-      // Focus the first text-like element inside the node
-      const textEl = nodeEl.querySelector('textarea, input, [contenteditable]') as HTMLElement;
-      if (textEl) {
-        textEl.focus();
-        if (textEl instanceof HTMLTextAreaElement || textEl instanceof HTMLInputElement) {
-          textEl.select();
-        }
+  const handleEditText = useCallback((nodeId: string) => {
+    setContextMenu(null);
+    const nodeEl = document.querySelector(`[data-id="${nodeId}"]`);
+    if (!nodeEl) return;
+    // Focus the first text-like element inside the node
+    const textEl = nodeEl.querySelector('textarea, input, [contenteditable]') as HTMLElement;
+    if (textEl) {
+      textEl.focus();
+      if (textEl instanceof HTMLTextAreaElement || textEl instanceof HTMLInputElement) {
+        textEl.select();
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   // ── Open AI edit modal ──
   const handleOpenAIEdit = useCallback(
@@ -731,7 +786,13 @@ function CanvasEngineInner({
     [getNodes, getEdges],
   );
 
-  const isOverlayMode = mode === 'draw' || mode === 'laser' || mode === 'line' || mode === 'eraser' || mode === 'lasso' || mode === 'boxSelect';
+  const isOverlayMode =
+    mode === 'draw' ||
+    mode === 'laser' ||
+    mode === 'line' ||
+    mode === 'eraser' ||
+    mode === 'lasso' ||
+    mode === 'boxSelect';
 
   // ── Eraser: delete nodes/edges under cursor while dragging ──
   const eraserActiveRef = useRef(false);
@@ -739,132 +800,211 @@ function CanvasEngineInner({
   const [eraserTrail, setEraserTrail] = useState<Array<{ x: number; y: number }>>([]);
 
   // Point-to-line-segment distance for accurate freehand hit detection
-  const distToSegment = useCallback((px: number, py: number, ax: number, ay: number, bx: number, by: number) => {
-    const dx = bx - ax, dy = by - ay;
-    const lenSq = dx * dx + dy * dy;
-    if (lenSq === 0) return Math.hypot(px - ax, py - ay);
-    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
-    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-  }, []);
+  const distToSegment = useCallback(
+    (px: number, py: number, ax: number, ay: number, bx: number, by: number) => {
+      const dx = bx - ax,
+        dy = by - ay;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) return Math.hypot(px - ax, py - ay);
+      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    },
+    [],
+  );
 
-  const eraseAtPosition = useCallback((clientX: number, clientY: number) => {
-    const flowPos = screenToFlowPosition({ x: clientX, y: clientY });
-    const allNodes = getNodes();
-    const toDelete: string[] = [];
+  const eraseAtPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      const flowPos = screenToFlowPosition({ x: clientX, y: clientY });
+      const allNodes = getNodes();
+      const toDelete: string[] = [];
 
-    for (const n of allNodes) {
-      if (erasedIdsRef.current.has(n.id)) continue;
-      const nx = n.position.x;
-      const ny = n.position.y;
+      for (const n of allNodes) {
+        if (erasedIdsRef.current.has(n.id)) continue;
+        const nx = n.position.x;
+        const ny = n.position.y;
 
-      if (n.type === 'freehand') {
-        // Check distance to actual drawn line segments
-        const pts = (n.data as { points?: Array<{ x: number; y: number }> })?.points;
-        if (pts && pts.length >= 2) {
-          let hit = false;
-          for (let i = 0; i < pts.length - 1; i++) {
-            const d = distToSegment(flowPos.x, flowPos.y, nx + pts[i].x, ny + pts[i].y, nx + pts[i + 1].x, ny + pts[i + 1].y);
-            if (d < 12) { hit = true; break; }
+        if (n.type === 'freehand') {
+          // Check distance to actual drawn line segments
+          const pts = (n.data as { points?: Array<{ x: number; y: number }> })?.points;
+          if (pts && pts.length >= 2) {
+            let hit = false;
+            for (let i = 0; i < pts.length - 1; i++) {
+              const d = distToSegment(
+                flowPos.x,
+                flowPos.y,
+                nx + pts[i].x,
+                ny + pts[i].y,
+                nx + pts[i + 1].x,
+                ny + pts[i + 1].y,
+              );
+              if (d < 12) {
+                hit = true;
+                break;
+              }
+            }
+            if (hit) {
+              toDelete.push(n.id);
+              erasedIdsRef.current.add(n.id);
+            }
           }
-          if (hit) { toDelete.push(n.id); erasedIdsRef.current.add(n.id); }
-        }
-      } else {
-        // Box-based hit for regular nodes
-        const w = (n.style as { width?: number; height?: number } | undefined)?.width || (n.measured?.width) || (n.width) || 180;
-        const h = (n.style as { width?: number; height?: number } | undefined)?.height || (n.measured?.height) || (n.height) || 60;
-        if (flowPos.x >= nx && flowPos.x <= nx + w && flowPos.y >= ny && flowPos.y <= ny + h) {
-          toDelete.push(n.id);
-          erasedIdsRef.current.add(n.id);
+        } else {
+          // Box-based hit for regular nodes
+          const w =
+            (n.style as { width?: number; height?: number } | undefined)?.width ||
+            n.measured?.width ||
+            n.width ||
+            180;
+          const h =
+            (n.style as { width?: number; height?: number } | undefined)?.height ||
+            n.measured?.height ||
+            n.height ||
+            60;
+          if (flowPos.x >= nx && flowPos.x <= nx + w && flowPos.y >= ny && flowPos.y <= ny + h) {
+            toDelete.push(n.id);
+            erasedIdsRef.current.add(n.id);
+          }
         }
       }
-    }
 
-    if (toDelete.length > 0) {
-      const deleteSet = new Set(toDelete);
-      setNodes(nds => nds.filter(n => !deleteSet.has(n.id)));
-      setEdges(eds => eds.filter(e => !deleteSet.has(e.source) && !deleteSet.has(e.target)));
-      if (onNodesChangeCallback) setTimeout(() => onNodesChangeCallback(nodesRef.current), 0);
-      if (onEdgesChangeCallback) setTimeout(() => onEdgesChangeCallback(edgesRef.current), 0);
-    }
-  }, [screenToFlowPosition, getNodes, setNodes, setEdges, onNodesChangeCallback, onEdgesChangeCallback, distToSegment]);
+      if (toDelete.length > 0) {
+        const deleteSet = new Set(toDelete);
+        setNodes((nds) => nds.filter((n) => !deleteSet.has(n.id)));
+        setEdges((eds) => eds.filter((e) => !deleteSet.has(e.source) && !deleteSet.has(e.target)));
+        if (onNodesChangeCallback) setTimeout(() => onNodesChangeCallback(nodesRef.current), 0);
+        if (onEdgesChangeCallback) setTimeout(() => onEdgesChangeCallback(edgesRef.current), 0);
+      }
+    },
+    [
+      screenToFlowPosition,
+      getNodes,
+      setNodes,
+      setEdges,
+      onNodesChangeCallback,
+      onEdgesChangeCallback,
+      distToSegment,
+    ],
+  );
 
   // Compute bounding box of selected nodes and persist it
   const updateSelectionBounds = useCallback(() => {
-    const selected = getNodes().filter(n => n.selected);
-    if (selected.length === 0) { setSelectionBounds(null); return; }
+    const selected = getNodes().filter((n) => n.selected);
+    if (selected.length === 0) {
+      setSelectionBounds(null);
+      return;
+    }
     const pad = 12;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     for (const n of selected) {
-      const w = n.measured?.width ?? (n.style as { width?: number; height?: number } | undefined)?.width ?? 180;
-      const h = n.measured?.height ?? (n.style as { width?: number; height?: number } | undefined)?.height ?? 60;
+      const w =
+        n.measured?.width ??
+        (n.style as { width?: number; height?: number } | undefined)?.width ??
+        180;
+      const h =
+        n.measured?.height ??
+        (n.style as { width?: number; height?: number } | undefined)?.height ??
+        60;
       minX = Math.min(minX, n.position.x);
       minY = Math.min(minY, n.position.y);
       maxX = Math.max(maxX, n.position.x + w);
       maxY = Math.max(maxY, n.position.y + h);
     }
-    setSelectionBounds({ x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 });
+    setSelectionBounds({
+      x: minX - pad,
+      y: minY - pad,
+      w: maxX - minX + pad * 2,
+      h: maxY - minY + pad * 2,
+    });
   }, [getNodes]);
 
   // Box selection — select nodes within rectangle
-  const handleBoxSelectComplete = useCallback((topLeft: { x: number; y: number }, bottomRight: { x: number; y: number }) => {
-    const allNodes = getNodes();
-    const selectedIds = new Set<string>();
-    for (const n of allNodes) {
-      const w = n.measured?.width ?? (n.style as { width?: number; height?: number } | undefined)?.width ?? 180;
-      const h = n.measured?.height ?? (n.style as { width?: number; height?: number } | undefined)?.height ?? 60;
-      const nx = n.position.x;
-      const ny = n.position.y;
-      // Partial overlap — node overlaps with selection box
-      if (nx + w > topLeft.x && nx < bottomRight.x && ny + h > topLeft.y && ny < bottomRight.y) {
-        selectedIds.add(n.id);
-      }
-    }
-    setNodes(nds => nds.map(n => ({ ...n, selected: selectedIds.has(n.id) })));
-    setTimeout(updateSelectionBounds, 50);
-  }, [getNodes, setNodes, updateSelectionBounds]);
-
-  // Lasso selection — point-in-polygon test
-  const handleLassoComplete = useCallback((polygon: { x: number; y: number }[]) => {
-    if (polygon.length < 3) return;
-    // Ray-casting point-in-polygon
-    const pointInPoly = (px: number, py: number) => {
-      let inside = false;
-      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i].x, yi = polygon[i].y;
-        const xj = polygon[j].x, yj = polygon[j].y;
-        if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
-          inside = !inside;
+  const handleBoxSelectComplete = useCallback(
+    (topLeft: { x: number; y: number }, bottomRight: { x: number; y: number }) => {
+      const allNodes = getNodes();
+      const selectedIds = new Set<string>();
+      for (const n of allNodes) {
+        const w =
+          n.measured?.width ??
+          (n.style as { width?: number; height?: number } | undefined)?.width ??
+          180;
+        const h =
+          n.measured?.height ??
+          (n.style as { width?: number; height?: number } | undefined)?.height ??
+          60;
+        const nx = n.position.x;
+        const ny = n.position.y;
+        // Partial overlap — node overlaps with selection box
+        if (nx + w > topLeft.x && nx < bottomRight.x && ny + h > topLeft.y && ny < bottomRight.y) {
+          selectedIds.add(n.id);
         }
       }
-      return inside;
-    };
-    // Select nodes whose center falls inside the lasso polygon
-    const allNodes = getNodes();
-    const selectedIds = new Set<string>();
-    for (const n of allNodes) {
-      const w = (n.measured?.width ?? (n.style as { width?: number; height?: number } | undefined)?.width ?? 180);
-      const h = (n.measured?.height ?? (n.style as { width?: number; height?: number } | undefined)?.height ?? 60);
-      const cx = n.position.x + w / 2;
-      const cy = n.position.y + h / 2;
-      if (pointInPoly(cx, cy)) selectedIds.add(n.id);
-    }
-    setNodes(nds => nds.map(n => ({ ...n, selected: selectedIds.has(n.id) })));
-    setTimeout(updateSelectionBounds, 50);
-  }, [getNodes, setNodes, updateSelectionBounds]);
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: selectedIds.has(n.id) })));
+      setTimeout(updateSelectionBounds, 50);
+    },
+    [getNodes, setNodes, updateSelectionBounds],
+  );
 
-  const handleEraserPointerDown = useCallback((e: React.PointerEvent) => {
-    if (mode !== 'eraser') return;
-    eraserActiveRef.current = true;
-    erasedIdsRef.current.clear();
-    setEraserTrail([{ x: e.clientX, y: e.clientY }]);
-    eraseAtPosition(e.clientX, e.clientY);
-  }, [mode, eraseAtPosition]);
+  // Lasso selection — point-in-polygon test
+  const handleLassoComplete = useCallback(
+    (polygon: { x: number; y: number }[]) => {
+      if (polygon.length < 3) return;
+      // Ray-casting point-in-polygon
+      const pointInPoly = (px: number, py: number) => {
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const xi = polygon[i].x,
+            yi = polygon[i].y;
+          const xj = polygon[j].x,
+            yj = polygon[j].y;
+          if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      };
+      // Select nodes whose center falls inside the lasso polygon
+      const allNodes = getNodes();
+      const selectedIds = new Set<string>();
+      for (const n of allNodes) {
+        const w =
+          n.measured?.width ??
+          (n.style as { width?: number; height?: number } | undefined)?.width ??
+          180;
+        const h =
+          n.measured?.height ??
+          (n.style as { width?: number; height?: number } | undefined)?.height ??
+          60;
+        const cx = n.position.x + w / 2;
+        const cy = n.position.y + h / 2;
+        if (pointInPoly(cx, cy)) selectedIds.add(n.id);
+      }
+      setNodes((nds) => nds.map((n) => ({ ...n, selected: selectedIds.has(n.id) })));
+      setTimeout(updateSelectionBounds, 50);
+    },
+    [getNodes, setNodes, updateSelectionBounds],
+  );
 
-  const handleEraserPointerMove = useCallback((e: React.PointerEvent) => {
-    if (mode !== 'eraser' || !eraserActiveRef.current) return;
-    setEraserTrail(prev => [...prev.slice(-40), { x: e.clientX, y: e.clientY }]);
-    eraseAtPosition(e.clientX, e.clientY);
-  }, [mode, eraseAtPosition]);
+  const handleEraserPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (mode !== 'eraser') return;
+      eraserActiveRef.current = true;
+      erasedIdsRef.current.clear();
+      setEraserTrail([{ x: e.clientX, y: e.clientY }]);
+      eraseAtPosition(e.clientX, e.clientY);
+    },
+    [mode, eraseAtPosition],
+  );
+
+  const handleEraserPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (mode !== 'eraser' || !eraserActiveRef.current) return;
+      setEraserTrail((prev) => [...prev.slice(-40), { x: e.clientX, y: e.clientY }]);
+      eraseAtPosition(e.clientX, e.clientY);
+    },
+    [mode, eraseAtPosition],
+  );
 
   const handleEraserPointerUp = useCallback(() => {
     if (eraserActiveRef.current) {
@@ -879,9 +1019,16 @@ function CanvasEngineInner({
     <DiagramViewProvider value={viewMode}>
       <div
         style={{
-          position: 'fixed', top: 8, left: 8, zIndex: 99999,
-          background: '#ff0040', color: '#fff', font: '12px monospace',
-          padding: '4px 8px', borderRadius: 4, pointerEvents: 'none',
+          position: 'fixed',
+          top: 8,
+          left: 8,
+          zIndex: 99999,
+          background: '#ff0040',
+          color: '#fff',
+          font: '12px monospace',
+          padding: '4px 8px',
+          borderRadius: 4,
+          pointerEvents: 'none',
         }}
       >
         DBG nodes:{nodes.length} edges:{edges.length}
@@ -979,7 +1126,11 @@ function CanvasEngineInner({
             onViewModeChange={setViewMode}
             onClear={() => {
               setClearSignal((s) => s + 1);
-              setNodes((ns) => ns.filter((n) => n.type !== 'freehand' && n.type !== 'sticky' && n.type !== 'annotation'));
+              setNodes((ns) =>
+                ns.filter(
+                  (n) => n.type !== 'freehand' && n.type !== 'sticky' && n.type !== 'annotation',
+                ),
+              );
             }}
             fullscreen={fullscreen}
             onToggleFullscreen={onToggleFullscreen}
@@ -988,20 +1139,80 @@ function CanvasEngineInner({
         {(onClearCanvas || onClearChat) && (
           <Panel position="top-right" style={{ display: 'flex', gap: 6 }}>
             {onClearChat && (
-              <button onClick={onClearChat} title="Clear chat history"
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 9999, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', backdropFilter: 'blur(12px)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,100,100,0.4)'; e.currentTarget.style.color = 'rgba(255,100,100,0.8)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--foreground) 8%, transparent)'; e.currentTarget.style.color = 'var(--muted-foreground)'; }}>
-                <svg width={12} height={12} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              <button
+                onClick={onClearChat}
+                title="Clear chat history"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '6px 12px',
+                  borderRadius: 9999,
+                  background: 'rgba(0,0,0,0.55)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--muted-foreground)',
+                  fontSize: 11,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(12px)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,100,100,0.4)';
+                  e.currentTarget.style.color = 'rgba(255,100,100,0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor =
+                    'color-mix(in srgb, var(--foreground) 8%, transparent)';
+                  e.currentTarget.style.color = 'var(--muted-foreground)';
+                }}
+              >
+                <svg width={12} height={12} viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
                 Clear Chat
               </button>
             )}
             {onClearCanvas && (
-              <button onClick={onClearCanvas} title="Clear all diagram nodes"
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 9999, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--muted-foreground)', fontSize: 11, fontFamily: 'inherit', cursor: 'pointer', backdropFilter: 'blur(12px)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,100,100,0.4)'; e.currentTarget.style.color = 'rgba(255,100,100,0.8)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--foreground) 8%, transparent)'; e.currentTarget.style.color = 'var(--muted-foreground)'; }}>
-                <svg width={12} height={12} viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+              <button
+                onClick={onClearCanvas}
+                title="Clear all diagram nodes"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '6px 12px',
+                  borderRadius: 9999,
+                  background: 'rgba(0,0,0,0.55)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'var(--muted-foreground)',
+                  fontSize: 11,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(12px)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(255,100,100,0.4)';
+                  e.currentTarget.style.color = 'rgba(255,100,100,0.8)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor =
+                    'color-mix(in srgb, var(--foreground) 8%, transparent)';
+                  e.currentTarget.style.color = 'var(--muted-foreground)';
+                }}
+              >
+                <svg width={12} height={12} viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
                 Clear Canvas
               </button>
             )}
@@ -1029,13 +1240,24 @@ function CanvasEngineInner({
             if (!eraserActiveRef.current) setEraserTrail([{ x: e.clientX, y: e.clientY }]);
           }}
           onPointerUp={handleEraserPointerUp}
-          onPointerLeave={(e) => { handleEraserPointerUp(); setEraserTrail([]); }}
+          onPointerLeave={(e) => {
+            handleEraserPointerUp();
+            setEraserTrail([]);
+          }}
         >
           {/* Eraser cursor + trail */}
-          <svg style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+          <svg
+            style={{
+              position: 'fixed',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+            }}
+          >
             {eraserTrail.length > 1 && (
               <path
-                d={`M ${eraserTrail.map(p => `${p.x} ${p.y}`).join(' L ')}`}
+                d={`M ${eraserTrail.map((p) => `${p.x} ${p.y}`).join(' L ')}`}
                 fill="none"
                 stroke="rgba(255,100,100,0.4)"
                 strokeWidth="3"
@@ -1071,11 +1293,7 @@ function CanvasEngineInner({
           onClose={closeContextMenu}
           onUpdate={handleNodeUpdate}
           onEditWithAI={() =>
-            handleOpenAIEdit(
-              contextMenu.nodeId,
-              contextMenu.nodeType,
-              contextMenu.nodeData,
-            )
+            handleOpenAIEdit(contextMenu.nodeId, contextMenu.nodeType, contextMenu.nodeData)
           }
           onDuplicate={() => handleNodeDuplicate(contextMenu.nodeId)}
           onDelete={() => handleNodeDelete(contextMenu.nodeId)}

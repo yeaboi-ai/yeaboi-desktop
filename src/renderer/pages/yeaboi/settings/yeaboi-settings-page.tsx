@@ -202,7 +202,11 @@ function SettingsBody() {
       // the same VOICE_DEVICE *name* back, which is the part both surfaces
       // share.
       return (
-        <MicTest key={field.env} value={field.value} onSave={(name) => void save(field.env, name)} />
+        <MicTest
+          key={field.env}
+          value={field.value}
+          onSave={(name) => void save(field.env, name)}
+        />
       );
     }
 
@@ -519,7 +523,9 @@ function DictationRow() {
     <div className="flex flex-wrap items-center gap-2 py-2">
       <span className={label}>Dictation</span>
       <span
-        className={voice.state === 'ready' ? 'text-[12px] text-success' : 'text-[12px] text-muted-foreground'}
+        className={
+          voice.state === 'ready' ? 'text-[12px] text-success' : 'text-[12px] text-muted-foreground'
+        }
       >
         {voice.detail}
       </span>

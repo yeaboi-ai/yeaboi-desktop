@@ -44,7 +44,7 @@ function readGlobalThemeFallback(): string {
     }`;
   }
   const styles = getComputedStyle(document.documentElement);
-  const v = (name: string, fb: string) => (styles.getPropertyValue(name).trim() || fb);
+  const v = (name: string, fb: string) => styles.getPropertyValue(name).trim() || fb;
   const bg = v('--wireframe-bg', v('--background', 'var(--background)'));
   const text = v('--wireframe-fg', v('--foreground', 'var(--foreground)'));
   const accent = v('--wireframe-accent', v('--primary', 'var(--primary)'));
@@ -709,7 +709,7 @@ function buildSrcDoc(
   opts?: { isOverlay?: boolean },
 ): string {
   const safeHtml = stripRootBlocks(html);
-  const overlayFlag = opts?.isOverlay ? "true" : "false";
+  const overlayFlag = opts?.isOverlay ? 'true' : 'false';
   return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <script>window.__SIM_IS_OVERLAY__ = ${overlayFlag};</script>
 <script>${TAILWIND_SHADCN_CONFIG}</script>
@@ -744,8 +744,23 @@ a,button,[role=button]{cursor:pointer}
 
 // Stop-words that appear in too many UI labels to be discriminating.
 const STOP = new Set([
-  'a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'on', 'for',
-  'screen', 'page', 'view', 'modal', 'drawer', 'popover', 'sheet',
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'on',
+  'for',
+  'screen',
+  'page',
+  'view',
+  'modal',
+  'drawer',
+  'popover',
+  'sheet',
 ]);
 
 function tokenize(s: string): string[] {
@@ -767,8 +782,8 @@ function matchTarget(text: string, candidates: SimScreen[]): SimScreen | null {
     const trigWords = tokenize(c.triggerFrom || '');
     if (nameWords.length === 0) continue;
     let score = 0;
-    for (const w of nameWords) if (tSet.has(w)) score += 4;        // name word in click
-    for (const w of trigWords) if (tSet.has(w)) score += 2;        // trigger word in click
+    for (const w of nameWords) if (tSet.has(w)) score += 4; // name word in click
+    for (const w of trigWords) if (tSet.has(w)) score += 2; // trigger word in click
     if (score === 0) continue;
     // Coverage bonus — fully-matching name beats partial.
     const matchedNameCount = nameWords.filter((w) => tSet.has(w)).length;
@@ -779,7 +794,14 @@ function matchTarget(text: string, candidates: SimScreen[]): SimScreen | null {
   return best && best.score >= 4 ? best.cand : null;
 }
 
-export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset = 0, rightInset = 0 }: Props) {
+export function SimulatorViewport({
+  open,
+  screens,
+  sessionId,
+  onClose,
+  leftInset = 0,
+  rightInset = 0,
+}: Props) {
   // Nav targets: prefer kind=screen, but fall back to ALL screens if the
   // session only produced overlays (so the simulator still has something
   // to render instead of a blank viewport).
@@ -792,9 +814,8 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
     [fullScreensStrict, screens],
   );
   const overlays = useMemo(
-    () => (fullScreensStrict.length > 0
-      ? screens.filter((s) => (s.kind || 'screen') !== 'screen')
-      : []),
+    () =>
+      fullScreensStrict.length > 0 ? screens.filter((s) => (s.kind || 'screen') !== 'screen') : [],
     [fullScreensStrict, screens],
   );
 
@@ -812,20 +833,23 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
   // `mode` controls whether the call should ALSO push (default for picks)
   // or merely update the current pointer (used by back/forward, which
   // already moved historyIdx).
-  const navigate = useCallback((id: string, mode: 'push' | 'replace' = 'push') => {
-    setOverlayId(null);
-    setCurrentId(id);
-    if (mode === 'replace') return;
-    setHistory((prev) => {
-      // Don't push if it's already the last entry (avoid duplicate
-      // entries when handlers fire twice for the same selection).
-      if (prev.length > 0 && historyIdx >= 0 && prev[historyIdx] === id) return prev;
-      const truncated = historyIdx >= 0 ? prev.slice(0, historyIdx + 1) : [];
-      const next = [...truncated, id];
-      setHistoryIdx(next.length - 1);
-      return next;
-    });
-  }, [historyIdx]);
+  const navigate = useCallback(
+    (id: string, mode: 'push' | 'replace' = 'push') => {
+      setOverlayId(null);
+      setCurrentId(id);
+      if (mode === 'replace') return;
+      setHistory((prev) => {
+        // Don't push if it's already the last entry (avoid duplicate
+        // entries when handlers fire twice for the same selection).
+        if (prev.length > 0 && historyIdx >= 0 && prev[historyIdx] === id) return prev;
+        const truncated = historyIdx >= 0 ? prev.slice(0, historyIdx + 1) : [];
+        const next = [...truncated, id];
+        setHistoryIdx(next.length - 1);
+        return next;
+      });
+    },
+    [historyIdx],
+  );
 
   const canGoBack = historyIdx > 0;
   const canGoForward = historyIdx >= 0 && historyIdx < history.length - 1;
@@ -871,8 +895,13 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
     };
     const onKey = (e: KeyboardEvent) => {
       if (!e.altKey) return;
-      if (e.key === 'ArrowLeft') { e.preventDefault(); goBack(); }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); goForward(); }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goBack();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goForward();
+      }
     };
     // Capture-phase on window so we run before any descendant handler
     // (and before the browser maps the button to history navigation).
@@ -918,7 +947,7 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
       }, 480);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Pick the home screen the first time fullScreens populates while open.
@@ -948,7 +977,9 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
   // Stay in sync with live token swaps (dark/light, accent dropdown).
   useEffect(() => {
     const refresh = (e?: Event) => {
-      const detail = e ? (e as CustomEvent).detail as { sessionId?: string } | undefined : undefined;
+      const detail = e
+        ? ((e as CustomEvent).detail as { sessionId?: string } | undefined)
+        : undefined;
       if (detail && detail.sessionId !== sessionId) return;
       setTokenVars(readTokenVars(sessionId));
     };
@@ -993,9 +1024,10 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
         const norm = trigger.toLowerCase().replace(/\s+/g, '_');
         const all = [...fullScreens, ...overlays];
         const direct = all.find(
-          (c) => c.id.toLowerCase() === norm
-            || c.name.toLowerCase() === trigger.toLowerCase()
-            || c.name.toLowerCase().replace(/\s+/g, '_') === norm,
+          (c) =>
+            c.id.toLowerCase() === norm ||
+            c.name.toLowerCase() === trigger.toLowerCase() ||
+            c.name.toLowerCase().replace(/\s+/g, '_') === norm,
         );
         if (direct) {
           const isOverlay = (direct.kind || 'screen') !== 'screen';
@@ -1021,7 +1053,8 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
         overlayHit: overlayHit?.name,
       });
       // Decide which won. Overlay name wins if longer / more specific.
-      const pickOverlay = overlayHit && (!screenHit || overlayHit.name.length >= screenHit.name.length);
+      const pickOverlay =
+        overlayHit && (!screenHit || overlayHit.name.length >= screenHit.name.length);
       if (pickOverlay) {
         setOverlayId(overlayHit!.id);
         return;
@@ -1112,8 +1145,7 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
           justifyContent: 'center',
           overflow: 'hidden',
           transition:
-            'left 380ms cubic-bezier(0.4,0,0.2,1), ' +
-            'right 380ms cubic-bezier(0.4,0,0.2,1)',
+            'left 380ms cubic-bezier(0.4,0,0.2,1), ' + 'right 380ms cubic-bezier(0.4,0,0.2,1)',
           pointerEvents: 'none',
         }}
       >
@@ -1128,7 +1160,8 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
               width: VIEWPORT_W * fitScale,
               height: VIEWPORT_H * fitScale,
               pointerEvents: 'auto',
-              transition: 'width 380ms cubic-bezier(0.4,0,0.2,1), height 380ms cubic-bezier(0.4,0,0.2,1)',
+              transition:
+                'width 380ms cubic-bezier(0.4,0,0.2,1), height 380ms cubic-bezier(0.4,0,0.2,1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1223,7 +1256,11 @@ export function SimulatorViewport({ open, screens, sessionId, onClose, leftInset
 }
 
 function SimNavButtons({
-  onBack, onForward, canGoBack, canGoForward, visible,
+  onBack,
+  onForward,
+  canGoBack,
+  canGoForward,
+  visible,
 }: {
   onBack: () => void;
   onForward: () => void;
@@ -1272,16 +1309,22 @@ function SimNavButtons({
         style={btn(canGoBack)}
         onMouseEnter={(e) => {
           if (!canGoBack) return;
-          e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 8%, transparent)';
+          e.currentTarget.style.background =
+            'color-mix(in srgb, var(--foreground) 8%, transparent)';
           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
           e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 4%, transparent)';
+          e.currentTarget.style.background =
+            'color-mix(in srgb, var(--foreground) 4%, transparent)';
           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
-          e.currentTarget.style.color = canGoBack ? 'rgba(255,255,255,0.7)' : 'var(--muted-foreground)';
+          e.currentTarget.style.color = canGoBack
+            ? 'rgba(255,255,255,0.7)'
+            : 'var(--muted-foreground)';
         }}
-      >‹</button>
+      >
+        ‹
+      </button>
       <button
         onClick={onForward}
         disabled={!canGoForward}
@@ -1289,22 +1332,31 @@ function SimNavButtons({
         style={btn(canGoForward)}
         onMouseEnter={(e) => {
           if (!canGoForward) return;
-          e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 8%, transparent)';
+          e.currentTarget.style.background =
+            'color-mix(in srgb, var(--foreground) 8%, transparent)';
           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
           e.currentTarget.style.color = 'rgba(255,255,255,0.95)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 4%, transparent)';
+          e.currentTarget.style.background =
+            'color-mix(in srgb, var(--foreground) 4%, transparent)';
           e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
-          e.currentTarget.style.color = canGoForward ? 'rgba(255,255,255,0.7)' : 'var(--muted-foreground)';
+          e.currentTarget.style.color = canGoForward
+            ? 'rgba(255,255,255,0.7)'
+            : 'var(--muted-foreground)';
         }}
-      >›</button>
+      >
+        ›
+      </button>
     </div>
   );
 }
 
 function SimToolbar({
-  screens, currentId, onPick, visible,
+  screens,
+  currentId,
+  onPick,
+  visible,
 }: {
   screens: SimScreen[];
   currentId: string;
@@ -1347,58 +1399,71 @@ function SimToolbar({
 
   const current = screens.find((s) => s.id === currentId);
 
-  const popover = open && coords && typeof document !== 'undefined' ? createPortal(
-    <div
-      ref={popoverRef}
-      className="nodrag"
-      style={{
-        position: 'fixed',
-        top: coords.top,
-        left: coords.left,
-        background: 'rgba(20,20,24,0.96)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: 10,
-        padding: 4,
-        minWidth: 220,
-        maxHeight: 320,
-        overflowY: 'auto',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-        zIndex: 1000,
-      }}
-    >
-      {screens.map((s) => {
-        const selected = s.id === currentId;
-        return (
-          <button
-            key={s.id}
-            onClick={(e) => { e.stopPropagation(); onPick(s.id); setOpen(false); }}
+  const popover =
+    open && coords && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            ref={popoverRef}
+            className="nodrag"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              padding: '8px 10px',
-              borderRadius: 6,
-              background: selected ? 'rgba(229,166,48,0.10)' : 'transparent',
-              border: 'none',
-              color: selected ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.85)',
-              fontSize: 12,
-              fontWeight: 500,
-              textAlign: 'left',
-              cursor: 'pointer',
-              transition: 'background 100ms',
+              position: 'fixed',
+              top: coords.top,
+              left: coords.left,
+              background: 'rgba(20,20,24,0.96)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 10,
+              padding: 4,
+              minWidth: 220,
+              maxHeight: 320,
+              overflowY: 'auto',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              zIndex: 1000,
             }}
-            onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 6%, transparent)'; }}
-            onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = 'transparent'; }}
           >
-            <span style={{ flex: 1 }}>{s.name}</span>
-            {selected && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-          </button>
-        );
-      })}
-    </div>,
-    document.body,
-  ) : null;
+            {screens.map((s) => {
+              const selected = s.id === currentId;
+              return (
+                <button
+                  key={s.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPick(s.id);
+                    setOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    background: selected ? 'rgba(229,166,48,0.10)' : 'transparent',
+                    border: 'none',
+                    color: selected ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.85)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'background 100ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selected)
+                      e.currentTarget.style.background =
+                        'color-mix(in srgb, var(--foreground) 6%, transparent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <span style={{ flex: 1 }}>{s.name}</span>
+                  {selected && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div
@@ -1420,10 +1485,23 @@ function SimToolbar({
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(229,166,48,0.95)' }}>SIM</span>
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          color: 'rgba(229,166,48,0.95)',
+        }}
+      >
+        SIM
+      </span>
       <button
         ref={triggerRef}
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -1445,21 +1523,20 @@ function SimToolbar({
   );
 }
 
-function SimCloseButton({
-  onClose, visible,
-}: {
-  onClose: () => void;
-  visible: boolean;
-}) {
+function SimCloseButton({ onClose, visible }: { onClose: () => void; visible: boolean }) {
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); onClose(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
       title="Exit simulation (Esc)"
       style={{
         position: 'relative',
         transform: `translateY(${visible ? 0 : -16}px)`,
         opacity: visible ? 1 : 0,
-        transition: 'transform 380ms cubic-bezier(0.4,0,0.2,1), opacity 280ms ease, background 120ms ease, color 120ms ease, border-color 120ms ease',
+        transition:
+          'transform 380ms cubic-bezier(0.4,0,0.2,1), opacity 280ms ease, background 120ms ease, color 120ms ease, border-color 120ms ease',
         height: 32,
         width: 32,
         padding: 0,
@@ -1492,7 +1569,11 @@ function SimCloseButton({
 }
 
 function SimFrame({
-  html, tokenVars, w, h, phase,
+  html,
+  tokenVars,
+  w,
+  h,
+  phase,
 }: {
   html: string;
   tokenVars: string;
@@ -1509,10 +1590,13 @@ function SimFrame({
         inset: 0,
         borderRadius: 14,
         overflow: 'hidden',
-        boxShadow: isShowing ? '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)' : 'none',
+        boxShadow: isShowing
+          ? '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)'
+          : 'none',
         transform: `scale(${isShowing ? 1 : 0.92}) translateY(${isShowing ? 0 : 24}px)`,
         opacity: isShowing ? 1 : 0,
-        transition: 'transform 380ms cubic-bezier(0.4,0,0.2,1), opacity 280ms ease, box-shadow 380ms ease',
+        transition:
+          'transform 380ms cubic-bezier(0.4,0,0.2,1), opacity 280ms ease, box-shadow 380ms ease',
         background: 'var(--color-bg, #0a0a0a)',
         pointerEvents: isShowing ? 'auto' : 'none',
       }}
@@ -1528,7 +1612,10 @@ function SimFrame({
 }
 
 function SimOverlayLayer({
-  html, kind, tokenVars, onClose,
+  html,
+  kind,
+  tokenVars,
+  onClose,
 }: {
   html: string;
   kind: string;
@@ -1542,7 +1629,7 @@ function SimOverlayLayer({
   const isPopover = kind === 'popover';
   const isModal = !isDrawer && !isPopover;
   const dims = (() => {
-    if (isDrawer) return { w: 420 };       // height = 100% of viewport
+    if (isDrawer) return { w: 420 }; // height = 100% of viewport
     if (isPopover) return { w: 320, h: 280 };
     return { w: 640, h: 480 };
   })();

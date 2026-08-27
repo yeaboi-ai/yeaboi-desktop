@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Mic, Shield } from "lucide-react";
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Mic, Shield } from 'lucide-react';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 
 interface ConsentPromptProps {
   open: boolean;
@@ -24,9 +24,7 @@ export function ConsentPrompt({ open, onAccept, onDecline }: ConsentPromptProps)
     <DialogPrimitive.Root open={open}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-[290] bg-background/80 backdrop-blur-sm data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-opacity duration-150" />
-        <DialogPrimitive.Popup
-          className="fixed top-1/2 left-1/2 z-[291] -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-2rem))] rounded-2xl bg-card ring-1 ring-border shadow-2xl outline-none data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95 transition-[opacity,transform] duration-150"
-        >
+        <DialogPrimitive.Popup className="fixed top-1/2 left-1/2 z-[291] -translate-x-1/2 -translate-y-1/2 w-[min(440px,calc(100vw-2rem))] rounded-2xl bg-card ring-1 ring-border shadow-2xl outline-none data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95 transition-[opacity,transform] duration-150">
           <div className="px-6 py-5">
             <div className="flex items-start gap-3 mb-3">
               <div className="rounded-full bg-warning/10 p-2 shrink-0">

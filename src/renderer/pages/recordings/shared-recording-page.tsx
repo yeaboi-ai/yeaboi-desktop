@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Film, Loader2 } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { Film, Loader2 } from 'lucide-react';
 
 interface PublicRecording {
   id: string;
@@ -15,15 +15,17 @@ interface PublicRecording {
 // The desktop's backend origin comes from main via the auth payload —
 // there is no build-time env. These pages are share-token authed, so the
 // origin is all they need.
-import { getAuth } from "@/lib/api-base";
-let API_BASE = "";
-void getAuth().then((auth) => { if (auth) API_BASE = auth.apiUrl; });
+import { getAuth } from '@/lib/api-base';
+let API_BASE = '';
+void getAuth().then((auth) => {
+  if (auth) API_BASE = auth.apiUrl;
+});
 
 function formatDuration(s: number | null): string {
-  if (s == null || s < 0) return "—";
+  if (s == null || s < 0) return '—';
   const m = Math.floor(s / 60);
   const sec = s % 60;
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -50,11 +52,11 @@ export default function PublicRecordingPage() {
           return;
         }
         if (resp.status === 410) {
-          setError("This recording has expired.");
+          setError('This recording has expired.');
           return;
         }
         if (resp.status === 409) {
-          setError("This recording is still being processed. Try again in a minute.");
+          setError('This recording is still being processed. Try again in a minute.');
           return;
         }
         if (!resp.ok) {

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface TranscriptEntry {
   id: string;
@@ -15,9 +15,9 @@ type FetchFn = (url: string, opts?: RequestInit) => Promise<Response>;
 export function useDeepgramTranscript(
   active: boolean,
   fetchFn: FetchFn,
-  speakerName: string = "You",
+  speakerName: string = 'You',
   muted: boolean = false,
-  language: string = "en",
+  language: string = 'en',
   keyterms: string[] = [],
 ) {
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
@@ -36,9 +36,11 @@ export function useDeepgramTranscript(
     // Also disable/enable the actual audio tracks as a safety net
     const stream = streamRef.current;
     if (stream) {
-      stream.getAudioTracks().forEach((t) => { t.enabled = !muted; });
+      stream.getAudioTracks().forEach((t) => {
+        t.enabled = !muted;
+      });
     }
-    console.log(`[Deepgram] Mic ${muted ? "muted" : "unmuted"}`);
+    console.log(`[Deepgram] Mic ${muted ? 'muted' : 'unmuted'}`);
   }, [muted]);
 
   const stop = useCallback(() => {
@@ -51,7 +53,7 @@ export function useDeepgramTranscript(
   }, []);
 
   // Stabilize keyterms reference to avoid unnecessary re-renders
-  const keytermsKey = keyterms.join(",");
+  const keytermsKey = keyterms.join(',');
 
   useEffect(() => {
     if (!active) {
@@ -64,15 +66,21 @@ export function useDeepgramTranscript(
     (async () => {
       // Get Deepgram API key from backend
       try {
-        console.log("[Deepgram] Fetching token...");
+        console.log('[Deepgram] Fetching token...');
         // The web app proxied this through Next; the desktop asks the
         // backend's authed route directly.
-        const resp = await fetchFn("/api/sessions/deepgram-token");
-        if (!resp.ok || cancelled) { console.log("[Deepgram] Token fetch failed:", resp.status); return; }
+        const resp = await fetchFn('/api/sessions/deepgram-token');
+        if (!resp.ok || cancelled) {
+          console.log('[Deepgram] Token fetch failed:', resp.status);
+          return;
+        }
         const data = await resp.json();
         const key = data.key;
-        if (!key || cancelled) { console.log("[Deepgram] No key returned"); return; }
-        console.log("[Deepgram] Got token, requesting mic...");
+        if (!key || cancelled) {
+          console.log('[Deepgram] No key returned');
+          return;
+        }
+        console.log('[Deepgram] Got token, requesting mic...');
 
         // Get microphone stream with noise suppression and echo cancellation
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -84,39 +92,45 @@ export function useDeepgramTranscript(
             sampleRate: { ideal: 16000 },
           },
         });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         streamRef.current = stream;
-        console.log("[Deepgram] Mic acquired, connecting WebSocket...");
+        console.log('[Deepgram] Mic acquired, connecting WebSocket...');
 
         // Connect to Deepgram WebSocket
         const params = new URLSearchParams({
-          model: "nova-3",
+          model: 'nova-3',
           language,
-          punctuate: "true",
-          smart_format: "true",
-          filler_words: "true",
-          interim_results: "true",
-          utterance_end_ms: "1500",
-          endpointing: "500",
+          punctuate: 'true',
+          smart_format: 'true',
+          filler_words: 'true',
+          interim_results: 'true',
+          utterance_end_ms: '1500',
+          endpointing: '500',
         });
         // Add vocabulary keyterms for Nova-3 (improves name/term recognition)
         for (const term of keyterms) {
-          params.append("keyterm", term);
+          params.append('keyterm', term);
         }
         const wsUrl = `wss://api.deepgram.com/v1/listen?${params}`;
-        console.log("[Deepgram] Connecting to:", wsUrl.replace(key, "***"));
-        const ws = new WebSocket(wsUrl, ["token", key]);
+        console.log('[Deepgram] Connecting to:', wsUrl.replace(key, '***'));
+        const ws = new WebSocket(wsUrl, ['token', key]);
         wsRef.current = ws;
 
         ws.onopen = () => {
-          console.log("[Deepgram] Connected, starting audio capture");
-          if (cancelled) { ws.close(); return; }
+          console.log('[Deepgram] Connected, starting audio capture');
+          if (cancelled) {
+            ws.close();
+            return;
+          }
 
           // Use MediaRecorder to send audio chunks
           const recorder = new MediaRecorder(stream, {
-            mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-              ? "audio/webm;codecs=opus"
-              : "audio/webm",
+            mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+              ? 'audio/webm;codecs=opus'
+              : 'audio/webm',
           });
           mediaRecorderRef.current = recorder;
 
@@ -132,7 +146,7 @@ export function useDeepgramTranscript(
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === "Results") {
+            if (data.type === 'Results') {
               const alt = data.channel?.alternatives?.[0];
               if (!alt || !alt.transcript) return;
 
@@ -171,9 +185,9 @@ export function useDeepgramTranscript(
                   // for this speaker. Deepgram occasionally emits a tail-audio
                   // interim right after the utterance final, and rendering
                   // both side-by-side looks like a duplicate row.
-                  const lastFinal = [...prev].reverse().find(
-                    (e) => e.is_final && e.speaker_name === speakerName,
-                  );
+                  const lastFinal = [...prev]
+                    .reverse()
+                    .find((e) => e.is_final && e.speaker_name === speakerName);
                   if (lastFinal) {
                     const a = lastFinal.text.toLowerCase().trim();
                     const b = text.toLowerCase().trim();
@@ -182,7 +196,7 @@ export function useDeepgramTranscript(
                   return [
                     ...prev.filter((e) => e.is_final),
                     {
-                      id: "dg-interim",
+                      id: 'dg-interim',
                       speaker_name: speakerName,
                       text,
                       is_final: false,
@@ -199,18 +213,20 @@ export function useDeepgramTranscript(
 
         ws.onerror = () => {
           // Browser WebSocket error events carry no useful info — details come from onclose
-          console.warn("[Deepgram] WebSocket error (see onclose for details)");
+          console.warn('[Deepgram] WebSocket error (see onclose for details)');
         };
 
         ws.onclose = (ev) => {
           if (ev.code !== 1000) {
-            console.warn(`[Deepgram] WebSocket closed: code=${ev.code} reason=${ev.reason || "none"}`);
+            console.warn(
+              `[Deepgram] WebSocket closed: code=${ev.code} reason=${ev.reason || 'none'}`,
+            );
           }
           mediaRecorderRef.current?.stop();
           mediaRecorderRef.current = null;
         };
       } catch (err) {
-        console.warn("[Deepgram] Setup failed:", err);
+        console.warn('[Deepgram] Setup failed:', err);
       }
     })();
 
@@ -218,7 +234,7 @@ export function useDeepgramTranscript(
       cancelled = true;
       stop();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, language]);
 
   const clear = useCallback(() => setEntries([]), []);

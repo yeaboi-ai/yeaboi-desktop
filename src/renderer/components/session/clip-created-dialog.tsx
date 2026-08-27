@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Check, Copy, ExternalLink, Link2, X } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
+import { Check, Copy, ExternalLink, Link2, X } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 export interface ClipPreviewLine {
   speaker: string | null;
@@ -53,7 +53,7 @@ export function ClipCreatedDialog({
   // when a new clip is created; no reset needed here.
   useEffect(() => {
     if (!open) return;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(url).then(
         () => setCopied(true),
         () => {
@@ -88,9 +88,7 @@ export function ClipCreatedDialog({
                 </DialogPrimitive.Title>
               </div>
               <DialogPrimitive.Close
-                render={
-                  <Button variant="ghost" size="icon-sm" aria-label="Close" />
-                }
+                render={<Button variant="ghost" size="icon-sm" aria-label="Close" />}
               >
                 <X className="h-4 w-4" />
               </DialogPrimitive.Close>
@@ -108,7 +106,7 @@ export function ClipCreatedDialog({
               />
               <Button
                 type="button"
-                variant={copied ? "outline" : "default"}
+                variant={copied ? 'outline' : 'default'}
                 size="sm"
                 onClick={handleCopy}
                 className="shrink-0"
@@ -139,7 +137,7 @@ export function ClipCreatedDialog({
                 Open in new tab
               </a>
               <span className="text-muted-foreground/70 truncate">
-                {lineCount} {lineCount === 1 ? "message" : "messages"} · {filterDescription}
+                {lineCount} {lineCount === 1 ? 'message' : 'messages'} · {filterDescription}
               </span>
             </div>
 
@@ -147,9 +145,14 @@ export function ClipCreatedDialog({
             {preview.length > 0 && (
               <div className="rounded-lg bg-foreground/[0.03] ring-1 ring-border/40 px-3.5 py-3 space-y-1.5">
                 {preview.map((line, i) => (
-                  <p key={i} className="text-[13px] leading-relaxed text-foreground/85 line-clamp-1">
+                  <p
+                    key={i}
+                    className="text-[13px] leading-relaxed text-foreground/85 line-clamp-1"
+                  >
                     {line.speaker && (
-                      <span className="text-muted-foreground/70 mr-1.5 font-medium">{line.speaker}:</span>
+                      <span className="text-muted-foreground/70 mr-1.5 font-medium">
+                        {line.speaker}:
+                      </span>
                     )}
                     {line.text}
                   </p>
@@ -158,7 +161,8 @@ export function ClipCreatedDialog({
             )}
 
             <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
-              Anyone with the link can view this clip. The transcript is captured as a snapshot — later edits or redactions don&apos;t affect what was clipped.
+              Anyone with the link can view this clip. The transcript is captured as a snapshot —
+              later edits or redactions don&apos;t affect what was clipped.
             </p>
           </div>
         </DialogPrimitive.Popup>

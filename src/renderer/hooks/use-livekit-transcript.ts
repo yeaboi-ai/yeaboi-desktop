@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { RoomEvent, type Participant, type TranscriptionSegment } from "livekit-client";
-import { useMaybeRoomContext } from "@livekit/components-react";
+import { useCallback, useEffect, useState } from 'react';
+import { RoomEvent, type Participant, type TranscriptionSegment } from 'livekit-client';
+import { useMaybeRoomContext } from '@livekit/components-react';
 
 interface TranscriptEntry {
   id: string;
@@ -30,7 +30,7 @@ const AVATAR_MIRROR_RE = /tavus|avatar/i;
  * shows up before the avatar speaks.
  */
 export function useLiveKitTranscript(
-  fallbackSpeakerName: string = "AI Facilitator",
+  fallbackSpeakerName: string = 'AI Facilitator',
   displayDelayMs: number = 800,
 ) {
   const room = useMaybeRoomContext();
@@ -41,16 +41,13 @@ export function useLiveKitTranscript(
 
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
 
-    const onSegments = (
-      segments: TranscriptionSegment[],
-      participant?: Participant,
-    ) => {
+    const onSegments = (segments: TranscriptionSegment[], participant?: Participant) => {
       // Skip the local participant — their STT echoes back via the agent, but
       // the user-side Deepgram hook is the authoritative source for that text.
       if (participant?.isLocal) return;
       // Skip Tavus's avatar mirror participant — segments from it duplicate
       // the original agent's transcription one-for-one.
-      if (AVATAR_MIRROR_RE.test(participant?.identity || "")) return;
+      if (AVATAR_MIRROR_RE.test(participant?.identity || '')) return;
 
       const speaker = participant?.name?.trim() || fallbackSpeakerName;
 
@@ -68,9 +65,7 @@ export function useLiveKitTranscript(
               created_at: new Date(tsSource).toISOString(),
             });
           }
-          return [...map.values()].sort((a, b) =>
-            a.created_at.localeCompare(b.created_at),
-          );
+          return [...map.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
         });
       };
 

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useRef, useState } from "react";
-import { useLiveKitDataChannel } from "./use-livekit-data-channel";
+import { useCallback, useRef, useState } from 'react';
+import { useLiveKitDataChannel } from './use-livekit-data-channel';
 
 export interface DrawPoint {
   /** Normalized 0..1 horizontal position on the shared-screen surface. */
@@ -45,8 +45,8 @@ export function useScreenDraw() {
     setStrokes((prev) => pruneStrokes([...prev, stroke], now));
   }, []);
 
-  const { send } = useLiveKitDataChannel<"screen_draw">({
-    topic: "screen_draw",
+  const { send } = useLiveKitDataChannel<'screen_draw'>({
+    topic: 'screen_draw',
     onEvent: (event) => {
       const payload = event.payload as { points?: DrawPoint[] } | undefined;
       const points = payload?.points;
@@ -61,12 +61,12 @@ export function useScreenDraw() {
       if (points.length === 0) return;
       addLocalStroke(points);
       try {
-        send<{ points: DrawPoint[] }>("screen_draw", { points });
+        send<{ points: DrawPoint[] }>('screen_draw', { points });
       } catch (err) {
         // The room may be reconnecting/disconnected — the stroke still renders
         // locally; peers/agent just miss this one. Don't throw out of the
         // pointer-event handler.
-        console.warn("[screen-draw] send failed:", err);
+        console.warn('[screen-draw] send failed:', err);
       }
     },
     [send, addLocalStroke],

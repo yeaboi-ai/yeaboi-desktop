@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useDataChannel, useLocalParticipant } from "@livekit/components-react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDataChannel, useLocalParticipant } from '@livekit/components-react';
 
 /**
  * Tagged JSON envelope sent over a LiveKit data channel.
@@ -29,7 +29,11 @@ interface Options<T extends string> {
  * Send/receive tagged events over a LiveKit data channel.
  * Must be used inside a `<LiveKitRoom>` context.
  */
-export function useLiveKitDataChannel<T extends string>({ topic, onEvent, includeLocalEcho }: Options<T>) {
+export function useLiveKitDataChannel<T extends string>({
+  topic,
+  onEvent,
+  includeLocalEcho,
+}: Options<T>) {
   const { localParticipant } = useLocalParticipant();
   const [latest, setLatest] = useState<LiveKitDataEvent | null>(null);
   const onEventRef = useRef(onEvent);
@@ -56,7 +60,7 @@ export function useLiveKitDataChannel<T extends string>({ topic, onEvent, includ
       const event: LiveKitDataEvent<string, P> = {
         type,
         payload,
-        from: localParticipant?.identity ?? "anon",
+        from: localParticipant?.identity ?? 'anon',
         ts: Date.now(),
       };
       const data = new TextEncoder().encode(JSON.stringify(event));
@@ -70,7 +74,7 @@ export function useLiveKitDataChannel<T extends string>({ topic, onEvent, includ
   );
 
   // Local participant identity for callers that need to filter out their own events.
-  const me = localParticipant?.identity ?? "anon";
+  const me = localParticipant?.identity ?? 'anon';
 
   return { send, latest, me };
 }

@@ -31,8 +31,7 @@ const modalStyles = {
     border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 12,
     boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.3)',
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     overflow: 'hidden',
   },
   header: {
@@ -150,7 +149,9 @@ export default function AIEditModal({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const label = nodeData?.label || nodeId;
-  const typeLabel = nodeType.replace(/^wire/, 'Wireframe ').replace(/^\w/, (c: string) => c.toUpperCase());
+  const typeLabel = nodeType
+    .replace(/^wire/, 'Wireframe ')
+    .replace(/^\w/, (c: string) => c.toUpperCase());
 
   useEffect(() => {
     // Focus textarea on mount
@@ -179,20 +180,17 @@ export default function AIEditModal({
 
     try {
       const doFetch = fetchFn || fetch;
-      const resp = await doFetch(
-        `/api/sessions/${sessionId}/ai-edit-element`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            node_id: nodeId,
-            node_type: nodeType,
-            node_data: nodeData,
-            instruction: instruction.trim(),
-            diagram_context: diagramContext,
-          }),
-        },
-      );
+      const resp = await doFetch(`/api/sessions/${sessionId}/ai-edit-element`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          node_id: nodeId,
+          node_type: nodeType,
+          node_data: nodeData,
+          instruction: instruction.trim(),
+          diagram_context: diagramContext,
+        }),
+      });
 
       if (!resp.ok) {
         const body = await resp.json().catch(() => null);
@@ -223,10 +221,7 @@ export default function AIEditModal({
       <style>{`@keyframes ai-edit-spin { to { transform: rotate(360deg); } }`}</style>
 
       <div style={modalStyles.overlay} onClick={loading ? undefined : onClose}>
-        <div
-          style={modalStyles.modal}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div style={modalStyles.modal} onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div style={modalStyles.header}>
             <div style={modalStyles.headerType}>{typeLabel}</div>
@@ -276,9 +271,7 @@ export default function AIEditModal({
               style={{
                 ...modalStyles.buttonBase,
                 ...modalStyles.applyButton,
-                ...(!instruction.trim() || loading
-                  ? modalStyles.applyButtonDisabled
-                  : {}),
+                ...(!instruction.trim() || loading ? modalStyles.applyButtonDisabled : {}),
               }}
               onClick={handleSubmit}
               disabled={!instruction.trim() || loading}

@@ -223,7 +223,12 @@ function StandupSetupBody() {
       <Section
         title="Code"
         actions={
-          <Button size="sm" variant="outline" disabled={!!busy} onClick={() => void discoverRepos()}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!!busy}
+            onClick={() => void discoverRepos()}
+          >
             {busy === 'repos' ? 'Looking…' : 'Find repositories'}
           </Button>
         }

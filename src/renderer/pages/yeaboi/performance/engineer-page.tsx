@@ -71,8 +71,7 @@ function EngineerBody({ name }: { name: string }) {
     // reload closes over `name`, which is the only thing it depends on.
   }, [name, reload]);
 
-  if (!name)
-    return <Notice title="No engineer" items={['Pick someone from the roster first.']} />;
+  if (!name) return <Notice title="No engineer" items={['Pick someone from the roster first.']} />;
   if (error && !file) return <Notice title={`Nothing on file for ${name}`} items={[error]} />;
   if (!file) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 

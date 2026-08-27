@@ -131,7 +131,10 @@ function RoadmapBody() {
             Point yeaboi at the quarterly roadmap and it proposes what to plan next.
           </p>
         </div>
-        <Link href="/humans/planning" className="text-[12px] text-muted-foreground hover:text-foreground">
+        <Link
+          href="/humans/planning"
+          className="text-[12px] text-muted-foreground hover:text-foreground"
+        >
           Back
         </Link>
       </header>

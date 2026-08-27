@@ -55,68 +55,80 @@ function ZoneActionDropdown({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const popoverContent = open && coords && typeof document !== 'undefined' ? createPortal(
-    <div
-      ref={popoverRef}
-      className="nodrag"
-      style={{
-        position: 'fixed',
-        top: coords.top,
-        right: coords.right,
-        background: 'rgba(20,20,24,0.96)',
-        backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255,255,255,0.12)',
-        borderRadius: 10,
-        padding: 4,
-        minWidth: 180,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-        zIndex: 1000,
-      }}
-    >
-      {options.map((opt) => {
-        const selected = opt === value;
-        return (
-          <button
-            key={opt}
-            onClick={(e) => { e.stopPropagation(); onSelect(opt); setOpen(false); }}
+  const popoverContent =
+    open && coords && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            ref={popoverRef}
+            className="nodrag"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              padding: '8px 10px',
-              borderRadius: 6,
-              background: selected ? 'rgba(229,166,48,0.10)' : 'transparent',
-              border: 'none',
-              color: selected ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.85)',
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: 0,
-              textTransform: 'none',
-              textAlign: 'left',
-              cursor: 'pointer',
-              transition: 'background 100ms',
-            }}
-            onMouseEnter={(e) => {
-              if (!selected) e.currentTarget.style.background = 'color-mix(in srgb, var(--foreground) 6%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              if (!selected) e.currentTarget.style.background = 'transparent';
+              position: 'fixed',
+              top: coords.top,
+              right: coords.right,
+              background: 'rgba(20,20,24,0.96)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 10,
+              padding: 4,
+              minWidth: 180,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              zIndex: 1000,
             }}
           >
-            <span style={{ flex: 1 }}>{opt}</span>
-            {selected && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
-          </button>
-        );
-      })}
-    </div>,
-    document.body,
-  ) : null;
+            {options.map((opt) => {
+              const selected = opt === value;
+              return (
+                <button
+                  key={opt}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(opt);
+                    setOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    background: selected ? 'rgba(229,166,48,0.10)' : 'transparent',
+                    border: 'none',
+                    color: selected ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.85)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    letterSpacing: 0,
+                    textTransform: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'background 100ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selected)
+                      e.currentTarget.style.background =
+                        'color-mix(in srgb, var(--foreground) 6%, transparent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selected) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <span style={{ flex: 1 }}>{opt}</span>
+                  {selected && <span style={{ fontSize: 11, opacity: 0.7 }}>✓</span>}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }} className="nodrag">
       <button
         ref={buttonRef}
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         title={title}
         style={{
           display: 'inline-flex',
@@ -125,7 +137,9 @@ function ZoneActionDropdown({
           height: 32,
           padding: '0 12px',
           borderRadius: 999,
-          background: open ? 'color-mix(in srgb, var(--foreground) 8%, transparent)' : 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+          background: open
+            ? 'color-mix(in srgb, var(--foreground) 8%, transparent)'
+            : 'color-mix(in srgb, var(--foreground) 4%, transparent)',
           border: `1px solid ${open ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.10)'}`,
           color: open ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.7)',
           fontSize: 11,
@@ -159,7 +173,10 @@ function ZoneActionButton({
 }) {
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       title={title}
       style={{
         display: 'inline-flex',
@@ -168,7 +185,9 @@ function ZoneActionButton({
         height: 32,
         padding: label ? '0 12px' : '0 10px',
         borderRadius: 999,
-        background: primary ? 'rgba(229,166,48,0.16)' : 'color-mix(in srgb, var(--foreground) 4%, transparent)',
+        background: primary
+          ? 'rgba(229,166,48,0.16)'
+          : 'color-mix(in srgb, var(--foreground) 4%, transparent)',
         border: `1px solid ${primary ? 'rgba(229,166,48,0.45)' : 'rgba(255,255,255,0.10)'}`,
         color: primary ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.7)',
         fontSize: 11,
@@ -180,13 +199,17 @@ function ZoneActionButton({
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget;
-        el.style.background = primary ? 'rgba(229,166,48,0.24)' : 'color-mix(in srgb, var(--foreground) 8%, transparent)';
+        el.style.background = primary
+          ? 'rgba(229,166,48,0.24)'
+          : 'color-mix(in srgb, var(--foreground) 8%, transparent)';
         el.style.borderColor = primary ? 'rgba(229,166,48,0.65)' : 'rgba(255,255,255,0.18)';
         el.style.color = primary ? 'rgba(229,166,48,1)' : 'rgba(255,255,255,0.95)';
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget;
-        el.style.background = primary ? 'rgba(229,166,48,0.16)' : 'color-mix(in srgb, var(--foreground) 4%, transparent)';
+        el.style.background = primary
+          ? 'rgba(229,166,48,0.16)'
+          : 'color-mix(in srgb, var(--foreground) 4%, transparent)';
         el.style.borderColor = primary ? 'rgba(229,166,48,0.45)' : 'rgba(255,255,255,0.10)';
         el.style.color = primary ? 'rgba(229,166,48,0.95)' : 'rgba(255,255,255,0.7)';
       }}
@@ -206,8 +229,8 @@ interface AnnotationNodeData {
   _isZoneHeader?: boolean;
   _isSubHeader?: boolean;
   _zoneType?: string;
-  _metaLine?: string;   // eyebrow / kicker line above the title
-  _subtitle?: string;   // italic serif tagline below the title
+  _metaLine?: string; // eyebrow / kicker line above the title
+  _subtitle?: string; // italic serif tagline below the title
   // Wireframe-zone action callbacks. Wired up only when _zoneType === 'wireframe'.
   // Each is optional so older callers don't have to provide them.
   _onToggleDarkMode?: () => void;
@@ -260,15 +283,17 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
           userSelect: 'none',
         }}
       >
-        <div style={{
-          fontSize: 16,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.62)',
-          fontWeight: 600,
-          paddingBottom: 10,
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-        }}>
+        <div
+          style={{
+            fontSize: 16,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.62)',
+            fontWeight: 600,
+            paddingBottom: 10,
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
           {label}
         </div>
         <Handle type="target" position={Position.Top} style={handleStyle} />
@@ -280,10 +305,12 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
   // Editorial zone header: eyebrow meta + serif title + italic tagline.
   if (isEditorialHeader) {
     const isWireframeZone = nodeData._zoneType === 'wireframe';
-    const hasActions = isWireframeZone && (
-      nodeData._onToggleDarkMode || nodeData._onSelectPalette ||
-      nodeData._onSimulate || nodeData._onMoreActions
-    );
+    const hasActions =
+      isWireframeZone &&
+      (nodeData._onToggleDarkMode ||
+        nodeData._onSelectPalette ||
+        nodeData._onSimulate ||
+        nodeData._onMoreActions);
     return (
       <div
         style={{
@@ -309,7 +336,8 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontFamily: '"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif',
+                fontFamily:
+                  '"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif',
                 fontSize: 80,
                 fontWeight: 400,
                 letterSpacing: '-0.02em',
@@ -323,7 +351,8 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
             {subtitle && (
               <div
                 style={{
-                  fontFamily: '"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif',
+                  fontFamily:
+                    '"Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif',
                   fontSize: 26,
                   fontStyle: 'italic',
                   fontWeight: 400,
@@ -396,7 +425,8 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         maxWidth: isHeader ? undefined : 300,
         borderRadius: 4,
-        border: selected && !isHeader ? '1px dashed rgba(229,166,48,0.3)' : '1px dashed transparent',
+        border:
+          selected && !isHeader ? '1px dashed rgba(229,166,48,0.3)' : '1px dashed transparent',
         transition: 'border-color 0.15s ease',
       }}
     >
@@ -405,7 +435,7 @@ function AnnotationNodeComponent({ data, selected }: NodeProps) {
           fontSize,
           fontWeight,
           letterSpacing,
-          textTransform: isHeader ? 'uppercase' as const : undefined,
+          textTransform: isHeader ? ('uppercase' as const) : undefined,
           color,
           lineHeight: 1.5,
           whiteSpace: 'pre-wrap',

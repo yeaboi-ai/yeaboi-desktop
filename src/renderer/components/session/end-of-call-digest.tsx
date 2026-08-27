@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { createPortal } from "react-dom";
-import { X, Sparkles } from "lucide-react";
-import type { Suggestion } from "@/hooks/use-suggestions";
+import { useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { X, Sparkles } from 'lucide-react';
+import type { Suggestion } from '@/hooks/use-suggestions';
 
 const SECTION_LABELS: Record<string, string> = {
-  project_overview: "Project Overview",
-  goals_constraints: "Goals & Constraints",
-  users_personas: "Users & Personas",
-  team_capacity: "Team & Capacity",
-  architecture: "Architecture",
-  tech_stack: "Tech Stack",
-  api_integrations: "API & Integrations",
-  ui_ux: "UI/UX",
-  security_compliance: "Security & Compliance",
-  infrastructure: "Infrastructure",
-  risks_unknowns: "Risks & Unknowns",
-  out_of_scope: "Out of Scope",
-  open_questions: "Open Questions",
+  project_overview: 'Project Overview',
+  goals_constraints: 'Goals & Constraints',
+  users_personas: 'Users & Personas',
+  team_capacity: 'Team & Capacity',
+  architecture: 'Architecture',
+  tech_stack: 'Tech Stack',
+  api_integrations: 'API & Integrations',
+  ui_ux: 'UI/UX',
+  security_compliance: 'Security & Compliance',
+  infrastructure: 'Infrastructure',
+  risks_unknowns: 'Risks & Unknowns',
+  out_of_scope: 'Out of Scope',
+  open_questions: 'Open Questions',
 };
 
 interface EndOfCallDigestProps {
@@ -51,7 +51,7 @@ export function EndOfCallDigest({
     return Array.from(map.entries());
   }, [pending]);
 
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[400] flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -59,9 +59,7 @@ export function EndOfCallDigest({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-success" />
-            <h2 className="text-[14px] font-semibold text-foreground">
-              Review AI suggestions
-            </h2>
+            <h2 className="text-[14px] font-semibold text-foreground">Review AI suggestions</h2>
             <span className="text-[11px] text-muted-foreground px-2 py-0.5 rounded-md bg-foreground/[0.06]">
               {pending.length}
             </span>
@@ -76,14 +74,16 @@ export function EndOfCallDigest({
         </div>
 
         <div className="px-5 py-3 text-[12.5px] text-muted-foreground leading-relaxed border-b border-border/60">
-          The AI captured these from the conversation but hasn&apos;t added them
-          to the blueprint yet. Pick a path below — you can always re-review
-          individual items later.
+          The AI captured these from the conversation but hasn&apos;t added them to the blueprint
+          yet. Pick a path below — you can always re-review individual items later.
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-3">
           {grouped.map(([section, items]) => (
-            <div key={section} className="rounded-lg bg-foreground/[0.02] border border-border/60 p-3">
+            <div
+              key={section}
+              className="rounded-lg bg-foreground/[0.02] border border-border/60 p-3"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[12px] font-medium text-foreground/95">
                   {SECTION_LABELS[section] || section}
@@ -92,7 +92,10 @@ export function EndOfCallDigest({
               </div>
               <ul className="flex flex-col gap-1.5">
                 {items.map((s) => (
-                  <li key={s.id} className="text-[12px] text-foreground/85 leading-relaxed whitespace-pre-wrap">
+                  <li
+                    key={s.id}
+                    className="text-[12px] text-foreground/85 leading-relaxed whitespace-pre-wrap"
+                  >
                     {s.content}
                   </li>
                 ))}

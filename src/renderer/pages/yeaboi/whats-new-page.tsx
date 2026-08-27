@@ -85,7 +85,10 @@ function WhatsNewBody() {
                 ? entry.highlights.filter((h) => h.areas.includes(area))
                 : entry.highlights
               ).map((h) => (
-                <li key={h.text} className="text-[12px] text-muted-foreground leading-snug pl-3 relative before:content-['·'] before:absolute before:left-0">
+                <li
+                  key={h.text}
+                  className="text-[12px] text-muted-foreground leading-snug pl-3 relative before:content-['·'] before:absolute before:left-0"
+                >
                   {h.text}
                 </li>
               ))}

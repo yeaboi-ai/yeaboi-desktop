@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Component, type ReactNode } from "react";
+import { Component, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -23,7 +23,7 @@ export class CanvasErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[Canvas] Error boundary caught:", error, errorInfo);
+    console.error('[Canvas] Error boundary caught:', error, errorInfo);
   }
 
   render() {
@@ -32,14 +32,14 @@ export class CanvasErrorBoundary extends Component<Props, State> {
         this.props.fallback || (
           <div
             style={{
-              height: "100%",
-              width: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--background)",
-              color: "var(--muted-foreground)",
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--background)',
+              color: 'var(--muted-foreground)',
               gap: 12,
             }}
           >
@@ -48,12 +48,12 @@ export class CanvasErrorBoundary extends Component<Props, State> {
               onClick={() => this.setState({ hasError: false, error: null })}
               style={{
                 fontSize: 12,
-                padding: "6px 16px",
-                background: "var(--primary)",
-                color: "var(--background)",
-                border: "none",
+                padding: '6px 16px',
+                background: 'var(--primary)',
+                color: 'var(--background)',
+                border: 'none',
                 borderRadius: 6,
-                cursor: "pointer",
+                cursor: 'pointer',
               }}
             >
               Try again
