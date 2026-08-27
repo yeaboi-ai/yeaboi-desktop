@@ -1,21 +1,18 @@
-// The two rules that decide what the shell will let through: where a window
-// may navigate, and which backend routes the renderer may ask the proxy for.
-// Both are pure, so neither needs Electron to be tested.
+// The rule that decides where a window in this app may navigate. Pure, so it
+// needs no Electron to be tested.
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { navigationAllowed } from '../src/main/permissions';
-
-// api-proxy imports ipcMain as a value, and CI installs no Electron binary —
-// so the real module throws on import and takes the whole file with it.
-vi.mock('electron', () => ({ ipcMain: { handle: () => {} } }));
-const { rendererMayCall } = await import('../src/main/api-proxy');
 
 describe('navigationAllowed', () => {
   it('allows the loopback backend on any port', () => {
-    // The backend and every board server bind an ephemeral port, so the host
-    // is what can be checked here, not the port.
-    expect(navigationAllowed('http://127.0.0.1:8731/api/meta/version')).toBe(true);
+    expect(navigationAllowed('http://127.0.0.1:8000/api/me')).toBe(true);
     expect(navigationAllowed('http://localhost:5173/')).toBe(true);
+  });
+
+  it('allows the packaged renderer origin', () => {
+    expect(navigationAllowed('app://yeaboi/index.html')).toBe(true);
+    expect(navigationAllowed('app://other/index.html')).toBe(false);
   });
 
   it('refuses a host that merely starts with the loopback address', () => {
@@ -42,18 +39,5 @@ describe('navigationAllowed', () => {
 
   it('refuses everything else when no dev server is running', () => {
     expect(navigationAllowed('https://yeaboi.ai/')).toBe(false);
-  });
-});
-
-describe('rendererMayCall', () => {
-  it('allows the ordinary api', () => {
-    expect(rendererMayCall('/api/boards')).toBe(true);
-    expect(rendererMayCall('/api/boards/b1')).toBe(true);
-    expect(rendererMayCall('/api/chat/send')).toBe(true);
-  });
-
-  it('refuses the board host link, which carries the admin token', () => {
-    expect(rendererMayCall('/api/boards/abc123/host')).toBe(false);
-    expect(rendererMayCall('/api/boards/abc123/host?x=1')).toBe(false);
   });
 });

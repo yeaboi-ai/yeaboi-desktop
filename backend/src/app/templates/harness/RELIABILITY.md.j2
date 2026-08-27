@@ -1,0 +1,31 @@
+# Reliability
+
+> Reliability and operational requirements for {{ project_name }}.
+
+## Infrastructure
+
+{{ blueprint.infrastructure or "Infrastructure not yet defined." }}
+
+## SLOs
+
+- Availability: 99.9% uptime
+- Latency: p99 < 500ms for API endpoints
+- Error rate: < 0.1%
+
+## Failure Modes
+
+- Database unavailable: return 503, retry with backoff
+- External API unavailable: circuit breaker, cached fallback
+- Memory pressure: shed load, return 429
+
+## Observability
+
+- Structured JSON logs with trace IDs
+- Metrics: request rate, error rate, latency histograms
+- Alerts on SLO breach
+
+## Deployment
+
+- Zero-downtime deploys (rolling or blue/green)
+- Database migrations run before code deploy
+- Rollback plan for each release

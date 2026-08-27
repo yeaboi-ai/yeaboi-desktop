@@ -6,29 +6,24 @@
     "moduleResolution": "bundler",
     "types": ["vite/client", "node"],
 
+    // Strictness matches the planning frontend the renderer came from —
+    // its 95k lines were written under these flags, not the shell's old
+    // stricter set.
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
 
-    // Preact via preact/compat — @yeaboi-ai/design is written against it, so
-    // this is what makes its primitives resolve the same here as on the boards.
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
     "paths": {
-      "react-dom/client": ["./node_modules/preact/compat/client"],
-      "react/jsx-runtime": ["./node_modules/preact/jsx-runtime"],
-      "react": ["./node_modules/preact/compat/"],
-      "react-dom": ["./node_modules/preact/compat/"],
-      "preact": ["./node_modules/preact"],
-      "preact/*": ["./node_modules/preact/*"],
-      "@design/*": ["./node_modules/@yeaboi-ai/design/design/*"]
+      "@/*": ["./src/renderer/*"],
+      "@design/*": ["./node_modules/@yeaboi-ai/design/design/*"],
+      "next/navigation": ["./src/renderer/shims/next-navigation.ts"],
+      "next/link": ["./src/renderer/shims/next-link.tsx"],
+      "next/dynamic": ["./src/renderer/shims/next-dynamic.tsx"],
+      "next-auth/react": ["./src/renderer/shims/next-auth.tsx"]
     },
 
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
     "resolveJsonModule": true

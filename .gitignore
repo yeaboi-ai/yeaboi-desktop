@@ -2,9 +2,19 @@ node_modules/
 out/
 dist/
 resources/py/
+resources/py-planning/
+resources/livekit/
 .python-cache/
+.livekit-cache/
 
 # The shared tooling checkout, pinned by .tooling-rev — cloned, never committed.
 .tooling/
 .claude/worktrees/
 __pycache__/
+
+# Feature clips render here; only the spec in .demo/clips/ is committed.
+.demo/out/
+backend/.venv/
+backend/dist/
+backend/.pytest_cache/
+backend/**/__pycache__/

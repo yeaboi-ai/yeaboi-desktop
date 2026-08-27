@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2d0e0e"/><stop offset="100%" stop-color="#1f1515"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#ef4444"/></linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#bg)"/>
+  <circle cx="100" cy="78" r="32" fill="url(#accent)" opacity="0.12"/>
+  <circle cx="100" cy="78" r="24" fill="url(#accent)" opacity="0.2"/>
+  <!-- Lightning/swords icon -->
+  <path d="M95 58h12l-6 16h10l-16 24 4-16h-10z" stroke="#f87171" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+  <text x="100" y="148" text-anchor="middle" fill="#f87171" font-family="system-ui" font-size="14" font-weight="600" opacity="0.7">CHALLENGER</text>
+</svg>

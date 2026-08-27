@@ -4,15 +4,12 @@
   What the hardened runtime has to be told to allow. Each line is something the
   app actually does; nothing here is speculative.
 
-  JIT and unsigned executable memory: V8, and CPython's own allocator.
-  dyld environment variables: the bundled Python sets its own before exec.
-  Library validation off: the in-app voice install adds native wheels to the
-    bundle after it was signed, and the hardened runtime would refuse to load
-    a dylib this team did not sign.
-  Network client: the app talks to model providers and trackers.
-  Network server: the loopback API, the retro/poker/ship board servers.
-  Audio input: dictation (M11), which records in the renderer.
+  JIT and unsigned executable memory: V8.
+  Network client: the app talks to the local planning backend.
+  Network server: the bundled backends and LiveKit listen on loopback/LAN.
   Apple events: the desktop duck asks the Dock where its icons are.
+  Microphone and camera: voice/video calls in planning sessions, and
+  on-device dictation.
 -->
 <plist version="1.0">
 <dict>
@@ -20,17 +17,15 @@
   <true/>
   <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
   <true/>
-  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
-  <true/>
-  <key>com.apple.security.cs.disable-library-validation</key>
-  <true/>
   <key>com.apple.security.network.client</key>
   <true/>
   <key>com.apple.security.network.server</key>
   <true/>
+  <key>com.apple.security.automation.apple-events</key>
+  <true/>
   <key>com.apple.security.device.audio-input</key>
   <true/>
-  <key>com.apple.security.automation.apple-events</key>
+  <key>com.apple.security.device.camera</key>
   <true/>
 </dict>
 </plist>

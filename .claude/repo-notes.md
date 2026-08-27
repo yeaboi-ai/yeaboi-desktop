@@ -78,3 +78,27 @@ Nothing generated is committed here except the icon set and the vendored contrac
 | `package-lock.json` | Take upstream, then re-run `npm install` for your own change and commit the result |
 | `contracts/**` | Take upstream, then `make contracts-sync` if you meant to move the pin |
 | `build/`, `resources/duck-*` | Take either side, then `make icons` — they are rendered, so neither side is authoritative |
+
+## Clips
+
+A clip here is `kind: "page"` with an `electron:` block — the repo's `demo_spec.py` is the example,
+and its docstring lists the two prerequisites a plain `make install` does not satisfy:
+
+- **The Electron binary.** `scripts/provision.sh` sets `ELECTRON_SKIP_BINARY_DOWNLOAD=1` on
+  purpose; fetch it once with `node node_modules/electron/install.js`.
+- **`YEABOI_DESKTOP_PYTHON`** must point at an interpreter that can `import yeaboi`. Without the
+  `YEABOI_APP_READY` handshake the window only ever shows the splash duck — and a clip of the
+  splash still passes verification, because verification proves a recording is alive, not correct.
+
+Three things that are specific to this surface:
+
+- **You cannot film a browser.** `src/renderer/api.ts` throws `preload bridge missing` without
+  `window.yeaboi`, so pointing Playwright at the dev server captures an error page. It launches the
+  built app, which is why the spec carries `"prepare": ["npm", "run", "build"]`.
+- **Routes are hash routes** (`#/agents/usage`, `#/humans/planning`). Use the `hash` step, not
+  `goto`: assigning `location.hash` never reloads, so window state survives across steps.
+- **`ready` must key on real text, never the splash**, with a generous `ready_timeout` (the demo
+  uses 60). Otherwise the take starts before the sidecar answers.
+
+**CI does not replay clips in this repo** (`replay: false` in `ci.yml`). Driving one needs xvfb, the
+skipped Electron binary and a working sidecar; a clip here is verified when it is recorded, by hand.

@@ -2,13 +2,12 @@
 
 <img src="https://yeaboi.ai/banner.jpg" alt="yeaboi.ai" width="800"/>
 
-# 🤙 yeaboi-desktop
+# 🦆 yeaboi-desktop
 
-**yeaboi as a desktop app — an Electron shell over `yeaboi app`, the loopback HTTP backend that ships inside the Python package.**
+**The duck-branded planning app — AI-facilitated planning sessions, a living blueprint, and a kanban board, in an Electron shell with a desktop duck.**
 
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/yeaboi-ai/yeaboi-desktop?style=for-the-badge&logo=github&label=Release)](https://github.com/yeaboi-ai/yeaboi-desktop/releases)
-[![Part of yeaboi](https://img.shields.io/badge/part%20of-yeaboi-ff6600?style=for-the-badge)](https://github.com/yeaboi-ai/yeaboi.ai)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/yeaboi-ai/yeaboi-desktop/ci.yml?style=for-the-badge&label=CI&logo=github)](https://github.com/yeaboi-ai/yeaboi-desktop/actions)
 
@@ -16,63 +15,63 @@
 
 ---
 
-<div align="center">
-<img src="https://yeaboi.ai/demo-desktop.gif" alt="The yeaboi desktop app — the home grid of Humans and Agents modes, then Agent Usage, Planning and Standup" width="800"/>
-
-*The window, across a few of its routes. `make demo` re-records this from `demo_spec.py`.*
-</div>
-
----
-
 ## What this is
 
-The sixth surface, and one of **five repos that make one product**:
-[yeaboi](https://github.com/yeaboi-ai/yeaboi.ai) (the Python — engines, TUI, CLI, MCP),
-[yeaboi-frontend](https://github.com/yeaboi-ai/yeaboi-frontend), this one,
-[yeaboi-site](https://github.com/yeaboi-ai/yeaboi-site) and
-[yeaboi-tooling](https://github.com/yeaboi-ai/yeaboi-tooling).
+The planning-platform's core loop as a desktop app:
 
-The renderer is an ordinary Vite/Preact ESM app. It is deliberately **not** one of the front end's
-IIFE bundles: that constraint exists for `file://` exports and tunnel CSPs, and neither applies to a
-window the shell itself opens. It draws its chrome from
-[`@yeaboi-ai/design`](https://www.npmjs.com/package/@yeaboi-ai/design), published by
-[yeaboi-frontend](https://github.com/yeaboi-ai/yeaboi-frontend).
+- **Projects → planning sessions** — a chat with an AI facilitator on the left,
+  the living **blueprint** (13 sections, AI suggestions, coverage) on the right.
+- **Completion wizard** — when coverage is high enough, gaps → defaults →
+  generated stories in dependency waves, committed to the board.
+- **Kanban board + tickets** — the stories land somewhere you can drag them.
+- **Niko** — a global assistant (Cmd+.) with tool-calling, duck-fronted.
+- **The duck** — the `<Duck>` brand component through the UI, a speech-bubble
+  quip arbiter in the corner of the window, a menu-bar duck, and the desktop
+  **pet**: an always-on-top physics duck that perches on the Dock and repeats
+  the app's quips.
 
-## What ships is a released wheel, not this tree
+The renderer is the planning-platform frontend (React 19) running as a Vite
+SPA under electron-vite, with small shims standing in for the Next.js surface
+it was written against. There is no bundled backend: the app is a client of
+the planning-platform FastAPI.
 
-An installer bundles a **published** `yeaboi` from PyPI inside a pinned python-build-standalone
-runtime, staged at `resources/py` and shipped as `Resources/py`; `src/main/sidecar.ts` spawns
-`Resources/py/bin/python3 -m yeaboi app`. The app's version *is* the version of the yeaboi it
-carries — this repo has no version line of its own.
+## Running it
+
+You need the [planning-platform](../planning-platform) backend on
+`localhost:8000`:
 
 ```bash
-make install                     # npm ci, without the Electron binary
-make test                        # typecheck + vitest
-make bundle VERSION=3.31.0       # stage the interpreter + that release
-make pack                        # unsigned local package into dist/ (a smoke test)
+cd ../planning-platform
+make db-up && make db-migrate
+make dev-backend        # FastAPI on :8000 (Next frontend not needed)
 ```
 
-`make dev` runs the shell against a **sibling yeaboi checkout** (`../yeaboi.ai`, or `$YEABOI_REPO`);
-`$YEABOI_DESKTOP_PYTHON` names an interpreter directly instead.
+Its `.env` must include the desktop origins in `CORS_ORIGINS`
+(`http://localhost:5173`, `app://yeaboi`) — see `.env.example` here.
 
-## Two things cross a repo boundary
+Then:
 
-- **`contracts/v1/app_http.md`** — the wire this shell speaks. Vendored from
-  [yeaboi](https://github.com/yeaboi-ai/yeaboi.ai) at the sha in `.contracts-rev`; never edited here.
-- **`contracts/v1/routes_manifest.json`** — the route surface, code-generated from
-  `src/renderer/routes.json` by `npm run gen-manifest`. yeaboi's surface-parity suite reads it to
-  decide whether a capability reached the desktop, so it is **committed in yeaboi** and vendored
-  back. `make check-manifest` fails when this repo's registries and that snapshot disagree.
+```bash
+npm install
+npm run dev             # electron-vite, HMR
+```
 
-Adding a route is therefore two PRs: this one, then a small yeaboi one carrying the regenerated
-manifest, then `make contracts-sync` here.
+First run asks for a name and an email; the main process mints HS256 JWTs
+from them with the shared secret (`YEABOI_JWT_SECRET`, which must equal the
+backend's `NEXTAUTH_SECRET`), and the backend creates the user on first
+request — the same trust model as the platform's dev login.
 
-## Releasing
+## Repository shape
 
-`.github/workflows/release.yml`, on a `v*` tag or a dispatch. It refuses a version that is not a
-final `X.Y.Z` already on PyPI, builds and signs on four runners, asks Gatekeeper what it thinks of
-the mac build, and publishes a draft GitHub release that `electron-updater` polls.
+```
+src/main/       Electron main — windows, tray, pet, auth (JWT mint), updater
+src/preload/    the window.yeaboi bridge, and the pet's narrower one
+src/renderer/   the planning UI (components/hooks/lib ported from
+                planning-platform/frontend), pages/ + app/ for the SPA shell,
+                shims/ for next/navigation, next/link, next/dynamic, next-auth
+vendor/         the @yeaboi-ai/design tarball (Duck, Wordmark) — npm's 1.0.1
+                predates the duck
+```
 
-## 📄 License
-
-MIT License. See [LICENSE](LICENSE) for details.
+`npm run typecheck`, `npm test`, `npm run build` — all Electron-free.
+`npm run pack` for an unsigned local package.

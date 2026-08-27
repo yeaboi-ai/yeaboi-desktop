@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2d1f0e"/><stop offset="100%" stop-color="#1a1520"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0c060"/><stop offset="100%" stop-color="#c08030"/></linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#bg)"/>
+  <circle cx="100" cy="78" r="32" fill="url(#accent)" opacity="0.15"/>
+  <circle cx="100" cy="78" r="24" fill="url(#accent)" opacity="0.25"/>
+  <!-- Wrench/gear icon -->
+  <path d="M108 70l6-6a4 4 0 015.6 0l2.4 2.4a4 4 0 010 5.6l-6 6" stroke="#e5a630" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M92 86l-6 6a4 4 0 01-5.6 0l-2.4-2.4a4 4 0 010-5.6l6-6" stroke="#e5a630" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <rect x="89" y="67" width="22" height="22" rx="4" transform="rotate(45 100 78)" stroke="#e5a630" stroke-width="2.5" fill="none"/>
+  <text x="100" y="148" text-anchor="middle" fill="#e5a630" font-family="system-ui" font-size="16" font-weight="600" opacity="0.7">ENGINEER</text>
+</svg>

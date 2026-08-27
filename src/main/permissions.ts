@@ -1,17 +1,11 @@
 // What a window in this app may ask the OS for.
 //
-// Electron grants every permission request when no handler is set, which was
-// survivable while nothing here wanted one. Now something does: dictation opens
-// the microphone. A blanket yes is a poor neighbour for that, because the app
-// draws windows it did not write — a live board is the same document a teammate
-// opens in a browser, on its own partition, and it must not gain a microphone
-// here that it lacks there.
-//
-// So the rule is about *which window is asking*, not which permission. The app's
-// own window keeps what it has: it is our bundle, behind a CSP that lets it talk
-// to nothing but the local backend, and an allowlist naming only the microphone
-// would have quietly broken every Copy button. Every other window — boards and
-// the pet — gets nothing, which is what each of them needs.
+// Electron grants every permission request when no handler is set. The rule is
+// about *which window is asking*, not which permission: the app's own window
+// keeps what it has — it is our bundle, behind a CSP that lets it talk to
+// nothing but the local backend, and an allowlist would have quietly broken
+// every Copy button (clipboard writes are a permission too). The pet window
+// gets nothing, which is all it needs.
 //
 // The electron objects arrive as arguments, so the rule is testable without one.
 
@@ -44,6 +38,9 @@ export function navigationAllowed(url: string, devServerUrl?: string): boolean {
     (target.hostname === '127.0.0.1' || target.hostname === 'localhost')
   )
     return true;
+  // The packaged renderer's own origin (see main/protocol.ts) — hash routing
+  // never triggers will-navigate, but a full reload does.
+  if (target.protocol === 'app:' && target.hostname === 'yeaboi') return true;
   if (!devServerUrl) return false;
   try {
     // The dev server's own hash routes are the app navigating within itself.

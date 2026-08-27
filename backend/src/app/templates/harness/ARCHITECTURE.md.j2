@@ -1,0 +1,23 @@
+# Architecture
+
+{{ blueprint.architecture or "Architecture not yet defined." }}
+
+## Layers
+
+Dependencies flow downward only. No upward imports.
+
+```
+Types → Config → Repo → Service → Runtime → UI
+```
+
+## Domain Map
+
+| Domain | Responsibility |
+|--------|---------------|
+{% for domain in domains -%}
+| {{ domain.name }} | {{ domain.purpose }} |
+{% endfor %}
+
+## Security
+
+{{ blueprint.security_compliance or "Security requirements not yet defined." }}

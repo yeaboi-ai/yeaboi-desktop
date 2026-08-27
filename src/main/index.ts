@@ -1,30 +1,56 @@
 // Electron main — app lifecycle, the main window, and the security posture
 // every window shares: contextIsolation, no nodeIntegration, sandbox, no
-// navigation off the app, external links to the OS browser. Live boards get
-// their own top-level windows (boards.ts) because a board page refuses to be
-// framed and its host URL carries an admin token.
+// navigation off the app, external links to the OS browser.
 //
-// Since M10 the app also persists in the tray with the window closed: the duck
-// pet is a window of its own, and awareness is only worth anything if the app
-// is still there to notice.
+// Main supervises two backends with two trust models:
+//
+// * the planning-platform FastAPI — the renderer talks to it directly on
+//   localhost, and main owns identity: it holds the shared JWT secret and
+//   mints short-lived tokens on request (auth.ts);
+// * the yeaboi app Python sidecar (sidecar.ts) — its bearer token never
+//   leaves this process, so every renderer call relays through api-proxy.ts,
+//   and the ambient SSE feed is read once here (events.ts). Live retro/poker
+//   boards get their own top-level windows (boards.ts) because a board page
+//   refuses to be framed and its host URL carries an admin token.
+//
+// The duck persists in the tray with the window closed, and the desktop pet
+// is a window of its own.
 
 import { join } from 'node:path';
 import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
-import { callApi, registerApiProxy } from './api-proxy';
+import { registerApiProxy } from './api-proxy';
+import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
+import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
+import { LivekitSidecar } from './livekit';
 import { Pet, type PetNotice } from './pet';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
+import { PlanningSidecar } from './planning';
+import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
+import { loadMachineSecrets } from './secrets';
+import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
 import { AppTray } from './tray';
 import { Updater } from './updater';
+import { VoiceAgentSidecar, registerVoicePack, voicePackInstalled } from './voice-pack';
 
+const settings = new Settings();
 const sidecar = new Sidecar();
-const pet = new Pet();
+const planning = new PlanningSidecar();
+const livekit = new LivekitSidecar();
+const voiceAgent = new VoiceAgentSidecar();
 const events = new EventReader(sidecar);
+const pet = new Pet();
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
+
+// An externally provided backend URL means "mine, don't spawn one" — the dev
+// escape hatch for pointing the renderer at a hand-run planning server.
+const externalPlanningUrl = process.env['YEABOI_API_URL'] ?? '';
+
+registerAppScheme();
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
@@ -33,7 +59,7 @@ function createMainWindow(): void {
     minWidth: 960,
     minHeight: 640,
     show: false,
-    backgroundColor: '#0e1013', // --bg midnight — no white flash before first paint
+    backgroundColor: '#0a0a0a', // planning theme dark background — no white flash
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -56,7 +82,7 @@ function createMainWindow(): void {
   if (process.env['ELECTRON_RENDERER_URL']) {
     void mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
-    void mainWindow.loadFile(join(import.meta.dirname, '../renderer/index.html'));
+    void mainWindow.loadURL(`${APP_ORIGIN}/index.html`);
   }
 }
 
@@ -79,21 +105,13 @@ function showAbout(): void {
   mainWindow?.webContents.send('app:about');
 }
 
-/** The pet's on/off state lives in the backend so the terminal, the tray and
- *  the app's own settings cannot disagree about it. */
-async function loadPetPreference(): Promise<boolean> {
-  const result = await callApi(sidecar, '/api/ambience');
-  if (result.status !== 200) return false;
-  return Boolean((result.body as { pet?: { enabled?: boolean } }).pet?.enabled);
-}
-
-async function setPetPreference(enabled: boolean): Promise<void> {
+function setPetPreference(enabled: boolean): void {
+  settings.setPetEnabled(enabled);
   pet.setEnabled(enabled);
   tray?.setPetEnabled(enabled);
-  await callApi(sidecar, '/api/ambience', { method: 'POST', body: { pet_enabled: enabled } });
 }
 
-// Global hardening for every webContents this app ever creates (boards, pet).
+// Global hardening for every webContents this app ever creates (pet included).
 app.on('web-contents-created', (_event, contents) => {
   contents.on('will-navigate', (event, url) => {
     if (!navigationAllowed(url, process.env['ELECTRON_RENDERER_URL'])) event.preventDefault();
@@ -108,28 +126,117 @@ if (!gotLock) {
   app.on('second-instance', () => openApp());
 
   void app.whenReady().then(() => {
+    settings.load();
+    // Machine secrets under ~/.yeaboi/planning: generated on first run. The
+    // JWT secret main mints with must equal the NEXTAUTH_SECRET the local
+    // planning sidecar runs under — same file, same value. An explicit
+    // $YEABOI_JWT_SECRET (external backend dev) still wins in settings.ts.
+    if (!externalPlanningUrl) {
+      process.env['YEABOI_JWT_SECRET'] ??= loadMachineSecrets().nextauthSecret;
+      void planning.start();
+    }
+    planning.onState((state) => {
+      console.log(
+        `[planning] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}${state.kind === 'ready' ? ` at ${state.url}` : ''}`,
+      );
+    });
+
+    // LiveKit — voice/video calls. Optional: 'down' just disables calls.
+    void livekit.start();
+    livekit.onState((state) => {
+      console.log(
+        `[livekit] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}${state.kind === 'ready' && state.external ? ' (external)' : ''}`,
+      );
+    });
+    registerCapture(session.defaultSession, () => {
+      mainWindow?.webContents.send('capture:request');
+    });
+    void ensureMediaAccess();
+
+    // The voice agent (facilitator's STT→LLM→TTS loop) — only once both the
+    // planning backend and LiveKit are up, and only when the pack is there.
+    registerVoicePack();
+    const maybeStartVoiceAgent = () => {
+      const planningUrl =
+        externalPlanningUrl || (planning.current.kind === 'ready' ? planning.current.url : '');
+      if (!planningUrl) return;
+      if (livekit.current.kind !== 'ready') return;
+      if (!voicePackInstalled()) return;
+      voiceAgent.start(planningUrl);
+    };
+    planning.onState(maybeStartVoiceAgent);
+    livekit.onState(maybeStartVoiceAgent);
+    installAppScheme(join(import.meta.dirname, '../renderer'));
     installPermissionHandlers(
       (listener) => app.on('session-created', listener),
       session.defaultSession,
       (contents) => contents !== null && contents === mainWindow?.webContents,
     );
+    pet.register((route) => openApp(route));
+
+    // The yeaboi app sidecar: proxy, board windows, and state relay. The
+    // renderer never sees the handshake — both halves strip it before the
+    // state crosses the bridge.
     registerApiProxy(sidecar);
     registerBoardWindows(sidecar);
-    pet.register((route) => openApp(route));
-    // The pull half (a window that mounted after 'ready' would otherwise wait
-    // forever for a transition that already happened) and the push half.
     ipcMain.handle('backend:get-state', () => {
-      // The renderer never sees the token — strip it before crossing the bridge.
       const state = sidecar.current;
       if (state.kind !== 'ready') return state;
       return { kind: 'ready' };
     });
-    ipcMain.handle('pet:set-enabled', async (_event, enabled: unknown) => {
-      await setPetPreference(Boolean(enabled));
+    sidecar.onState((state) => {
+      console.log(`[backend] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}`);
+      const safe = state.kind === 'ready' ? { kind: 'ready' } : state;
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send('backend:state', safe);
+      }
+    });
+
+    // One reader for the ambient feed: the renderer gets everything (the
+    // consent modal lives there), the duck gets only what he can say.
+    events.start();
+    broadcast(events, () => (mainWindow && !mainWindow.isDestroyed() ? [mainWindow] : []));
+    events.on((event) => {
+      if (event.type !== 'notice') return;
+      pet.notify({
+        quip: String(event['quip'] ?? ''),
+        sticky: Boolean(event['sticky']),
+        route: String(event['route'] ?? ''),
+      } satisfies PetNotice);
+    });
+    void sidecar.start();
+
+    // Identity + tokens. A null token payload means first run — the renderer
+    // shows the identity screen and calls auth:set-identity.
+    ipcMain.handle('auth:get-token', () => mintToken(settings));
+    ipcMain.handle('auth:get-identity', () => settings.identity);
+    ipcMain.handle('auth:set-identity', (_event, identity: unknown) => {
+      const id = identity as Identity;
+      if (typeof id?.email !== 'string' || !id.email.includes('@')) {
+        throw new Error('identity needs an email');
+      }
+      settings.setIdentity({ email: id.email, name: String(id.name ?? id.email) });
+      return settings.identity;
+    });
+
+    // The desktop duck. The renderer forwards app moments (a suggestion
+    // landed, the wizard committed) as short quips; validation is here so a
+    // compromised renderer cannot flood arbitrary payloads at the pet window.
+    ipcMain.on('pet:notify', (_event, notice: unknown) => {
+      const n = notice as PetNotice;
+      if (typeof n?.quip !== 'string' || !n.quip) return;
+      pet.notify({
+        quip: n.quip.slice(0, 80),
+        sticky: Boolean(n.sticky),
+        route: typeof n.route === 'string' ? n.route.slice(0, 200) : '',
+      });
+    });
+    ipcMain.handle('pet:set-enabled', (_event, enabled: unknown) => {
+      setPetPreference(Boolean(enabled));
       return { enabled: pet.on };
     });
-    // What the About panel shows about the shell itself; everything else it
-    // knows (the yeaboi version, the bundled Python) comes from the backend.
+    ipcMain.handle('pet:get-enabled', () => settings.petEnabled);
+
     ipcMain.handle('app:meta', () => ({
       version: app.getVersion(),
       electron: process.versions.electron,
@@ -147,38 +254,9 @@ if (!gotLock) {
       for (const window of BrowserWindow.getAllWindows())
         window.webContents.send('update:state', state);
     });
-    sidecar.onState((state) => {
-      console.log(`[backend] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}`);
-      // Same stripping as the pull half: the handshake (token) stays in main.
-      const safe = state.kind === 'ready' ? { kind: 'ready' } : state;
-      for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send('backend:state', safe);
-      }
-      // The duck stays on screen when the backend falls over — he just stops
-      // knowing anything, which is the honest degradation.
-      if (state.kind === 'ready') {
-        void loadPetPreference().then((enabled) => {
-          pet.setEnabled(enabled);
-          tray?.setPetEnabled(enabled);
-        });
-      }
-    });
 
-    // One reader for the ambient feed: the renderer gets everything (the
-    // consent modal lives there), the duck gets only what he can say.
-    events.start();
-    broadcast(events, () => (mainWindow && !mainWindow.isDestroyed() ? [mainWindow] : []));
-    events.on((event) => {
-      if (event.type !== 'notice') return;
-      pet.notify({
-        quip: String(event['quip'] ?? ''),
-        sticky: Boolean(event['sticky']),
-        route: String(event['route'] ?? ''),
-      } satisfies PetNotice);
-    });
-
-    void sidecar.start();
     createMainWindow();
+    pet.setEnabled(settings.petEnabled);
     tray = new AppTray(pet, {
       open: () => openApp(),
       about: () => showAbout(),
@@ -189,10 +267,10 @@ if (!gotLock) {
         else if (updater.current.kind === 'available') void updater.download();
         else void updater.check();
       },
-      togglePet: (enabled) => void setPetPreference(enabled),
+      togglePet: (enabled) => setPetPreference(enabled),
       quit: () => app.quit(),
     });
-    tray.create(false);
+    tray.create(settings.petEnabled);
 
     app.on('activate', () => openApp());
   });
@@ -213,7 +291,12 @@ if (!gotLock) {
     pet.hide();
     events.stop();
     tray?.destroy();
-    void sidecar.stop().finally(() => {
+    void Promise.allSettled([
+      voiceAgent.stop(),
+      livekit.stop(),
+      planning.stop(),
+      sidecar.stop(),
+    ]).finally(() => {
       cleanShutdown = true;
       app.quit();
     });
