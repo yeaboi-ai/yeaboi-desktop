@@ -790,3 +790,50 @@ body::before {
 .tiptap-content:focus {
   outline: none;
 }
+
+/* ── React Flow (canvas) ─────────────────────────────────────────────
+   Theme-aware overrides moved out of CanvasEngine.tsx so they apply
+   anywhere React Flow is mounted. Hardcoded colors replaced with vars. */
+
+.react-flow {
+  background: var(--canvas-bg) !important;
+}
+.react-flow__pane { cursor: default !important; }
+.react-flow__node { cursor: grab !important; }
+.react-flow__node:active { cursor: grabbing !important; }
+.react-flow__node:hover { z-index: 10 !important; }
+.react-flow__edge { cursor: pointer !important; }
+.react-flow__edge.selected path {
+  stroke: var(--canvas-edge-selected) !important;
+  stroke-width: 2.5 !important;
+}
+.react-flow__edge path {
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+.react-flow__handle { cursor: crosshair !important; }
+
+.react-flow__selection {
+  background: var(--canvas-selection-fill) !important;
+  border: 1.5px solid var(--canvas-selection-stroke) !important;
+  border-radius: 2px !important;
+}
+.react-flow__nodesselection-rect {
+  background: transparent !important;
+  border: none !important;
+}
+
+.react-flow__minimap-mask { fill: var(--canvas-minimap-mask) !important; }
+.react-flow__minimap-node {
+  rx: 3;
+  ry: 3;
+  stroke: var(--canvas-minimap-node);
+  stroke-width: 0.5;
+}
+.react-flow__minimap svg { border-radius: 8px; }
+.edge-draw-in path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: edge-draw 0.6s ease-out forwards;
+}
+@keyframes edge-draw { to { stroke-dashoffset: 0; } }
+
