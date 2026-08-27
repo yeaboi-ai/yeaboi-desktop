@@ -2,23 +2,37 @@
 // every window shares: contextIsolation, no nodeIntegration, sandbox, no
 // navigation off the app, external links to the OS browser.
 //
-// There is no bundled backend any more: the renderer talks straight to the
-// planning-platform FastAPI on localhost, and what main owns is identity —
-// it holds the shared JWT secret and mints short-lived tokens on request
-// (auth.ts). The duck persists in the tray with the window closed, and the
-// desktop pet is a window of its own.
+// Main supervises two backends with two trust models:
+//
+// * the planning-platform FastAPI — the renderer talks to it directly on
+//   localhost, and main owns identity: it holds the shared JWT secret and
+//   mints short-lived tokens on request (auth.ts);
+// * the yeaboi app Python sidecar (sidecar.ts) — its bearer token never
+//   leaves this process, so every renderer call relays through api-proxy.ts,
+//   and the ambient SSE feed is read once here (events.ts). Live retro/poker
+//   boards get their own top-level windows (boards.ts) because a board page
+//   refuses to be framed and its host URL carries an admin token.
+//
+// The duck persists in the tray with the window closed, and the desktop pet
+// is a window of its own.
 
 import { join } from 'node:path';
 import { BrowserWindow, app, ipcMain, session, shell } from 'electron';
+import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
+import { closeAllBoardWindows, registerBoardWindows } from './boards';
+import { EventReader, broadcast } from './events';
 import { Pet, type PetNotice } from './pet';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
 import { Settings, type Identity } from './settings';
+import { Sidecar } from './sidecar';
 import { AppTray } from './tray';
 import { Updater } from './updater';
 
 const settings = new Settings();
+const sidecar = new Sidecar();
+const events = new EventReader(sidecar);
 const pet = new Pet();
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
@@ -109,6 +123,38 @@ if (!gotLock) {
     );
     pet.register((route) => openApp(route));
 
+    // The yeaboi app sidecar: proxy, board windows, and state relay. The
+    // renderer never sees the handshake — both halves strip it before the
+    // state crosses the bridge.
+    registerApiProxy(sidecar);
+    registerBoardWindows(sidecar);
+    ipcMain.handle('backend:get-state', () => {
+      const state = sidecar.current;
+      if (state.kind !== 'ready') return state;
+      return { kind: 'ready' };
+    });
+    sidecar.onState((state) => {
+      console.log(`[backend] ${state.kind}${state.kind === 'down' ? `: ${state.reason}` : ''}`);
+      const safe = state.kind === 'ready' ? { kind: 'ready' } : state;
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send('backend:state', safe);
+      }
+    });
+
+    // One reader for the ambient feed: the renderer gets everything (the
+    // consent modal lives there), the duck gets only what he can say.
+    events.start();
+    broadcast(events, () => (mainWindow && !mainWindow.isDestroyed() ? [mainWindow] : []));
+    events.on((event) => {
+      if (event.type !== 'notice') return;
+      pet.notify({
+        quip: String(event['quip'] ?? ''),
+        sticky: Boolean(event['sticky']),
+        route: String(event['route'] ?? ''),
+      } satisfies PetNotice);
+    });
+    void sidecar.start();
+
     // Identity + tokens. A null token payload means first run — the renderer
     // shows the identity screen and calls auth:set-identity.
     ipcMain.handle('auth:get-token', () => mintToken(settings));
@@ -183,8 +229,20 @@ if (!gotLock) {
     // still be on the desktop with the window shut. Quit is the tray's Quit.
   });
 
-  app.on('before-quit', () => {
+  let cleanShutdown = false;
+  app.on('before-quit', (event) => {
+    if (cleanShutdown) return;
+    event.preventDefault();
+    // The windows first: the sidecar's own shutdown closes the board servers
+    // underneath them, and a window left pointing at a dead port shows an
+    // error page on the way out.
+    closeAllBoardWindows();
     pet.hide();
+    events.stop();
     tray?.destroy();
+    void sidecar.stop().finally(() => {
+      cleanShutdown = true;
+      app.quit();
+    });
   });
 }

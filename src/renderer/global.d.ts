@@ -16,6 +16,19 @@ interface YeaboiBridge {
   getAuthToken: () => Promise<YeaboiAuthPayload | null>;
   getIdentity: () => Promise<YeaboiIdentity | null>;
   setIdentity: (identity: YeaboiIdentity) => Promise<YeaboiIdentity>;
+  api: (
+    path: string,
+    init?: { method?: string; body?: unknown },
+  ) => Promise<{ status: number; body: unknown }>;
+  apiStream: (
+    path: string,
+    body: unknown,
+    onLine: (line: unknown) => void,
+  ) => Promise<{ status: number; body: unknown }>;
+  getBackendState: () => Promise<unknown>;
+  onBackendState: (callback: (state: unknown) => void) => void;
+  onEvent: (callback: (event: unknown) => void) => void;
+  openBoard: (boardId: string) => Promise<unknown>;
   onNavigate: (callback: (route: string) => void) => void;
   onAbout: (callback: () => void) => void;
   appMeta: () => Promise<{

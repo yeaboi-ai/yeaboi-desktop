@@ -1,6 +1,11 @@
 // The renderer's entire capability surface, typed and narrow. Nothing here
-// exposes Node or the JWT secret — the renderer gets short-lived minted
-// tokens and talks to the local backend itself.
+// exposes Node, the JWT secret, or the yeaboi-app bearer token. Two backends,
+// two trust models on one bridge:
+//
+// * planning FastAPI — the renderer talks to it directly with short-lived
+//   minted JWTs (getAuthToken);
+// * yeaboi app — api()/apiStream() are blind relays into the main process,
+//   which alone holds the loopback handshake token (api-proxy.ts).
 
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -22,11 +27,31 @@ export interface PetNotice {
 }
 
 export interface YeaboiBridge {
-  /** A fresh 1h bearer token plus where the backend lives. Null on first run,
-   *  before an identity exists. */
+  /** A fresh 1h bearer token plus where the planning backend lives. Null on
+   *  first run, before an identity exists. */
   getAuthToken: () => Promise<AuthPayload | null>;
   getIdentity: () => Promise<Identity | null>;
   setIdentity: (identity: Identity) => Promise<Identity>;
+  /** One authed call to the yeaboi app backend, relayed through main. */
+  api: (
+    path: string,
+    init?: { method?: string; body?: unknown },
+  ) => Promise<{ status: number; body: unknown }>;
+  /** The NDJSON half: one parsed line per callback, resolves when the turn is
+   *  over. The channel is per call so concurrent streams never cross lines. */
+  apiStream: (
+    path: string,
+    body: unknown,
+    onLine: (line: unknown) => void,
+  ) => Promise<{ status: number; body: unknown }>;
+  /** The yeaboi app sidecar's state — pull half for late-mounting windows. */
+  getBackendState: () => Promise<unknown>;
+  onBackendState: (callback: (state: unknown) => void) => void;
+  /** The ambient feed, read once in main and pushed here: consent requests and
+   *  the awareness notices. */
+  onEvent: (callback: (event: unknown) => void) => void;
+  /** Open one live retro/poker board in its own top-level window, by id. */
+  openBoard: (boardId: string) => Promise<unknown>;
   /** Main asking the app to show a route — the tray, or a click on the duck. */
   onNavigate: (callback: (route: string) => void) => void;
   /** The tray asking for the About panel, which is a modal and not a route. */
@@ -58,6 +83,26 @@ const bridge: YeaboiBridge = {
   getAuthToken: () => ipcRenderer.invoke('auth:get-token'),
   getIdentity: () => ipcRenderer.invoke('auth:get-identity'),
   setIdentity: (identity) => ipcRenderer.invoke('auth:set-identity', identity),
+  api: (path, init) => ipcRenderer.invoke('api:request', path, init),
+  apiStream: (path, body, onLine) => {
+    // The channel is per call, so two concurrent turns never cross lines; the
+    // listener is removed when the stream ends, however it ends.
+    const id = `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
+    const channel = `api:stream:${id}`;
+    const handler = (_event: unknown, line: unknown) => onLine(line);
+    ipcRenderer.on(channel, handler);
+    return ipcRenderer
+      .invoke('api:stream', path, { method: 'POST', body }, id)
+      .finally(() => ipcRenderer.removeListener(channel, handler));
+  },
+  getBackendState: () => ipcRenderer.invoke('backend:get-state'),
+  onBackendState: (callback) => {
+    ipcRenderer.on('backend:state', (_event, state: unknown) => callback(state));
+  },
+  onEvent: (callback) => {
+    ipcRenderer.on('app:event', (_event, payload: unknown) => callback(payload));
+  },
+  openBoard: (boardId) => ipcRenderer.invoke('boards:open', boardId),
   onNavigate: (callback) => {
     ipcRenderer.on('app:navigate', (_event, route: string) => callback(route));
   },
