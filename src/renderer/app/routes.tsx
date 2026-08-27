@@ -10,6 +10,11 @@ import GlobalBoardPage from '@/pages/board-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/yeaboi/home-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
+import ChatPage from '@/pages/yeaboi/planning/chat-page';
+import PlanPage from '@/pages/yeaboi/planning/plan-page';
+import PlanningPage from '@/pages/yeaboi/planning/planning-page';
+import RoadmapPage from '@/pages/yeaboi/planning/roadmap-page';
+import PlanningSessionsPage from '@/pages/yeaboi/planning/sessions-page';
 import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
@@ -70,6 +75,11 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
   '/usage': <UsagePage />,
+  '/humans/planning': <PlanningPage />,
+  '/humans/planning/chat': <ChatPage />,
+  '/humans/planning/plan': <PlanPage />,
+  '/humans/planning/sessions': <PlanningSessionsPage />,
+  '/humans/planning/roadmap': <RoadmapPage />,
 };
 
 // Registry paths the planning routes below already serve, and the non-route
