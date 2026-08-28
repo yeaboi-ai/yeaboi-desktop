@@ -22,6 +22,28 @@ describe('signing', () => {
     expect(builder.mac.notarize).toBe(true);
   });
 
+  it('the mac targets pin no arch, so the workflow decides one per leg', () => {
+    // An arch list here overrides the CLI's --arm64/--x64 and every leg packages
+    // both. A leg stages runtimes for its own arch only, so the other arch's dmg
+    // ships the wrong interpreter — it packages, signs and notarizes clean and
+    // then fails on first launch.
+    for (const target of builder.mac.target) {
+      expect(typeof target).toBe('string');
+    }
+    expect(builder.mac.target).toContain('dmg');
+    expect(builder.mac.target).toContain('zip');
+  });
+
+  it('every bundled runtime is checked against the arch being built', () => {
+    const step = release.slice(release.indexOf('The bundled runtimes match the architecture'));
+    // all three, because each is staged by a different script
+    for (const tree of ['py', 'py-planning', 'livekit-server']) {
+      expect(step.slice(0, step.indexOf('Assess the signed app'))).toContain(tree);
+    }
+    expect(step).toContain('lipo -archs');
+    expect(step).toMatch(/x64\).*x86_64/s);
+  });
+
   it('one draft is created up front, so racing publishers cannot make two', () => {
     // PublishManager.getOrCreatePublisher is async and does check-then-set across
     // an await, so concurrent uploads each build a publisher with its own Lazy and
@@ -126,7 +148,12 @@ describe('updates', () => {
     // electron-updater updates a mac app from the zip. Publishing only the dmg
     // leaves every mac install permanently on the version it was downloaded at,
     // with a working-looking updater.
-    const targets = new Set(builder.mac.target.map((entry: { target: string }) => entry.target));
+    // A target is a bare string once no arch is pinned; tolerate either form.
+    const targets = new Set(
+      builder.mac.target.map((entry: string | { target: string }) =>
+        typeof entry === 'string' ? entry : entry.target,
+      ),
+    );
     expect(targets).toContain('dmg');
     expect(targets).toContain('zip');
   });

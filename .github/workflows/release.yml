@@ -227,6 +227,32 @@ jobs:
       # Gatekeeper's own opinion of what was just built. Notarization can report
       # success and still leave an app macOS refuses to open, and the only place
       # that shows up otherwise is a user's Downloads folder.
+      # The staged interpreter is the thing a wrong arch breaks first, and nothing
+      # else notices: a mismatched runtime packages, signs and notarizes fine, then
+      # fails on first launch in a user's Applications folder.
+      - name: The bundled runtimes match the architecture built
+        if: runner.os == 'macOS'
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          case "$ARCH" in
+            arm64) want=arm64 ;;
+            x64) want=x86_64 ;;
+            *) echo "::error::unknown arch $ARCH"; exit 1 ;;
+          esac
+          n=$(find dist -maxdepth 3 -name '*.app' | wc -l | tr -d ' ')
+          [ "$n" = "1" ] || { echo "::error::$n .app bundles in dist, expected 1"; exit 1; }
+          app=$(find dist -maxdepth 3 -name '*.app' | head -1)
+          for tree in py py-planning; do
+            got=$(lipo -archs "$app/Contents/Resources/$tree/bin/python3")
+            echo "$tree: $got"
+            [ "$got" = "$want" ] || { echo "::error::$tree is $got, expected $want"; exit 1; }
+          done
+          got=$(lipo -archs "$app/Contents/Resources/livekit/livekit-server")
+          echo "livekit: $got"
+          [ "$got" = "$want" ] || { echo "::error::livekit-server is $got, expected $want"; exit 1; }
+
       - name: Assess the signed app
         if: runner.os == 'macOS'
         env:
