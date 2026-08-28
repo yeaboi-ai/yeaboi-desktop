@@ -98,6 +98,42 @@ jobs:
           printf 'matrix={"include":%s}\n' "$include" >> "$GITHUB_OUTPUT"
           printf '%s' "$include" | jq -r '.[] | "building " + .name'
 
+      # electron-builder creates the release from whichever upload arrives first,
+      # and its uploads run concurrently: PublishManager.getOrCreatePublisher is
+      # async and does check-then-set across an await, so two artifact events both
+      # find no publisher, each builds one with its own Lazy, and each calls
+      # getOrCreateRelease. GitHub accepts both — a draft has no tag to collide on
+      # — and the assets end up split across two drafts. max-parallel does not help;
+      # the race is inside one leg. Creating the draft once, here, is what makes it
+      # impossible: every publisher then finds this one.
+      - name: Create the one draft the legs publish into
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          VERSION: ${{ steps.pick.outputs.version }}
+        run: |
+          set -euo pipefail
+          repo=yeaboi-ai/yeaboi-desktop-releases
+          releases=$(gh api "repos/$repo/releases" --paginate)
+
+          # Re-releasing over a published version would silently rewrite what the
+          # website already links to.
+          if printf '%s' "$releases" | jq -e --arg t "v$VERSION" \
+               'any(.[]; .tag_name == $t and .draft == false)' >/dev/null; then
+            echo "::error::v$VERSION is already published — bump the version"
+            exit 1
+          fi
+
+          # Drafts left by an earlier attempt, including any duplicate pair.
+          for id in $(printf '%s' "$releases" | jq -r --arg t "v$VERSION" \
+                        '.[] | select(.tag_name == $t) | .id'); do
+            echo "removing stale draft $id"
+            gh api -X DELETE "repos/$repo/releases/$id"
+          done
+
+          gh release create "v$VERSION" --repo "$repo" --draft \
+            --title "$VERSION" --notes "yeaboi.ai $VERSION"
+          echo "draft v$VERSION ready"
+
   build:
     name: ${{ matrix.name }}
     needs: resolve
@@ -265,7 +301,15 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.version }}
         run: |
           set -euo pipefail
-          gh release view "v$VERSION" --repo yeaboi-ai/yeaboi-desktop-releases \
+          repo=yeaboi-ai/yeaboi-desktop-releases
+
+          # `gh release view` resolves a tag to one release and duplicates are
+          # legal for drafts, so it would happily report on whichever it picked.
+          n=$(gh api "repos/$repo/releases" --paginate \
+                | jq --arg t "v$VERSION" '[.[] | select(.tag_name == $t)] | length')
+          [ "$n" = "1" ] || { echo "::error::$n releases tagged v$VERSION, expected 1"; exit 1; }
+
+          gh release view "v$VERSION" --repo "$repo" \
             --json assets --jq '.assets[].name' | sort | tee assets.txt
           for want in yeaboi.ai-arm64.dmg yeaboi.ai-x64.dmg latest-mac.yml; do
             grep -qx "$want" assets.txt || { echo "::error::$want is missing"; exit 1; }

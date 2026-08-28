@@ -22,6 +22,21 @@ describe('signing', () => {
     expect(builder.mac.notarize).toBe(true);
   });
 
+  it('one draft is created up front, so racing publishers cannot make two', () => {
+    // PublishManager.getOrCreatePublisher is async and does check-then-set across
+    // an await, so concurrent uploads each build a publisher with its own Lazy and
+    // each calls getOrCreateRelease. A draft has no tag to collide on, so GitHub
+    // accepts both and the assets split across two drafts. max-parallel does not
+    // help — the race is inside a single leg.
+    const resolve = release.slice(release.indexOf('resolve:'), release.indexOf('  build:'));
+    expect(resolve).toContain('gh release create "v$VERSION"');
+    expect(resolve).toContain('--draft');
+    // and it must refuse to rewrite something the website already links to
+    expect(resolve).toContain('is already published');
+    // the assertion job must not trust a tag lookup that duplicates make ambiguous
+    expect(release).toMatch(/releases tagged v\$VERSION, expected 1/);
+  });
+
   it('gatekeeper is still asserted whenever a certificate exists', () => {
     // The step degrades to a warning without CSC_LINK so the credential-free
     // rehearsal can reach the jobs downstream of it. That escape hatch must stay
