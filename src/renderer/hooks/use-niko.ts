@@ -1,8 +1,31 @@
 'use client';
 
+// Niko's state, for the whole window. Mounted once in providers.tsx so the
+// panel keeps its conversation across route changes.
+//
+// The transport is the yeaboi sidecar over the preload bridge — NDJSON, not
+// SSE, and no Authorization header anywhere: the bearer token never leaves the
+// main process (lib/yeaboi/api.ts). The hook's shape is unchanged from the
+// version that talked to the planning platform, so the seven components under
+// components/niko/ consume it exactly as before.
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAuthFetch } from './use-auth-fetch';
+import { useSession } from 'next-auth/react';
+import { duckQuip } from '@/lib/duck-events';
+import { logger } from '@/lib/logger';
+import {
+  type NikoSuggestion,
+  type NikoTurnState,
+  cancelTurn,
+  createConversation,
+  emptyTurn,
+  loadConversation,
+  loadSuggestions,
+  messagesOf,
+  reduceTurn,
+  sendTurn,
+} from '@/lib/yeaboi/niko';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -11,312 +34,175 @@ export interface NikoMessage {
   role: 'user' | 'assistant';
   content: string;
   toolCalls?: Array<{ name: string; input: Record<string, unknown> }>;
-  toolResults?: Array<{
-    name: string;
-    success: boolean;
-    result?: unknown;
-    error?: string;
-  }>;
-  createdAt?: string;
+  toolResults?: Array<{ name: string; success: boolean; error?: string }>;
 }
 
-export interface NikoMagicPrompt {
-  label: string;
-  prompt: string;
-  icon?: string;
+/** A chip the empty panel offers. Named for the components that render it. */
+export type NikoMagicPrompt = NikoSuggestion;
+
+const STORAGE_KEY = 'niko_conversation_id';
+
+/** Where the panel thinks the user is. The backend maps it to a capability. */
+function routeOf(pathname: string | null): string {
+  return pathname && pathname.startsWith('/') ? pathname : '/home';
 }
 
-interface NikoContextPayload {
-  page: string;
-  project_id?: string;
-  session_id?: string;
-  board_id?: string;
+/** A turn's state as the message the panel draws. */
+function turnMessage(id: string, turn: NikoTurnState): NikoMessage {
+  return {
+    id,
+    role: 'assistant',
+    content: turn.error ? `Sorry — ${turn.error}` : turn.text,
+    toolCalls: turn.toolCalls.map((call) => ({ name: call.name, input: {} })),
+    toolResults: turn.toolCalls
+      .filter((call) => call.ok !== undefined)
+      .map((call) => ({ name: call.name, success: !!call.ok, error: call.error })),
+  };
 }
 
-// ─── Context extraction ─────────────────────────────────────────────────────
-
-function extractContextFromPath(pathname: string): NikoContextPayload {
-  const ctx: NikoContextPayload = { page: pathname };
-
-  // /projects/[id]/...
-  const projectMatch = pathname.match(/\/projects\/([^/]+)/);
-  if (projectMatch) {
-    ctx.project_id = projectMatch[1];
-  }
-
-  // /projects/[id]/sessions/[sessionId]
-  const sessionMatch = pathname.match(/\/sessions\/([^/]+)/);
-  if (sessionMatch && sessionMatch[1] !== 'new') {
-    ctx.session_id = sessionMatch[1];
-  }
-
-  return ctx;
-}
-
-// ─── SSE Parser ─────────────────────────────────────────────────────────────
-
-interface SSEEvent {
-  event: string;
-  data: string;
-}
-
-function parseSSEChunk(chunk: string): SSEEvent[] {
-  const events: SSEEvent[] = [];
-  const blocks = chunk.split('\n\n').filter(Boolean);
-  for (const block of blocks) {
-    const lines = block.split('\n');
-    let event = 'message';
-    let data = '';
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        event = line.slice(7);
-      } else if (line.startsWith('data: ')) {
-        data = line.slice(6);
-      }
-    }
-    if (data) {
-      events.push({ event, data });
-    }
-  }
-  return events;
-}
-
-// ─���─ Hook ───────────────────────────────────────────────────────────────────
+// ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useNiko() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<NikoMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('niko_conversation_id');
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
   });
   const [isStreaming, setIsStreaming] = useState(false);
   const [magicPrompts, setMagicPrompts] = useState<NikoMagicPrompt[]>([]);
+  /** Niko's last navigation suggestion; the panel pushes it and clears it. */
+  const [suggestedRoute, setSuggestedRoute] = useState('');
 
   const pathname = usePathname();
-  const { authFetch, ready } = useAuthFetch();
-  const abortRef = useRef<AbortController | null>(null);
+  const { data: session } = useSession();
+  const route = routeOf(pathname);
+  // Readable from stopStreaming mid-turn, before React commits.
+  const opRef = useRef('');
 
-  // Persist conversation ID
   useEffect(() => {
-    if (conversationId) {
-      localStorage.setItem('niko_conversation_id', conversationId);
+    try {
+      if (conversationId) localStorage.setItem(STORAGE_KEY, conversationId);
+      else localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* private window or blocked storage — the thread just won't survive a reload */
     }
   }, [conversationId]);
 
-  // Fetch magic prompts when page changes
+  // The chips follow the screen: different questions are worth asking on
+  // /agents/usage than on /humans/retro.
   useEffect(() => {
-    if (!ready || !pathname) return;
-    const ctx = extractContextFromPath(pathname);
-    const params = new URLSearchParams({ page: ctx.page });
-    if (ctx.project_id) params.set('project_id', ctx.project_id);
-
-    authFetch(`/api/niko/magic-prompts?${params}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then(setMagicPrompts)
-      .catch(() => setMagicPrompts([]));
-  }, [pathname, ready, authFetch]);
-
-  // Load conversation history when opening with existing ID
-  useEffect(() => {
-    if (!isOpen || !conversationId || !ready || messages.length > 0) return;
-    authFetch(`/api/niko/conversations/${conversationId}`)
-      .then((r) => {
-        if (!r.ok) {
-          // Conversation not found, start fresh
-          setConversationId(null);
-          localStorage.removeItem('niko_conversation_id');
-          return null;
-        }
-        return r.json();
-      })
+    let mounted = true;
+    loadSuggestions(route)
       .then((data) => {
-        if (data?.messages) {
-          setMessages(
-            data.messages.map((m: Record<string, unknown>) => ({
-              id: m.id as string,
-              role: m.role as 'user' | 'assistant',
-              content: (m.content as string) || '',
-              toolCalls: m.tool_calls as NikoMessage['toolCalls'],
-              toolResults: m.tool_results as NikoMessage['toolResults'],
-              createdAt: m.created_at as string,
-            })),
-          );
-        }
+        if (mounted) setMagicPrompts(data.suggestions ?? []);
       })
-      .catch(() => {});
-  }, [isOpen, conversationId, ready, authFetch, messages.length]);
+      .catch(() => {
+        if (mounted) setMagicPrompts([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [route]);
+
+  // Replay the stored thread the first time the panel opens on it.
+  useEffect(() => {
+    if (!isOpen || !conversationId || messages.length > 0) return;
+    let mounted = true;
+    loadConversation(conversationId)
+      .then((conversation) => {
+        if (!mounted) return;
+        setMessages(
+          messagesOf(conversation).map((message) => ({
+            id: message.id,
+            role: message.role,
+            content: message.content,
+            toolCalls: message.toolCalls.map((call) => ({ name: call.name, input: {} })),
+            toolResults: message.toolCalls
+              .filter((call) => call.ok !== undefined)
+              .map((call) => ({ name: call.name, success: !!call.ok, error: call.error })),
+          })),
+        );
+      })
+      .catch(() => {
+        // Gone (a purge from the terminal's hub) — start fresh rather than
+        // leaving the panel pointed at a thread that no longer exists.
+        if (mounted) setConversationId(null);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, conversationId, messages.length]);
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!ready || isStreaming || !content.trim()) return;
+      const question = content.trim();
+      if (isStreaming || !question) return;
 
-      const context = extractContextFromPath(pathname || '/');
-
-      // Add user message optimistically
-      const userMsg: NikoMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: content.trim(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-
-      // Prepare assistant message placeholder
-      const assistantMsg: NikoMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: '',
-        toolCalls: [],
-        toolResults: [],
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-
+      const assistantId = crypto.randomUUID();
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'user', content: question },
+        { id: assistantId, role: 'assistant', content: '', toolCalls: [], toolResults: [] },
+      ]);
       setIsStreaming(true);
-      const abort = new AbortController();
-      abortRef.current = abort;
+      opRef.current = '';
 
+      let turn = emptyTurn();
       try {
-        const resp = await authFetch('/api/niko/chat', {
-          method: 'POST',
-          body: JSON.stringify({
-            conversation_id: conversationId,
-            message: content.trim(),
-            context,
-          }),
-          signal: abort.signal,
-        });
-
-        if (!resp.ok) {
-          const errText = await resp.text().catch(() => 'Unknown error');
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsg.id ? { ...m, content: `Error: ${errText}` } : m,
-            ),
-          );
-          setIsStreaming(false);
-          return;
-        }
-
-        // Read SSE stream
-        const reader = resp.body?.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const events = parseSSEChunk(buffer);
-
-            // Keep unprocessed partial data
-            const lastNewline = buffer.lastIndexOf('\n\n');
-            if (lastNewline >= 0) {
-              buffer = buffer.slice(lastNewline + 2);
-            }
-
-            for (const evt of events) {
-              try {
-                const data = JSON.parse(evt.data);
-
-                if (evt.event === 'text') {
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsg.id
-                        ? { ...m, content: m.content + (data.delta || '') }
-                        : m,
-                    ),
-                  );
-                } else if (evt.event === 'tool_call') {
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsg.id
-                        ? {
-                            ...m,
-                            toolCalls: [
-                              ...(m.toolCalls || []),
-                              {
-                                name: data.tool_name,
-                                input: data.tool_input,
-                              },
-                            ],
-                          }
-                        : m,
-                    ),
-                  );
-                } else if (evt.event === 'tool_result') {
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsg.id
-                        ? {
-                            ...m,
-                            toolResults: [
-                              ...(m.toolResults || []),
-                              {
-                                name: data.tool_name,
-                                success: data.success,
-                                result: data.result,
-                                error: data.error,
-                              },
-                            ],
-                          }
-                        : m,
-                    ),
-                  );
-                } else if (evt.event === 'done') {
-                  if (data.conversation_id) {
-                    setConversationId(data.conversation_id);
-                  }
-                } else if (evt.event === 'error') {
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsg.id
-                        ? {
-                            ...m,
-                            content: m.content + `\n\nError: ${data.error || 'Unknown error'}`,
-                          }
-                        : m,
-                    ),
-                  );
-                }
-              } catch {
-                // Ignore parse errors from partial chunks
-              }
-            }
-          }
-        }
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsg.id
-                ? { ...m, content: m.content || 'Failed to connect to Niko.' }
-                : m,
-            ),
-          );
-        }
+        const thread = conversationId ?? (await createConversation()).id;
+        setConversationId(thread);
+        await sendTurn(
+          thread,
+          question,
+          (line) => {
+            turn = reduceTurn(turn, line);
+            if (turn.opId) opRef.current = turn.opId;
+            const snapshot = turn;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? turnMessage(assistantId, snapshot) : m)),
+            );
+          },
+          { route, userName: session?.user?.name ?? '' },
+        );
+        if (turn.route) setSuggestedRoute(turn.route);
+        if (turn.warnings.length) logger.warn('niko: turn warnings', { warnings: turn.warnings });
+        if (!turn.error && !turn.cancelled) duckQuip('niko.reply');
+      } catch (error) {
+        logger.warn('niko: turn failed', { error: (error as Error).message });
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId && !m.content
+              ? { ...m, content: "I couldn't reach the backend. Is yeaboi still running?" }
+              : m,
+          ),
+        );
       } finally {
         setIsStreaming(false);
-        abortRef.current = null;
+        opRef.current = '';
       }
     },
-    [ready, isStreaming, pathname, conversationId, authFetch],
+    [isStreaming, conversationId, route, session?.user?.name],
   );
 
-  const togglePanel = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
+  const togglePanel = useCallback(() => setIsOpen((prev) => !prev), []);
 
   const startNewConversation = useCallback(() => {
     setMessages([]);
     setConversationId(null);
-    localStorage.removeItem('niko_conversation_id');
   }, []);
 
   const stopStreaming = useCallback(() => {
-    abortRef.current?.abort();
+    // No op line means no cancel seam — the contract's own rule: a Stop button
+    // on a turn that cannot stop would be a lie.
+    if (!opRef.current) return;
+    void cancelTurn(opRef.current).catch(() => undefined);
   }, []);
+
+  const clearSuggestedRoute = useCallback(() => setSuggestedRoute(''), []);
 
   return {
     isOpen,
@@ -325,6 +211,8 @@ export function useNiko() {
     conversationId,
     isStreaming,
     magicPrompts,
+    suggestedRoute,
+    clearSuggestedRoute,
     sendMessage,
     togglePanel,
     startNewConversation,

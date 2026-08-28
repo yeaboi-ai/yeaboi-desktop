@@ -1,64 +1,87 @@
 'use client';
 
+// One row per tool Niko reached for, with a human label for it. The maps are
+// keyed by the read-only tool names in yeaboi/niko/tools.py — an unmapped name
+// falls back to the raw name and a file icon, so a backend that grows a tool
+// degrades rather than breaks.
+
 import {
+  BarChart3,
+  Bot,
+  Calendar,
   CheckCircle2,
-  Loader2,
-  XCircle,
-  FolderPlus,
-  FilePlus,
-  Pencil,
-  Trash2,
-  ListTodo,
-  LayoutDashboard,
-  Shield,
-  Users,
+  Clock,
+  Compass,
   FileText,
+  GitBranch,
+  LayoutDashboard,
+  ListTodo,
+  Loader2,
+  Map,
+  Presentation,
+  Shield,
+  ShieldCheck,
+  Ship,
+  Sparkles,
+  Spade,
+  Sunrise,
+  TrendingUp,
+  UserRound,
+  Users,
+  Wallet,
+  XCircle,
 } from 'lucide-react';
 
 const TOOL_ICONS: Record<string, React.ElementType> = {
-  create_project: FolderPlus,
-  update_project: Pencil,
-  delete_project: Trash2,
-  list_projects: ListTodo,
-  get_project: FileText,
-  create_session: FilePlus,
+  list_capabilities: Sparkles,
+  list_routes: Map,
   list_sessions: ListTodo,
-  update_session: Pencil,
-  create_card: FilePlus,
-  update_card: Pencil,
-  delete_card: Trash2,
-  list_board_cards: LayoutDashboard,
-  move_card: LayoutDashboard,
-  get_blueprint_coverage: Shield,
-  update_blueprint_section: Pencil,
-  list_personas: Users,
-  create_persona: Users,
-  list_templates: FileText,
-  create_template: FilePlus,
-  get_project_status: LayoutDashboard,
+  get_session: FileText,
+  standup_history: Sunrise,
+  reporting_history: Presentation,
+  retro_history: LayoutDashboard,
+  poker_history: Spade,
+  team_roster: Users,
+  team_profile: TrendingUp,
+  performance_roster: UserRound,
+  ship_status: Ship,
+  ship_history: Ship,
+  agents_usage_history: BarChart3,
+  agents_advisor_history: Wallet,
+  agents_standup_history: Bot,
+  agents_security_history: ShieldCheck,
+  llm_usage: Wallet,
+  ceremonies_list: Calendar,
+  ceremonies_history: Clock,
+  provenance_audit: Shield,
+  provenance_trace: GitBranch,
+  navigate: Compass,
 };
 
 const TOOL_LABELS: Record<string, string> = {
-  create_project: 'Creating project',
-  update_project: 'Updating project',
-  delete_project: 'Deleting project',
-  list_projects: 'Listing projects',
-  get_project: 'Getting project details',
-  create_session: 'Creating session',
-  list_sessions: 'Listing sessions',
-  update_session: 'Updating session',
-  create_card: 'Creating card',
-  update_card: 'Updating card',
-  delete_card: 'Deleting card',
-  list_board_cards: 'Loading board',
-  move_card: 'Moving card',
-  get_blueprint_coverage: 'Checking blueprint',
-  update_blueprint_section: 'Updating blueprint',
-  list_personas: 'Listing personas',
-  create_persona: 'Creating persona',
-  list_templates: 'Listing templates',
-  create_template: 'Creating template',
-  get_project_status: 'Getting project status',
+  list_capabilities: 'Reading what yeaboi does',
+  list_routes: 'Finding the screen',
+  list_sessions: 'Reading your plans',
+  get_session: 'Opening a plan',
+  standup_history: 'Reading standups',
+  reporting_history: 'Reading delivery reports',
+  retro_history: 'Reading retros',
+  poker_history: 'Reading poker sessions',
+  team_roster: 'Reading the team',
+  team_profile: "Reading your team's profile",
+  performance_roster: 'Reading the engineer roster',
+  ship_status: 'Checking Ship',
+  ship_history: 'Reading Ship runs',
+  agents_usage_history: 'Reading agent spend',
+  agents_advisor_history: 'Reading recoverable spend',
+  agents_standup_history: 'Reading what agents shipped',
+  agents_security_history: 'Reading agent security',
+  llm_usage: "Reading yeaboi's own spend",
+  ceremonies_list: 'Reading the schedule',
+  ceremonies_history: 'Reading what fired',
+  provenance_audit: 'Reading the decision record',
+  provenance_trace: 'Tracing a decision',
+  navigate: 'Taking you there',
 };
 
 interface NikoToolCardProps {
@@ -79,8 +102,8 @@ export function NikoToolCard({ name, status, error }: NikoToolCardProps) {
         {status === 'running' && <Loader2 className="size-3.5 animate-spin text-primary" />}
         {status === 'success' && <CheckCircle2 className="size-3.5 text-emerald-500" />}
         {status === 'error' && (
-          <span title={error || 'Failed'}>
-            <XCircle className="size-3.5 text-destructive" />
+          <span title={error || 'Nothing to read'}>
+            <XCircle className="size-3.5 text-muted-foreground/60" />
           </span>
         )}
       </div>
