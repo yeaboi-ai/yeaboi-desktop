@@ -1,5 +1,7 @@
 {
   "name": "yeaboi-desktop",
+  "//productName": "The display name everywhere: app.getName() in a dev run, CFBundleName and the installer filenames through electron-builder.",
+  "productName": "yeaboi.ai",
   "version": "0.1.0",
   "private": true,
   "description": "yeaboi desktop — the duck-branded planning app",
@@ -13,6 +15,7 @@
     "email": "64692956+dinho149@users.noreply.github.com"
   },
   "scripts": {
+    "predev": "node scripts/dev-bundle-name.mjs",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "build:check": "node scripts/check-build.mjs",

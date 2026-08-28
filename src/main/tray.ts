@@ -18,13 +18,14 @@ import type { UpdateState } from './updater';
 const TRAY_ICON_SIZE = 20;
 
 /** The update item says where the update got to, not what the menu does — a
- *  "Check for updates…" that already found one reads as if nothing happened. */
-export function updateLabel(state: UpdateState): string {
+ *  "Check for updates…" that already found one reads as if nothing happened.
+ *  The name is passed in rather than read here so this stays a pure function. */
+export function updateLabel(state: UpdateState, name: string): string {
   switch (state.kind) {
     case 'checking':
       return 'Checking for updates…';
     case 'available':
-      return `Download yeaboi ${state.version}`;
+      return `Download ${name} ${state.version}`;
     case 'downloading':
       return `Downloading ${state.version} — ${state.percent}%`;
     case 'ready':
@@ -66,7 +67,7 @@ export class AppTray {
       .resize({ width: TRAY_ICON_SIZE, height: TRAY_ICON_SIZE });
     icon.setTemplateImage(template);
     this.tray = new Tray(icon);
-    this.tray.setToolTip('yeaboi');
+    this.tray.setToolTip(app.getName());
     this.tray.on('click', () => this.actions.open());
     this.render();
   }
@@ -90,9 +91,11 @@ export class AppTray {
 
   private render(): void {
     if (!this.tray) return;
+    // One name for every label: app.getName() is package.json's productName.
+    const name = app.getName();
     this.tray.setContextMenu(
       Menu.buildFromTemplate([
-        { label: 'Open yeaboi', click: () => this.actions.open() },
+        { label: `Open ${name}`, click: () => this.actions.open() },
         { type: 'separator' },
         {
           label: 'Duck on the desktop',
@@ -106,14 +109,14 @@ export class AppTray {
         { label: 'Come here', enabled: this.petEnabled, click: () => this.actions.recenterPet() },
         { label: 'Duck settings…', click: () => this.actions.petSettings() },
         { type: 'separator' },
-        { label: `yeaboi ${app.getVersion()}`, enabled: false },
+        { label: `${name} ${app.getVersion()}`, enabled: false },
         {
-          label: updateLabel(this.update),
+          label: updateLabel(this.update, name),
           enabled: this.update.kind !== 'unsupported',
           click: () => this.actions.update(),
         },
-        { label: 'About yeaboi', click: () => this.actions.about() },
-        { label: 'Quit yeaboi', click: () => this.actions.quit() },
+        { label: `About ${name}`, click: () => this.actions.about() },
+        { label: `Quit ${name}`, click: () => this.actions.quit() },
       ]),
     );
   }

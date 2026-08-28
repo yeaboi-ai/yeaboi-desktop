@@ -18,8 +18,8 @@
 // contain.
 //
 // Usage:
-//   node scripts/fetch-python.mjs --version 3.28.0 [--platform darwin] [--arch arm64]
-//   node scripts/fetch-python.mjs --version 3.28.0 --check   # is the tree staged?
+//   node scripts/fetch-runtimes.mjs --version 3.28.0 --planning [--arch arm64]
+//   node scripts/fetch-runtimes.mjs --check --planning --version 3.28.0   # staged?
 
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -27,7 +27,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { argv, exit, platform as hostPlatform, arch as hostArch } from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const STAGE = join(ROOT, 'resources', 'py');
@@ -249,7 +249,7 @@ async function stagePlanning({ platform, arch, planningWheel }) {
   );
 }
 
-function check({ platform, arch, version }) {
+function check({ platform, arch, version, planning, planningWheel }) {
   const stamp = join(STAGE, 'yeaboi-bundle.json');
   if (!existsSync(stamp)) throw new Error(`nothing staged at ${STAGE} — run without --check first`);
   const staged = JSON.parse(readFileSync(stamp, 'utf8'));
@@ -260,6 +260,17 @@ function check({ platform, arch, version }) {
   const python = pythonPath(STAGE, platform);
   if (!statSync(python, { throwIfNoEntry: false })) throw new Error(`missing ${python}`);
   console.log(`✓ ${target}: python ${staged.python}, yeaboi ${staged.yeaboi}`);
+  if (!planning && !planningWheel) return;
+  const planningStamp = join(STAGE_PLANNING, 'planning-bundle.json');
+  if (!existsSync(planningStamp))
+    throw new Error(`nothing staged at ${STAGE_PLANNING} — run with --planning first`);
+  const stagedPlanning = JSON.parse(readFileSync(planningStamp, 'utf8'));
+  if (stagedPlanning.target !== target)
+    throw new Error(`staged planning ${stagedPlanning.target}, wanted ${target}`);
+  const planningPython = pythonPath(STAGE_PLANNING, platform);
+  if (!statSync(planningPython, { throwIfNoEntry: false }))
+    throw new Error(`missing ${planningPython}`);
+  console.log(`✓ ${target}: planning backend staged`);
 }
 
 async function main() {
@@ -278,8 +289,10 @@ async function main() {
   }
 }
 
-// Importable for the tests; only the CLI entry runs anything.
-if (process.argv[1] && process.argv[1].endsWith('fetch-runtimes.mjs')) {
+// Importable for the tests; only the CLI entry runs anything. Compared by URL and
+// not by filename: a name check fails open, exiting 0 having staged nothing, and
+// electron-builder only warns about the extraResources that are then missing.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(`✗ ${error.message}`);
     exit(1);

@@ -214,7 +214,7 @@ def dmg_background():
     duck = _duck()
     small = duck.resize((64, round(duck.height * 64 / duck.width)), Image.LANCZOS)
     background.paste(small, (width // 2 - small.width // 2, 12), small)
-    draw.text((width // 2, 104), "yeaboi", font=_font(30), fill=(228, 236, 232), anchor="mm")
+    draw.text((width // 2, 104), "yeaboi.ai", font=_font(30), fill=(228, 236, 232), anchor="mm")
 
     # The arrow sits on the icon centreline — DMG_ICON_Y, the same y the two
     # icons are placed at in electron-builder.yml.
