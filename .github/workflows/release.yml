@@ -174,18 +174,43 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        run: npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An absent secret expands to the empty string, and GitHub still puts the
+          # key in the environment. electron-builder reads CSC_LINK with a
+          # chooseNotNull whose own comment says "allow to specify as empty string",
+          # so "" wins over unset and it resolves the cert against the project dir —
+          # "<projectDir> not a file". Unsetting is the only way to say "no cert".
+          for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD \
+                   APPLE_TEAM_ID AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET; do
+            [ -n "${!v:-}" ] || unset "$v"
+          done
+          npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always
 
       # Gatekeeper's own opinion of what was just built. Notarization can report
       # success and still leave an app macOS refuses to open, and the only place
       # that shows up otherwise is a user's Downloads folder.
       - name: Assess the signed app
         if: runner.os == 'macOS'
+        env:
+          # Whether a certificate existed, not the certificate — a `!= ''` on a
+          # secret evaluates to a plain boolean and leaks nothing.
+          SIGNED: ${{ secrets.CSC_LINK != '' }}
         run: |
           set -euo pipefail
           # By glob, not by name: the bundle is named from productName and
           # a rename must not quietly turn this step into a no-op.
           app=$(find dist -maxdepth 3 -name '*.app' | head -1)
+          test -n "$app" || { echo "::error::no .app in dist"; exit 1; }
+          if [ "$SIGNED" != "true" ]; then
+            # A credential-free rehearsal, whose job is to prove staging and the
+            # cross-repo publish. Gatekeeper will refuse an ad-hoc signature, so
+            # asserting it here would make the rehearsal permanently red and skip
+            # every job downstream of it. The release stays a draft regardless.
+            echo "::warning::no CSC_LINK — checked that $app exists, not that Gatekeeper accepts it"
+            exit 0
+          fi
           echo "assessing $app"
           spctl --assess --type execute --verbose=4 "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
