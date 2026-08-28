@@ -17,7 +17,9 @@ export interface MusicChannel {
 export interface AmbienceState {
   duck: { enabled: boolean; quips: Record<string, string> };
   music: { channels: MusicChannel[]; channel: number; enabled: boolean };
-  saver: { idle_seconds: number };
+  // `styles` is a catalogue (key -> display name) and `style` the pick, the
+  // same shape music uses. `off` is the one value every surface honours.
+  saver: { idle_seconds: number; style: string; styles: Record<string, string> };
   pet: { enabled: boolean };
 }
 

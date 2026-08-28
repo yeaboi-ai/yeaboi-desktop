@@ -4,6 +4,7 @@
 // the contract's runs are request-scoped, and a page shows one at a time.
 
 import { useCallback, useRef, useState } from 'react';
+import { useScreensaverSuppression } from '@/hooks/use-screensaver-suppression';
 import { apiStream } from '@/lib/yeaboi/api';
 import { type ModeRunState, cancelModeRun, emptyModeRun, reduceModeRun } from '@/lib/yeaboi/modes';
 
@@ -25,6 +26,9 @@ export function useNdjsonRun(): NdjsonRun {
   const [lines, setLines] = useState<unknown[]>([]);
   // The op id must be readable from cancel() mid-stream, before React commits.
   const opRef = useRef('');
+  // A run is work, not idleness: the screensaver must not cover the stream the
+  // person is watching, and the minutes it takes must not count toward idle.
+  useScreensaverSuppression(status === 'running');
 
   const start = useCallback(async (path: string, body: object) => {
     opRef.current = '';

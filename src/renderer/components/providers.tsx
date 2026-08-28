@@ -12,6 +12,7 @@ import { AppShell } from './app-shell';
 import { DuckChrome } from '@/components/brand/duck-chrome';
 import { AmbienceHost } from '@/components/yeaboi/ambience-host';
 import { NikoBar } from '@/components/niko/niko-bar';
+import { ScreensaverHost } from '@/components/screensaver/screensaver-host';
 import { CapturePicker } from '@/components/session/capture-picker';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <DuckChrome />
                 <NikoBar />
                 <AmbienceHost />
+                <ScreensaverHost />
                 <CapturePicker />
                 <Toaster />
               </NikoProvider>

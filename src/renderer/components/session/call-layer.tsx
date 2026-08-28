@@ -11,6 +11,7 @@
 // shapes so future diffs against the web stay readable.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useScreensaverSuppression } from '@/hooks/use-screensaver-suppression';
 import { createPortal } from 'react-dom';
 import {
   LiveKitRoom,
@@ -153,6 +154,9 @@ export function CallLayer({
 }: CallLayerProps) {
   const [videoExpanded, setVideoExpanded] = useState(true);
   const [, setAiRinging] = useState(false);
+  // A call is the clearest case of all: the person is here, looking at the
+  // window, and touching nothing.
+  useScreensaverSuppression(inCall);
 
   if (!inCall || !lkUrl) return null;
   return (
