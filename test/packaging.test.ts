@@ -22,6 +22,30 @@ describe('signing', () => {
     expect(builder.mac.notarize).toBe(true);
   });
 
+  it('gatekeeper is still asserted whenever a certificate exists', () => {
+    // The step degrades to a warning without CSC_LINK so the credential-free
+    // rehearsal can reach the jobs downstream of it. That escape hatch must stay
+    // tied to the secret — dropping spctl entirely would make every signed
+    // release green on an app macOS refuses to open.
+    const step = release.slice(release.indexOf('Assess the signed app'));
+    expect(step).toContain("SIGNED: ${{ secrets.CSC_LINK != '' }}");
+    expect(step).toMatch(/if \[ "\$SIGNED" != "true" \]/);
+    expect(step).toContain('spctl --assess --type execute');
+    expect(step).toContain('codesign --verify --deep --strict');
+  });
+
+  it('an unset signing secret reaches electron-builder unset, not empty', () => {
+    // GitHub expands an absent secret to "" and still exports the key.
+    // electron-builder's getCscLink prefers "" over unset ("allow to specify as
+    // empty string"), then resolves the cert against the project dir and dies with
+    // "<projectDir> not a file" — so every credential-free build fails at publish.
+    const step = release.slice(release.indexOf('Build, sign and publish'));
+    expect(step).toMatch(/for v in CSC_LINK[\s\S]*?\|\| unset "\$v"/);
+    for (const v of ['CSC_LINK', 'CSC_KEY_PASSWORD', 'APPLE_ID', 'APPLE_TEAM_ID']) {
+      expect(step.slice(0, step.indexOf('npx electron-builder'))).toContain(v);
+    }
+  });
+
   it('the bundled pythons may load the on-demand voice pack', () => {
     // The pack is pip-installed into ~/.yeaboi at runtime and loaded over
     // PYTHONPATH, so its .so files carry a different Team ID than the process.
