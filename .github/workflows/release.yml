@@ -197,11 +197,21 @@ jobs:
       - name: Build the renderer and main bundles
         run: npm run build
 
+      # dmgbuild detaches the image it just wrote, and Spotlight indexing the new
+      # volume is what usually still holds it: "hdiutil: couldn't eject disk2 -
+      # Resource busy". Cheap to prevent, and a CI runner indexes nothing anybody
+      # will search.
+      - name: Stop Spotlight indexing the disk images
+        if: runner.os == 'macOS'
+        run: sudo mdutil -a -i off || true
+
       - name: Build, sign and publish
         env:
           # Not GITHUB_TOKEN: the release lands in another repository, which the
           # default token has no write access to.
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          ARCH: ${{ matrix.arch }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -222,6 +232,37 @@ jobs:
                    APPLE_TEAM_ID AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET; do
             [ -n "${!v:-}" ] || unset "$v"
           done
+
+          repo=yeaboi-ai/yeaboi-desktop-releases
+
+          # electron-publish skips an upload whose name already exists with only a
+          # warning. So anything this leg left behind — a failed attempt, an earlier
+          # rerun — must go first, or the rebuilt zip's sha512 lands in
+          # latest-mac.yml describing the file that is actually being served, and
+          # every update for this arch fails its integrity check. Only this leg's
+          # names: the other arch may have finished already.
+          clear_leg_assets() {
+            local id
+            id=$(gh api "repos/$repo/releases" --paginate \
+                   | jq -r --arg t "v$VERSION" 'first(.[] | select(.tag_name == $t) | .id) // empty')
+            [ -n "$id" ] || return 0
+            gh api "repos/$repo/releases/$id/assets" \
+              | jq -r --arg a "-$ARCH." '.[] | select(.name | contains($a)) | .id' \
+              | while read -r aid; do
+                  echo "clearing stale asset $aid"
+                  gh api -X DELETE "repos/$repo/releases/assets/$aid"
+                done
+          }
+
+          clear_leg_assets
+          if npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always; then
+            exit 0
+          fi
+
+          # One retry, because the dmg detach flake is intermittent and a leg costs
+          # ~35 minutes of signing and notarization to reach this point.
+          echo "::warning::electron-builder failed; clearing this leg's assets and retrying once"
+          clear_leg_assets
           npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always
 
       # Gatekeeper's own opinion of what was just built. Notarization can report

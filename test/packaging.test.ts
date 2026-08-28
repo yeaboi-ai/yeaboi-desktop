@@ -44,6 +44,29 @@ describe('signing', () => {
     expect(step).toMatch(/x64\).*x86_64/s);
   });
 
+  it("a retry clears this leg's assets first, so shas cannot drift from files", () => {
+    // electron-publish skips an upload whose name already exists with only a
+    // warning. Retrying without clearing puts the rebuilt zip's sha512 into
+    // latest-mac.yml while the failed attempt's file stays served — every update
+    // for that arch then fails its integrity check, and nothing goes red.
+    const step = release.slice(
+      release.indexOf('Build, sign and publish'),
+      release.indexOf('The bundled runtimes match'),
+    );
+    expect(step).toContain('clear_leg_assets()');
+    // once before the first attempt, once before the retry
+    expect(step.match(/^\s*clear_leg_assets$/gm)?.length).toBe(2);
+    // scoped to this arch: the other leg may have finished already
+    expect(step).toContain('--arg a "-$ARCH."');
+  });
+
+  it('spotlight is stopped before the dmg is detached', () => {
+    // dmgbuild detaches the image it just wrote and Spotlight indexing the new
+    // volume still holds it: "hdiutil: couldn't eject disk2 - Resource busy".
+    expect(release).toContain('mdutil -a -i off');
+    expect(release.indexOf('mdutil')).toBeLessThan(release.indexOf('Build, sign and publish'));
+  });
+
   it('one draft is created up front, so racing publishers cannot make two', () => {
     // PublishManager.getOrCreatePublisher is async and does check-then-set across
     // an await, so concurrent uploads each build a publisher with its own Lazy and
