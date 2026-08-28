@@ -70,11 +70,13 @@ mac:
   # of resources nothing reads.
   electronLanguages: [en, en-US]
   icon: build/icon.icns
+  # No arch list. Pinning both here overrides the CLI's --arm64/--x64, so every
+  # leg packaged both — and since a leg stages runtimes for its own arch only
+  # (fetch-runtimes.mjs --arch), the other arch's dmg shipped the wrong Python and
+  # could not start. The workflow passes one arch per leg; let it decide.
   target:
-    - target: dmg
-      arch: [arm64, x64]
-    - target: zip # electron-updater needs the zip; the dmg is what people click
-      arch: [arm64, x64]
+    - dmg
+    - zip # electron-updater needs the zip; the dmg is what people click
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
