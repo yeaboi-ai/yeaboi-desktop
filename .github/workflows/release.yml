@@ -142,10 +142,12 @@ jobs:
       contents: read # the release goes to another repo, through RELEASES_REPO_TOKEN
     strategy:
       fail-fast: false
-      # One at a time. Both mac legs call electron-builder's getOrCreateRelease and
-      # both write latest-mac.yml; run in parallel they make two drafts, and the
-      # second upload replaces the first arch's update metadata rather than merging.
-      max-parallel: 1
+      # The legs run concurrently. They used to be serialised because both called
+      # getOrCreateRelease and both wrote latest-mac.yml — but resolve now creates
+      # the one draft they publish into, update-metadata merges the per-leg
+      # metadata from the artifacts, and each leg only ever clears assets carrying
+      # its own arch token. Nothing is shared any more, and serialising cost a
+      # whole extra leg of signing and notarization in wall-clock.
       matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7

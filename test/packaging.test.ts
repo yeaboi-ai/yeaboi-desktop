@@ -252,9 +252,16 @@ describe('staging', () => {
     expect(release).toContain('--check');
   });
 
-  it('the mac legs run one at a time', () => {
-    // Both call getOrCreateRelease; in parallel they make two drafts.
-    expect(release).toContain('max-parallel: 1');
+  it('the legs are free to run concurrently, because nothing is shared', () => {
+    // Serialising them cost a whole extra leg of signing and notarization. It is
+    // only safe to drop while all three of these hold, so they are asserted here
+    // rather than left to a comment: one draft made up front, per-leg metadata
+    // merged from the artifacts, and asset clearing scoped to a leg's own arch.
+    // the key, not the word — the comment in resolve still explains the history
+    expect(release).not.toMatch(/^\s*max-parallel:/m);
+    expect(release).toContain('gh release create "v$VERSION"');
+    expect(release).toContain('merge-mac-update-info.mjs');
+    expect(release).toContain('--arg a "-$ARCH."');
   });
 
   it('the release goes somewhere the default token cannot reach', () => {
