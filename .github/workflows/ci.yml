@@ -55,6 +55,19 @@ jobs:
       # survives with exit 0) into a red job.
       - run: npm run build:check
 
+  tooling:
+    name: The shared tooling pin is honoured
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # `make tooling-check` clones .tooling/ at the pinned sha, asserts the
+      # checkout matches it, and asserts this repo still defines every target
+      # the devkit plugin calls. This job exists because none of that was true
+      # for a while: a renderer migration deleted .tooling-rev, scripts/
+      # tooling-sync.sh and the Makefile's include in one commit, and nothing
+      # was red afterwards.
+      - run: make tooling-check
+
   manifest:
     name: Renderer routes match the manifest
     runs-on: ubuntu-latest

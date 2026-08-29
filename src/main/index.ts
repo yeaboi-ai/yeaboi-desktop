@@ -58,9 +58,21 @@ let tray: AppTray | null = null;
 // escape hatch for pointing the renderer at a hand-run planning server.
 const externalPlanningUrl = process.env['YEABOI_API_URL'] ?? '';
 
+// A throwaway profile, for a recording or a test. The app is single-user and
+// writes identity into userData, and macOS resolves that from the password
+// database — neither `--user-data-dir` nor $HOME moves it — so this env var is
+// the only way to point it elsewhere. Without it `make demo` films the profile
+// of whoever is recording and puts their name and email in a public README GIF.
+// It has to be part of THIS call rather than an earlier one: the assignment
+// below runs unconditionally, and an override set before it is simply replaced.
+const profileOverride = process.env['YEABOI_DESKTOP_PROFILE'];
+
 // Storage is not branding: the display name is free to change without moving
 // anyone's settings.json, and the dev run keeps a directory of its own.
-app.setPath('userData', join(app.getPath('appData'), app.isPackaged ? 'yeaboi' : 'yeaboi-desktop'));
+app.setPath(
+  'userData',
+  profileOverride || join(app.getPath('appData'), app.isPackaged ? 'yeaboi' : 'yeaboi-desktop'),
+);
 
 registerAppScheme();
 
