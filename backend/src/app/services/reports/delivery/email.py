@@ -40,7 +40,7 @@ def deliver_email(
             try:
                 resend.Emails.send(
                     {
-                        "from": "Planning Platform <onboarding@resend.dev>",
+                        "from": "yeaboi.ai <onboarding@resend.dev>",
                         "to": [to],
                         "subject": subject,
                         "text": body_text,

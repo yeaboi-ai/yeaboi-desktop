@@ -64,7 +64,7 @@ async def handle(db: AsyncSession, payload: dict, background_tasks: BackgroundTa
     # Resolve team
     team_id = await resolve_team_from_channel(db, channel_id)
     if not team_id:
-        await _post_error(response_url, "This channel isn't mapped to a Planr team yet.")
+        await _post_error(response_url, "This channel isn't mapped to a yeaboi team yet.")
         return None
 
     team_result = await db.execute(select(Team).where(Team.id == team_id))
@@ -82,7 +82,7 @@ async def handle(db: AsyncSession, payload: dict, background_tasks: BackgroundTa
     if not user_id:
         await _post_error(
             response_url,
-            "Please run `/planr link <your Planr email>` first so I know who you are.",
+            "Please run `/planr link <your yeaboi email>` first so I know who you are.",
         )
         return None
 

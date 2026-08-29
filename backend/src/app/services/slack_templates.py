@@ -64,7 +64,7 @@ def _actions(buttons: list[dict]) -> dict:
 def _blocks_scan_started(p: dict) -> list:
     return [
         _section(f":mag: *{p.get('title', 'Scan started')}*"),
-        _context(f"_Planr · {p.get('provider_label', '?')} scan_"),
+        _context(f"_yeaboi · {p.get('provider_label', '?')} scan_"),
     ]
 
 
@@ -74,7 +74,7 @@ def _blocks_scan_complete(p: dict) -> list:
     return [
         _section(f":white_check_mark: *{p.get('title', 'Scan complete')}*"),
         _section(stat_line or "_no stats_"),
-        _context(f"_Planr · {p.get('provider_label', '?')} scan_"),
+        _context(f"_yeaboi · {p.get('provider_label', '?')} scan_"),
     ]
 
 
@@ -82,7 +82,7 @@ def _blocks_scan_partial(p: dict) -> list:
     return [
         _section(f":warning: *{p.get('title', 'Scan finished with warnings')}*"),
         _section(p.get("failure_summary") or p.get("body") or ""),
-        _context(f"_Planr · {p.get('provider_label', '?')} scan_"),
+        _context(f"_yeaboi · {p.get('provider_label', '?')} scan_"),
     ]
 
 
@@ -90,7 +90,7 @@ def _blocks_scan_failed(p: dict) -> list:
     return [
         _section(f":x: *{p.get('title', 'Scan failed')}*"),
         _section(f"`{p.get('error') or p.get('body') or 'unknown error'}`"),
-        _context(f"_Planr · {p.get('provider_label', '?')} scan_"),
+        _context(f"_yeaboi · {p.get('provider_label', '?')} scan_"),
     ]
 
 
@@ -175,7 +175,7 @@ def _blocks_mention(p: dict) -> list:
             f":bust_in_silhouette: *{p.get('mentioned_user_name', 'You')}* was mentioned on "
             f"{p.get('source_type', 'resource')} *{p.get('source_title', '?')}*"
         ),
-        _actions([_button("Open in Planr", "noop", url=p.get("source_url") or "/")]),
+        _actions([_button("Open in yeaboi", "noop", url=p.get("source_url") or "/")]),
     ]
 
 
@@ -200,7 +200,7 @@ def build_blocks_for_event(event_type: str, payload: dict) -> list:
     """Return Block Kit for the event type; unknown types get a minimal fallback."""
     builder = _REGISTRY.get(event_type)
     if builder is None:
-        return [_section(f"Planr event: `{event_type}`")]
+        return [_section(f"yeaboi event: `{event_type}`")]
     return builder(payload)
 
 
@@ -256,7 +256,7 @@ def over_project_limit_block(*, projects_url: str) -> list[dict]:
             "elements": [
                 {
                     "type": "button",
-                    "text": {"type": "plain_text", "text": "Open Planr →"},
+                    "text": {"type": "plain_text", "text": "Open yeaboi →"},
                     "url": projects_url,
                     "action_id": "session_open_projects_list",
                 }
@@ -315,4 +315,4 @@ def title_for_event(event_type: str, payload: dict) -> str:
         return f"Session {event_type.split('_', 1)[1]}: {payload.get('title', '?')}"
     if event_type.startswith("scan_"):
         return payload.get("title") or f"Slack {event_type}"
-    return f"Planr {event_type}"
+    return f"yeaboi {event_type}"

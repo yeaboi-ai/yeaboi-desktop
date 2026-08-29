@@ -22,7 +22,7 @@ interface BrandContextValue {
   refresh: () => Promise<void>;
 }
 
-const DEFAULT_APP_NAME = 'planr';
+const DEFAULT_APP_NAME = 'yeaboi.ai';
 
 const BrandContext = createContext<BrandContextValue | null>(null);
 
@@ -74,8 +74,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   // Update document title and favicon when the brand changes.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    document.title =
-      appName === DEFAULT_APP_NAME ? 'Planning Platform' : `${appName} · Planning Platform`;
+    document.title = appName === DEFAULT_APP_NAME ? 'yeaboi.ai' : `${appName} · yeaboi.ai`;
     if (faviconUrl) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {

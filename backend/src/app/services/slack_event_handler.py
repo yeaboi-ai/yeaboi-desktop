@@ -102,7 +102,7 @@ async def handle(db: AsyncSession, envelope: dict, background_tasks: BackgroundT
         and event.get("thread_ts")
         and event.get("channel_type") in {"channel", "group"}
     ):
-        # Thread reply in a public/private channel. Only process if Planr has
+        # Thread reply in a public/private channel. Only process if yeaboi has
         # already posted in the thread — that's our signal the user's reply
         # is a follow-up to us rather than an unrelated channel conversation.
         # The filter check runs inside the background task so we don't block
@@ -131,10 +131,10 @@ async def _dispatch_thread_reply_bg(
     thread_ts: str,
     db: AsyncSession | None = None,
 ) -> None:
-    """Process a thread reply in a channel — only if Planr has posted in the thread.
+    """Process a thread reply in a channel — only if yeaboi has posted in the thread.
 
     Filters out the firehose of ``message.channels`` events by checking the
-    thread for a prior bot message. Bails silently if Planr isn't in the thread.
+    thread for a prior bot message. Bails silently if yeaboi isn't in the thread.
     """
     if not question:
         return
@@ -166,21 +166,21 @@ async def _dispatch_thread_reply_bg(
     if not token:
         return
 
-    # Filter: only process if Planr has already posted in the thread. This
+    # Filter: only process if yeaboi has already posted in the thread. This
     # removes the noise of every channel message without needing to remember
     # which threads we've participated in.
-    if not await _planr_posted_in_thread(token, channel_id, thread_ts):
+    if not await _yeaboi_posted_in_thread(token, channel_id, thread_ts):
         return
 
     await _dispatch_ask(db, slack_team_id, slack_user_id, channel_id, question, thread_ts)
 
 
-async def _planr_posted_in_thread(token: str, channel_id: str, thread_ts: str) -> bool:
+async def _yeaboi_posted_in_thread(token: str, channel_id: str, thread_ts: str) -> bool:
     """Return True if any message in the thread was posted by a bot.
 
     We check for any bot message (via ``bot_id`` / ``subtype == "bot_message"``)
     rather than checking for our specific bot id — simpler, and the only bots
-    we'd expect in a Planr-mapped channel's threads are ours.
+    we'd expect in a yeaboi-mapped channel's threads are ours.
     """
     import httpx
 
@@ -274,7 +274,7 @@ async def _dispatch_ask(
         await _post_to_channel(
             token,
             channel_id,
-            text="Please run `/planr link <your Planr email>` first so I know who you are.",
+            text="Please run `/planr link <your yeaboi email>` first so I know who you are.",
             blocks=None,
             thread_ts=thread_ts or None,
         )
@@ -287,7 +287,7 @@ async def _dispatch_ask(
 
     # Build message history — if this message is in an existing thread, pull
     # the prior messages so the LLM has the conversation context. Fixes the
-    # "Planr just asked which project?" → user replies "Task Tracker Pro" →
+    # "yeaboi just asked which project?" → user replies "Task Tracker Pro" →
     # bot treats it as a new isolated turn bug.
     messages = await _build_messages_from_thread(
         token=token,
@@ -298,7 +298,7 @@ async def _dispatch_ask(
 
     ai = await get_ai_client(org.id, db, task="fast")
     system = (
-        f"You are Planr, a helpful planning assistant for the team at {org.name}. "
+        f"You are yeaboi, a helpful planning assistant for the team at {org.name}. "
         "You are talking to a team member inside Slack.\n\n"
         "TOOL USAGE — strict rules:\n"
         "- When the user wants to start/create/open a planning session, IMMEDIATELY "

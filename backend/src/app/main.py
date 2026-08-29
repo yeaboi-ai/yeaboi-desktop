@@ -154,7 +154,7 @@ def create_app() -> FastAPI:
                 except (asyncio.CancelledError, Exception):
                     pass
 
-    app = FastAPI(title="Planning Platform", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="yeaboi.ai", version="0.1.0", lifespan=lifespan)
 
     # --- OpenTelemetry distributed tracing (disabled when endpoint is empty) ---
     from .tracing import setup_tracing

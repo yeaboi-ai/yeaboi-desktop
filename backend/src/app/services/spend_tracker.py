@@ -321,7 +321,7 @@ async def _send_spend_alert_email(
         resend.api_key = settings.resend_api_key
         resend.Emails.send(
             {
-                "from": "Planning Platform <billing@resend.dev>",
+                "from": "yeaboi.ai <billing@resend.dev>",
                 "to": [to_email],
                 "subject": subject,
                 "text": body,
