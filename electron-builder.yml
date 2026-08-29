@@ -83,6 +83,8 @@ mac:
   entitlementsInherit: build/entitlements.mac.inherit.plist
   notarize: true
   extendInfo:
+    # A UIElement app gets no Dock tile and no menu bar. Stated, not inferred.
+    LSUIElement: false
     # The duck climbs the Dock by asking the Dock where its icons are.
     NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it.
     NSMicrophoneUsageDescription: yeaboi uses the microphone for voice calls in planning sessions and for on-device dictation.
