@@ -11,6 +11,10 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/yeaboi-ai/yeaboi-desktop/ci.yml?style=for-the-badge&label=CI&logo=github)](https://github.com/yeaboi-ai/yeaboi-desktop/actions)
 
+<img src="https://yeaboi.ai/demo-desktop.gif" alt="The desktop app moving through Home, Plan a project, Retro, Planning poker and Usage — the nav down the left, each surface rendering in the Electron window" width="800"/>
+
+_Re-record it with `make demo`; the walkthrough is `demo_spec.py`._
+
 </div>
 
 ---

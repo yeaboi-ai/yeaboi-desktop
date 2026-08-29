@@ -231,7 +231,21 @@ describe('identity', () => {
   it('settings do not move when the name does', () => {
     // app.getPath('userData') is derived from app.getName(), so an unpinned
     // path orphans an installed app's settings.json on every rename.
-    expect(read('src/main/index.ts')).toContain("app.setPath('userData'");
+    const main = read('src/main/index.ts');
+    expect(main).toMatch(/app\.setPath\(\s*'userData',/);
+    expect(main).toContain("app.isPackaged ? 'yeaboi' : 'yeaboi-desktop'");
+  });
+
+  it('a recording can point the profile somewhere else', () => {
+    // macOS resolves userData from the password database, so neither
+    // --user-data-dir nor $HOME moves it. Without this env var `make demo`
+    // films the profile of whoever ran it, putting their name and email in a
+    // public README GIF.
+    const main = read('src/main/index.ts');
+    expect(main).toContain('YEABOI_DESKTOP_PROFILE');
+    // It has to be part of the pinning call above: that call is unconditional,
+    // so an override set before it is simply replaced.
+    expect(main).toMatch(/setPath\(\s*'userData',\s*profileOverride \|\|/);
   });
 });
 
