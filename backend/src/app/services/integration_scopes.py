@@ -1,6 +1,6 @@
 """Per-provider scope discovery — fetches the list of resources
 (spaces, projects, etc.) the connected integration can access so the user
-can choose which ones Planr is allowed to scan.
+can choose which ones yeaboi is allowed to scan.
 """
 
 from __future__ import annotations

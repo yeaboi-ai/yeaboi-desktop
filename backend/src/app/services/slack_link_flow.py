@@ -1,6 +1,6 @@
 """Handle the `/planr link <email>` sub-command.
 
-Links a Slack user to their Planr account by email.
+Links a Slack user to their yeaboi account by email.
 """
 
 from __future__ import annotations
@@ -30,13 +30,13 @@ async def handle_link_command(db: AsyncSession, fields: dict, bt: BackgroundTask
     """
     email = (fields.get("rest") or "").strip().lower()
     if not email:
-        return _ephemeral("Please include your Planr email: `/planr link you@company.com`")
+        return _ephemeral("Please include your yeaboi email: `/planr link you@company.com`")
 
     # Look up user by email
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user is None:
-        return _ephemeral(f"No Planr user found for `{email}`.")
+        return _ephemeral(f"No yeaboi user found for `{email}`.")
 
     slack_team_id = fields.get("team_id", "")
     slack_user_id = fields.get("user_id", "")
@@ -44,7 +44,7 @@ async def handle_link_command(db: AsyncSession, fields: dict, bt: BackgroundTask
     await link_user(db, slack_team_id, slack_user_id, user, via="explicit")
 
     logger.info(
-        "Linked Slack user %s (team %s) to Planr user %s via /planr link",
+        "Linked Slack user %s (team %s) to yeaboi user %s via /planr link",
         slack_user_id,
         slack_team_id,
         user.id,
@@ -57,11 +57,11 @@ async def handle_link_command(db: AsyncSession, fields: dict, bt: BackgroundTask
         bt.add_task(
             send_invite_email,
             to_email=user.email,
-            inviter_name="Planr",
+            inviter_name="yeaboi",
             inviter_email="noreply@planr.app",
         )
     except Exception:
         # Email notification is best-effort; never fail the command
         pass
 
-    return _ephemeral(f"Linked. You can now use Planr from Slack as `{email}`.")
+    return _ephemeral(f"Linked. You can now use yeaboi from Slack as `{email}`.")

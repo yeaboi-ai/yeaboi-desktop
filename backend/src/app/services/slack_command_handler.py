@@ -13,15 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-HELP_TEXT = """:wave: *Planr slash commands*
+HELP_TEXT = """:wave: *yeaboi slash commands*
 
 • `/planr help` — show this message
-• `/planr link <your@email>` — link your Slack account to Planr
-• `/planr ask <question>` — ask Planr a question about your projects
+• `/planr link <your@email>` — link your Slack account to yeaboi
+• `/planr ask <question>` — ask yeaboi a question about your projects
 • `/planr summarise <session title>` — summarise a planning session
 • `/planr session <title>` — create a new planning session
 
-_Need richer interaction? Open the Planr web app._
+_Need richer interaction? Open the yeaboi web app._
 """
 
 
@@ -72,5 +72,5 @@ async def handle(db: AsyncSession, fields: dict, background_tasks: BackgroundTas
         return await handle_session_create(db, fields, background_tasks)
 
     # Unknown subcommand → fall through to help
-    logger.info("Unknown Planr subcommand %r — returning help", subcommand)
+    logger.info("Unknown yeaboi subcommand %r — returning help", subcommand)
     return _ephemeral(HELP_TEXT)

@@ -57,7 +57,7 @@ async def _resolve_context(
 
     team_id = await resolve_team_from_channel(db, channel_id)
     if not team_id:
-        return None, None, "This channel isn't mapped to a Planr team yet. Ask your admin to connect it."
+        return None, None, "This channel isn't mapped to a yeaboi team yet. Ask your admin to connect it."
 
     # Load team to get org_id
     team_result = await db.execute(select(Team).where(Team.id == team_id))
@@ -71,7 +71,7 @@ async def _resolve_context(
 
     user_id = await resolve_user_id(db, slack_team_id, slack_user_id, slack_bot_token=token)
     if not user_id:
-        return None, None, "I couldn't match your Slack account. Run `/planr link <your Planr email>` first."
+        return None, None, "I couldn't match your Slack account. Run `/planr link <your yeaboi email>` first."
 
     return user_id, team_id, None
 
@@ -112,7 +112,7 @@ async def handle_ask(db: AsyncSession, fields: dict, background_tasks: Backgroun
 
                 client = await get_ai_client(org_id, bg_db, task="fast")
                 system = (
-                    "You are Planr, a planning assistant. "
+                    "You are yeaboi, a planning assistant. "
                     "Answer the user's question concisely. "
                     "If you need data about projects, sessions, or cards, mention that you'd need to look them up "
                     "— do not fabricate."

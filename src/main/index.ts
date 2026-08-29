@@ -144,6 +144,13 @@ if (!gotLock) {
 
   void app.whenReady().then(() => {
     settings.load();
+    // macOS picks an activation policy for itself unless it is told one. An
+    // accessory app has no Dock tile and cannot own the menu bar; this is a
+    // normal windowed app, so it says so rather than inheriting a guess.
+    if (process.platform === 'darwin') {
+      app.setActivationPolicy('regular');
+      if (app.dock && !app.dock.isVisible()) void app.dock.show();
+    }
     // An unpackaged run lives inside node_modules' stock Electron.app, whose
     // Info.plist is what the Dock reads; only this puts the duck there.
     // scripts/dev-bundle-name.mjs handles the name beside it.

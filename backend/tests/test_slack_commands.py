@@ -90,7 +90,7 @@ async def test_link_unknown_email_returns_error(db_session):
     bt = BackgroundTasks()
     resp = await command_handle(db_session, _fields(text="link unknown@example.com"), bt)
     text = resp.get("text", "")
-    assert "no planr user" in text.lower() or "not found" in text.lower() or "unknown@example.com" in text.lower()
+    assert "no yeaboi user" in text.lower() or "not found" in text.lower() or "unknown@example.com" in text.lower()
 
 
 @pytest.mark.asyncio

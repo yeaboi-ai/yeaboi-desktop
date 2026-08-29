@@ -42,7 +42,7 @@ def test_mention_template_does_not_include_action_buttons_action_ids():
         {"mentioned_user_name": "Nick", "source_type": "card",
          "source_title": "x", "source_url": "/p/1"},
     )
-    # The "Open in Planr" button uses action_id="noop" (no handler).
+    # The "Open in yeaboi" button uses action_id="noop" (no handler).
     flat = str(blocks)
     assert "Nick" in flat
     assert "mention:" not in flat  # No "mention:<action>" buttons
@@ -65,7 +65,7 @@ def test_title_for_event_known_and_unknown():
     assert "card failed" in title_for_event("card_failed", {"card_title": "x"}).lower()
     assert "PR ready" in title_for_event("pr_ready", {"card_title": "x"})
     assert title_for_event("session_created", {"title": "y"}).startswith("Session created")
-    assert title_for_event("weird_thing", {}) == "Planr weird_thing"
+    assert title_for_event("weird_thing", {}) == "yeaboi weird_thing"
 
 
 def test_session_created_block_contains_link_button():

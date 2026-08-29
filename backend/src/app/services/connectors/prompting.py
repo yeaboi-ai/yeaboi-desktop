@@ -12,8 +12,8 @@ rather than generic summaries.
 
 from __future__ import annotations
 
-PLANR_FRAMING = (
-    "You are analysing a team's {provider} data for Planr, an AI-powered "
+YEABOI_FRAMING = (
+    "You are analysing a team's {provider} data for yeaboi, an AI-powered "
     "planning platform. Your output will be indexed in a team knowledge "
     "directory consumed by an AI facilitator during planning sessions, and "
     "by team members browsing the directory.\n\n"
@@ -30,13 +30,13 @@ PLANR_FRAMING = (
 
 
 def system_prompt(provider: str, role: str = "") -> str:
-    """Build a system prompt that anchors the AI in Planr's use case.
+    """Build a system prompt that anchors the AI in yeaboi's use case.
 
     Args:
         provider: human-readable provider name (e.g. "GitHub", "AWS")
         role: optional role hint (e.g. "senior cloud architect")
     """
-    framing = PLANR_FRAMING.format(provider=provider)
+    framing = YEABOI_FRAMING.format(provider=provider)
     if role:
         framing = f"You are a {role}. " + framing
     return framing

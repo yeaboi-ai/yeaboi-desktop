@@ -147,7 +147,13 @@ export class Pet {
     // 'screen-saver' is the highest normal level — above the dock and above
     // other always-on-top windows.
     window.setAlwaysOnTop(true, 'screen-saver');
-    window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    // skipTransformProcessType, or this call transforms the whole app to
+    // UIElementApplication so the duck can float over other apps' fullscreen
+    // spaces — and an accessory app has no Dock tile and no menu bar.
+    window.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
     window.setIgnoreMouseEvents(true, { forward: true });
 
     const rendererUrl = process.env['ELECTRON_RENDERER_URL'];

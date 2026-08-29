@@ -310,7 +310,7 @@ async def connect_integration(
 
     # Providers that require per-resource scope selection after connect — same
     # list as the OAuth callback. Even when connected via credential/PAT, the
-    # user must still pick which projects/spaces Planr should scan.
+    # user must still pick which projects/spaces yeaboi should scan.
     SCOPE_RESTRICTABLE = {"confluence", "jira", "azure_devops"}
     initial_status = "pending_scope" if body.provider in SCOPE_RESTRICTABLE else "active"
 
@@ -386,7 +386,7 @@ async def list_available_scopes(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """List the resources (spaces, projects, etc.) the connected integration
-    can access, so the user can pick which ones Planr is allowed to scan."""
+    can access, so the user can pick which ones yeaboi is allowed to scan."""
     from ..services.integration_scopes import get_available_scopes
 
     await _require_org_member(org_id, user, db)

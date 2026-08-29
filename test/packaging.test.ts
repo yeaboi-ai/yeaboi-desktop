@@ -235,6 +235,41 @@ describe('identity', () => {
   });
 });
 
+describe('the dock tile', () => {
+  // An app that macOS treats as an accessory has no Dock tile, no menu bar and
+  // can never become the active app. It is a runtime policy, so neither the
+  // icon nor the bundle proves anything about it.
+  it('main claims the regular activation policy on macOS', () => {
+    const main = read('src/main/index.ts');
+    const ready = main.slice(main.indexOf('app.whenReady()'));
+    expect(ready).toContain("app.setActivationPolicy('regular')");
+    expect(ready).toContain("process.platform === 'darwin'");
+  });
+
+  it('the bundle states it is not a UIElement', () => {
+    expect(builder.mac.extendInfo.LSUIElement).toBe(false);
+  });
+
+  it('the pet keeps its fullscreen visibility without transforming the app', () => {
+    // setVisibleOnAllWorkspaces(…, { visibleOnFullScreen: true }) transforms the
+    // process to UIElementApplication unless told not to, which cost the whole
+    // app its Dock tile and its menu bar for as long as the duck was on.
+    const pet = read('src/main/pet.ts');
+    const call = pet.slice(pet.indexOf('setVisibleOnAllWorkspaces'));
+    expect(call).toContain('skipTransformProcessType: true');
+  });
+
+  it('the window is named after the app, not the vendored backend', () => {
+    // Electron takes the window title from the page, so index.html's <title> is
+    // only the start of it: the brand provider rewrites document.title on every
+    // render and is what the title bar ends up showing.
+    const brand = read('src/renderer/components/providers/brand-provider.tsx');
+    expect(brand).not.toContain('Planning Platform');
+    expect(brand).toContain("DEFAULT_APP_NAME = 'yeaboi.ai'");
+    expect(read('src/renderer/index.html')).toContain('<title>yeaboi.ai</title>');
+  });
+});
+
 describe('staging', () => {
   // A missing extraResources source is a WARNING in electron-builder, not an
   // error: the installer builds, signs, notarizes, publishes — and cannot start.

@@ -158,7 +158,7 @@ def build_scan_blocks(event: str, provider_label: str, title: str, body: str | N
     blocks.append(
         {
             "type": "context",
-            "elements": [{"type": "mrkdwn", "text": f"_Planr · {provider_label} scan_"}],
+            "elements": [{"type": "mrkdwn", "text": f"_yeaboi · {provider_label} scan_"}],
         }
     )
     return blocks

@@ -70,14 +70,14 @@ async def send_invite_email(
         await asyncio.to_thread(
             resend.Emails.send,
             {
-                "from": "Planning Platform <onboarding@resend.dev>",
+                "from": "yeaboi.ai <onboarding@resend.dev>",
                 "to": [to_email],
-                "subject": f"{inviter_name} invited you to Planning Platform",
+                "subject": f"{inviter_name} invited you to yeaboi.ai",
                 "html": f"""
             <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
                 <h1 style="font-size: 24px; font-weight: 600; color: #f0f0f0; margin-bottom: 8px;">You're invited</h1>
                 <p style="color: #858585; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
-                    <strong style="color: #f0f0f0;">{inviter_name}</strong> ({inviter_email}) has invited you to join their team on Planning Platform.
+                    <strong style="color: #f0f0f0;">{inviter_name}</strong> ({inviter_email}) has invited you to join their team on yeaboi.ai.
                 </p>
                 <a href="{join_url}" style="display: inline-block; background: #e5a630; color: #0a0a0a; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
                     Accept invitation
@@ -158,7 +158,7 @@ async def send_session_recap_email(
                 await asyncio.to_thread(
                     resend.Emails.send,
                     {
-                        "from": "Planning Platform <onboarding@resend.dev>",
+                        "from": "yeaboi.ai <onboarding@resend.dev>",
                         "to": [to_email],
                         "subject": f"Recap: {session_title}{duration_label}",
                         "html": f"""
