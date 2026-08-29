@@ -40,6 +40,9 @@ import {
   setStoredTeamId,
   dispatchTeamChange,
 } from '@/hooks/use-auth-fetch';
+import { updateIndicatorVisible } from '@shared/update';
+import { useUpdateState } from '@/hooks/use-update-state';
+import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
 interface NavItem {
@@ -117,6 +120,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { authFetch, ready } = useAuthFetch();
+  // The nav dot ignores dismissal — it is the quiet permanent reminder that
+  // What's New has something; the dismissible card is the loud half.
+  const updateState = useUpdateState();
+  const updateDot = updateIndicatorVisible(updateState, null);
 
   // All nav routes in order for arrow key cycling — main nav, then bottom section
   const allRoutes = [...NAV_ITEMS.map((n) => n.href), '/settings/themes', '/settings'];
@@ -348,8 +355,16 @@ export function Sidebar() {
                 }}
                 title={label}
               >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="relative shrink-0">
+                  <Icon className="h-3.5 w-3.5" />
+                  {href === '/whats-new' && updateDot && (
+                    <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  )}
+                </span>
                 <span className="hidden md:inline">{label}</span>
+                {href === '/whats-new' && updateDot && (
+                  <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
+                )}
               </Link>
             ))}
           </div>
@@ -358,6 +373,7 @@ export function Sidebar() {
 
       {/* Bottom section */}
       <div className="px-2 md:px-3 pb-4 flex flex-col gap-1">
+        <UpdateCard />
         <Link
           href="/settings/themes"
           className={`flex items-center gap-2.5 px-2 md:px-3 py-2 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${

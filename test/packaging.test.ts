@@ -197,6 +197,65 @@ describe('updates', () => {
     expect(release).toContain('merge-mac-update-info.mjs');
     expect(read('scripts/merge-mac-update-info.mjs')).toBeTruthy();
   });
+
+  it('nothing downloads uninvited, and a quit finishes a pending install', () => {
+    const updater = read('src/main/updater.ts');
+    expect(updater).toContain('autoDownload = false');
+    expect(updater).toContain('autoInstallOnAppQuit = true');
+  });
+
+  it('main checks for updates on its own schedule', () => {
+    // The check is automatic; the download is not. Deleting the scheduler would
+    // silently return the app to update-only-if-someone-opens-the-tray.
+    const main = read('src/main/index.ts');
+    expect(main).toContain('shouldAutoCheck');
+    expect(main).toContain('UPDATE_CHECK_DELAY_MS');
+    expect(main).toContain('UPDATE_CHECK_INTERVAL_MS');
+  });
+
+  it('the update policy lives in the shared module, not re-forked per process', () => {
+    expect(read('src/main/updater.ts')).toContain("from '../shared/update'");
+    expect(read('src/main/tray.ts')).toContain("from '../shared/update'");
+    expect(read('src/renderer/lib/yeaboi/api.ts')).toContain("from '@shared/update'");
+  });
+});
+
+describe('versioning', () => {
+  // The app's version is its own line, independent of the bundled wheel. The
+  // updater compares it, so a release that regressed below the last published
+  // one (3.32.0, the final shared-version release) would strand every install.
+  it('package.json carries a real version above the shared-version era', () => {
+    const [major] = pkg.version.split('.').map(Number);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(major).toBeGreaterThanOrEqual(4);
+  });
+
+  it('the workflow reads the version from the tree, never stamps one', () => {
+    expect(release).not.toContain('npm version');
+    expect(release).toContain('jq -r .version package.json');
+  });
+
+  it('a release refuses to ship without its notes', () => {
+    expect(release).toContain(
+      "jq -r '.entries[0].version' src/renderer/lib/yeaboi/shell-changelog.json",
+    );
+    expect(release).toContain('every release ships its notes');
+  });
+
+  it('the release notes come from the shell ledger', () => {
+    expect(release).toContain('scripts/release-notes.mjs');
+    expect(release).toContain('--notes-file');
+    expect(release).not.toContain('--notes "yeaboi.ai');
+  });
+
+  it('the bundled runtimes are fetched at the wheel version, not the app version', () => {
+    const staging = release.slice(
+      release.indexOf('Stage the bundled runtimes'),
+      release.indexOf('Install livekit-server'),
+    );
+    expect(staging).toContain('fetch-runtimes.mjs --version "${{ needs.resolve.outputs.wheel }}"');
+    expect(staging).not.toContain('needs.resolve.outputs.version');
+  });
 });
 
 describe('identity', () => {

@@ -12,32 +12,10 @@ import trayIconPath from '../../resources/duck-tray.png?asset';
 // Its @2x sibling ships beside it in resources/ and Electron picks it up by
 // name — an import would only re-emit the same file under a second one.
 import trayTemplatePath from '../../resources/duck-trayTemplate.png?asset';
-import type { UpdateState } from './updater';
+import { updateLabel, type UpdateState } from '../shared/update';
 
 /** Menu-bar icons are measured in points; 20 is the conventional height. */
 const TRAY_ICON_SIZE = 20;
-
-/** The update item says where the update got to, not what the menu does — a
- *  "Check for updates…" that already found one reads as if nothing happened.
- *  The name is passed in rather than read here so this stays a pure function. */
-export function updateLabel(state: UpdateState, name: string): string {
-  switch (state.kind) {
-    case 'checking':
-      return 'Checking for updates…';
-    case 'available':
-      return `Download ${name} ${state.version}`;
-    case 'downloading':
-      return `Downloading ${state.version} — ${state.percent}%`;
-    case 'ready':
-      return `Restart to update to ${state.version}`;
-    case 'error':
-      return 'Check for updates… (last check failed)';
-    case 'unsupported':
-      return 'Updates are managed outside the app';
-    default:
-      return 'Check for updates…';
-  }
-}
 
 export interface TrayActions {
   open: () => void;

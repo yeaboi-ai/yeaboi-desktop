@@ -140,14 +140,8 @@ export interface ShellMeta {
 
 export const getShellMeta = (): Promise<ShellMeta> => bridge().appMeta() as Promise<ShellMeta>;
 
-export type UpdateState =
-  | { kind: 'unsupported'; reason: string }
-  | { kind: 'idle'; version?: string }
-  | { kind: 'checking' }
-  | { kind: 'available'; version: string }
-  | { kind: 'downloading'; version: string; percent: number }
-  | { kind: 'ready'; version: string }
-  | { kind: 'error'; message: string };
+export type { UpdateState } from '@shared/update';
+import type { UpdateState } from '@shared/update';
 
 export const getUpdateState = (): Promise<UpdateState> =>
   bridge().getUpdateState() as Promise<UpdateState>;
