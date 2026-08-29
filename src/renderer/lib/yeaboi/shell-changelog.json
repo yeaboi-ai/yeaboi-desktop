@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "version": "4.0.0",
+      "date": "2026-08-29",
+      "summary": "The desktop app now has a life of its own: its own version number, its own release notes, and a one-click updater. When a new version is out, an amber card appears in the sidebar — one click downloads it and restarts the app. What's New now shows what changed in the app itself alongside the yeaboi releases that matter on the desktop, instead of every terminal-only note.",
+      "highlights": [
+        {
+          "text": "The app checks for updates on its own and shows an amber card when one is ready to install",
+          "areas": ["updater"]
+        },
+        {
+          "text": "One click updates: download with live progress, then an automatic restart into the new version",
+          "areas": ["updater"]
+        },
+        {
+          "text": "App releases carry their own version and release notes, independent of the yeaboi package",
+          "areas": ["packaging"]
+        },
+        {
+          "text": "What's New separates app changes from yeaboi changes and hides terminal-only notes",
+          "areas": ["shell"]
+        }
+      ]
+    }
+  ]
+}

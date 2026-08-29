@@ -32,6 +32,7 @@ import { Notifier } from './notify';
 import { Pet, type PetNotice } from './pet';
 import { clampBanner, noticeTitle } from '../shared/notices';
 import type { PetPrefs } from '../shared/pet-prefs';
+import { UPDATE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS, shouldAutoCheck } from '../shared/update';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { PlanningSidecar } from './planning';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
@@ -320,6 +321,15 @@ if (!gotLock) {
       for (const window of BrowserWindow.getAllWindows())
         window.webContents.send('update:state', state);
     });
+    // Automatic checks find the update; nothing downloads until a person
+    // clicks (autoDownload stays false in updater.ts).
+    if (updater.current.kind !== 'unsupported') {
+      const autoCheck = () => {
+        if (shouldAutoCheck(updater.current.kind)) void updater.check();
+      };
+      setTimeout(autoCheck, UPDATE_CHECK_DELAY_MS);
+      setInterval(autoCheck, UPDATE_CHECK_INTERVAL_MS);
+    }
 
     createMainWindow();
     pet.setPrefs(settings.pet);

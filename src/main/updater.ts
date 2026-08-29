@@ -11,15 +11,9 @@
 // mid-sentence is not a feature.
 
 import { app } from 'electron';
+import { updateSupport, type UpdateState } from '../shared/update';
 
-export type UpdateState =
-  | { kind: 'unsupported'; reason: string }
-  | { kind: 'idle'; version?: string }
-  | { kind: 'checking' }
-  | { kind: 'available'; version: string }
-  | { kind: 'downloading'; version: string; percent: number }
-  | { kind: 'ready'; version: string }
-  | { kind: 'error'; message: string };
+export type { UpdateState };
 
 /** The one shape the renderer and the tray both read. */
 export interface UpdaterLike {
@@ -28,22 +22,6 @@ export interface UpdaterLike {
   check(): Promise<UpdateState>;
   download(): Promise<UpdateState>;
   install(): void;
-}
-
-/** Where an installed build can replace itself, and where it cannot.
- *
- *  A `.deb` is owned by the system package manager and an unpackaged dev run
- *  has nothing to update — saying so plainly beats a button that fails. */
-export function updateSupport(
-  packaged: boolean,
-  platform: string,
-  appImage: string | undefined,
-): string | null {
-  if (!packaged) return 'Updates are handled by your dev server while running from source.';
-  if (platform === 'linux' && !appImage) {
-    return 'Installed from a package — update through your package manager.';
-  }
-  return null;
 }
 
 export class Updater implements UpdaterLike {

@@ -24,9 +24,7 @@ Name the model that did the work, rather than pinning a version this file then h
 
 ## Gate
 
-There is no `make ship-gate` here, and no shared-tooling clone: the Makefile is this repo's own
-and stops at `help install dev build typecheck test icons pack dist clean`. The gate is what
-`ci.yml` runs, in three jobs:
+`make ship-gate` (shared tooling) runs the same set `ci.yml` does:
 
 ```
 npm run lint            # tsc --noEmit
@@ -87,9 +85,12 @@ half a rename lands.
 
 `.github/workflows/release.yml`, **dispatch only**. Things to know:
 
-- **The version is an input, never derived from the tree.** `package.json` says `0.1.0` on `main`
-  and the workflow stamps the real number at build time — a rebuild of last month's app must bundle
-  last month's yeaboi.
+- **The app's version is `package.json`'s; the wheel is the input.** The two are independent: bump
+  the version by hand together with the head entry of `src/renderer/lib/yeaboi/shell-changelog.json`
+  (the workflow refuses a mismatch — every release ships its notes), and dispatch with the
+  `yeaboi_version` to bundle. It must only ever go up — electron-updater compares it, and the last
+  shared-version release was `3.32.0` (hence the independent line starting at `4.0.0`). A rebuild of
+  last month's app still bundles last month's yeaboi, because the wheel stays an explicit input.
 - **This repo carries no release tags.** The tag lives in `yeaboi-desktop-releases`, created when
   the draft is published. There is deliberately no `push: tags` trigger: this clone shares an
   object store with the Python repo and has carried 141 of its tags, any one of which would
