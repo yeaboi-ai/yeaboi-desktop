@@ -3,8 +3,11 @@
 // `assistant` REPLACES the streamed tokens rather than doubling them, and a
 // tool_result closes the call it belongs to rather than appending a second row.
 
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 import {
+  COLLAPSED_TEXT_WIDTH,
   COLLAPSED_WIDTH,
   MIN_EXPANDED_HEIGHT,
   type NikoConversation,
@@ -327,5 +330,39 @@ describe('slashWindow', () => {
     for (let i = 0; i < all.length; i += 1) {
       expect(slashWindow(all, i).filter((r) => r.isPeek)).toHaveLength(i > 2 ? 1 : 0);
     }
+  });
+});
+
+describe('the collapsed pill', () => {
+  // COLLAPSED_WIDTH is derived from Tailwind classes it cannot see, so the
+  // regression to catch is a change to the markup, not to the arithmetic —
+  // restating the same four numbers here would only pin the constant against a
+  // copy of itself. vitest is node-only, so read the JSX.
+  const source = readFileSync(
+    new URL('../src/renderer/components/niko/niko-bar.tsx', import.meta.url),
+    'utf8',
+  );
+
+  it('renders the chrome its width is derived from', () => {
+    const start = source.indexOf('── The pill ');
+    expect(start).toBeGreaterThan(-1);
+    const button = source.slice(start, source.indexOf('</button>', start));
+    // 2×24 padding, an 16px icon, an 8px gap and a 1px border on each side.
+    expect(button).toContain('px-6');
+    expect(button).toContain('gap-2');
+    expect(button).toMatch(/\bborder\b/);
+    expect(button).toContain('size-4');
+    expect(button).toContain('<NikoCyclingText />');
+  });
+
+  it('is wide enough for the placeholder it renders', () => {
+    expect(COLLAPSED_WIDTH - (2 * 1 + 2 * 24 + 16 + 8)).toBeGreaterThanOrEqual(
+      COLLAPSED_TEXT_WIDTH,
+    );
+  });
+
+  it('leaves room for the tip dock beside it at the minimum window', () => {
+    // 960 is the main window's minWidth (src/main/index.ts).
+    expect(COLLAPSED_WIDTH).toBeLessThan(960 / 2);
   });
 });

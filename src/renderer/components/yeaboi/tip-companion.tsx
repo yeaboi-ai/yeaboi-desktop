@@ -2,29 +2,40 @@
 
 // The duck who hands you a tip.
 //
-// Mirrors the TUI welcome screen's companion lane: the duck holds the current
-// tip in a speech bubble, quacks as each new one lands, and the browse / open /
-// hide controls sit on the bubble's bottom edge.
+// A dock pinned to the window's bottom-right corner: the duck perches there and
+// the bubble grows upward out of him. The bubble is positioned against the duck
+// rather than stacked with him, so retracting it never makes him move.
 //
-// Page-local on purpose. An app-wide rotating-tips bubble was tried and read
-// as noise (see the note in lib/duck-voice.ts). This is the welcome-screen
-// surface, which is where the terminal puts them too.
+// Home-screen only, which is where the terminal puts tips too. An app-wide
+// rotating bubble was tried and read as noise (see the note in lib/duck-voice.ts).
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 import { DuckMark, useDuckPulse } from '@/components/brand/duck';
+import { useNikoContext } from '@/components/niko/niko-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { COLLAPSED_WIDTH } from '@/lib/yeaboi/niko';
 import { loadSettings, saveSetting } from '@/lib/yeaboi/settings';
-import { cleanTipText, resolveIndex, tipBrightness, tipRoute, type Tip } from '@/lib/yeaboi/tips';
+import {
+  cleanTipText,
+  dockMode,
+  dockWidth,
+  resolveIndex,
+  tipBrightness,
+  tipProgress,
+  tipRoute,
+  type Tip,
+} from '@/lib/yeaboi/tips';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
 
-/** How often the clock is sampled. Fine enough for the cross-fade, coarse
- *  enough that it is one style update rather than an animation loop. */
+/** How often the clock is sampled. Fine enough for the cross-fade and the
+ *  hairline, coarse enough that it is one style update rather than a loop. */
 const TICK_MS = 50;
 
-/** Above this many tips a dot per tip is clutter, so the position reads as a count. */
-const MAX_DOTS = 10;
+const DUCK_SIZE = 72;
+/** The duck, once tips are off — present enough to click, quiet enough to ignore. */
+const QUIET_DUCK_SIZE = 40;
 
 interface ModeCard {
   key: string;
@@ -39,13 +50,27 @@ interface Props {
   onNavigate: (route: string) => void;
 }
 
+/** The window's width, resampled on resize. Mirrors niko-bar's useOpenWidth. */
+function useWindowWidth(): number {
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return width;
+}
+
 export function TipCompanion({ tips, cards, onNavigate }: Props) {
   const reduced = useReducedMotion();
+  const { isOpen: nikoOpen } = useNikoContext();
+  const innerWidth = useWindowWidth();
+
   const [elapsed, setElapsed] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [engaged, setEngaged] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  // null until the backend answers — the block stays out of the way rather than
+  // null until the backend answers — the dock stays out of the way rather than
   // flashing on and then hiding itself.
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [duckState, pulse] = useDuckPulse('idle');
@@ -64,14 +89,25 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
     );
   }, []);
 
-  // The clock. Resumes from where it froze so a hover never loses your place.
+  const mode = dockMode({
+    enabled,
+    tipCount: tips.length,
+    nikoOpen,
+    innerWidth,
+    pillWidth: COLLAPSED_WIDTH,
+  });
+
+  // The clock. Runs only while the bubble is on screen and nothing is holding
+  // it, and resumes from where it froze — a hover, a Niko turn or a trip through
+  // the gallery never loses your place.
+  const running = mode === 'bubble' && !engaged && !galleryOpen;
   useEffect(() => {
-    if (paused) return;
+    if (!running) return;
     const from = elapsedRef.current;
     const startedAt = Date.now();
     const timer = setInterval(() => setElapsed(from + (Date.now() - startedAt)), TICK_MS);
     return () => clearInterval(timer);
-  }, [paused]);
+  }, [running]);
 
   const index = resolveIndex(elapsed, offset, tips.length);
   const tip = tips[index];
@@ -84,142 +120,186 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
     if (!reduced) pulse('card');
   }, [index, pulse, reduced]);
 
-  const hide = () => {
-    setEnabled(false);
-    void saveSetting('TIPS_ENABLED', 'false');
+  const setEnabledSetting = (value: boolean) => {
+    setEnabled(value);
+    void saveSetting('TIPS_ENABLED', value ? 'true' : 'false');
   };
 
-  const show = () => {
-    setEnabled(true);
-    void saveSetting('TIPS_ENABLED', 'true');
-  };
+  if (mode === 'off') return null;
 
-  if (enabled === null || tips.length === 0) return null;
-
-  // Never a blank slot: a hidden rotation still says how to get it back.
-  if (!enabled) {
+  // Never a blank corner: tips off leaves a quiet duck that turns them back on.
+  if (mode === 'quiet') {
     return (
       <button
         type="button"
-        onClick={show}
-        className="mt-8 text-[12px] text-muted-foreground/70 hover:text-foreground transition-colors"
+        onClick={() => setEnabledSetting(true)}
+        title="Show tips"
+        aria-label="Show tips"
+        className="fixed bottom-6 right-6 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
       >
-        Show tips
+        <DuckMark size={QUIET_DUCK_SIZE} />
       </button>
     );
   }
 
-  if (!tip) return null;
-
-  const route = tipRoute(tip);
-  const card = tip.mode_key ? cards.find((c) => c.key === tip.mode_key) : undefined;
+  const route = tip ? tipRoute(tip) : null;
+  const card = tip?.mode_key ? cards.find((c) => c.key === tip.mode_key) : undefined;
+  const accent = card?.color ?? 'var(--primary)';
   const opacity = reduced ? 1 : tipBrightness(elapsed);
+  // Hidden until the dock is hovered OR focused — focus-within is what keeps
+  // these reachable from the keyboard.
+  // Hidden until the dock is hovered OR focused — focus-within is what keeps
+  // these reachable from the keyboard. Under reduced motion they stay put: the
+  // rotation still advances, and the way to stop it must not itself be behind a
+  // hover (WCAG 2.2.2).
+  const reveal = reduced
+    ? ''
+    : 'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100';
 
   return (
     <>
       <div
-        className="mt-8 flex items-end gap-3"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onFocusCapture={() => setPaused(true)}
-        onBlurCapture={() => setPaused(false)}
+        className="group fixed bottom-6 right-6 z-30"
+        onMouseEnter={() => setEngaged(true)}
+        onMouseLeave={() => setEngaged(false)}
+        onFocusCapture={() => setEngaged(true)}
+        onBlurCapture={() => setEngaged(false)}
       >
-        {/* Decorative: the duck reports nothing the bubble does not already say,
-            so he stays out of the tab order and off the a11y tree. */}
-        <button
-          type="button"
-          aria-hidden
-          tabIndex={-1}
-          onClick={() => pulse('startled')}
-          className="shrink-0 cursor-pointer bg-transparent border-0 p-0"
-        >
-          <DuckMark state={duckState} size={56} />
-        </button>
-
-        <div className="min-w-0 max-w-[560px] flex-1 rounded-2xl rounded-bl-sm bg-card ring-1 ring-border/60 shadow-sm">
+        {mode === 'bubble' && tip && (
           <div
-            className="flex items-start gap-2 px-4 pt-3 pb-2.5"
-            style={{ opacity, transition: reduced ? undefined : 'opacity 60ms linear' }}
-            aria-live="polite"
+            className="absolute bottom-full right-2 mb-2.5 rounded-2xl bg-card shadow-lg ring-1 ring-border/60"
+            style={{
+              width: `${dockWidth(innerWidth, COLLAPSED_WIDTH)}px`,
+              transformOrigin: 'bottom right',
+              animation: reduced ? undefined : 'tip-bubble-in 200ms ease-out',
+            }}
           >
-            {/* A maturity caveat outranks a freshness cue; never both. */}
-            {tip.is_beta ? (
-              <span className="mt-px shrink-0 rounded-md bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warning">
-                BETA
-              </span>
-            ) : tip.is_new ? (
-              <span className="mt-px shrink-0 rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-primary">
-                NEW
-              </span>
-            ) : null}
-            <p className="text-[13px] leading-snug text-foreground">{cleanTipText(tip.text)}</p>
-          </div>
-
-          <div className="flex items-center gap-1 border-t border-border/60 px-2 py-1.5">
-            <button
-              type="button"
-              onClick={() => setOffset((o) => o - 1)}
-              aria-label="Previous tip"
-              className="rounded-md p-1 text-muted-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setOffset((o) => o + 1)}
-              aria-label="Next tip"
-              className="rounded-md p-1 text-muted-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-
-            {tips.length <= MAX_DOTS ? (
-              <div className="ml-1 flex items-center gap-1">
-                {tips.map((t, i) => (
-                  <span
-                    key={`${t.key}-${i}`}
-                    className={`h-1 rounded-full transition-all ${
-                      i === index ? 'w-3 bg-primary' : 'w-1 bg-muted-foreground/25'
-                    }`}
-                  />
-                ))}
+            {/* The rotation clock, as the bubble's top edge. Left out under
+                reduced motion, where the always-visible counter carries it. */}
+            {!reduced && (
+              <div className="absolute left-4 right-4 top-0 h-0.5 overflow-hidden rounded-full bg-border/40">
+                <div
+                  className="h-full"
+                  style={{ width: `${tipProgress(elapsed) * 100}%`, background: accent }}
+                />
               </div>
-            ) : (
-              <span className="ml-1.5 text-[11px] tabular-nums text-muted-foreground/60">
-                {index + 1}/{tips.length}
-              </span>
             )}
 
-            <div className="ml-auto flex items-center gap-1">
-              {route && card && (
+            <div
+              className="flex items-start gap-2 px-4 pb-2 pt-3.5"
+              style={{ opacity, transition: reduced ? undefined : 'opacity 60ms linear' }}
+              aria-live="polite"
+            >
+              {/* A maturity caveat outranks a freshness cue; never both. */}
+              {tip.is_beta ? (
+                <span className="mt-px shrink-0 rounded-md bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warning">
+                  BETA
+                </span>
+              ) : tip.is_new ? (
+                <span className="mt-px shrink-0 rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-primary">
+                  NEW
+                </span>
+              ) : null}
+              <p className="text-[13px] leading-snug text-foreground">{cleanTipText(tip.text)}</p>
+            </div>
+
+            {/* One row at a fixed height: hovering changes opacity, never layout. */}
+            <div className="flex h-9 items-center gap-0.5 px-2">
+              <div className={`flex items-center gap-0.5 ${reveal}`}>
                 <button
                   type="button"
-                  onClick={() => onNavigate(route)}
-                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium hover:bg-secondary/60 transition-colors"
-                  style={{ color: card.color }}
+                  onClick={() => setOffset((o) => o - 1)}
+                  aria-label="Previous tip"
+                  className="rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-secondary/60 hover:text-foreground"
                 >
-                  Open {card.title}
-                  <ArrowUpRight className="h-3 w-3" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setGalleryOpen(true)}
-                className="rounded-md px-2 py-1 text-[11px] text-muted-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
-              >
-                See all
-              </button>
-              <button
-                type="button"
-                onClick={hide}
-                aria-label="Hide tips"
-                className="rounded-md p-1 text-muted-foreground/50 hover:text-foreground hover:bg-secondary/60 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setOffset((o) => o + 1)}
+                  aria-label="Next tip"
+                  className="rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-secondary/60 hover:text-foreground"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+                <span className="ml-1 text-[11px] tabular-nums text-muted-foreground/60">
+                  {index + 1}/{tips.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setGalleryOpen(true)}
+                  className="ml-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground/70 transition-colors hover:bg-secondary/60 hover:text-foreground"
+                >
+                  See all tips
+                </button>
+              </div>
+
+              <div className="ml-auto flex items-center gap-0.5">
+                {route && card && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(route)}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors hover:bg-secondary/60"
+                    style={{ color: accent }}
+                  >
+                    Open {card.title}
+                    <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEnabledSetting(false)}
+                  title="Turn tips off"
+                  aria-label="Turn tips off"
+                  className={`rounded-md p-1 text-muted-foreground/50 transition-colors hover:bg-secondary/60 hover:text-foreground ${reveal}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
+
+            {/* The tail, pointing down at the duck's head. Two borders only, so
+                it reads as the bubble's own corner rather than a pasted square. */}
+            <span
+              aria-hidden
+              className="absolute h-2.5 w-2.5 rotate-45 rounded-[1px] bg-card"
+              style={{
+                bottom: '-5px',
+                // `right` positions the tail's edge and it is 10px wide: the
+                // duck's centre is 36px from the dock's edge, the bubble 8px in.
+                right: '23px',
+                borderRight: '1px solid color-mix(in srgb, var(--border) 60%, transparent)',
+                borderBottom: '1px solid color-mix(in srgb, var(--border) 60%, transparent)',
+              }}
+            />
           </div>
-        </div>
+        )}
+
+        {/* With the bubble up the duck reports nothing it does not already say,
+            so he stays out of the tab order and off the a11y tree. Retracted he
+            is the only thing left, so he becomes the way in — otherwise there is
+            no route to the tips at all while Niko's bar is open. */}
+        {mode === 'duck' ? (
+          <button
+            type="button"
+            onClick={() => setGalleryOpen(true)}
+            title="See all tips"
+            aria-label="See all tips"
+            className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
+          >
+            <DuckMark state={duckState} size={DUCK_SIZE} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => pulse('startled')}
+            className="block cursor-pointer border-0 bg-transparent p-0"
+          >
+            <DuckMark state={duckState} size={DUCK_SIZE} />
+          </button>
+        )}
       </div>
 
       <AllTipsSheet

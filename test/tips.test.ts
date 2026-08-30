@@ -2,17 +2,23 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  DOCK_MAX_WIDTH,
+  DOCK_MIN_WIDTH,
   FADE_FRACTION,
   MODE_ROUTES,
   TIP_ROTATE_MS,
   buildTipsText,
   cleanTipText,
+  dockMode,
+  dockWidth,
   groupTips,
   resolveIndex,
   tipBrightness,
+  tipProgress,
   tipRoute,
   type Tip,
 } from '../src/renderer/lib/yeaboi/tips';
+import { COLLAPSED_WIDTH } from '../src/renderer/lib/yeaboi/niko';
 
 const tip = (over: Partial<Tip> = {}): Tip => ({
   key: 'k',
@@ -201,5 +207,83 @@ describe('tipRoute', () => {
       'ship',
     ];
     for (const key of shipped) expect(MODE_ROUTES[key], key).toBeTruthy();
+  });
+});
+
+describe('tipProgress', () => {
+  it('starts each window empty and fills across it', () => {
+    expect(tipProgress(0)).toBe(0);
+    expect(tipProgress(TIP_ROTATE_MS / 2)).toBeCloseTo(0.5);
+    expect(tipProgress(TIP_ROTATE_MS - 1)).toBeCloseTo(1, 2);
+  });
+
+  it('resets on the next window rather than running past 1', () => {
+    expect(tipProgress(TIP_ROTATE_MS)).toBe(0);
+    expect(tipProgress(TIP_ROTATE_MS * 3.25)).toBeCloseTo(0.25);
+  });
+
+  it('treats a negative clock as the start', () => {
+    expect(tipProgress(-5_000)).toBe(0);
+  });
+});
+
+describe('dockWidth', () => {
+  it('caps on a wide window', () => {
+    expect(dockWidth(1600, COLLAPSED_WIDTH)).toBe(DOCK_MAX_WIDTH);
+  });
+
+  it('still fits the bubble at the 960px minimum window', () => {
+    // Stated as the invariant rather than a number: the pill is sized from its
+    // own content, so a phrase change moves it and this must still hold.
+    const width = dockWidth(960, COLLAPSED_WIDTH);
+    expect(width).toBeGreaterThanOrEqual(DOCK_MIN_WIDTH);
+    // The gutter it claims must clear Niko's centred pill.
+    expect(width + 24 + 16 + COLLAPSED_WIDTH / 2).toBeLessThanOrEqual(960 / 2);
+  });
+
+  it('shrinks with the gutter, and goes under the floor on a tiny window', () => {
+    expect(dockWidth(800, COLLAPSED_WIDTH)).toBeLessThan(dockWidth(960, COLLAPSED_WIDTH));
+    expect(dockWidth(600, COLLAPSED_WIDTH)).toBeLessThan(DOCK_MIN_WIDTH);
+  });
+
+  it('shrinks as the pill grows', () => {
+    expect(dockWidth(1000, 560)).toBeLessThan(dockWidth(1000, COLLAPSED_WIDTH));
+  });
+});
+
+describe('dockMode', () => {
+  const input = {
+    enabled: true,
+    tipCount: 31,
+    nikoOpen: false,
+    innerWidth: 1280,
+    pillWidth: COLLAPSED_WIDTH,
+  };
+
+  it('shows the bubble once the backend has answered', () => {
+    expect(dockMode(input)).toBe('bubble');
+  });
+
+  it('renders nothing until the setting has loaded', () => {
+    expect(dockMode({ ...input, enabled: null })).toBe('off');
+  });
+
+  it('renders nothing when the backend served no tips, whatever else is true', () => {
+    expect(dockMode({ ...input, tipCount: 0 })).toBe('off');
+    expect(dockMode({ ...input, tipCount: 0, enabled: false, nikoOpen: true })).toBe('off');
+  });
+
+  it('leaves a quiet duck when tips are turned off', () => {
+    expect(dockMode({ ...input, enabled: false })).toBe('quiet');
+    // Off outranks Niko: the corner is quiet either way.
+    expect(dockMode({ ...input, enabled: false, nikoOpen: true })).toBe('quiet');
+  });
+
+  it('retracts to the duck while Niko is open', () => {
+    expect(dockMode({ ...input, nikoOpen: true })).toBe('duck');
+  });
+
+  it('retracts to the duck when the gutter is too narrow to read in', () => {
+    expect(dockMode({ ...input, innerWidth: 600 })).toBe('duck');
   });
 });

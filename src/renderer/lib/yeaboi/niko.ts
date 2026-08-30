@@ -211,7 +211,17 @@ export function messagesOf(conversation: NikoConversation): NikoMessage[] {
 // Kept out of the component so vitest can drive them with no DOM, the same
 // split `reduceTurn` above uses.
 
-export const COLLAPSED_WIDTH = 200;
+/**
+ * The rotating placeholder's box, fixed in px so the pill's width never moves as
+ * phrases swap (see niko-cycling-text.tsx). Wide enough for the longest phrase.
+ */
+export const COLLAPSED_TEXT_WIDTH = 175;
+
+/** The pill's chrome around that box: a 1px border, `px-6`, a `size-4` icon, `gap-2`. */
+const COLLAPSED_CHROME = 2 * 1 + 2 * 24 + 16 + 8;
+
+/** Sized from its content, so the box it renders always fits. */
+export const COLLAPSED_WIDTH = COLLAPSED_TEXT_WIDTH + COLLAPSED_CHROME;
 export const COLLAPSED_HEIGHT = 44;
 export const INPUT_HEIGHT = 52;
 export const DEFAULT_EXPANDED_HEIGHT = 440;
