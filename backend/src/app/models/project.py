@@ -37,4 +37,9 @@ class Project(TimestampMixin, Base):
     # no defaults so the wizard starts with nothing checked.
     default_modifiers: Mapped[list] = mapped_column(JSON, nullable=False, default=list, server_default="[]")
 
+    # The yeaboi engine's project row this project is a client of (proj-<8hex>,
+    # minted lazily on the first engine-touching run). Soft reference — the
+    # engine's sessions.db is a different database, so no FK.
+    yeaboi_project_id: Mapped[str | None] = mapped_column(String(64), default=None)
+
     owner: Mapped["User"] = relationship(back_populates="projects")  # noqa: F821

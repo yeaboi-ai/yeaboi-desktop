@@ -17,6 +17,8 @@ class ProjectUpdate(BaseModel):
     # against a static enum here. See routers/projects.py:update_project.
     default_generation_style: str | None = None
     default_modifiers: list[str] | None = Field(default=None)
+    # Engine link (proj-<8hex>): set once by the renderer after project_create.
+    yeaboi_project_id: str | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -31,5 +33,6 @@ class ProjectResponse(BaseModel):
     is_demo: bool = False
     default_generation_style: str | None = None
     default_modifiers: list[str] = Field(default_factory=list)
+    yeaboi_project_id: str | None = None
 
     model_config = {"from_attributes": True}

@@ -19,6 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { callTool, newOpId, onAmbientEvent } from '@/lib/yeaboi/api';
 import { mapBlueprintToIntake, type IntakeArgs } from '@/lib/yeaboi/blueprint-intake';
+import { ensureEngineProject, type EngineLinkable } from '@/lib/yeaboi/engine-project';
 import { mapPlan, previewImport, runImport } from '@/lib/yeaboi/board-bridge';
 import type { Plan } from '@/lib/yeaboi/plan';
 import { duckQuip } from '@/lib/duck-events';
@@ -100,6 +101,7 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
   const { authFetch, ready } = useAuthFetch();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const opIdRef = useRef('');
+  const projectRef = useRef<EngineLinkable | null>(null);
 
   useEffect(() => () => watchProgress(null), []);
 
@@ -119,7 +121,9 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
         name: string;
         description?: string | null;
         repo_url?: string | null;
+        yeaboi_project_id?: string | null;
       };
+      projectRef.current = { id: projectId, ...project };
       const snapshot = (await blueprintResp.json()) as {
         id: string;
         content: Record<string, string>;
@@ -176,12 +180,25 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
       });
     });
     try {
+      // The engine-side project link (minted lazily here on the first run).
+      // Scoping is an enrichment — a sidecar hiccup degrades to an unscoped
+      // plan rather than blocking the generation the user asked for.
+      let engineProjectId = '';
+      try {
+        if (projectRef.current) {
+          engineProjectId = await ensureEngineProject(authFetch, projectRef.current);
+          projectRef.current.yeaboi_project_id = engineProjectId;
+        }
+      } catch (e) {
+        console.warn('engine-project: could not resolve, generating unscoped', e);
+      }
       const envelope = await callTool<Plan>(
         'plan_generate',
         {
           description: args.description,
           answers: args.answers,
           project_context: args.project_context,
+          ...(engineProjectId ? { project_id: engineProjectId } : {}),
         },
         { opId },
       );

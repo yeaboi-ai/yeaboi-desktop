@@ -139,11 +139,11 @@ async def test_patch_default_modifiers_round_trips_cross_category_combo(client, 
     project_id = create_resp.json()["id"]
 
     combo = [
-        "vertical_slices",      # shape
-        "test_driven",          # quality
+        "vertical_slices",  # shape
+        "test_driven",  # quality
         "observability_first",  # quality
-        "compliance_aware",     # risk
-        "mvp_first",            # methodology
+        "compliance_aware",  # risk
+        "mvp_first",  # methodology
     ]
     resp = await client.patch(
         f"/api/projects/{project_id}",
@@ -215,24 +215,16 @@ async def test_delete_project_cascades_project_outputs(client, auth_headers, db_
 
     from src.app.models.project_output import ProjectOutput
 
-    proj = await client.post(
-        "/api/projects", json={"name": "Output Cascade"}, headers=auth_headers
-    )
+    proj = await client.post("/api/projects", json={"name": "Output Cascade"}, headers=auth_headers)
     project_id = proj.json()["id"]
 
-    db_session.add(
-        ProjectOutput(project_id=project_id, output_type="code_scaffold", status="ready")
-    )
+    db_session.add(ProjectOutput(project_id=project_id, output_type="code_scaffold", status="ready"))
     await db_session.commit()
 
     resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
 
-    rows = (
-        await db_session.execute(
-            select(ProjectOutput).where(ProjectOutput.project_id == project_id)
-        )
-    ).all()
+    rows = (await db_session.execute(select(ProjectOutput).where(ProjectOutput.project_id == project_id))).all()
     assert rows == []
 
 
@@ -242,14 +234,10 @@ async def test_delete_project_cascades_blueprint_suggestions(client, auth_header
 
     from src.app.models.blueprint import BlueprintSuggestion
 
-    proj = await client.post(
-        "/api/projects", json={"name": "Suggestion Cascade"}, headers=auth_headers
-    )
+    proj = await client.post("/api/projects", json={"name": "Suggestion Cascade"}, headers=auth_headers)
     project_id = proj.json()["id"]
 
-    db_session.add(
-        BlueprintSuggestion(project_id=project_id, section="goals", content="Add SSO", status="pending")
-    )
+    db_session.add(BlueprintSuggestion(project_id=project_id, section="goals", content="Add SSO", status="pending"))
     db_session.add(
         BlueprintSuggestion(project_id=project_id, section="risks", content="Vendor lock-in", status="pending")
     )
@@ -259,9 +247,7 @@ async def test_delete_project_cascades_blueprint_suggestions(client, auth_header
     assert resp.status_code == 204, resp.text
 
     rows = (
-        await db_session.execute(
-            select(BlueprintSuggestion).where(BlueprintSuggestion.project_id == project_id)
-        )
+        await db_session.execute(select(BlueprintSuggestion).where(BlueprintSuggestion.project_id == project_id))
     ).all()
     assert rows == []
 
@@ -273,9 +259,7 @@ async def test_delete_project_cascades_project_scoped_ticket_templates(client, a
     from src.app.models.organization import OrgMember
     from src.app.models.ticket_template import TicketTemplate
 
-    proj = await client.post(
-        "/api/projects", json={"name": "Template Cascade"}, headers=auth_headers
-    )
+    proj = await client.post("/api/projects", json={"name": "Template Cascade"}, headers=auth_headers)
     project_id = proj.json()["id"]
 
     org_id = (await db_session.execute(select(OrgMember.org_id))).scalar_one()
@@ -303,18 +287,12 @@ async def test_delete_project_cascades_project_scoped_ticket_templates(client, a
     resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
 
-    scoped = (
-        await db_session.execute(
-            select(TicketTemplate).where(TicketTemplate.project_id == project_id)
-        )
-    ).all()
+    scoped = (await db_session.execute(select(TicketTemplate).where(TicketTemplate.project_id == project_id))).all()
     assert scoped == []
 
     org_level = (
-        await db_session.execute(
-            select(TicketTemplate).where(TicketTemplate.slug == "bug-org")
-        )
-    ).scalars().all()
+        (await db_session.execute(select(TicketTemplate).where(TicketTemplate.slug == "bug-org"))).scalars().all()
+    )
     assert len(org_level) == 1
 
 
@@ -327,9 +305,7 @@ async def test_delete_project_nullifies_usage_events(client, auth_headers, db_se
     from src.app.models.organization import OrgMember
     from src.app.models.usage_event import UsageEvent
 
-    proj = await client.post(
-        "/api/projects", json={"name": "Usage Detach"}, headers=auth_headers
-    )
+    proj = await client.post("/api/projects", json={"name": "Usage Detach"}, headers=auth_headers)
     project_id = proj.json()["id"]
 
     org_id = (await db_session.execute(select(OrgMember.org_id))).scalar_one()
@@ -349,24 +325,22 @@ async def test_delete_project_nullifies_usage_events(client, auth_headers, db_se
     resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
 
-    still_attached = (
-        await db_session.execute(
-            select(UsageEvent).where(UsageEvent.project_id == project_id)
-        )
-    ).all()
+    still_attached = (await db_session.execute(select(UsageEvent).where(UsageEvent.project_id == project_id))).all()
     assert still_attached == []
 
     detached = (
-        await db_session.execute(
-            select(UsageEvent).where(UsageEvent.org_id == org_id, UsageEvent.project_id.is_(None))
+        (
+            await db_session.execute(
+                select(UsageEvent).where(UsageEvent.org_id == org_id, UsageEvent.project_id.is_(None))
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(detached) == 3
 
 
-async def test_team_admin_can_delete_project_they_dont_own(
-    client, auth_headers, other_auth_headers, db_session
-):
+async def test_team_admin_can_delete_project_they_dont_own(client, auth_headers, other_auth_headers, db_session):
     """A team admin who is not the project owner can still delete the project."""
     from sqlalchemy import select
 
@@ -374,24 +348,18 @@ async def test_team_admin_can_delete_project_they_dont_own(
     from src.app.models.project import Project
     from src.app.models.user import User
 
-    proj_resp = await client.post(
-        "/api/projects", json={"name": "Admin Delete"}, headers=auth_headers
-    )
+    proj_resp = await client.post("/api/projects", json={"name": "Admin Delete"}, headers=auth_headers)
     assert proj_resp.status_code == 201
     project_id = proj_resp.json()["id"]
 
     # Resolve the project's team
-    project = (
-        await db_session.execute(select(Project).where(Project.id == project_id))
-    ).scalar_one()
+    project = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
 
     # Trigger auto-creation of the other user by hitting any auth-required endpoint.
     # /api/me works for this (returns 200 without requiring org membership).
     await client.get("/api/me", headers=other_auth_headers)
 
-    other_user = (
-        await db_session.execute(select(User).where(User.email == "other@example.com"))
-    ).scalar_one()
+    other_user = (await db_session.execute(select(User).where(User.email == "other@example.com"))).scalar_one()
 
     # Grant team-admin role on the project's team to the other user.
     db_session.add(TeamMember(team_id=project.team_id, user_id=other_user.id, role="admin"))
@@ -400,9 +368,7 @@ async def test_team_admin_can_delete_project_they_dont_own(
     resp = await client.delete(f"/api/projects/{project_id}", headers=other_auth_headers)
     assert resp.status_code == 204, resp.text
 
-    gone = (
-        await db_session.execute(select(Project).where(Project.id == project_id))
-    ).scalar_one_or_none()
+    gone = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one_or_none()
     assert gone is None
 
 
@@ -415,9 +381,7 @@ async def test_delete_project_with_cards_referencing_session(client, auth_header
     from src.app.models.organization import OrgMember
     from src.app.models.session import Session
 
-    proj = await client.post(
-        "/api/projects", json={"name": "Card Session FK"}, headers=auth_headers
-    )
+    proj = await client.post("/api/projects", json={"name": "Card Session FK"}, headers=auth_headers)
     project_id = proj.json()["id"]
 
     org_id = (await db_session.execute(select(OrgMember.org_id))).scalar_one()
@@ -432,30 +396,22 @@ async def test_delete_project_with_cards_referencing_session(client, auth_header
     column = BoardColumn(board_id=board.id, name="To Do")
     db_session.add(column)
     await db_session.flush()
-    db_session.add(
-        Card(column_id=column.id, project_id=project_id, session_id=session.id, title="Spike auth")
-    )
+    db_session.add(Card(column_id=column.id, project_id=project_id, session_id=session.id, title="Spike auth"))
     await db_session.commit()
 
     resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
 
     # Project and its cards/sessions all gone.
-    sessions_left = (
-        await db_session.execute(select(Session).where(Session.project_id == project_id))
-    ).all()
+    sessions_left = (await db_session.execute(select(Session).where(Session.project_id == project_id))).all()
     assert sessions_left == []
-    cards_left = (
-        await db_session.execute(select(Card).where(Card.project_id == project_id))
-    ).all()
+    cards_left = (await db_session.execute(select(Card).where(Card.project_id == project_id))).all()
     assert cards_left == []
 
 
 async def test_non_owner_non_admin_cannot_delete(client, auth_headers, other_auth_headers):
     """A user who is neither the owner nor a team admin gets 403."""
-    proj_resp = await client.post(
-        "/api/projects", json={"name": "Forbidden"}, headers=auth_headers
-    )
+    proj_resp = await client.post("/api/projects", json={"name": "Forbidden"}, headers=auth_headers)
     assert proj_resp.status_code == 201
     project_id = proj_resp.json()["id"]
 
@@ -463,3 +419,25 @@ async def test_non_owner_non_admin_cannot_delete(client, auth_headers, other_aut
     resp = await client.delete(f"/api/projects/{project_id}", headers=other_auth_headers)
     assert resp.status_code == 403
     assert "authoris" in resp.json()["detail"].lower() or "authoriz" in resp.json()["detail"].lower()
+
+
+async def test_yeaboi_project_link_round_trips(client, auth_headers):
+    create_resp = await client.post("/api/projects", json={"name": "Linked"}, headers=auth_headers)
+    project = create_resp.json()
+    assert project["yeaboi_project_id"] is None
+
+    resp = await client.patch(
+        f"/api/projects/{project['id']}",
+        json={"yeaboi_project_id": "proj-aabbccdd"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["yeaboi_project_id"] == "proj-aabbccdd"
+
+    # A name-only PATCH leaves the link untouched.
+    resp = await client.patch(
+        f"/api/projects/{project['id']}",
+        json={"name": "Renamed"},
+        headers=auth_headers,
+    )
+    assert resp.json()["yeaboi_project_id"] == "proj-aabbccdd"
