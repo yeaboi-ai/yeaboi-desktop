@@ -6,15 +6,14 @@
 // tip in a speech bubble, quacks as each new one lands, and the browse / open /
 // hide controls sit on the bubble's bottom edge.
 //
-// Page-local on purpose. The app-wide bubble (brand/duck-chrome.tsx) stays
-// event-only — rotating tips were tried there and read as noise (see the note
-// in lib/duck-voice.ts). This is the welcome-screen surface, which is where the
-// terminal puts them too.
+// Page-local on purpose. An app-wide rotating-tips bubble was tried and read
+// as noise (see the note in lib/duck-voice.ts). This is the welcome-screen
+// surface, which is where the terminal puts them too.
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-import { Duck, useDuckPulse } from '@/components/brand/duck';
+import { DuckMark, useDuckPulse } from '@/components/brand/duck';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { loadSettings, saveSetting } from '@/lib/yeaboi/settings';
 import { cleanTipText, resolveIndex, tipBrightness, tipRoute, type Tip } from '@/lib/yeaboi/tips';
@@ -134,7 +133,7 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
           onClick={() => pulse('startled')}
           className="shrink-0 cursor-pointer bg-transparent border-0 p-0"
         >
-          <Duck state={duckState} size={56} />
+          <DuckMark state={duckState} size={56} />
         </button>
 
         <div className="min-w-0 max-w-[560px] flex-1 rounded-2xl rounded-bl-sm bg-card ring-1 ring-border/60 shadow-sm">

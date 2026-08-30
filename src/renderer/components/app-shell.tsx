@@ -34,11 +34,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // The sidebar is position: fixed — the margin, not a flex row, is what
+  // keeps content clear of it.
   return (
-    <div className="flex min-h-screen">
+    <>
       <Sidebar />
-      <main className="flex-1 ml-[56px] md:ml-[180px]">{children}</main>
+      <main className="min-h-screen ml-[56px] md:ml-[180px]">{children}</main>
       <ThemePreviewBar />
-    </div>
+    </>
   );
 }

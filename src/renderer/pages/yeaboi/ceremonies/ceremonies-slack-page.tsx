@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { type SlackPage, linkSlackMember, loadSlack, pollSlack } from '@/lib/yeaboi/ops';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -151,7 +151,7 @@ function CeremoniesSlackBody() {
       {!page.two_way ? (
         <Section title="Write-only">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> {page.empty_message}
+            <DuckMark state="idle" size={28} /> {page.empty_message}
           </p>
           <p className="text-[12px] text-muted-foreground mt-2">{page.why}</p>
         </Section>

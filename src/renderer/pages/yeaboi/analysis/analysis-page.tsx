@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { type ProfileSummary, loadProfiles } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -89,8 +89,9 @@ function AnalysisBody() {
             Nothing analysed yet
           </h2>
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> Point yeaboi at your tracker and it will read the last
-            few sprints — how fast the team goes, what a point means here, and where work spills.
+            <DuckMark state="idle" size={28} /> Point yeaboi at your tracker and it will read the
+            last few sprints — how fast the team goes, what a point means here, and where work
+            spills.
           </p>
           <div className="mt-3">
             <Button size="sm" onClick={() => router.push('/humans/analysis/new')}>

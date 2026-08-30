@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { type PerformanceRoster, loadPerformanceRoster } from '@/lib/yeaboi/modes';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 
@@ -67,7 +67,7 @@ function PerformanceBody() {
       ) : (
         <Section title="No engineers yet">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> {roster.empty_message}
+            <DuckMark state="idle" size={28} /> {roster.empty_message}
           </p>
         </Section>
       )}

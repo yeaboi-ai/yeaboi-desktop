@@ -2,7 +2,7 @@
 
 // The idle screensaver: mounted once, covers the window, gets out of the way.
 //
-// Mounted in Providers beside DuckChrome and AmbienceHost, and inside
+// Mounted in Providers beside AmbienceHost, and inside
 // ThemeProvider — which is what lets the scenes read the active theme's tokens
 // off <html> and belong to whatever palette the window is wearing.
 //

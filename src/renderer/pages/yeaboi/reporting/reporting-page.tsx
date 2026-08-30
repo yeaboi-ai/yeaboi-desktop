@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { maskText } from '@/lib/yeaboi/boards';
 import { type ReportRun, reportingHistory } from '@/lib/yeaboi/modes';
 import { ResultActions } from '@/components/yeaboi/result-actions';
@@ -108,8 +108,8 @@ function ReportingBody() {
       {runs && runs.length === 0 && (
         <Section title="No reports yet">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> Pick a period and yeaboi gathers what actually shipped,
-            writes the narrative, and lays it out as a deck you can present.
+            <DuckMark state="idle" size={28} /> Pick a period and yeaboi gathers what actually
+            shipped, writes the narrative, and lays it out as a deck you can present.
           </p>
         </Section>
       )}

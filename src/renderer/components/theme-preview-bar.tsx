@@ -2,7 +2,7 @@
 
 import { Check, Eye, X } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useTheme } from '@/components/providers/theme-provider';
 
 /**
@@ -12,7 +12,6 @@ import { useTheme } from '@/components/providers/theme-provider';
  */
 export function ThemePreviewBar() {
   const { preview, cancelPreview, confirmPreview } = useTheme();
-  const router = useRouter();
   const pathname = usePathname();
 
   if (!preview) return null;
@@ -20,7 +19,11 @@ export function ThemePreviewBar() {
   const onThemesPage = pathname?.startsWith('/settings/themes') ?? false;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[300] pointer-events-none">
+    <div
+      className="fixed left-0 right-0 z-[300] pointer-events-none"
+      // Sits below the provider-health banner when one is up.
+      style={{ top: 'var(--banner-h, 0px)' }}
+    >
       <div className="mx-auto max-w-5xl px-4 pt-3 pointer-events-auto">
         <div
           role="status"
@@ -61,12 +64,7 @@ export function ThemePreviewBar() {
               )}
               <button
                 type="button"
-                onClick={() => {
-                  cancelPreview();
-                  if (!onThemesPage) {
-                    // Stay where they are — preview is gone, page reverts.
-                  }
-                }}
+                onClick={cancelPreview}
                 className="px-3 py-1.5 rounded-md text-[11px] font-body border border-border bg-card hover:border-destructive/50 hover:text-destructive text-foreground transition-colors inline-flex items-center gap-1.5"
               >
                 <X className="h-3.5 w-3.5" />
@@ -74,10 +72,7 @@ export function ThemePreviewBar() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  confirmPreview();
-                  if (!onThemesPage) router.refresh();
-                }}
+                onClick={confirmPreview}
                 className="px-3.5 py-1.5 rounded-md text-[11px] font-body bg-primary text-primary-foreground hover:opacity-90 transition-opacity inline-flex items-center gap-1.5 shadow-sm"
               >
                 <Check className="h-3.5 w-3.5" />

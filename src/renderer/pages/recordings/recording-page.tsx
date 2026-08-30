@@ -99,7 +99,7 @@ export default function RecordingPlayerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center gap-2">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading recording…
       </div>
@@ -107,14 +107,14 @@ export default function RecordingPlayerPage() {
   }
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-md">
-          <Film className="h-8 w-8 text-white/30 mx-auto" />
-          <p className="text-sm text-white/80">{error.message}</p>
+          <Film className="h-8 w-8 text-muted-foreground/60 mx-auto" />
+          <p className="text-sm text-foreground">{error.message}</p>
           <button
             type="button"
             onClick={() => window.close()}
-            className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/85 transition-colors"
+            className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
           >
             Close tab
           </button>
@@ -213,12 +213,12 @@ export default function RecordingPlayerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
-      <header className="border-b border-white/[0.06] px-6 py-4 flex items-center justify-between shrink-0">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="border-b border-border px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <Film className="h-4 w-4 text-white/40" />
+          <Film className="h-4 w-4 text-muted-foreground" />
           <h1 className="text-sm font-semibold">Session recording</h1>
-          <span className="text-xs text-white/40 tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {formatDuration(rec.duration_seconds)}
           </span>
         </div>
@@ -226,7 +226,7 @@ export default function RecordingPlayerPage() {
           type="button"
           onClick={() => window.close()}
           aria-label="Close"
-          className="p-1.5 rounded-lg text-white/40 hover:text-white/85 hover:bg-white/5 transition-colors"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -243,8 +243,8 @@ export default function RecordingPlayerPage() {
               className="max-w-full max-h-full rounded-lg shadow-2xl"
             />
           ) : (
-            <div className="text-center text-white/55 space-y-2">
-              <Film className="h-10 w-10 mx-auto text-white/30" />
+            <div className="text-center text-muted-foreground space-y-2">
+              <Film className="h-10 w-10 mx-auto text-muted-foreground/60" />
               <p className="text-sm">
                 {rec.status === 'starting' || rec.status === 'active'
                   ? 'Recording is still in progress — check back when the call ends.'
@@ -256,18 +256,18 @@ export default function RecordingPlayerPage() {
           )}
         </section>
 
-        <aside className="w-80 max-w-[36vw] border-l border-white/[0.06] bg-[#0d0d0d] p-5 space-y-5 overflow-y-auto">
+        <aside className="w-80 max-w-[36vw] border-l border-border bg-card p-5 space-y-5 overflow-y-auto">
           <div className="space-y-1">
-            <p className="text-[10px] uppercase tracking-[0.08em] text-white/40 font-medium">
+            <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-medium">
               Recorded
             </p>
-            <p className="text-[13px] text-white/85">
+            <p className="text-[13px] text-foreground">
               {rec.started_at ? new Date(rec.started_at).toLocaleString() : '—'}
             </p>
           </div>
 
           <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-[0.08em] text-white/40 font-medium flex items-center gap-1.5">
+            <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-medium flex items-center gap-1.5">
               <Calendar className="h-3 w-3" />
               Expires
             </p>
@@ -276,7 +276,7 @@ export default function RecordingPlayerPage() {
                 type="date"
                 value={expiryDraft}
                 onChange={(e) => setExpiryDraft(e.target.value)}
-                className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[12px] text-white/85 focus:outline-none focus:border-white/20"
+                className="flex-1 bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[12px] text-foreground focus:outline-none focus:border-ring"
               />
               <button
                 type="button"
@@ -284,18 +284,18 @@ export default function RecordingPlayerPage() {
                 disabled={
                   savingExpiry || !expiryDraft || expiryDraft === isoToDateInput(rec.expires_at)
                 }
-                className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-white/5 hover:bg-white/10 text-white/65 hover:text-white/85 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Save
               </button>
             </div>
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px] text-muted-foreground">
               The recording is auto-deleted after this date.
             </p>
           </div>
 
           <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-[0.08em] text-white/40 font-medium flex items-center gap-1.5">
+            <p className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground font-medium flex items-center gap-1.5">
               <Share2 className="h-3 w-3" />
               Share link
             </p>
@@ -306,13 +306,13 @@ export default function RecordingPlayerPage() {
                     readOnly
                     value={shareLink}
                     onClick={(e) => (e.target as HTMLInputElement).select()}
-                    className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-[11px] text-white/70 font-mono"
+                    className="flex-1 bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-foreground/70 font-mono"
                   />
                   <button
                     type="button"
                     onClick={copyShareLink}
                     aria-label="Copy share link"
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/85 transition-colors"
+                    className="p-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </button>
@@ -337,7 +337,7 @@ export default function RecordingPlayerPage() {
             )}
           </div>
 
-          <div className="pt-3 border-t border-white/[0.06] space-y-2 text-[11px] text-white/40">
+          <div className="pt-3 border-t border-border space-y-2 text-[11px] text-muted-foreground">
             {rec.duration_seconds != null && (
               <p className="flex items-center gap-1.5">
                 <Clock className="h-3 w-3" />

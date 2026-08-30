@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { quip } from '@/lib/yeaboi/ambience';
 import {
   type ArtifactEdits,
@@ -292,8 +292,8 @@ function StandupBody() {
             {!run.phases.length && <li className="text-[12px] text-muted-foreground">Starting…</li>}
           </ol>
           <p className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
-            <Duck state="idle" size={20} /> A standup run cannot be stopped part-way — it finishes
-            or it fails.
+            <DuckMark state="idle" size={20} /> A standup run cannot be stopped part-way — it
+            finishes or it fails.
           </p>
         </Section>
       )}

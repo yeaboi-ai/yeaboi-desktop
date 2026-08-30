@@ -26,7 +26,12 @@ interface BoardSnapshot {
   title: string;
 }
 
-export function registerBoardWindows(sidecar: Sidecar): void {
+/** Called after any board window closes — closing does not always route
+ *  through blur, and the pet's suppression wants to know. */
+let onWindowClosed: () => void = () => undefined;
+
+export function registerBoardWindows(sidecar: Sidecar, onClosed?: () => void): void {
+  if (onClosed) onWindowClosed = onClosed;
   ipcMain.handle('boards:open', async (_event, boardId: unknown) => {
     if (typeof boardId !== 'string' || !/^[a-f0-9]{1,32}$/.test(boardId)) {
       return { ok: false, error: 'invalid board id' };
@@ -72,7 +77,7 @@ function openWindow(boardId: string, board: BoardSnapshot, hostUrl: string): voi
     minHeight: 520,
     title: `${TITLES[board.kind] ?? 'Board'} — ${board.title}`,
     icon: iconPath,
-    backgroundColor: '#0e1013',
+    backgroundColor: '#0e1013', // board pages are always dark, whatever the app theme
     webPreferences: {
       // No preload at all: a board page is the same document a teammate opens
       // in a browser, and it must not gain a bridge here that it lacks there.
@@ -83,7 +88,10 @@ function openWindow(boardId: string, board: BoardSnapshot, hostUrl: string): voi
     },
   });
   windows.set(boardId, window);
-  window.on('closed', () => windows.delete(boardId));
+  window.on('closed', () => {
+    windows.delete(boardId);
+    onWindowClosed();
+  });
 
   const origin = new URL(hostUrl).origin;
   window.webContents.on('will-navigate', (event, url) => {

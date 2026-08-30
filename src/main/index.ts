@@ -87,7 +87,9 @@ function createMainWindow(): void {
     icon: iconPath,
     // What the window is called until index.html's own <title> loads.
     title: app.getName(),
-    backgroundColor: '#0a0a0a', // planning theme dark background — no white flash
+    // The last theme's background, so no flash of the wrong scheme while the
+    // renderer boots. The renderer keeps it current over theme:background.
+    backgroundColor: settings.windowBackground,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,
@@ -99,6 +101,9 @@ function createMainWindow(): void {
   mainWindow.once('ready-to-show', () => mainWindow?.show());
   mainWindow.on('closed', () => {
     mainWindow = null;
+    // Closing the window doesn't always route through blur; if nothing in the
+    // app holds focus any more, the duck is free to come back out.
+    if (BrowserWindow.getFocusedWindow() === null) pet.setSuppressed(false);
   });
 
   // External links open in the OS browser; anything else is denied.
@@ -224,11 +229,32 @@ if (!gotLock) {
     );
     pet.register((route) => openApp(route));
 
+    // The duck stays off the app itself: any focused app window (main or a
+    // board) suppresses him; he returns when focus leaves the app. Blur is
+    // settled on a short delay because focus moving between two app windows
+    // fires blur→focus back-to-back.
+    let focusSettle: NodeJS.Timeout | null = null;
+    app.on('browser-window-focus', () => {
+      if (focusSettle) clearTimeout(focusSettle);
+      focusSettle = null;
+      pet.setSuppressed(true);
+    });
+    app.on('browser-window-blur', () => {
+      if (focusSettle) clearTimeout(focusSettle);
+      focusSettle = setTimeout(() => {
+        focusSettle = null;
+        pet.setSuppressed(BrowserWindow.getFocusedWindow() !== null);
+      }, 120);
+    });
+
     // The yeaboi app sidecar: proxy, board windows, and state relay. The
     // renderer never sees the handshake — both halves strip it before the
     // state crosses the bridge.
     registerApiProxy(sidecar);
-    registerBoardWindows(sidecar);
+    registerBoardWindows(sidecar, () => {
+      // Same belt-and-braces as the main window's `closed` handler.
+      if (BrowserWindow.getFocusedWindow() === null) pet.setSuppressed(false);
+    });
     ipcMain.handle('backend:get-state', () => {
       const state = sidecar.current;
       if (state.kind !== 'ready') return state;
@@ -296,6 +322,12 @@ if (!gotLock) {
     ipcMain.handle('pet:set-prefs', (_event, patch: unknown) =>
       setPetPreference((patch ?? {}) as Partial<PetPrefs>),
     );
+
+    // The renderer reports the active theme's background so the next window
+    // opens in the right colour. Fire-and-forget; bad values are dropped.
+    ipcMain.on('theme:background', (_event, colour: unknown) => {
+      if (typeof colour === 'string') settings.setWindowBackground(colour);
+    });
 
     // A banner the renderer asked for: a run it was streaming has finished.
     // Clamped here for the same reason `pet:notify` is.

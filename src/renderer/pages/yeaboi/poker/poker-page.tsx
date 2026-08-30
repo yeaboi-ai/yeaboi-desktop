@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
@@ -107,7 +107,7 @@ function PokerBody() {
       {runs && runs.length === 0 && (
         <Section title="No sessions yet">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and
+            <DuckMark state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and
             everyone votes at once — no anchoring on whoever spoke first.
           </p>
         </Section>

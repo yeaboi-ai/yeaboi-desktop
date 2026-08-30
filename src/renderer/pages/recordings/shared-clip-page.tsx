@@ -68,14 +68,14 @@ export default function PublicClipPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center">
         Loading clip…
       </div>
     );
   }
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center">
         {error}
       </div>
     );
@@ -83,23 +83,23 @@ export default function PublicClipPage() {
   if (!clip) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-8">
+    <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-2xl mx-auto">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-white/40 font-medium mb-2">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium mb-2">
           Shared clip
         </p>
         <h1 className="text-xl font-semibold mb-1">{clip.title ?? 'Session clip'}</h1>
         {clip.start_ts && clip.end_ts && (
-          <p className="text-[12px] text-white/40 mb-6 tabular-nums">
+          <p className="text-[12px] text-muted-foreground mb-6 tabular-nums">
             {new Date(clip.start_ts).toLocaleString()} →{' '}
             {new Date(clip.end_ts).toLocaleTimeString()}
           </p>
         )}
-        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 space-y-2">
+        <div className="rounded-2xl bg-card border border-border p-5 space-y-2">
           {clip.transcript.map((line, i) => (
             <p key={i} className="text-[14px] leading-relaxed">
-              {line.speaker && <span className="text-white/45 mr-2">{line.speaker}:</span>}
-              <span className="text-white/85">{line.text}</span>
+              {line.speaker && <span className="text-muted-foreground mr-2">{line.speaker}:</span>}
+              <span className="text-foreground">{line.text}</span>
             </p>
           ))}
         </div>

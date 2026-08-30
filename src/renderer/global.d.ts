@@ -50,6 +50,7 @@ interface YeaboiBridge {
   getPetPrefs: () => Promise<unknown>;
   setPetPrefs: (patch: unknown) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
+  setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
   checkForUpdate: () => Promise<unknown>;

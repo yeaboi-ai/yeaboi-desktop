@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { createChat } from '@/lib/yeaboi/chat';
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
@@ -43,7 +43,7 @@ function PlanningBody() {
   return (
     <>
       <div className="flex items-start gap-4 mb-6">
-        <Duck state="idle" size={56} />
+        <DuckMark state="idle" size={56} />
         <div>
           <h1 className="font-display text-2xl text-foreground">Plan a project</h1>
           <p className="text-[13px] text-muted-foreground mt-1 leading-snug">

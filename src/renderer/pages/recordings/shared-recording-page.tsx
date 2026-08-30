@@ -78,7 +78,7 @@ export default function PublicRecordingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center gap-2">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading recording…
       </div>
@@ -86,10 +86,10 @@ export default function PublicRecordingPage() {
   }
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white/60 flex items-center justify-center px-6">
+      <div className="min-h-screen bg-background text-muted-foreground flex items-center justify-center px-6">
         <div className="text-center space-y-2 max-w-md">
-          <Film className="h-8 w-8 text-white/30 mx-auto" />
-          <p className="text-sm text-white/80">{error}</p>
+          <Film className="h-8 w-8 text-muted-foreground/60 mx-auto" />
+          <p className="text-sm text-foreground">{error}</p>
         </div>
       </div>
     );
@@ -97,11 +97,11 @@ export default function PublicRecordingPage() {
   if (!rec || !rec.playback_url) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
-      <header className="border-b border-white/[0.06] px-6 py-4 flex items-center gap-3">
-        <Film className="h-4 w-4 text-white/40" />
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="border-b border-border px-6 py-4 flex items-center gap-3">
+        <Film className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-semibold">Shared recording</h1>
-        <span className="text-xs text-white/40 tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {formatDuration(rec.duration_seconds)}
         </span>
       </header>

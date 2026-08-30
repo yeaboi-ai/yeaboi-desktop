@@ -50,8 +50,10 @@ export function AmbienceHost() {
       const quip = String(event['quip'] ?? '');
       const route = String(event['route'] ?? '');
       const kind = String(event['kind'] ?? '');
-      // The same rule the pet follows: a question holds the bubble until it
-      // is answered, everything else fades.
+      // The voice currently has no in-app reader (the old corner bubble is
+      // gone); the desktop pet and the toasts below are the visible surfaces.
+      // The writes stay so a future reader inherits the same rule: a question
+      // holds until answered, everything else fades.
       if (event['sticky']) duckVoice().saySticky(quip);
       else duckVoice().say(quip);
       if (TOASTED_KINDS.has(kind) && quip && notifyPrefs().notify.toast) {

@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'react-router';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type Bubble,
   type ChatLine,
@@ -284,7 +284,7 @@ function ChatBody({ projectId }: { projectId: string }) {
         )}
         {busy && !pending && (
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Duck state="idle" size={22} />
+            <DuckMark state="idle" size={22} />
             <span className="text-[12px]">Thinking…</span>
           </div>
         )}
