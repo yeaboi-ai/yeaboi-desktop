@@ -89,7 +89,7 @@ const MARKER_LIMIT = 6;
  * would read twice.
  *
  * Cutting at the marker rather than stripping a run of punctuation keeps a tip
- * that opens on code — "`yeaboi provenance audit` verifies…" — intact.
+ * that opens on a backticked term intact.
  */
 export function cleanTipText(text: string): string {
   const marker = text.indexOf(TIP_MARKER);
@@ -150,4 +150,66 @@ export function buildTipsText(tips: Tip[], titles: Record<string, string> = {}):
     lines.push(line);
   }
   return `${lines.join('\n').replace(/\s+$/, '')}\n`;
+}
+
+/** How far through the current rotation window, 0→1. Drives the hairline. */
+export function tipProgress(elapsedMs: number): number {
+  return (Math.max(0, elapsedMs) % TIP_ROTATE_MS) / TIP_ROTATE_MS;
+}
+
+// ── the corner dock's geometry, as pure functions ──────────────────────────
+//
+// Kept out of the component for the same reason the clock is: test/ is
+// node-only, so anything decided in JSX cannot be covered.
+
+/** The dock's inset from the window edges (`bottom-6 right-6`). The bubble sits
+ *  a further `right-2` inside, so the reserve is 8px conservative. */
+export const DOCK_MARGIN = 24;
+/** Clearance the bubble keeps from Niko's pill. */
+export const DOCK_GAP = 16;
+export const DOCK_MAX_WIDTH = 340;
+/** Below this the bubble is too cramped to read, and the duck stands alone. */
+export const DOCK_MIN_WIDTH = 240;
+
+/**
+ * How wide the bubble may grow.
+ *
+ * Niko's bar is centred on the viewport, so the free right-hand gutter is
+ * `(innerWidth - pillWidth) / 2` less the dock's own margin and the gap.
+ */
+export function dockWidth(innerWidth: number, pillWidth: number): number {
+  const gutter = (innerWidth - pillWidth) / 2 - DOCK_MARGIN - DOCK_GAP;
+  return Math.min(DOCK_MAX_WIDTH, gutter);
+}
+
+/**
+ * What the dock shows.
+ *
+ * `off` — still loading, or the backend served no tips: render nothing.
+ * `quiet` — tips turned off: a dimmed duck that turns them back on.
+ * `duck` — the duck alone; Niko's bar is open, or the gutter is too narrow.
+ * `bubble` — duck plus speech bubble.
+ */
+export type DockMode = 'off' | 'quiet' | 'duck' | 'bubble';
+
+export interface DockInput {
+  /** null until the backend answers, so the dock never flashes on and hides. */
+  enabled: boolean | null;
+  tipCount: number;
+  nikoOpen: boolean;
+  innerWidth: number;
+  pillWidth: number;
+}
+
+export function dockMode({
+  enabled,
+  tipCount,
+  nikoOpen,
+  innerWidth,
+  pillWidth,
+}: DockInput): DockMode {
+  if (enabled === null || tipCount <= 0) return 'off';
+  if (!enabled) return 'quiet';
+  if (nikoOpen) return 'duck';
+  return dockWidth(innerWidth, pillWidth) >= DOCK_MIN_WIDTH ? 'bubble' : 'duck';
 }

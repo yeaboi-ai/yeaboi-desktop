@@ -5,9 +5,12 @@
 // Every phrase is rendered at once, stacked absolutely inside a fixed
 // overflow-hidden box: that is what keeps the pill's width stable while the
 // text swaps, and why the box is sized in px rather than by content. Outgoing
-// phrases leave upward, pending ones wait below.
+// phrases leave upward, pending ones wait below. The width lives in niko.ts,
+// which sizes the pill around it.
 
 import { useEffect, useState } from 'react';
+
+import { COLLAPSED_TEXT_WIDTH } from '@/lib/yeaboi/niko';
 
 const PHRASES = [
   'Ask anything…',
@@ -32,8 +35,8 @@ export function NikoCyclingText() {
 
   return (
     <span
-      className="relative inline-flex items-center overflow-hidden text-[12px] font-body text-muted-foreground/60 group-hover:text-foreground/80 whitespace-nowrap"
-      style={{ height: 16, width: 175 }}
+      className="relative inline-flex shrink-0 items-center overflow-hidden text-[12px] font-body text-muted-foreground/60 group-hover:text-foreground/80 whitespace-nowrap"
+      style={{ height: 16, width: COLLAPSED_TEXT_WIDTH }}
     >
       {PHRASES.map((phrase, i) => {
         const isLeaving = i < index || (index === 0 && i === PHRASES.length - 1);

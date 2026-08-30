@@ -149,7 +149,11 @@ function HomeBody() {
 export default function HomePage() {
   return (
     <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      {/* The tip dock and Niko's pill both float over the bottom of the window;
+          the padding is what keeps the last card row reachable under them. The
+          dock is 24 + 72 duck + 10, and a three-line bubble another ~112 — the
+          common case at the 960px minimum width, not the edge. */}
+      <div className="mx-auto max-w-5xl px-6 py-10 pb-64">
         <h1 className="font-display text-2xl text-foreground mb-6">Home</h1>
         <HomeBody />
       </div>
