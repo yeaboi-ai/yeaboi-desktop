@@ -95,6 +95,16 @@ export const discoverModels = (provider: string, credential: string) =>
       credential,
     },
   );
+/** Live-check one optional integration. Flat body per the wire contract;
+ *  omitted fields fall back to values already saved on the backend. */
+export const verifyConnection = (
+  kind: 'github' | 'jira' | 'confluence' | 'notion' | 'elevenlabs' | 'tavus',
+  fields: { token?: string; base_url?: string; email?: string; space_key?: string } = {},
+) =>
+  apiPost<{ ok: boolean; message: string }>('/api/settings/connection/verify', {
+    kind,
+    ...fields,
+  });
 export const signInStart = () =>
   apiPost<{ started: boolean; message: string }>('/api/settings/signin/start');
 export const signInStatus = () => apiGet<SignInStatus>('/api/settings/signin');

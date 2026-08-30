@@ -26,7 +26,7 @@ let cached: { auth: AuthInfo; at: number } | null = null;
 export async function getAuth(force = false): Promise<AuthInfo | null> {
   if (!force && cached && Date.now() - cached.at < TOKEN_TTL_MS) return cached.auth;
   const auth = await window.yeaboi.getAuthToken();
-  if (!auth) return null; // first run — no identity yet
+  if (!auth) return null; // identity is auto-minted at startup; null only on a malformed store
   cached = { auth, at: Date.now() };
   return auth;
 }

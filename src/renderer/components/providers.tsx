@@ -13,6 +13,7 @@ import { AmbienceHost } from '@/components/yeaboi/ambience-host';
 import { NikoBar } from '@/components/niko/niko-bar';
 import { ScreensaverHost } from '@/components/screensaver/screensaver-host';
 import { CapturePicker } from '@/components/session/capture-picker';
+import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -22,11 +23,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ConfirmProvider>
             <ProviderHealthProvider>
               <NikoProvider>
-                <ProviderHealthBanner />
-                <AppShell>{children}</AppShell>
-                <NikoBar />
-                <AmbienceHost />
-                <ScreensaverHost />
+                {/* First run, the wizard is the whole window; the shell and its
+                    chrome mount only once onboarding is done or not needed. */}
+                <OnboardingGate>
+                  <ProviderHealthBanner />
+                  <AppShell>{children}</AppShell>
+                  <NikoBar />
+                  <AmbienceHost />
+                  <ScreensaverHost />
+                </OnboardingGate>
                 <CapturePicker />
                 <Toaster />
               </NikoProvider>

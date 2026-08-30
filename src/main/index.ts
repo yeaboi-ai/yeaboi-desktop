@@ -36,7 +36,8 @@ import { UPDATE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS, shouldAutoCheck } from
 import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { PlanningSidecar } from './planning';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
-import { loadMachineSecrets } from './secrets';
+import { needsOnboarding } from '../shared/onboarding';
+import { loadMachineSecrets, loadSharedEnv } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
 import { AppTray } from './tray';
@@ -162,6 +163,19 @@ if (!gotLock) {
 
   void app.whenReady().then(() => {
     settings.load();
+    // Identity is plumbing, not sign-in: the planning sidecar's JWTs need an
+    // email claim, so a fresh install gets a default one silently. Whether an
+    // identity predated this launch feeds the onboarding decision below.
+    const hadIdentity = settings.identity !== null;
+    if (!hadIdentity) settings.setIdentity({ name: 'You', email: 'you@yeaboi.local' });
+    // Installs that predate the wizard (an existing TUI config, or a desktop
+    // identity from the old first-run screen) are marked done once, so only a
+    // genuinely fresh machine meets the wizard. A fresh machine records an
+    // explicit false instead: the identity minted above must not read as a
+    // pre-wizard install on the next launch if the user quits mid-wizard.
+    if (settings.onboardingComplete === undefined) {
+      settings.setOnboardingComplete(hadIdentity || Object.keys(loadSharedEnv()).length > 0);
+    }
     // macOS picks an activation policy for itself unless it is told one. An
     // accessory app has no Dock tile and cannot own the menu bar; this is a
     // normal windowed app, so it says so rather than inheriting a guess.
@@ -288,8 +302,8 @@ if (!gotLock) {
     });
     void sidecar.start();
 
-    // Identity + tokens. A null token payload means first run — the renderer
-    // shows the identity screen and calls auth:set-identity.
+    // Identity + tokens. Identity is auto-minted at startup, so a token is
+    // always available; auth:set-identity remains for editing name/email.
     ipcMain.handle('auth:get-token', () => mintToken(settings));
     ipcMain.handle('auth:get-identity', () => settings.identity);
     ipcMain.handle('auth:set-identity', (_event, identity: unknown) => {
@@ -299,6 +313,22 @@ if (!gotLock) {
       }
       settings.setIdentity({ email: id.email, name: String(id.name ?? id.email) });
       return settings.identity;
+    });
+
+    // First-run onboarding. The gate asks once per window; completion restarts
+    // the planning sidecar (and, via its state changes, the voice agent) so
+    // keys the wizard just wrote to ~/.yeaboi/.env reach them — both read the
+    // shared env only at spawn time.
+    ipcMain.handle('onboarding:get', () => ({
+      needed: needsOnboarding(loadSharedEnv(), settings.onboardingComplete, hadIdentity),
+    }));
+    ipcMain.handle('onboarding:complete', async () => {
+      settings.setOnboardingComplete(true);
+      if (!externalPlanningUrl) {
+        await voiceAgent.stop();
+        await planning.stop();
+        void planning.start();
+      }
     });
 
     // The desktop duck. The renderer forwards app moments (a suggestion

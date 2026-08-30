@@ -27,11 +27,16 @@ export interface PetNotice {
 }
 
 export interface YeaboiBridge {
-  /** A fresh 1h bearer token plus where the planning backend lives. Null on
-   *  first run, before an identity exists. */
+  /** A fresh 1h bearer token plus where the planning backend lives. Identity
+   *  is auto-minted at startup, so null only survives a malformed store. */
   getAuthToken: () => Promise<AuthPayload | null>;
   getIdentity: () => Promise<Identity | null>;
   setIdentity: (identity: Identity) => Promise<Identity>;
+  /** First-run onboarding: whether the wizard should gate the window, and the
+   *  explicit finish/skip that drops the gate (and restarts the planning
+   *  sidecar so freshly saved keys reach it). */
+  getOnboarding: () => Promise<{ needed: boolean }>;
+  completeOnboarding: () => Promise<void>;
   /** One authed call to the yeaboi app backend, relayed through main. */
   api: (
     path: string,
@@ -96,6 +101,8 @@ const bridge: YeaboiBridge = {
   getAuthToken: () => ipcRenderer.invoke('auth:get-token'),
   getIdentity: () => ipcRenderer.invoke('auth:get-identity'),
   setIdentity: (identity) => ipcRenderer.invoke('auth:set-identity', identity),
+  getOnboarding: () => ipcRenderer.invoke('onboarding:get'),
+  completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),
   apiStream: (path, body, onLine) => {
     // The channel is per call, so two concurrent turns never cross lines; the
