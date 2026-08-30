@@ -50,6 +50,7 @@ import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
 import BoardSettingsPage from '@/pages/projects/board-settings-page';
 import ProjectDetailPage from '@/pages/projects/project-page';
+import ProjectPlanPage from '@/pages/projects/project-plan-page';
 import ProjectsPage from '@/pages/projects/projects-page';
 import SessionCompletedPage from '@/pages/session/session-completed-page';
 import NewSessionPage from '@/pages/session/session-new-page';
@@ -153,6 +154,7 @@ const PLANNING_SERVED = new Set([
   '/projects/:id',
   '/projects/:id/board-settings',
   '/projects/:id/blueprint',
+  '/projects/:id/plan',
   '/projects/:id/sessions/new',
   '/projects/:id/sessions/:sessionId',
   '/projects/:id/sessions/:sessionId/completed',
@@ -184,6 +186,7 @@ export const router = createHashRouter([
       { path: '/projects/:id/board', element: <ProjectBoardRedirect /> },
       { path: '/projects/:id/board-settings', element: <BoardSettingsRoute /> },
       { path: '/projects/:id/blueprint', element: <BlueprintPage /> },
+      { path: '/projects/:id/plan', element: <ProjectPlanPage /> },
       { path: '/projects/:id/sessions/new', element: <NewSessionPage /> },
       { path: '/projects/:id/sessions/:sessionId', element: <SessionPage /> },
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },

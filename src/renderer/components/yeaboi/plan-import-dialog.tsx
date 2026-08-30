@@ -22,13 +22,20 @@ interface ProjectRow {
 
 export interface PlanImportDialogProps {
   plan: Plan;
+  /** Pre-selects the target and hides the picker — the plan already belongs
+   *  to this project. */
+  projectId?: string;
   onClose: () => void;
 }
 
-export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
+export function PlanImportDialog({
+  plan,
+  projectId: fixedProjectId,
+  onClose,
+}: PlanImportDialogProps) {
   const { authFetch, ready } = useAuthFetch();
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState(fixedProjectId ?? '');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +43,7 @@ export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
   const mapped = mapPlan(plan);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || fixedProjectId) return;
     authFetch('/api/projects')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`projects → ${r.status}`))))
       .then((rows: ProjectRow[]) => {
@@ -44,7 +51,7 @@ export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
         if (rows.length) setProjectId((prior) => prior || rows[0]!.id);
       })
       .catch((e: Error) => setError(e.message));
-  }, [ready, authFetch]);
+  }, [ready, authFetch, fixedProjectId]);
 
   useEffect(() => {
     if (!projectId || !ready) return;
@@ -87,14 +94,16 @@ export function PlanImportDialog({ plan, onClose }: PlanImportDialogProps) {
           labels. Re-running updates the cards it made before — it never duplicates or deletes.
         </p>
 
-        {!projects && !error && <p className="text-[12px] text-muted-foreground">Loading…</p>}
+        {!fixedProjectId && !projects && !error && (
+          <p className="text-[12px] text-muted-foreground">Loading…</p>
+        )}
         {projects && projects.length === 0 && (
           <p className="text-[12px] text-muted-foreground">
             No projects yet — create one in the Workspace first.
           </p>
         )}
 
-        {projects && projects.length > 0 && (
+        {!fixedProjectId && projects && projects.length > 0 && (
           <label className="block mb-3">
             <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
               Project

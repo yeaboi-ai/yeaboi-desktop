@@ -2,7 +2,7 @@
 // main process: the renderer calls window.yeaboi.api(path, init) → preload →
 // ipcMain here → fetch with the Authorization header attached.
 
-import { ipcMain } from 'electron';
+import { ipcMain, net } from 'electron';
 import type { Sidecar } from './sidecar';
 
 export interface ApiResult {
@@ -40,8 +40,13 @@ export async function callApi(
   const handshake = sidecar.handshake;
   if (!handshake) return { status: 503, body: { error: 'backend is not running' } };
   const method = (init.method ?? 'GET').toUpperCase();
+  // Tool calls can hold the response open for minutes (a plan generation is
+  // several LLM calls); Node's fetch gives up on headers after 300s, so those
+  // go through Chromium's stack, which has no such clock. The dispatcher's own
+  // 1h ceiling is the real limit.
+  const doFetch = path.startsWith('/api/tool/') ? net.fetch.bind(net) : fetch;
   try {
-    const response = await fetch(`${handshake.url}${path}`, {
+    const response = await doFetch(`${handshake.url}${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${handshake.token}`,

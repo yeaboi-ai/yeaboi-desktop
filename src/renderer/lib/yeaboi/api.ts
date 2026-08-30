@@ -78,14 +78,24 @@ export async function apiStream(
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
 }
 
-export async function callTool<T = unknown>(name: string, args: object = {}): Promise<Envelope<T>> {
+export async function callTool<T = unknown>(
+  name: string,
+  args: object = {},
+  options: { opId?: string } = {},
+): Promise<Envelope<T>> {
   const { status, body } = await bridge().api(`/api/tool/${name}`, {
     method: 'POST',
-    body: { arguments: args },
+    body: { arguments: args, ...(options.opId ? { op_id: options.opId } : {}) },
   });
   if (status !== 200)
     throw new Error((body as { error?: string }).error ?? `tool ${name} → ${status}`);
   return body as Envelope<T>;
+}
+
+/** An op id ties a long tool call to the progress events it publishes on the
+ *  ambient feed — filter onAmbientEvent for `type === 'progress'` with it. */
+export function newOpId(): string {
+  return `op-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
 }
 
 export function onBackendState(callback: (state: { kind: string; reason?: string }) => void): void {

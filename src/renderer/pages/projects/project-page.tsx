@@ -1014,6 +1014,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       status: string;
       iteration_type?: string | null;
       forked_from_id?: string | null;
+      yeaboi_session_id?: string | null;
+      plan_generated_at?: string | null;
     }>
   >([]);
   const [activeIterationId, setActiveIterationId] = useState<string | null>(null);
@@ -1023,6 +1025,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     () => [
       { id: 'sessions', label: 'Sessions' },
       { id: 'blueprint', label: 'Blueprint' },
+      { id: 'plan', label: 'Plan' },
       { id: 'diagrams', label: 'Diagrams' },
       { id: 'board', label: 'Board' },
       { id: 'analytics', label: 'Analytics' },
@@ -1723,6 +1726,42 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     )}
                   </>
                 )}
+              </DashboardPanel>
+            </div>
+
+            {/* Panel: Plan — the yeaboi engine's plan for the current iteration */}
+            <div key="plan" className="h-full">
+              <DashboardPanel label="Plan">
+                {(() => {
+                  const current = iterations[iterations.length - 1];
+                  const generated = current?.yeaboi_session_id;
+                  return (
+                    <>
+                      {generated ? (
+                        <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                          Plan generated
+                          {current?.plan_generated_at
+                            ? ` ${String(current.plan_generated_at).slice(0, 10)}`
+                            : ''}{' '}
+                          — epics, stories, tasks and sprints from the blueprint.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                          No plan yet. Fill in the blueprint, then generate — stories land on the
+                          board.
+                        </p>
+                      )}
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <Link
+                          href={`/projects/${project.id}/plan`}
+                          className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
+                        >
+                          {generated ? 'Open the plan →' : 'Generate a plan →'}
+                        </Link>
+                      </div>
+                    </>
+                  );
+                })()}
               </DashboardPanel>
             </div>
 
