@@ -313,14 +313,13 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className="relative flex flex-1 flex-col overflow-hidden rounded-2xl transition-opacity duration-300"
+        className="relative flex flex-1 flex-col overflow-hidden rounded-2xl shadow-2xl transition-opacity duration-300"
         style={{
           // In `input` the 1px pad + border-coloured backing IS the track the
           // spinning gradient below shows through; the inner card masks the rest.
           padding: state === 'input' ? '1px' : 0,
           background: state === 'input' ? 'var(--border)' : 'var(--popover)',
           border: state === 'input' ? 'none' : '1px solid var(--border)',
-          boxShadow: '0 8px 32px rgb(0 0 0 / 35%)',
           opacity: state === 'collapsed' ? 0 : 1,
           pointerEvents: state === 'collapsed' ? 'none' : 'auto',
         }}
@@ -392,7 +391,7 @@ export function NikoBar() {
           )}
 
           {down && state !== 'collapsed' && (
-            <div className="border-t border-amber-500/20 bg-amber-950/30 px-4 py-1.5 text-[11px] text-amber-200/80">
+            <div className="border-t border-warning/20 bg-warning/10 px-4 py-1.5 text-[11px] text-warning">
               {backend.kind === 'starting'
                 ? 'Starting the yeaboi backend…'
                 : `Niko is paused: ${backend.reason || 'the yeaboi backend is down.'}`}

@@ -17,6 +17,7 @@ import { execFile } from 'node:child_process';
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import { DOCK_SCRIPT, type DockRect, dockConfig, parseDockRect } from './dock';
 import { PET_DEFAULTS, type PetPrefs } from '../shared/pet-prefs';
+import { petFeedsActive, petWindowCommand } from '../shared/pet-visibility';
 
 /** Window-local cursor feed rate. 16ms is one frame at 60fps — the duck flees
  *  a moving pointer, so a slower feed reads as a stutter. */
@@ -46,9 +47,16 @@ function queryDockRect(callback: (rect: DockRect | null) => void): void {
 
 export class Pet {
   private window: BrowserWindow | null = null;
-  private timers: NodeJS.Timeout[] = [];
+  private layoutTimer: NodeJS.Timeout | null = null;
+  private cursorTimer: NodeJS.Timeout | null = null;
+  /** The live window's feed callbacks — set at creation, cleared with it. */
+  private feeds: { layout: () => void; cursor: () => void } | null = null;
   private prefs: PetPrefs = PET_DEFAULTS;
   private enabled = false;
+  /** An app window is focused; the duck hides rather than walk over it. */
+  private suppressed = false;
+  /** The app is quitting; no state change may revive the window. */
+  private quitting = false;
   /** Where a click on a duck holding a question should land. */
   private onOpen: (route: string) => void = () => undefined;
 
@@ -76,16 +84,75 @@ export class Pet {
   setPrefs(prefs: PetPrefs): void {
     this.prefs = prefs;
     this.enabled = prefs.enabled;
-    if (!prefs.enabled) {
-      this.hide();
-      return;
-    }
-    this.show();
-    this.sendPrefs();
+    this.applyVisibility();
+    if (this.enabled) this.sendPrefs();
   }
 
   setEnabled(enabled: boolean): void {
     this.setPrefs({ ...this.prefs, enabled });
+  }
+
+  /** Hide the duck while an app window is focused; bring him back on blur.
+   *  Orthogonal to `prefs.enabled` — the tray checkbox never flips with focus. */
+  setSuppressed(suppressed: boolean): void {
+    if (this.suppressed === suppressed) return;
+    this.suppressed = suppressed;
+    this.applyVisibility();
+  }
+
+  /** Reconcile the window with `enabled × suppressed`. Suppression hides
+   *  rather than destroys, so the duck resumes mid-scene instead of
+   *  re-hatching on every alt-tab. */
+  private applyVisibility(): void {
+    // During quit the main window's `closed` handler and the blur-settle timer
+    // still fire; without this latch either would hatch a fresh duck
+    // mid-teardown, after the tray is already gone.
+    if (this.quitting) return;
+    const window = this.window && !this.window.isDestroyed() ? this.window : null;
+    const command = petWindowCommand(
+      { enabled: this.enabled, suppressed: this.suppressed },
+      { exists: window !== null, visible: window?.isVisible() ?? false },
+    );
+    switch (command) {
+      case 'destroy':
+        this.destroyWindow();
+        break;
+      case 'create-hidden':
+      case 'create-visible':
+        this.createWindow(command === 'create-visible');
+        break;
+      case 'hide':
+        window?.hide();
+        break;
+      case 'show':
+        window?.showInactive(); // focusable: false — never steal focus
+        break;
+    }
+    this.syncFeeds();
+  }
+
+  /** Start or stop the dock poll and cursor feed to match visibility. */
+  private syncFeeds(): void {
+    const active =
+      petFeedsActive(
+        { enabled: this.enabled, suppressed: this.suppressed },
+        this.window !== null && !this.window.isDestroyed(),
+      ) && this.feeds !== null;
+    if (!active) {
+      this.clearFeeds();
+      return;
+    }
+    if (this.layoutTimer || !this.feeds) return; // already running
+    this.feeds.layout(); // the dock may have moved while the duck was hidden
+    this.layoutTimer = setInterval(this.feeds.layout, LAYOUT_POLL_MS);
+    this.cursorTimer = setInterval(this.feeds.cursor, CURSOR_FEED_MS);
+  }
+
+  private clearFeeds(): void {
+    if (this.layoutTimer) clearInterval(this.layoutTimer);
+    if (this.cursorTimer) clearInterval(this.cursorTimer);
+    this.layoutTimer = null;
+    this.cursorTimer = null;
   }
 
   private sendPrefs(): void {
@@ -100,17 +167,24 @@ export class Pet {
   }
 
   recenter(): void {
-    this.window?.webContents.send('pet:recenter');
+    const window = this.window;
+    if (window && !window.isDestroyed()) window.webContents.send('pet:recenter');
   }
 
+  /** Tear the duck down for app quit. Latches: nothing revives him after. */
   hide(): void {
-    for (const timer of this.timers) clearInterval(timer);
-    this.timers = [];
+    this.quitting = true;
+    this.destroyWindow();
+  }
+
+  private destroyWindow(): void {
+    this.clearFeeds();
+    this.feeds = null;
     if (this.window && !this.window.isDestroyed()) this.window.destroy();
     this.window = null;
   }
 
-  private show(): void {
+  private createWindow(visible: boolean): void {
     if (this.window && !this.window.isDestroyed()) return;
     const display = screen.getPrimaryDisplay();
     const { x, y, width, height } = display.bounds; // full bounds, so the dock is covered
@@ -124,6 +198,7 @@ export class Pet {
       y,
       width,
       height,
+      show: visible, // enabling while the app is focused hatches him hidden
       frame: false,
       transparent: true,
       hasShadow: false,
@@ -174,22 +249,21 @@ export class Pet {
       this.sendPrefs();
       sendLayout();
     });
-    this.timers.push(setInterval(sendLayout, LAYOUT_POLL_MS));
 
     // The cursor is polled rather than taken from forwarded DOM events: those
     // only fire while the pointer is over the window, which a click-through
     // window cannot rely on.
-    this.timers.push(
-      setInterval(() => {
-        if (!this.window || this.window.isDestroyed()) return;
-        const point = screen.getCursorScreenPoint();
-        this.window.webContents.send('pet:cursor', { x: point.x - x, y: point.y - y });
-      }, CURSOR_FEED_MS),
-    );
+    const sendCursor = (): void => {
+      if (!this.window || this.window.isDestroyed()) return;
+      const point = screen.getCursorScreenPoint();
+      this.window.webContents.send('pet:cursor', { x: point.x - x, y: point.y - y });
+    };
+    this.feeds = { layout: sendLayout, cursor: sendCursor };
+    this.syncFeeds();
 
     window.on('closed', () => {
-      for (const timer of this.timers) clearInterval(timer);
-      this.timers = [];
+      this.clearFeeds();
+      this.feeds = null;
       this.window = null;
     });
   }

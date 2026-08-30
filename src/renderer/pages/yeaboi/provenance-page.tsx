@@ -8,7 +8,7 @@
 // chain that cannot be trusted is worse than no window at all.
 
 import { useEffect, useState } from 'react';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type ProvenanceAudit,
   type ProvenanceTrace,
@@ -211,8 +211,8 @@ function ProvenanceBody() {
       <Section title="Lately">
         {audit.recent.length === 0 ? (
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> Nothing in this window. Run a standup or a performance
-            workflow and the trail starts itself.
+            <DuckMark state="idle" size={28} /> Nothing in this window. Run a standup or a
+            performance workflow and the trail starts itself.
           </p>
         ) : (
           <Table

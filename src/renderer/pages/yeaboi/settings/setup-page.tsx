@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type ProviderCard,
   type ProviderCatalog,
@@ -356,7 +356,7 @@ function SetupBody() {
       {step === 3 && provider && (
         <Pane title="You're set">
           <div className="flex items-center gap-3">
-            <Duck state="joined" size={56} />
+            <DuckMark state="joined" size={56} />
             <p className="text-[13px] text-foreground">
               {provider.full_name} ·{' '}
               <code className="font-mono">{model === '__custom__' ? custom.trim() : model}</code>

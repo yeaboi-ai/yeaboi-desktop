@@ -1,6 +1,5 @@
-// App moments → duck words. One vocabulary for both ducks: the in-app bubble
-// (DuckChrome reading duckVoice()) and the desktop pet (petNotify IPC) say
-// the same thing. Pages never write the bubble directly — they name what
+// App moments → duck words. One vocabulary, spoken by the desktop pet
+// (petNotify IPC). Pages never write the words directly — they name what
 // happened and the table decides the words, so the tone stays consistent.
 //
 // A moment worth interrupting for also gets a NOTIFY row, and then the same

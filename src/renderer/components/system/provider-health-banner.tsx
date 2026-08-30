@@ -203,11 +203,12 @@ export function ProviderHealthBanner() {
       role="alert"
       data-variant={content.variant}
       className={cn(
-        'fixed inset-x-0 top-0 z-[9999] w-full border-b backdrop-blur-md',
-        isAmber
-          ? 'bg-amber-950/95 border-amber-500/40 text-amber-100'
-          : 'bg-red-950/95 border-red-500/40 text-red-100',
+        'fixed inset-x-0 top-0 z-50 w-full border-b backdrop-blur-md text-foreground',
+        isAmber ? 'border-warning/40' : 'border-destructive/40',
       )}
+      style={{
+        background: `color-mix(in srgb, var(${isAmber ? '--warning' : '--destructive'}) 15%, var(--background))`,
+      }}
     >
       <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-2.5">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -223,7 +224,7 @@ export function ProviderHealthBanner() {
         </div>
         <Link
           href="/settings?tab=integrations"
-          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-white/15 px-2.5 py-1 text-[12px] font-medium hover:bg-white/10 transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-foreground/10 transition-colors"
         >
           Manage keys
           <ExternalLink className="h-3 w-3" />
@@ -233,7 +234,7 @@ export function ProviderHealthBanner() {
           onClick={onDismiss}
           aria-label="Dismiss alert"
           title="Hide for this session"
-          className="shrink-0 rounded-md p-1 text-current/60 hover:bg-white/10 hover:text-current transition-colors"
+          className="shrink-0 rounded-md p-1 text-current/60 hover:bg-foreground/10 hover:text-current transition-colors"
         >
           <X className="h-3.5 w-3.5" />
         </button>

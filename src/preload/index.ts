@@ -81,6 +81,8 @@ export interface YeaboiBridge {
   setPetPrefs: (patch: unknown) => Promise<unknown>;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
+  /** The active theme's background — the next window opens in it. */
+  setThemeBackground: (colour: string) => void;
   /** Self-update: state, then the three steps a person drives. */
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
@@ -132,6 +134,7 @@ const bridge: YeaboiBridge = {
   getPetPrefs: () => ipcRenderer.invoke('pet:get-prefs'),
   setPetPrefs: (patch) => ipcRenderer.invoke('pet:set-prefs', patch),
   notify: (banner) => ipcRenderer.send('app:notify', banner),
+  setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),
   onUpdateState: (callback) => {
     ipcRenderer.on('update:state', (_event, state: unknown) => callback(state));
   },

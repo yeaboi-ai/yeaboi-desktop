@@ -9,7 +9,7 @@ import {
   useMemo,
   Fragment,
 } from 'react';
-import { Duck } from '@/components/brand/duck';
+import { DuckMark } from '@/components/brand/duck';
 import ReactMarkdown from 'react-markdown';
 import {
   Send,
@@ -1523,7 +1523,7 @@ export function ChatPanel({
                 className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 shrink-0 mt-0.5"
               />
               <div className="flex items-center gap-2 bg-foreground/[0.04] border border-border/60 rounded-xl px-3 py-2">
-                <Duck state="idle" jamming size={22} />
+                <DuckMark state="idle" jamming size={22} />
                 <span className="text-[10px] font-medium text-success/60">Thinking it over…</span>
               </div>
             </div>

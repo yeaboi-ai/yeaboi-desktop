@@ -9,7 +9,6 @@ import { ProviderHealthBanner } from '@/components/system/provider-health-banner
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { BrandProvider } from '@/components/providers/brand-provider';
 import { AppShell } from './app-shell';
-import { DuckChrome } from '@/components/brand/duck-chrome';
 import { AmbienceHost } from '@/components/yeaboi/ambience-host';
 import { NikoBar } from '@/components/niko/niko-bar';
 import { ScreensaverHost } from '@/components/screensaver/screensaver-host';
@@ -25,7 +24,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <NikoProvider>
                 <ProviderHealthBanner />
                 <AppShell>{children}</AppShell>
-                <DuckChrome />
                 <NikoBar />
                 <AmbienceHost />
                 <ScreensaverHost />

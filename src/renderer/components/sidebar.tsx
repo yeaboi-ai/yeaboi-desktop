@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
-import { Duck } from '@design/primitives/Duck';
-import { Wordmark } from '@design/primitives/Wordmark';
+import { BrandName, DuckMark } from '@/components/brand/duck';
+import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import {
   LayoutGrid,
   Columns3,
   Settings,
-  LogOut,
+  ChevronsUpDown,
   Palette,
   Home,
   MessageSquareText,
@@ -262,49 +262,55 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`fixed top-0 left-0 bottom-0 w-[56px] md:w-[180px] border-r border-border/60 bg-background flex flex-col z-40 overflow-visible transition-opacity duration-300 ${
+      className={`fixed left-0 bottom-0 w-[56px] md:w-[180px] border-r border-border/60 bg-background flex flex-col z-40 overflow-visible transition-opacity duration-300 ${
         loaded ? 'opacity-100' : 'opacity-0'
       }`}
+      // The provider-health banner pads <html> to push page content down, but
+      // padding cannot move a fixed element — this reads the banner's height.
+      style={{ top: 'var(--banner-h, 0px)' }}
     >
       {/* Org switcher — only shown when user belongs to multiple orgs */}
       {orgs.length > 1 && (
         <div className="px-3 md:px-5 pt-3 hidden md:block">
-          <select
-            value={currentOrgId || ''}
-            onChange={async (e) => {
-              const newOrgId = e.target.value;
-              setStoredOrgId(newOrgId);
-              setCurrentOrgId(newOrgId);
-              localStorage.removeItem('current_team_id');
-              setCurrentTeamId(null);
-              // Re-fetch teams for the new org
-              try {
-                const r = await authFetch(`/api/orgs/${newOrgId}/teams`);
-                const data = r.ok ? await r.json() : [];
-                setTeams(data);
-                if (data.length > 0) {
-                  setStoredTeamId(data[0].id);
-                  setCurrentTeamId(data[0].id);
+          <div className="relative mb-2">
+            <select
+              value={currentOrgId || ''}
+              onChange={async (e) => {
+                const newOrgId = e.target.value;
+                setStoredOrgId(newOrgId);
+                setCurrentOrgId(newOrgId);
+                localStorage.removeItem('current_team_id');
+                setCurrentTeamId(null);
+                // Re-fetch teams for the new org
+                try {
+                  const r = await authFetch(`/api/orgs/${newOrgId}/teams`);
+                  const data = r.ok ? await r.json() : [];
+                  setTeams(data);
+                  if (data.length > 0) {
+                    setStoredTeamId(data[0].id);
+                    setCurrentTeamId(data[0].id);
+                  }
+                } catch {
+                  /* ignore */
                 }
-              } catch {
-                /* ignore */
-              }
-              dispatchTeamChange();
-            }}
-            className="w-full text-[10px] font-body bg-transparent border border-border/40 rounded px-2 py-1 text-muted-foreground mb-2"
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
+                dispatchTeamChange();
+              }}
+              className="w-full appearance-none cursor-pointer text-[10px] font-body bg-transparent border border-border/40 rounded-md pl-2 pr-6 py-1 text-muted-foreground hover:border-border focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+            <ChevronsUpDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
+          </div>
         </div>
       )}
 
       {/* Logo + notification bell */}
       <div className="flex items-center justify-between px-3 md:px-5 pt-5 pb-6">
-        <Link href="/projects" className="flex items-center gap-2 min-w-0">
+        <Link href={DEFAULT_ROUTE} className="flex items-center gap-2 min-w-0">
           <BrandWordmark />
         </Link>
       </div>
@@ -312,21 +318,24 @@ export function Sidebar() {
       {/* Team switcher */}
       {teams.length > 0 && (
         <div className="px-3 md:px-5 pb-3 hidden md:block">
-          <select
-            value={currentTeamId || ''}
-            onChange={(e) => {
-              setStoredTeamId(e.target.value);
-              setCurrentTeamId(e.target.value);
-              dispatchTeamChange();
-            }}
-            className="w-full text-[10px] font-body bg-transparent border border-border/40 rounded px-2 py-1 text-muted-foreground"
-          >
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={currentTeamId || ''}
+              onChange={(e) => {
+                setStoredTeamId(e.target.value);
+                setCurrentTeamId(e.target.value);
+                dispatchTeamChange();
+              }}
+              className="w-full appearance-none cursor-pointer text-[10px] font-body bg-transparent border border-border/40 rounded-md pl-2 pr-6 py-1 text-muted-foreground hover:border-border focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <ChevronsUpDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
+          </div>
         </div>
       )}
 
@@ -335,7 +344,7 @@ export function Sidebar() {
         {NAV_SECTIONS.map((section, index) => (
           <div key={section.label ?? `top-${index}`} className="flex flex-col gap-0.5">
             {section.label && (
-              <p className="hidden md:block px-3 pt-3 pb-1 text-[9px] font-body font-semibold uppercase tracking-widest text-muted-foreground/50">
+              <p className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest text-muted-foreground/50">
                 {section.label}
               </p>
             )}
@@ -376,7 +385,7 @@ export function Sidebar() {
         <UpdateCard />
         <Link
           href="/settings/themes"
-          className={`flex items-center gap-2.5 px-2 md:px-3 py-2 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
+          className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
             pathname?.startsWith('/settings/themes')
               ? 'bg-secondary text-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -388,7 +397,7 @@ export function Sidebar() {
         </Link>
         <Link
           href="/settings"
-          className={`flex items-center gap-2.5 px-2 md:px-3 py-2 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
+          className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
             isActive('/settings') && !pathname?.startsWith('/settings/themes')
               ? 'bg-secondary text-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
@@ -406,74 +415,31 @@ export function Sidebar() {
           <span className="hidden md:inline">Settings</span>
         </Link>
 
-        {/* User profile */}
+        {/* User profile. The theme switcher is a popover trigger, so it sits
+            beside the settings link rather than inside it — a button may not
+            live inside an anchor. */}
         <div className="border-t border-border/40 pt-2 mt-1">
-          <Link
-            href="/settings"
-            className="hidden md:flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors group"
-            title="Profile & Settings"
-          >
-            {session.user?.image ? (
-              <img src={session.user.image} alt="" className="w-6 h-6 rounded-full shrink-0" />
-            ) : (
+          <div className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors">
+            <Link
+              href="/settings"
+              className="flex flex-1 min-w-0 items-center gap-2.5"
+              title="Profile & Settings"
+            >
               <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-                <span className="text-[9px] font-body font-semibold text-primary">
+                <span className="text-[10px] font-body font-semibold text-primary">
                   {(session.user?.name ?? session.user?.email ?? '?').charAt(0).toUpperCase()}
                 </span>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-body font-medium text-foreground truncate leading-tight">
-                {session.user?.name ?? 'User'}
-              </p>
-              <p className="text-[9px] font-body text-muted-foreground/50 truncate leading-tight">
-                {session.user?.email}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-              >
-                <ThemeSwitcher />
-              </span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  signOut({ callbackUrl: '/auth/signin' });
-                }}
-                className="text-muted-foreground/30 hover:text-foreground transition-colors"
-                title="Sign out"
-              >
-                <LogOut className="h-3 w-3" />
-              </button>
-            </div>
-          </Link>
-
-          {/* Mobile: avatar + theme switcher + sign out */}
-          <div className="md:hidden flex flex-col items-center gap-1">
-            <Link href="/settings" title="Profile">
-              {session.user?.image ? (
-                <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
-                  <span className="text-[10px] font-body font-semibold text-primary">
-                    {(session.user?.name ?? session.user?.email ?? '?').charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-body font-medium text-foreground truncate leading-tight">
+                  {session.user?.name ?? 'User'}
+                </p>
+                <p className="text-[10px] font-body text-muted-foreground/50 truncate leading-tight">
+                  {session.user?.email}
+                </p>
+              </div>
             </Link>
-            <ThemeSwitcher compact />
-            <button
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              className="flex items-center justify-center px-2 py-1.5 rounded-lg text-muted-foreground/50 hover:text-foreground transition-colors"
-              title="Sign out"
-            >
-              <LogOut className="h-3 w-3" />
-            </button>
+            <ThemeSwitcher />
           </div>
         </div>
       </div>
@@ -486,10 +452,8 @@ function BrandWordmark() {
   // BrandProvider is intentionally not consulted here.
   return (
     <>
-      <Duck state="idle" size={28} />
-      <span className="hidden md:inline w-[96px] shrink-0" aria-label="yeaboi">
-        <Wordmark text="YEABOI" />
-      </span>
+      <DuckMark state="idle" size={26} />
+      <BrandName className="hidden md:inline text-xl leading-none" />
     </>
   );
 }

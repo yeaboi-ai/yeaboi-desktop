@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocation } from 'react-router';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type ProviderCatalog,
   type SettingField,
@@ -332,7 +332,7 @@ function SettingsBody() {
       )}
       {status && (
         <div className="mb-4 flex items-center gap-2 text-[12px] text-muted-foreground">
-          <Duck state="idle" size={20} /> {status}
+          <DuckMark state="idle" size={20} /> {status}
         </div>
       )}
 

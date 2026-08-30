@@ -17,7 +17,7 @@ import {
   polishFeedback,
   submitFeedback,
 } from '@/lib/yeaboi/ambience';
-import { duckVoice } from '@/lib/duck-voice';
+import { toast } from '@/components/ui/toast';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -69,7 +69,7 @@ function FeedbackBody() {
       .then(
         (answer) => {
           setResult(answer);
-          if (answer.ok) duckVoice().say('Sent it!');
+          if (answer.ok) toast.show({ title: 'Sent it!', variant: 'success' });
         },
         (e: Error) => setStatus(e.message),
       )

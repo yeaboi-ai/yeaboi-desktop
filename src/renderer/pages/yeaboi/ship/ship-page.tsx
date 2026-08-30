@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type ShipSnapshot,
   type ShipStories,
@@ -235,7 +235,7 @@ function ShipBody() {
       {plan.stories.length === 0 && boardStories.length === 0 ? (
         <Section title="No stories yet">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> {plan.empty_message}
+            <DuckMark state="idle" size={28} /> {plan.empty_message}
           </p>
         </Section>
       ) : (

@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   // Aliased: the page component itself claims the `CeremoniesPage` name.
   type CeremoniesPage as CeremoniesSnapshot,
@@ -179,7 +179,7 @@ function CeremoniesBody() {
       {page.ceremonies.length === 0 ? (
         <Section title="Nothing scheduled">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> {page.empty_message}
+            <DuckMark state="idle" size={28} /> {page.empty_message}
           </p>
           <p className="text-[12px] text-muted-foreground mt-2">{page.add_hint}</p>
         </Section>

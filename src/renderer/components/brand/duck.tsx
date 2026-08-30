@@ -1,16 +1,28 @@
 // The one import path for duck branding. App code pulls Duck/Wordmark from
 // here rather than deep-importing @design paths everywhere.
 
-import { Duck, type DuckRest } from '@design/primitives/Duck';
+import { Duck, type DuckState } from '@design/primitives/Duck';
 
 export { Duck, useDuckPulse } from '@design/primitives/Duck';
 export type { DuckPulse, DuckRest, DuckState } from '@design/primitives/Duck';
 export { Wordmark } from '@design/primitives/Wordmark';
 
+/**
+ * The product name, set in the app's own display voice.
+ *
+ * The pixel duck is the mascot and the one pixel-art artifact in the chrome;
+ * the name beside him is typography, not sprite lettering — the same
+ * `font-display italic` every heading in the app already speaks.
+ */
+export function BrandName({ className = '' }: { className?: string }) {
+  return <span className={`font-display italic text-foreground ${className}`}>yeaboi</span>;
+}
+
 export interface DuckMarkProps {
   /** Rendered width in px. Anything under 64 needs this wrapper. */
   size?: number;
-  state?: DuckRest;
+  state?: DuckState;
+  jamming?: boolean;
   className?: string;
 }
 
@@ -30,14 +42,14 @@ export interface DuckMarkProps {
  * the design package because that package is vendored — its source of truth is
  * yeaboi-frontend, a third repo — and this is a consumer-side sizing choice.
  */
-export function DuckMark({ size = 24, state = 'idle', className }: DuckMarkProps) {
+export function DuckMark({ size = 24, state = 'idle', jamming, className }: DuckMarkProps) {
   return (
     <span
       data-duck-mark
       className={className}
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
-      <Duck state={state} size={size} />
+      <Duck state={state} size={size} jamming={jamming} />
     </span>
   );
 }

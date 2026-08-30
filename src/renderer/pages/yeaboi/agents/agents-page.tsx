@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import {
   type AgentModes,
   type AgentRunState,
@@ -293,8 +293,8 @@ function AgentsBody() {
       {!report ? (
         <Section title="Nothing yet">
           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <Duck state="idle" size={28} /> The first pass reads every session log on this machine —
-            it takes a moment.
+            <DuckMark state="idle" size={28} /> The first pass reads every session log on this
+            machine — it takes a moment.
           </p>
         </Section>
       ) : (

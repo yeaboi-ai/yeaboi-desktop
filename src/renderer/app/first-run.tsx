@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { Duck } from '@design/primitives/Duck';
-import { Wordmark } from '@design/primitives/Wordmark';
+import { BrandName } from '@/components/brand/duck';
 
 export function FirstRunScreen({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState('');
@@ -40,9 +40,7 @@ export function FirstRunScreen({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background text-foreground">
       <Duck state="idle" size={72} />
-      <div className="w-64">
-        <Wordmark text="YEABOI" />
-      </div>
+      <BrandName className="text-4xl leading-none" />
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-sm">
         <h1 className="font-display text-2xl italic">Who's planning?</h1>
         <p className="mt-1 text-xs text-muted-foreground">

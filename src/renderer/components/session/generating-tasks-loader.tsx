@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Duck } from '@/components/brand/duck';
+import { DuckMark } from '@/components/brand/duck';
 
 const BASE_PHASES = [
   'Reading your blueprint…',
@@ -81,7 +81,7 @@ export function GeneratingTasksLoader({
 
       <div className="px-8 pt-6 pb-2 text-center">
         <div className="mb-2 flex justify-center">
-          <Duck state="idle" jamming={!reduced} size={40} />
+          <DuckMark state="idle" jamming={!reduced} size={40} />
         </div>
         <div key={phaseIdx} className="text-sm text-foreground/80 animate-fade-in">
           {phases[phaseIdx]}

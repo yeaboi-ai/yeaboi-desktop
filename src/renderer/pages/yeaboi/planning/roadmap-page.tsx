@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Duck } from '@design/primitives/Duck';
+import { DuckMark } from '@/components/brand/duck';
 import { quip } from '@/lib/yeaboi/ambience';
 import { createChat } from '@/lib/yeaboi/chat';
 import {
@@ -216,7 +216,7 @@ function RoadmapBody() {
           {analysis.projects.length === 0 && (
             <Section title="Nothing to plan">
               <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                <Duck state="idle" size={28} /> No concrete projects came out of that document —
+                <DuckMark state="idle" size={28} /> No concrete projects came out of that document —
                 check its content, or try another source.
               </p>
             </Section>

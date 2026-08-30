@@ -20,7 +20,12 @@ interface SettingsFile {
   pet?: unknown;
   apiUrl?: string;
   jwtSecret?: string;
+  /** The active theme's background, so a new window paints the right colour
+   *  before first render instead of flashing dark on a light theme. */
+  windowBackground?: string;
 }
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
 
 const FILE = 'settings.json';
 
@@ -73,6 +78,19 @@ export class Settings {
     this.data.petEnabled = next.enabled;
     this.save();
     return next;
+  }
+
+  /** Pre-paint window colour. Defaults to the dark preset's background — the
+   *  app's default theme — until the renderer reports the active one. */
+  get windowBackground(): string {
+    const colour = this.data.windowBackground;
+    return typeof colour === 'string' && HEX_COLOUR.test(colour) ? colour : '#0a0a0a';
+  }
+
+  setWindowBackground(colour: string): void {
+    if (!HEX_COLOUR.test(colour) || this.data.windowBackground === colour) return;
+    this.data.windowBackground = colour;
+    this.save();
   }
 
   /** Backend base URL. Env wins so a dev shell can point elsewhere without

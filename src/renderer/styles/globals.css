@@ -384,6 +384,16 @@ body::before {
    without !important. See components/brand/duck.tsx. */
 span[data-duck-mark] img {
   image-rendering: auto;
+  /* The module's 5px/45%-black drop-shadow is sized for a 64px+ duck on a dark
+     board; at mark sizes it reads as dirt, and it ignores the light themes. */
+  filter: none;
+}
+
+/* The sleep "z" (`.zzz`) is coloured with `--muted` — a surface token in this
+   app, invisible against the panels it sits on. Hand it the text token. The
+   `.zzz` span is the only span child of the duck root. */
+span[data-duck-mark] [data-state] > span {
+  color: var(--muted-foreground);
 }
 
 @keyframes spin-slow {

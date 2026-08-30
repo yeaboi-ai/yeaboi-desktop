@@ -214,6 +214,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         tokens: resolved.theme.tokens,
       }),
     );
+    // The cookie covers the first paint; the native window colour behind it
+    // is main's, so report it too. Guarded — no bridge in a plain browser.
+    const background = resolved.theme.tokens['background'];
+    if (background) window.yeaboi?.setThemeBackground?.(background);
   }, [resolved, preview]);
 
   // Cross-tab sync.
