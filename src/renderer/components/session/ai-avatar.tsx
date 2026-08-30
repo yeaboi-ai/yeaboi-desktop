@@ -11,6 +11,9 @@ interface AIAvatarProps {
   /** Explicit four-state machine. Wins over `speaking` when provided. */
   state?: AIAvatarState;
   persona?: string;
+  /** Literal hex tint; wins over `persona`. Must be a hex color — the canvas
+   *  path concatenates alpha digits onto it, which a CSS var can't take. */
+  color?: string;
 }
 
 const PERSONA_COLORS: Record<string, string> = {
@@ -28,10 +31,15 @@ const STATE_LABEL: Record<AIAvatarState, string> = {
   paused: 'AI is paused',
 };
 
-export function AIAvatar({ speaking, state: explicitState, persona = 'default' }: AIAvatarProps) {
+export function AIAvatar({
+  speaking,
+  state: explicitState,
+  persona = 'default',
+  color: explicitColor,
+}: AIAvatarProps) {
   // Resolve effective state. Explicit `state` always wins.
   const state: AIAvatarState = explicitState ?? (speaking ? 'speaking' : 'listening');
-  const color = PERSONA_COLORS[persona] || PERSONA_COLORS.default;
+  const color = explicitColor ?? PERSONA_COLORS[persona] ?? PERSONA_COLORS.default;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSupported, setCanvasSupported] = useState(true);
   const reducedMotion = useReducedMotion();

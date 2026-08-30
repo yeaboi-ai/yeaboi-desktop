@@ -16,6 +16,7 @@ import { randomBytes } from 'node:crypto';
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { parseDotenv } from '../shared/dotenv';
 
 export interface MachineSecrets {
   nextauthSecret: string;
@@ -75,32 +76,16 @@ export function loadMachineSecrets(): MachineSecrets {
   return merged;
 }
 
-/**
- * Parse ~/.yeaboi/.env — the minimal dotenv subset the TUI writes: KEY=value
- * lines, optional single/double quotes, # comments. No interpolation.
- */
+/** Read and parse the shared key file; {} when absent.
+ *
+ *  Always literally ~/.yeaboi/.env, even when $YEABOI_HOME relocates the data
+ *  tree — the Python engine treats it as the bootstrap file (it can itself set
+ *  YEABOI_HOME, so deriving its location from the override would be circular),
+ *  and reading anywhere else splits this process from what the engine writes. */
 export function loadSharedEnv(): Record<string, string> {
-  let raw = '';
   try {
-    raw = readFileSync(join(yeaboiHome(), '.env'), 'utf8');
+    return parseDotenv(readFileSync(join(homedir(), '.yeaboi', '.env'), 'utf8'));
   } catch {
     return {};
   }
-  const env: Record<string, string> = {};
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq <= 0) continue;
-    const key = trimmed.slice(0, eq).trim();
-    let value = trimmed.slice(eq + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    if (/^[A-Z_][A-Z0-9_]*$/i.test(key)) env[key] = value;
-  }
-  return env;
 }

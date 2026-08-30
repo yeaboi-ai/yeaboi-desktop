@@ -1,7 +1,8 @@
 // Local app settings, persisted as JSON in userData. This replaces both the
 // old sidecar-backed preference store (pet on/off) and NextAuth's session as
 // the source of identity: the desktop is single-user, so "who are you" is a
-// name and an email written once on first run.
+// name and an email — auto-minted at startup (the app has no sign-in), and
+// editable later from the planning Settings page.
 
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,6 +16,9 @@ export interface Identity {
 
 interface SettingsFile {
   identity?: Identity;
+  /** First-run onboarding: set on explicit finish/skip, or migrated true for
+   *  installs that predate the wizard. Absent means "not decided yet". */
+  onboardingComplete?: boolean;
   /** Pre-prefs pet switch. Still written, so a downgrade still finds it. */
   petEnabled?: boolean;
   pet?: unknown;
@@ -56,6 +60,17 @@ export class Settings {
 
   setIdentity(identity: Identity): void {
     this.data.identity = { email: identity.email.trim(), name: identity.name.trim() };
+    this.save();
+  }
+
+  get onboardingComplete(): boolean | undefined {
+    return typeof this.data.onboardingComplete === 'boolean'
+      ? this.data.onboardingComplete
+      : undefined;
+  }
+
+  setOnboardingComplete(complete: boolean): void {
+    this.data.onboardingComplete = complete;
     this.save();
   }
 

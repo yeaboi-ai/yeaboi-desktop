@@ -5,6 +5,7 @@
 // persists it and only says that it did.
 
 import { useEffect, useRef, useState } from 'react';
+import { Check, X } from 'lucide-react';
 import {
   type SignInStatus,
   signInCancel,
@@ -36,31 +37,46 @@ export function SignInPanel({ onClose }: { onClose: (saved: boolean, message: st
   const [startError, setStartError] = useState('');
   const [code, setCode] = useState('');
   const [copied, setCopied] = useState(false);
-  const closed = useRef(false);
+  // Outlives StrictMode's simulated unmount, so the effect's second run polls
+  // the session the first run started instead of spawning a second
+  // `claude setup-token` (which cancels the first and opens the browser twice).
+  const started = useRef(false);
 
   useEffect(() => {
+    let alive = true;
     let timer: ReturnType<typeof setInterval> | undefined;
-    signInStart().then(
-      (result) => {
-        if (!result.started) {
-          setStartError(result.message || 'Sign-in could not start');
-          return;
-        }
-        timer = setInterval(() => {
-          signInStatus().then(
-            (s) => {
-              if (closed.current) return;
-              setStatus(s);
-              if (s.done && timer) clearInterval(timer);
-            },
-            () => undefined,
-          );
-        }, POLL_MS);
-      },
-      (e: Error) => setStartError(e.message),
-    );
+    const beginPolling = () => {
+      timer = setInterval(() => {
+        signInStatus().then(
+          (s) => {
+            if (!alive) return;
+            setStatus(s);
+            if (s.done && timer) clearInterval(timer);
+          },
+          () => undefined,
+        );
+      }, POLL_MS);
+    };
+    if (started.current) {
+      beginPolling();
+    } else {
+      started.current = true;
+      signInStart().then(
+        (result) => {
+          if (!alive) return;
+          if (!result.started) {
+            setStartError(result.message || 'Sign-in could not start');
+            return;
+          }
+          beginPolling();
+        },
+        (e: Error) => {
+          if (alive) setStartError(e.message);
+        },
+      );
+    }
     return () => {
-      closed.current = true;
+      alive = false;
       if (timer) clearInterval(timer);
     };
   }, []);
@@ -84,13 +100,34 @@ export function SignInPanel({ onClose }: { onClose: (saved: boolean, message: st
   }
 
   if (status?.done) {
+    const ok = Boolean(status.ok);
     return (
       <Shell>
-        <p className={`text-[13px] ${status.ok ? 'text-success' : 'text-destructive'}`}>
-          {status.message}
-        </p>
-        <div className="mt-4 flex justify-end">
-          <Button size="sm" onClick={() => onClose(Boolean(status.saved), status.message ?? '')}>
+        <div className="flex flex-col items-center py-3 text-center">
+          <span
+            aria-hidden
+            className={`flex h-12 w-12 items-center justify-center rounded-full ring-1 ${
+              ok
+                ? 'bg-success/10 text-success ring-success/30'
+                : 'bg-destructive/10 text-destructive ring-destructive/30'
+            }`}
+          >
+            {ok ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
+          </span>
+          <h3 className="mt-4 text-[15px] font-body font-medium text-foreground">
+            {ok ? 'Signed in' : "Sign-in didn't complete"}
+          </h3>
+          <p className="mt-1.5 max-w-xs text-[12.5px] leading-relaxed text-muted-foreground">
+            {ok
+              ? 'Your Claude subscription now powers the duck. The token is saved on this machine and never shown.'
+              : (status.message ??
+                'Something went wrong — try again, or paste an API key instead.')}
+          </p>
+          <Button
+            autoFocus
+            className="mt-6 px-7"
+            onClick={() => onClose(Boolean(status.saved), status.message ?? '')}
+          >
             Done
           </Button>
         </div>
