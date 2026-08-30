@@ -75,8 +75,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Team',
     items: [
-      { href: '/team/planning', label: 'Planning', icon: MessageSquareText },
-      { href: '/team/planning/roadmap', label: 'Roadmap', icon: Map },
+      // Planning lives in the Workspace now: project → blueprint → plan.
+      { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: Map },
       { href: '/team/analysis', label: 'Analysis', icon: BarChart3 },
       { href: '/team/standup', label: 'Standup', icon: Sunrise },
       { href: '/team/retro', label: 'Retro', icon: RotateCcw },
@@ -249,8 +249,8 @@ export function Sidebar() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentOrgId, ready, fetchTeams]);
 
-  // Longest-prefix wins, so /team/planning/roadmap lights Roadmap and not
-  // Planning too.
+  // Longest-prefix wins, so /projects/new/from-roadmap lights Roadmap and
+  // not Projects too.
   const activeHref = NAV_ITEMS.map((item) => item.href)
     .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];

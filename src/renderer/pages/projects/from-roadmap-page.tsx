@@ -1,21 +1,18 @@
 'use client';
 
 // Roadmap intake — point yeaboi at the quarterly roadmap, pick a project,
-// plan it.
-//
-// A Planning sub-page, like the terminal's intake card: Plan This hands the
-// chosen project's description to the chat rather than opening a mode of its
-// own.
-//
-// Share/anonymize actions (the old ResultActions strip) arrive with the
-// global export dialog in a later phase.
+// and it becomes a workspace project: created on the platform backend with
+// its blueprint overview seeded from the roadmap item, landing on the
+// blueprint to refine and generate from. The analysis itself runs on the
+// yeaboi sidecar (lib/yeaboi/modes.ts), which is why the BackendGate wraps
+// a page that lives under /projects.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DuckMark } from '@/components/brand/duck';
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { quip } from '@/lib/yeaboi/ambience';
-import { createChat } from '@/lib/yeaboi/chat';
 import {
   type ModeRunState,
   type RoadmapAnalysisView,
@@ -56,6 +53,7 @@ function Notice({ title, items }: { title: string; items: string[] }) {
 
 function RoadmapBody() {
   const router = useRouter();
+  const { authFetch } = useAuthFetch();
   const [sources, setSources] = useState<RoadmapSourceOption[] | null>(null);
   const [saved, setSaved] = useState<SavedRoadmap[]>([]);
   const [kind, setKind] = useState('confluence');
@@ -64,6 +62,7 @@ function RoadmapBody() {
   const [roadmapId, setRoadmapId] = useState(0);
   const [run, setRun] = useState<ModeRunState>(emptyModeRun());
   const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(-1);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -110,15 +109,34 @@ function RoadmapBody() {
     setBusy(false);
   }
 
-  async function plan(index: number) {
+  async function makeProject(index: number, name: string) {
+    if (creating >= 0) return;
+    setCreating(index);
+    setError('');
     try {
-      // The backend decides both halves: the description a project plans
-      // from, and whether it is large enough for the full intake.
+      // The backend resolves the roadmap item into the description a
+      // project plans from; that seeds both the project and its blueprint.
       const picked = await planProject(roadmapId, index);
-      const view = await createChat(picked.description, picked.intake_mode);
-      router.push(`/team/planning/chat?id=${encodeURIComponent(view.project_id)}`);
+      const resp = await authFetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description: picked.description }),
+      });
+      if (!resp.ok) throw new Error(`could not create the project (${resp.status})`);
+      const created = (await resp.json()) as { id: string };
+      const seed = await authFetch(
+        `/api/projects/${created.id}/blueprint/sections/project_overview`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: picked.description }),
+        },
+      );
+      if (!seed.ok) throw new Error(`could not seed the blueprint (${seed.status})`);
+      router.push(`/projects/${created.id}/blueprint`);
     } catch (e) {
       setError((e as Error).message);
+      setCreating(-1);
     }
   }
 
@@ -128,13 +146,11 @@ function RoadmapBody() {
         <div>
           <h1 className="font-display text-2xl text-foreground">Roadmap intake</h1>
           <p className="text-[13px] text-muted-foreground mt-1">
-            Point yeaboi at the quarterly roadmap and it proposes what to plan next.
+            Point yeaboi at the quarterly roadmap and it proposes what to plan next — each pick
+            becomes a project with its blueprint started.
           </p>
         </div>
-        <Link
-          href="/team/planning"
-          className="text-[12px] text-muted-foreground hover:text-foreground"
-        >
+        <Link href="/projects" className="text-[12px] text-muted-foreground hover:text-foreground">
           Back
         </Link>
       </header>
@@ -206,8 +222,12 @@ function RoadmapBody() {
                   <span>{project.description}</span>
                 </p>
                 <div className="mt-3">
-                  <Button size="sm" onClick={() => void plan(index)}>
-                    Plan this
+                  <Button
+                    size="sm"
+                    disabled={creating >= 0}
+                    onClick={() => void makeProject(index, project.name)}
+                  >
+                    {creating === index ? 'Creating…' : 'Start this project'}
                   </Button>
                 </div>
               </Section>
@@ -240,7 +260,7 @@ function RoadmapBody() {
   );
 }
 
-export default function RoadmapPage() {
+export default function FromRoadmapPage() {
   return (
     <BackendGate>
       <div className="mx-auto max-w-3xl px-6 py-10">

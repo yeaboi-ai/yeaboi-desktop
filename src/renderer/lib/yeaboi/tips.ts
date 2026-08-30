@@ -28,7 +28,8 @@ export const FADE_FRACTION = 0.16;
  */
 export const MODE_ROUTES: Record<string, string> = {
   'team-analysis': '/team/analysis',
-  'project-planning': '/team/planning',
+  // Planning folded into the workspace: project → blueprint → plan.
+  'project-planning': '/projects',
   'daily-standup': '/team/standup',
   retro: '/team/retro',
   poker: '/team/poker',

@@ -1,7 +1,18 @@
 import type { Board, Card } from '@/hooks/use-board';
 import type { BoardGroupBy } from '@/lib/preferences';
-import { formatWaveHeader } from '@/components/session/completion-wizard-helpers';
 import { Layers, Rocket, type LucideIcon } from 'lucide-react';
+
+/**
+ * Lane header label for a wave-grouped view.
+ *
+ * - Wave 0: "Can start in parallel · N task(s)"
+ * - Wave N>0: "N task(s) that wait on wave N-1"
+ */
+export function formatWaveHeader(waveIndex: number, taskCount: number): string {
+  const tasks = `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}`;
+  if (waveIndex <= 0) return `Can start in parallel · ${tasks}`;
+  return `${tasks} that wait on wave ${waveIndex - 1}`;
+}
 
 /**
  * A horizontal swim lane in the board view. Lanes are derived client-side

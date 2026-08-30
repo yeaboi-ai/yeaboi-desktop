@@ -1,8 +1,7 @@
 'use client';
 
-import { useAuthFetch } from '@/hooks/use-auth-fetch';
-import { CompletionWizard, type WizardTask } from './completion-wizard';
-import { clearCachedStories } from './completion-wizard-helpers';
+import { useRef } from 'react';
+import { GeneratePlanDialog } from '@/components/projects/generate-plan-dialog';
 
 interface ReviewScreenProps {
   projectId: string;
@@ -12,42 +11,26 @@ interface ReviewScreenProps {
 }
 
 /**
- * Thin host for the wrap-up wizard. The wizard owns the entire UI surface
- * now (gaps → defaults → preview → commit); this component just supplies
- * the commit handler and the cancel/complete callbacks the wizard needs.
- *
- * The legacy 3-column "Review Your Plan" screen was removed because it
- * duplicated context the wizard already shows (blueprint) and rendered
- * empty placeholder boxes for diagram/scaffold previews that aren't part
- * of the wizard flow. The post-commit summary page at
- * `/projects/{id}/sessions/{sessionId}/completed` carries the
- * ExtractionPanel + feedback buttons that used to live here.
+ * Session wrap-up. The blueprint the session built is handed to the yeaboi
+ * planning engine (the same Generate dialog the blueprint page uses): the
+ * plan is generated, recorded on the iteration, and its stories land on the
+ * board. The old completion wizard's own story generator retired with it.
  */
-export function ReviewScreen({ projectId, sessionId, onComplete, onCancel }: ReviewScreenProps) {
-  const { authFetch } = useAuthFetch();
-
-  // Throws on failure so the wizard's finish() catch surfaces the error
-  // in its built-in error UI (with Try again).
-  const handleCommit = async (tasks: WizardTask[]) => {
-    const r = await authFetch(`/api/projects/${projectId}/stories/commit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tasks }),
-    });
-    if (!r.ok) {
-      const text = await r.text().catch(() => '');
-      throw new Error(text || `commit ${r.status}`);
-    }
-    clearCachedStories(sessionId);
-    onComplete();
-  };
+export function ReviewScreen({ projectId, onComplete, onCancel }: ReviewScreenProps) {
+  // The dialog closes itself after a successful run — don't let that close
+  // read as a cancel.
+  const completed = useRef(false);
 
   return (
-    <CompletionWizard
+    <GeneratePlanDialog
       projectId={projectId}
-      sessionId={sessionId}
-      onCancel={() => onCancel?.()}
-      onCommit={handleCommit}
+      onGenerated={() => {
+        completed.current = true;
+        onComplete();
+      }}
+      onClose={() => {
+        if (!completed.current) onCancel?.();
+      }}
     />
   );
 }
