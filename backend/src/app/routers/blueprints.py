@@ -1,6 +1,7 @@
 import json
 import logging
 import secrets
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import func, or_, select
@@ -650,6 +651,11 @@ async def update_iteration(
         iteration.label = body.label
     if body.iteration_type is not None:
         iteration.iteration_type = body.iteration_type
+    if body.yeaboi_session_id is not None:
+        iteration.yeaboi_session_id = body.yeaboi_session_id
+        iteration.plan_generated_at = datetime.now(UTC)
+    if body.plan_source_snapshot_id is not None:
+        iteration.plan_source_snapshot_id = body.plan_source_snapshot_id
     await db.commit()
     return iteration
 

@@ -169,6 +169,9 @@ class BlueprintIterationResponse(BaseModel):
     parent_out_of_scope: str | None = None
     share_token: str | None = None
     share_enabled: bool = False
+    yeaboi_session_id: str | None = None
+    plan_generated_at: datetime | None = None
+    plan_source_snapshot_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -216,6 +219,10 @@ class BlueprintIterationUpdate(BaseModel):
     label: str | None = None
     display_name: str | None = None
     iteration_type: str | None = None
+    # Setting this records which engine planning session produced the
+    # iteration's plan; the server stamps plan_generated_at itself.
+    yeaboi_session_id: str | None = None
+    plan_source_snapshot_id: str | None = None
 
 
 # ─── Blueprint Suggestions ──────────────────────────────────────────────────
