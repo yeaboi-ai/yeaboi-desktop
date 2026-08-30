@@ -3,9 +3,17 @@
   "entries": [
     {
       "version": "4.0.0",
-      "date": "2026-08-29",
-      "summary": "The desktop app now has a life of its own: its own version number, its own release notes, and a one-click updater. When a new version is out, an amber card appears in the sidebar — one click downloads it and restarts the app. What's New now shows what changed in the app itself alongside the yeaboi releases that matter on the desktop, instead of every terminal-only note.",
+      "date": "2026-08-30",
+      "summary": "The desktop app now has a life of its own: its own version number, its own release notes, a one-click updater — and a proper welcome. A fresh install opens a short setup wizard: the duck walks you through connecting a model, and optionally a voice, a face, and your tools, with progress told as the duck's own life cycle, from egg to quack. When a new version is out, an amber card appears in the sidebar — one click downloads it and restarts the app.",
       "highlights": [
+        {
+          "text": "First run opens a setup wizard: connect a model, then optionally voice, video and tool credentials — everything after the model is skippable",
+          "areas": ["onboarding"]
+        },
+        {
+          "text": "Setup progress is the duck's life cycle: egg, cracked egg, hatchling, duckling, and the full duck at quack",
+          "areas": ["onboarding"]
+        },
         {
           "text": "The app checks for updates on its own and shows an amber card when one is ready to install",
           "areas": ["updater"]
