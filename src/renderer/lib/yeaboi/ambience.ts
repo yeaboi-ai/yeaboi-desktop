@@ -8,6 +8,16 @@
 // bubble in a DOM need identical copies of.
 
 import { apiGet, apiPost } from './api';
+import type { FeedbackOptions } from './feedback';
+
+/** What POST /api/feedback/attachments answers with. */
+export interface StoredAttachment {
+  path: string;
+  name: string;
+  kind: 'image' | 'text';
+  bytes: number;
+  lines?: number;
+}
 
 export interface MusicChannel {
   name: string;
@@ -43,11 +53,7 @@ export interface ConsentRequest {
   context: string;
 }
 
-export interface FeedbackOptions {
-  types: string[];
-  areas: string[];
-  repo: string;
-}
+export type { FeedbackOptions } from './feedback';
 
 export interface FeedbackResult {
   ok: boolean;
@@ -90,7 +96,17 @@ export interface FeedbackDraft {
   area: string;
   title: string;
   description: string;
+  /** Paths /api/feedback/attachments handed back. Any other path is refused. */
+  image_paths?: string[];
+  text_paths?: string[];
 }
+
+/** One screenshot or log file, base64 in JSON — the proxy sends nothing else. */
+export const attachFeedbackFile = (file: {
+  name: string;
+  mime: string;
+  data: string;
+}): Promise<StoredAttachment> => apiPost('/api/feedback/attachments', file);
 
 export const submitFeedback = (draft: FeedbackDraft): Promise<FeedbackResult> =>
   apiPost('/api/feedback', draft);
