@@ -36,7 +36,7 @@ if (head.version !== pkg.version) {
 const wheelFlag = process.argv.indexOf('--wheel');
 const wheel = wheelFlag !== -1 ? process.argv[wheelFlag + 1] : '';
 
-const lines = [head.summary, ''];
+const lines = head.headline ? [`**${head.headline}**`, '', head.summary, ''] : [head.summary, ''];
 for (const highlight of head.highlights ?? []) {
   lines.push(`- ${highlight.text}`);
 }
