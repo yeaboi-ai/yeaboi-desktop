@@ -4,11 +4,18 @@
 // rendered monochrome so the cards stay inside the design system. Path data
 // comes from simple-icons where it carries the mark; OpenAI's knot, Slack's
 // pinwheel, the Azure DevOps mark and Grok's swirl are embedded (simple-icons
-// carries none of them); AWS Bedrock — no usable mark ships in any icon set we
-// bundle — gets a cloud glyph. Unknown names fall back to a two-letter
-// monogram. All marks identify their owners' services.
+// carries none of them). AWS and Azure write themselves in letters instead:
+// their owners' brand guidelines put those marks out of reach — which is why
+// simple-icons carries neither — and a reconstruction would be a wrong logo
+// rather than an absent one. AWS Bedrock and incident.io get a family glyph.
+// Unknown names fall back to a two-letter monogram. All marks identify their
+// owners' services.
+//
+// A connector may also pass its accent, which tints the tile rather than the
+// glyph: the mark stays monochrome and inside the design system, and a vendor
+// we ship no logo for still reads as itself in a list of several.
 
-import { Cloud, Siren, Sunrise, Video } from 'lucide-react';
+import { Activity, Bug, Cloud, Siren, Sunrise, Video } from 'lucide-react';
 import {
   siBitbucket,
   siClaude,
@@ -91,22 +98,74 @@ export const FALLBACK_GLYPHS: Record<
   bedrock: Cloud,
   tavus: Video,
   standup: Sunrise,
-  // simple-icons carries no AWS or Azure mark (trademark removals) and no
-  // incident.io mark — deliberate glyphs, not accidental monograms.
-  aws: Cloud,
-  azure_cloud: Cloud,
-  incidentio: Siren,
 };
 
-export function ProviderIcon({ provider, size = 40 }: { provider: string; size?: number }) {
+/** The neutral mark a connector family wears when we ship no logo for the
+ *  vendor itself — so a connector always renders as something, never as a
+ *  blank, and never has to wait on a licensed asset to look finished. */
+const FAMILY_GLYPHS: Record<
+  string,
+  React.ComponentType<{ size?: number; strokeWidth?: number }>
+> = {
+  observability: Activity,
+  incidents: Siren,
+  errors: Bug,
+  cloud: Cloud,
+};
+
+/** How a vendor writes itself when we cannot ship its logomark.
+ *
+ *  Amazon's and Microsoft's brand guidelines restrict third-party logo use —
+ *  which is why simple-icons carries neither — so their marks are not ours to
+ *  draw, and a reconstruction from memory would be a wrong logo rather than an
+ *  absent one. Lettering is the honest alternative: it is what the vendor calls
+ *  itself, it is accurate, and inside the vendor's own accent it reads as
+ *  itself. The generic family cloud does not: three cloud providers wearing one
+ *  cloud is indistinguishable from having forgotten all three. */
+const MONOGRAMS: Record<string, string> = {
+  aws: 'AWS',
+  // Matches what the two-letter slice would produce today, and is declared
+  // anyway: the slice is derived from the connector KEY, so renaming the key
+  // would silently relabel the tile.
+  azure_cloud: 'AZ',
+};
+
+/** `rgb(r,g,b)` from the connector catalog → the same colour at `alpha`. */
+function tint(accent: string, alpha: number): string | undefined {
+  const m = /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/.exec(accent.trim());
+  return m ? `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})` : undefined;
+}
+
+export function ProviderIcon({
+  provider,
+  size = 40,
+  family = '',
+  accent = '',
+}: {
+  provider: string;
+  size?: number;
+  /** Connector family, used to pick a fallback mark before the monogram. */
+  family?: string;
+  /** Connector accent, `rgb(r,g,b)`. Tints the tile, never the mark. */
+  accent?: string;
+}) {
   const path = ICON_PATHS[provider];
-  const Glyph = FALLBACK_GLYPHS[provider];
+  const Glyph =
+    FALLBACK_GLYPHS[provider] ?? (MONOGRAMS[provider] ? undefined : FAMILY_GLYPHS[family]);
+  const lettering = MONOGRAMS[provider] ?? provider.slice(0, 2).toUpperCase();
   const glyph = Math.round(size * 0.52);
+  const wash = tint(accent, 0.14);
+  const edge = tint(accent, 0.35);
   return (
     <span
       aria-hidden
       className="flex shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40 text-foreground/85"
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        ...(wash ? { background: wash } : {}),
+        ...(edge ? { boxShadow: `inset 0 0 0 1px ${edge}` } : {}),
+      }}
     >
       {path ? (
         <svg width={glyph} height={glyph} viewBox="0 0 24 24">
@@ -117,9 +176,10 @@ export function ProviderIcon({ provider, size = 40 }: { provider: string; size?:
       ) : (
         <span
           className="font-mono font-semibold tracking-tight"
-          style={{ fontSize: Math.max(9, Math.round(size * 0.26)) }}
+          // Three letters need to fit the same tile two do.
+          style={{ fontSize: Math.max(9, Math.round((size * 0.72) / lettering.length)) }}
         >
-          {provider.slice(0, 2).toUpperCase()}
+          {lettering}
         </span>
       )}
     </span>
