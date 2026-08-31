@@ -1,9 +1,15 @@
 // The Team world's mark: three ducks, one cluster. Pure composition of the
 // existing DuckMark — no new sprites — mirroring the TUI category screen's
-// staging: the front duck centred and full-size for the mark's box, the two
-// behind it smaller, higher and faded, the way distance stages a crowd.
+// staging: the front duck centred, the two behind it smaller, higher and
+// faded, the way distance stages a crowd.
 
 import { DuckMark } from '@/components/brand/duck';
+
+// The duck sprite is 128×136, so a DuckMark of width `size` renders this
+// tall. The cluster claims the SAME box as a lone DuckMark at the same
+// `size` — the marks sit side by side (chooser cards, the sidebar pill), and
+// a shorter box floats the Team card's text off its neighbours' line.
+const DUCK_ASPECT = 136 / 128;
 
 export interface TeamMarkProps {
   /** Rendered width of the whole cluster in px, like DuckMark's `size`. */
@@ -12,14 +18,14 @@ export interface TeamMarkProps {
 }
 
 export function TeamMark({ size = 24, className }: TeamMarkProps) {
-  const front = Math.round(size * 0.62);
-  const back = Math.round(size * 0.44);
+  const front = Math.round(size * 0.7);
+  const back = Math.round(size * 0.5);
   return (
     <span
       className={className}
       style={{
         width: size,
-        height: front,
+        height: Math.round(size * DUCK_ASPECT),
         display: 'inline-block',
         position: 'relative',
         lineHeight: 0,
