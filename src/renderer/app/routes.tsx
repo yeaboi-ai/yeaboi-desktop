@@ -52,7 +52,6 @@ import ProjectsPage from '@/pages/projects/projects-page';
 import SessionCompletedPage from '@/pages/session/session-completed-page';
 import NewSessionPage from '@/pages/session/session-new-page';
 import SessionPage from '@/pages/session/session-page';
-import SettingsPage from '@/pages/settings/settings-page';
 import ThemeEditorPage from '@/pages/settings/theme-edit-page';
 import ThemesSettingsPage from '@/pages/settings/themes-page';
 import TicketPage from '@/pages/ticket-page';
@@ -137,6 +136,8 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/settings/credentials': <YeaboiSettingsPage />,
   '/settings/sharing': <YeaboiSettingsPage />,
   '/settings/system': <YeaboiSettingsPage />,
+  '/settings/appearance': <YeaboiSettingsPage />,
+  '/settings/duck': <YeaboiSettingsPage />,
   '/setup': <SetupPage />,
 };
 
@@ -184,7 +185,7 @@ export const router = createHashRouter([
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
-      { path: '/settings', element: <SettingsPage /> },
+      { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },
       { path: '/settings/themes', element: <ThemesSettingsPage /> },
       { path: '/settings/themes/edit', element: <ThemeEditorPage /> },
       { path: '/recordings/:id', element: <RecordingPage /> },

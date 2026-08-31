@@ -16,3 +16,20 @@ export interface SettingsTab {
 }
 
 export const SETTINGS_TABS: readonly SettingsTab[] = registry.settings_tabs;
+
+/** Tabs that configure this window rather than the engine.
+ *
+ *  They are ordinary routes, never settings_tabs entries: that block is held
+ *  equal to the terminal's section list, and the terminal has no appearance,
+ *  themes or desktop-duck section to match. */
+export const CHROME_TABS: readonly { route: string; title: string }[] = [
+  { route: '/settings/appearance', title: 'Appearance' },
+  { route: '/settings/themes', title: 'Themes' },
+  { route: '/settings/duck', title: 'Duck' },
+];
+
+/** Every tab on the settings page, in bar order. */
+export const ALL_SETTINGS_TABS: readonly { route: string; title: string }[] = [
+  ...SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })),
+  ...CHROME_TABS,
+];

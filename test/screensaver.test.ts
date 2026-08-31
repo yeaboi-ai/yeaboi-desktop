@@ -20,6 +20,12 @@ import { seeded } from '../src/renderer/lib/screensaver/scene';
 import { FALLBACK_PALETTE } from '../src/renderer/lib/screensaver/palette';
 import { resolveScene, SCENE_STYLES, isSaverStyle } from '../src/renderer/lib/screensaver/styles';
 import {
+  onPreviewRequest,
+  onSaverPreferenceChange,
+  previewScreensaver,
+  saverPreferenceChanged,
+} from '../src/renderer/lib/screensaver/preview';
+import {
   isSuppressed,
   onSuppressionChange,
   resetSuppression,
@@ -324,5 +330,58 @@ describe('the token rule', () => {
       expect(code, `${name} hardcodes a colour`).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
       expect(code, `${name} hardcodes a colour`).not.toMatch(/\b(rgba?|hsla?)\s*\(/);
     }
+  });
+});
+
+describe('the preview bus', () => {
+  it('hands the listener the style it was asked for', () => {
+    const seen: (string | undefined)[] = [];
+    const stop = onPreviewRequest((style) => seen.push(style));
+    previewScreensaver('aurora');
+    stop();
+    expect(seen).toEqual(['aurora']);
+  });
+
+  it('passes nothing through when no style is named, so the stored one wins', () => {
+    const seen: (string | undefined)[] = [];
+    const stop = onPreviewRequest((style) => seen.push(style));
+    previewScreensaver();
+    stop();
+    expect(seen).toEqual([undefined]);
+  });
+
+  // The regression: the Preview button used to be `onClick={previewScreensaver}`,
+  // which handed it a MouseEvent, and the host drew whatever style was stored
+  // when the window opened rather than the tile that was clicked.
+  it('resolves the style it is handed, not a default', () => {
+    let drawn = '';
+    const stop = onPreviewRequest((style) => {
+      drawn = resolveScene(style ?? 'duck-yard', () => 0);
+    });
+    previewScreensaver('ricochet');
+    stop();
+    expect(drawn).toBe('ricochet');
+  });
+
+  it('tells listeners the stored preference moved', () => {
+    let told = 0;
+    const stop = onSaverPreferenceChange(() => {
+      told += 1;
+    });
+    saverPreferenceChanged();
+    saverPreferenceChanged();
+    stop();
+    saverPreferenceChanged();
+    expect(told).toBe(2);
+  });
+
+  it('drops a listener once it unsubscribes', () => {
+    let told = 0;
+    const stop = onPreviewRequest(() => {
+      told += 1;
+    });
+    stop();
+    previewScreensaver('aurora');
+    expect(told).toBe(0);
   });
 });

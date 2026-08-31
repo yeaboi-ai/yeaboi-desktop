@@ -16,6 +16,7 @@ interface YeaboiBridge {
   getAuthToken: () => Promise<YeaboiAuthPayload | null>;
   getIdentity: () => Promise<YeaboiIdentity | null>;
   setIdentity: (identity: YeaboiIdentity) => Promise<YeaboiIdentity>;
+  pickDirectory: (options?: { title?: string; defaultPath?: string }) => Promise<{ path: string }>;
   getOnboarding: () => Promise<{ needed: boolean }>;
   completeOnboarding: () => Promise<void>;
   api: (

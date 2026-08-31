@@ -32,6 +32,8 @@ export interface YeaboiBridge {
   getAuthToken: () => Promise<AuthPayload | null>;
   getIdentity: () => Promise<Identity | null>;
   setIdentity: (identity: Identity) => Promise<Identity>;
+  /** Ask the OS for a folder. Returns '' when the person cancels. */
+  pickDirectory: (options?: { title?: string; defaultPath?: string }) => Promise<{ path: string }>;
   /** First-run onboarding: whether the wizard should gate the window, and the
    *  explicit finish/skip that drops the gate (and restarts the planning
    *  sidecar so freshly saved keys reach it). */
@@ -101,6 +103,7 @@ const bridge: YeaboiBridge = {
   getAuthToken: () => ipcRenderer.invoke('auth:get-token'),
   getIdentity: () => ipcRenderer.invoke('auth:get-identity'),
   setIdentity: (identity) => ipcRenderer.invoke('auth:set-identity', identity),
+  pickDirectory: (options) => ipcRenderer.invoke('dialog:pick-directory', options),
   getOnboarding: () => ipcRenderer.invoke('onboarding:get'),
   completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),

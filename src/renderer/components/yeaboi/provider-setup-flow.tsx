@@ -8,10 +8,11 @@
 // The grid keeps each card to an icon, a name, and one line — where a key
 // comes from belongs to the credential pane, where the URL is a real link.
 
-import { useEffect, useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
-import type { ProviderCard } from '@/lib/yeaboi/settings';
+import { useRef } from 'react';
 import type { ProviderSetup } from '@/hooks/yeaboi/use-provider-setup';
+import { Linkified } from '@/components/yeaboi/linkified';
+import { ModelChoice } from '@/components/yeaboi/model-choice';
+import { ProviderGrid } from '@/components/yeaboi/provider-grid';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { Button } from '@/components/ui/button';
@@ -28,34 +29,6 @@ const VENDOR_SUBSCRIPTION_NOTES: Record<string, string> = {
     "Google doesn't accept Gemini subscription sign-ins on its API yet — paste an API key instead.",
 };
 
-const URL_RE = /(https?:\/\/[^\s]+?)([.,;)]?)(\s|$)/g;
-
-/** Catalog prose with its URLs rendered as real links (shown without the
- *  protocol; opened in the OS browser by main's window-open handler). */
-function Linkified({ text }: { text: string }) {
-  const parts: React.ReactNode[] = [];
-  let last = 0;
-  for (const match of text.matchAll(URL_RE)) {
-    const [, url, punct, space] = match;
-    if (match.index > last) parts.push(text.slice(last, match.index));
-    parts.push(
-      <a
-        key={match.index}
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="text-primary hover:underline"
-      >
-        {url.replace(/^https?:\/\//, '')}
-      </a>,
-    );
-    parts.push(`${punct}${space}`);
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return <>{parts}</>;
-}
-
 function Pane({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="max-w-xl rounded-2xl bg-card ring-1 ring-border/60 p-6">
@@ -69,54 +42,6 @@ function Pane({ title, children }: { title: React.ReactNode; children: React.Rea
 
 const FIELD_INPUT =
   'w-full rounded-lg bg-secondary/40 border border-border/40 px-3.5 py-2.5 text-[13px] font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/40';
-
-function ProviderGrid({ flow }: { flow: ProviderSetup }) {
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  // Arrow keys walk the cards (2-column grid); Enter picks the focused one
-  // (native button behavior). First card takes focus so keys work at once.
-  useEffect(() => {
-    gridRef.current?.querySelector('button')?.focus();
-  }, []);
-  const onGridKey = (event: React.KeyboardEvent) => {
-    const moves: Record<string, number> = {
-      ArrowRight: 1,
-      ArrowLeft: -1,
-      ArrowDown: 2,
-      ArrowUp: -2,
-    };
-    const delta = moves[event.key];
-    if (delta === undefined || !gridRef.current) return;
-    const buttons = Array.from(gridRef.current.querySelectorAll('button'));
-    const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    const next = current < 0 ? 0 : Math.min(Math.max(current + delta, 0), buttons.length - 1);
-    buttons[next]?.focus();
-    event.preventDefault();
-  };
-
-  if (!flow.catalog) return null;
-  return (
-    <div ref={gridRef} onKeyDown={onGridKey} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {flow.catalog.providers.map((card: ProviderCard) => (
-        <button
-          key={card.provider_val}
-          type="button"
-          onClick={() => flow.pickProvider(card)}
-          className="group flex items-center gap-3.5 rounded-2xl bg-card ring-1 ring-border/60 px-5 py-4 text-left transition-all hover:ring-primary/40 hover:bg-secondary/40 focus:outline-none focus-visible:ring-primary/60 focus-visible:bg-secondary/40"
-        >
-          <ProviderIcon provider={card.provider_val} size={44} />
-          <span className="min-w-0 flex-1">
-            <h3 className="text-[13.5px] font-body font-medium text-foreground">
-              {card.full_name}
-            </h3>
-            <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{card.tagline}</p>
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function AuthSwitch({ flow, vendorNote }: { flow: ProviderSetup; vendorNote?: string }) {
   const groupRef = useRef<HTMLDivElement>(null);
@@ -310,33 +235,6 @@ function CredentialPane({ flow, onBack }: { flow: ProviderSetup; onBack: () => v
   );
 }
 
-// Trait lines for well-known model families, used when the backend sends no
-// hint for an id. Honest one-liners, not marketing; unknown ids get nothing.
-const MODEL_TRAITS: [RegExp, string][] = [
-  [/opus/i, 'Deepest reasoning — best for hard planning; slower and pricier.'],
-  [/sonnet/i, 'Balanced speed and depth — the daily driver.'],
-  [/haiku/i, 'Fastest and lightest — quick work on a budget.'],
-  [/mini|nano|flash|lite/i, 'Small and quick — cheap for routine work.'],
-];
-
-function modelTrait(id: string, hints: Record<string, string>): string | undefined {
-  return hints[id] ?? MODEL_TRAITS.find(([re]) => re.test(id))?.[1];
-}
-
-/** The amber radio dot; the real input sits sr-only beside it for semantics. */
-function RadioDot({ selected }: { selected: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ring-1 transition-colors ${
-        selected ? 'ring-primary' : 'ring-border'
-      }`}
-    >
-      {selected && <span className="h-2 w-2 rounded-full bg-primary" />}
-    </span>
-  );
-}
-
 function ModelPane({ flow, saveLabel }: { flow: ProviderSetup; saveLabel: string }) {
   const provider = flow.provider;
   if (!provider) return null;
@@ -360,62 +258,17 @@ function ModelPane({ flow, saveLabel }: { flow: ProviderSetup; saveLabel: string
         </>
       }
     >
-      <div className={`mt-5 space-y-1.5 ${flow.discovering ? 'animate-pulse' : ''}`}>
-        {flow.models.map((id) => {
-          const selected = flow.model === id;
-          const trait = modelTrait(id, flow.hints);
-          return (
-            <label key={id} className={rowClass(selected)}>
-              <input
-                type="radio"
-                name="model"
-                checked={selected}
-                onChange={() => flow.setModel(id)}
-                className="sr-only"
-              />
-              <RadioDot selected={selected} />
-              <span className="min-w-0 flex-1">
-                <code className="block text-[13px] font-mono text-foreground">{id}</code>
-                {trait && (
-                  <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
-                    {trait}
-                  </span>
-                )}
-              </span>
-              {id === provider.models.default && (
-                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary ring-1 ring-primary/25">
-                  recommended
-                </span>
-              )}
-            </label>
-          );
-        })}
-        <label className={rowClass(flow.model === '__custom__')}>
-          <input
-            type="radio"
-            name="model"
-            checked={flow.model === '__custom__'}
-            onChange={() => flow.setModel('__custom__')}
-            className="sr-only"
-          />
-          <RadioDot selected={flow.model === '__custom__'} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[13px] text-foreground">Custom…</span>
-            {flow.model === '__custom__' ? (
-              <input
-                autoFocus
-                value={flow.custom}
-                placeholder={`e.g. ${provider.models.default}`}
-                onChange={(event) => flow.setCustom(event.target.value)}
-                className="mt-1.5 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-1.5 text-[12.5px] font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
-              />
-            ) : (
-              <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
-                Paste any model id this credential can reach.
-              </span>
-            )}
-          </span>
-        </label>
+      <div className="mt-5">
+        <ModelChoice
+          models={flow.models}
+          recommended={provider.models.default}
+          hints={flow.hints}
+          value={flow.model}
+          custom={flow.custom}
+          onPick={flow.setModel}
+          onCustom={flow.setCustom}
+          busy={flow.discovering}
+        />
       </div>
       {flow.saveError && <p className="mt-3 text-[12px] text-destructive">{flow.saveError}</p>}
       <div className="mt-6 flex items-center gap-2.5">
@@ -448,7 +301,8 @@ export function ProviderSetupFlow({
     );
   if (!flow.catalog) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
-  if (flow.phase === 'pick') return <ProviderGrid flow={flow} />;
+  if (flow.phase === 'pick')
+    return <ProviderGrid providers={flow.catalog.providers} onPick={flow.pickProvider} />;
   if (flow.phase === 'credential')
     return <CredentialPane flow={flow} onBack={() => flow.setPhase('pick')} />;
   if (flow.phase === 'model') return <ModelPane flow={flow} saveLabel={saveLabel} />;

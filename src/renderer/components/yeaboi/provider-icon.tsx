@@ -8,8 +8,17 @@
 // a cloud glyph. Unknown names fall back to a two-letter monogram. All marks
 // identify their owners' services.
 
-import { Cloud } from 'lucide-react';
-import { siClaude, siGithub, siGooglegemini, siJira, siNotion, siOllama } from 'simple-icons';
+import { Cloud, Sunrise, Video } from 'lucide-react';
+import {
+  siClaude,
+  siCloudflare,
+  siElevenlabs,
+  siGithub,
+  siGooglegemini,
+  siJira,
+  siNotion,
+  siOllama,
+} from 'simple-icons';
 
 // The OpenAI knot, as previously published by simple-icons (CC0 path data).
 const OPENAI_PATH =
@@ -33,10 +42,22 @@ const ICON_PATHS: Record<string, string> = {
   azure: AZURE_DEVOPS_PATH,
   notion: siNotion.path,
   slack: SLACK_PATH,
+  cloudflare: siCloudflare.path,
+  elevenlabs: siElevenlabs.path,
+};
+
+const FALLBACK_GLYPHS: Record<
+  string,
+  React.ComponentType<{ size?: number; strokeWidth?: number }>
+> = {
+  bedrock: Cloud,
+  tavus: Video,
+  standup: Sunrise,
 };
 
 export function ProviderIcon({ provider, size = 40 }: { provider: string; size?: number }) {
   const path = ICON_PATHS[provider];
+  const Glyph = FALLBACK_GLYPHS[provider];
   const glyph = Math.round(size * 0.52);
   return (
     <span
@@ -48,8 +69,8 @@ export function ProviderIcon({ provider, size = 40 }: { provider: string; size?:
         <svg width={glyph} height={glyph} viewBox="0 0 24 24">
           <path d={path} fill="currentColor" />
         </svg>
-      ) : provider === 'bedrock' ? (
-        <Cloud size={glyph} strokeWidth={1.8} />
+      ) : Glyph ? (
+        <Glyph size={glyph} strokeWidth={1.8} />
       ) : (
         <span
           className="font-mono font-semibold tracking-tight"

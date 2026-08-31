@@ -223,7 +223,7 @@ export function ProviderHealthBanner() {
           )}
         </div>
         <Link
-          href="/settings?tab=integrations"
+          href="/settings/credentials"
           className="shrink-0 inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-foreground/10 transition-colors"
         >
           Manage keys

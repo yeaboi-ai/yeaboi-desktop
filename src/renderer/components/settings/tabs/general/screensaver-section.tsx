@@ -17,7 +17,7 @@ import { ScreensaverCanvas } from '@/components/screensaver/screensaver-canvas';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { logger } from '@/lib/logger';
 import { getAmbience, setAmbience } from '@/lib/yeaboi/ambience';
-import { previewScreensaver } from '@/lib/screensaver/preview';
+import { previewScreensaver, saverPreferenceChanged } from '@/lib/screensaver/preview';
 import { DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
 import {
   DEFAULT_SAVER_STYLE,
@@ -73,7 +73,10 @@ export function ScreensaverSection() {
     setStyle(next); // optimistic: the tile must light up on the click
     setSaving(true);
     setAmbience({ saver_style: next }).then(
-      () => setSaving(false),
+      () => {
+        setSaving(false);
+        saverPreferenceChanged();
+      },
       (error: unknown) => {
         // The backend refuses a style it does not know; showing it as selected
         // when it was not stored is the one outcome worth undoing.
@@ -96,7 +99,7 @@ export function ScreensaverSection() {
           )}
           <button
             type="button"
-            onClick={previewScreensaver}
+            onClick={() => previewScreensaver(style)}
             disabled={style === 'off'}
             className={cn(
               'inline-flex items-center gap-1 text-[11px] font-body transition-colors',

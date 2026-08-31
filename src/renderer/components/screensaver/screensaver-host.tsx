@@ -16,7 +16,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { getAmbience } from '@/lib/yeaboi/ambience';
 import { IdleController, DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
-import { onPreviewRequest } from '@/lib/screensaver/preview';
+import { onPreviewRequest, onSaverPreferenceChange } from '@/lib/screensaver/preview';
 import { isSuppressed, onSuppressionChange } from '@/lib/screensaver/suppression';
 import { DEFAULT_SAVER_STYLE, resolveScene, type SceneStyle } from '@/lib/screensaver/styles';
 import { ScreensaverCanvas } from './screensaver-canvas';
@@ -41,17 +41,17 @@ export function ScreensaverHost() {
     if (controller.noteActivity(performance.now())) setShowing(false);
   }, []);
 
-  const activate = useCallback(() => {
+  const activate = useCallback((style?: string) => {
     const controller = controllerRef.current;
-    if (preferenceRef.current === 'off') return;
+    const wanted = style ?? preferenceRef.current;
+    if (wanted === 'off') return;
     if (!controller.showNow(performance.now())) return;
-    setScene(resolveScene(preferenceRef.current, Math.random));
+    setScene(resolveScene(wanted, Math.random));
     setShowing(true);
   }, []);
 
   // The preference, once the backend is up. Until then the defaults stand.
-  useEffect(() => {
-    if (backend.kind !== 'ready') return;
+  const readPreference = useCallback(() => {
     let cancelled = false;
     getAmbience().then(
       (state) => {
@@ -65,7 +65,16 @@ export function ScreensaverHost() {
     return () => {
       cancelled = true;
     };
-  }, [backend.kind]);
+  }, []);
+
+  useEffect(() => {
+    if (backend.kind !== 'ready') return;
+    return readPreference();
+  }, [backend.kind, readPreference]);
+
+  // Settings saved a new style: re-read rather than be told, so the stored
+  // preference stays the one source of truth for the idle path.
+  useEffect(() => onSaverPreferenceChange(readPreference), [readPreference]);
 
   // Activity. Capture-phase and passive: this only ever observes.
   useEffect(() => {
