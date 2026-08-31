@@ -10,17 +10,22 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { LIVEKIT_PORT, planningPortRange, rendererCsp } from '../src/shared/csp';
 
 const INDEX = join(import.meta.dirname, '..', 'src', 'renderer', 'index.html');
 
 describe('planningPortRange', () => {
-  afterEach(() => {
+  // Cleared BEFORE each case as well as after: once a worktree has a block,
+  // `make test` exports these, and the default case would read that block
+  // rather than the default it is asserting.
+  const clear = () => {
     delete process.env['YEABOI_PLANNING_PORT'];
     delete process.env['YEABOI_PLANNING_PORT_COUNT'];
-  });
+  };
+  beforeEach(clear);
+  afterEach(clear);
 
   it('is the historical 8000..8010 with no worktree block', () => {
     expect(planningPortRange()).toEqual([
