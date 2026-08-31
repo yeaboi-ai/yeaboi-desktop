@@ -20,6 +20,8 @@ interface YeaboiBridge {
   revealPath: (path: string) => Promise<{ revealed: boolean }>;
   getOnboarding: () => Promise<{ needed: boolean }>;
   completeOnboarding: () => Promise<void>;
+  getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
+  setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
   api: (
     path: string,
     init?: { method?: string; body?: unknown },

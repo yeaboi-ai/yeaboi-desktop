@@ -173,8 +173,12 @@ export function loadProfiles(): Promise<{ profiles: ProfileSummary[] }> {
   return apiGet<{ profiles: ProfileSummary[] }>('/api/analysis/profiles');
 }
 
-export function loadAnalysisResult(teamId: string): Promise<AnalysisResult> {
-  return apiGet<AnalysisResult>(`/api/analysis/result/${encodeURIComponent(teamId)}`);
+export function loadAnalysisResult(
+  teamId: string,
+  opts?: { solo?: boolean },
+): Promise<AnalysisResult> {
+  const query = opts?.solo ? '?solo=1' : '';
+  return apiGet<AnalysisResult>(`/api/analysis/result/${encodeURIComponent(teamId)}${query}`);
 }
 
 export function runAnalysis(body: RunRequest, onLine: (line: RunLine) => void): Promise<void> {

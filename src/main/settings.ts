@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { app } from 'electron';
 import { type PetPrefs, mergePetPrefs, normalizePetPrefs } from '../shared/pet-prefs';
+import { type Audience, normalizeAudience } from '../shared/audience';
 
 export interface Identity {
   email: string;
@@ -19,6 +20,10 @@ interface SettingsFile {
   /** First-run onboarding: set on explicit finish/skip, or migrated true for
    *  installs that predate the wizard. Absent means "not decided yet". */
   onboardingComplete?: boolean;
+  /** Which world the app lives in: 'solo', 'team' or 'agents' (legacy
+   *  'humans' reads as 'team'). Absent means the chooser was never answered —
+   *  including for installs that predate it. */
+  audience?: string;
   /** Pre-prefs pet switch. Still written, so a downgrade still finds it. */
   petEnabled?: boolean;
   pet?: unknown;
@@ -71,6 +76,15 @@ export class Settings {
 
   setOnboardingComplete(complete: boolean): void {
     this.data.onboardingComplete = complete;
+    this.save();
+  }
+
+  get audience(): Audience | undefined {
+    return normalizeAudience(this.data.audience);
+  }
+
+  setAudience(audience: Audience): void {
+    this.data.audience = audience;
     this.save();
   }
 

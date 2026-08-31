@@ -36,6 +36,7 @@ mkdir -p "$PROFILE" "$HOME_DIR"
 cat >"$PROFILE/settings.json" <<'JSON'
 {
   "identity": { "email": "sam@yeaboi.ai", "name": "Sam Rivera" },
+  "audience": "humans",
   "petEnabled": false,
   "pet": { "enabled": false }
 }

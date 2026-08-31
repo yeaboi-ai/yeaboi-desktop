@@ -67,6 +67,9 @@ icons: ## Re-render the committed icon set from the yeaboi-site duck art (needs 
 sprites: ## Re-render the onboarding lifecycle sprites from the yeaboi-site duck art (needs uv)
 	uv run --with pillow --no-project python scripts/gen_lifecycle_sprites.py
 
+robo: ## Re-render the Agents world's robo mascot from the vendored pixel duck (needs uv)
+	uv run --with pillow --no-project python scripts/gen_robo_sprites.py
+
 pack: ## Unsigned local package into dist/ (a smoke test, not a release)
 	$(MAKE) build
 	CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --dir --publish never

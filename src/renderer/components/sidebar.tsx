@@ -5,6 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
 import { BrandName, DuckMark } from '@/components/brand/duck';
+import { RoboMark } from '@/components/brand/robo';
+import { TeamMark } from '@/components/brand/team';
+import { useAudience } from '@/components/providers/audience-provider';
+import { navItems, navSections, type IconKey } from '@/lib/nav/sections';
+import { audiencesForRoute, type Audience } from '@shared/audience';
 import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import {
   LayoutGrid,
@@ -45,6 +50,7 @@ import { useUpdateState } from '@/hooks/use-update-state';
 import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
+<<<<<<< HEAD
 interface NavItem {
   href: string;
   label: string;
@@ -110,6 +116,34 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
+=======
+// The nav inventory lives in lib/nav/sections.ts, per audience world; this
+// map turns its icon keys into components.
+const ICONS: Record<IconKey, typeof LayoutGrid> = {
+  home: Home,
+  projects: LayoutGrid,
+  board: Columns3,
+  roadmap: Map,
+  analysis: BarChart3,
+  standup: Sunrise,
+  retro: RotateCcw,
+  poker: Spade,
+  performance: TrendingUp,
+  reporting: Presentation,
+  ship: Rocket,
+  'agent-usage': Coins,
+  'agent-advisor': Sparkles,
+  'agent-standup': Bot,
+  'agent-security': ShieldCheck,
+  ceremonies: CalendarClock,
+  provenance: FileClock,
+  usage: Gauge,
+  'whats-new': Megaphone,
+  'system-check': Stethoscope,
+  privacy: Lock,
+  feedback: MessageSquareText,
+};
+>>>>>>> ff0f433 (three-way audience split: solo, team (renamed from humans), agents)
 
 const CMD_SHORTCUTS: Record<string, string> = {
   p: '/projects',
@@ -120,14 +154,26 @@ const CMD_SHORTCUTS: Record<string, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { audience, setAudience } = useAudience();
   const { authFetch, ready } = useAuthFetch();
+  const sections = navSections(audience);
+  const items = navItems(audience);
+
+  // Flipping the world while standing in the other world's route would leave
+  // the page orphaned from the nav — go home instead.
+  const flipAudience = (next: Audience) => {
+    if (next === audience) return;
+    setAudience(next);
+    const worlds = pathname ? audiencesForRoute(pathname) : [];
+    if (worlds.length > 0 && !worlds.includes(next)) router.push(DEFAULT_ROUTE);
+  };
   // The nav dot ignores dismissal — it is the quiet permanent reminder that
   // What's New has something; the dismissible card is the loud half.
   const updateState = useUpdateState();
   const updateDot = updateIndicatorVisible(updateState, null);
 
   // All nav routes in order for arrow key cycling — main nav, then bottom section
-  const allRoutes = [...NAV_ITEMS.map((n) => n.href), '/settings'];
+  const allRoutes = [...items.map((n) => n.href), '/settings'];
 
   // Detect Cmd/Ctrl held for border glow on active item
   const [cmdHeld, setCmdHeld] = useState(false);
@@ -188,6 +234,13 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!ready) return;
+    // Orgs and teams scope the planning workspace, which Solo and Team share
+    // (the stored ids scope /api/projects); the agents world reads local
+    // session telemetry and has neither.
+    if (audience === 'agents') {
+      setLoaded(true);
+      return;
+    }
     const storedOrg = getStoredOrgId();
     const storedTeam = getStoredTeamId();
     setCurrentOrgId(storedOrg);
@@ -223,7 +276,7 @@ export function Sidebar() {
     };
 
     loadAll();
-  }, [ready, authFetch]);
+  }, [ready, authFetch, audience]);
 
   // Re-fetch teams when window regains focus
   const fetchTeams = useCallback(
@@ -251,7 +304,8 @@ export function Sidebar() {
 
   // Longest-prefix wins, so /projects/new/from-roadmap lights Roadmap and
   // not Projects too.
-  const activeHref = NAV_ITEMS.map((item) => item.href)
+  const activeHref = items
+    .map((item) => item.href)
     .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
   const isActive = (href: string) =>
@@ -266,8 +320,45 @@ export function Sidebar() {
       // padding cannot move a fixed element — this reads the banner's height.
       style={{ top: 'var(--banner-h, 0px)' }}
     >
-      {/* Org switcher — only shown when user belongs to multiple orgs */}
-      {orgs.length > 1 && (
+      {/* The world flip: duck or robo, one silhouette, two materials. */}
+      <div
+        className="mx-2 md:mx-3 mt-3 flex rounded-lg bg-secondary/40 p-0.5"
+        role="radiogroup"
+        aria-label="Audience"
+      >
+        {(
+          [
+            { key: 'solo', label: 'Solo', mark: <DuckMark state="idle" size={16} /> },
+            { key: 'team', label: 'Team', mark: <TeamMark size={18} /> },
+            { key: 'agents', label: 'Agents', mark: <RoboMark size={16} /> },
+          ] as const
+        ).map(({ key, label, mark }) => (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={audience === key}
+            onClick={() => flipAudience(key)}
+            data-audience-accented
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-body font-medium ${
+              audience === key
+                ? 'bg-card text-foreground'
+                : 'text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'
+            }`}
+            style={{
+              boxShadow: audience === key ? 'inset 0 0 0 1px var(--audience-accent)' : 'none',
+            }}
+            title={label}
+          >
+            {mark}
+            <span className="hidden md:inline">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Org switcher — only shown when user belongs to multiple orgs.
+          Team-world only: solo keeps the scoping data, not the roster UI. */}
+      {audience === 'team' && orgs.length > 1 && (
         <div className="px-3 md:px-5 pt-3 hidden md:block">
           <div className="relative mb-2">
             <select
@@ -312,8 +403,8 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Team switcher */}
-      {teams.length > 0 && (
+      {/* Team switcher — the roster affordance, so team-world only */}
+      {audience === 'team' && teams.length > 0 && (
         <div className="px-3 md:px-5 pb-3 hidden md:block">
           <div className="relative">
             <select
@@ -338,41 +429,51 @@ export function Sidebar() {
 
       {/* Nav — sectioned, and scrollable now that both surfaces live in it. */}
       <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3 overflow-y-auto min-h-0">
-        {NAV_SECTIONS.map((section, index) => (
+        {sections.map((section, index) => (
           <div key={section.label ?? `top-${index}`} className="flex flex-col gap-0.5">
             {section.label && (
-              <p className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest text-muted-foreground/50">
+              <p
+                data-audience-accented
+                className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest"
+                style={{
+                  color: 'color-mix(in srgb, var(--audience-accent) 55%, var(--muted-foreground))',
+                }}
+              >
                 {section.label}
               </p>
             )}
-            {section.items.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
-                  isActive(href)
-                    ? 'bg-secondary text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                }`}
-                style={{
-                  boxShadow: isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-                  transition:
-                    'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-                }}
-                title={label}
-              >
-                <span className="relative shrink-0">
-                  <Icon className="h-3.5 w-3.5" />
+            {section.items.map(({ href, label, icon }) => {
+              const Icon = ICONS[icon];
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
+                    isActive(href)
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  }`}
+                  style={{
+                    boxShadow:
+                      isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+                    transition:
+                      'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
+                  }}
+                  title={label}
+                >
+                  <span className="relative shrink-0">
+                    <Icon className="h-3.5 w-3.5" />
+                    {href === '/whats-new' && updateDot && (
+                      <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    )}
+                  </span>
+                  <span className="hidden md:inline">{label}</span>
                   {href === '/whats-new' && updateDot && (
-                    <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
                   )}
-                </span>
-                <span className="hidden md:inline">{label}</span>
-                {href === '/whats-new' && updateDot && (
-                  <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
-                )}
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         ))}
       </nav>

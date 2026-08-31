@@ -84,6 +84,14 @@ function ProjectBoardRedirect() {
   return <Navigate to={`/board?project=${id}`} replace />;
 }
 
+// The Humans world became Team; a pre-rename deep link (a tray notice, a
+// pinned URL) lands on the same page under its new prefix. The planning
+// redirects below then chain for the oldest links of all.
+function LegacyHumansRedirect() {
+  const { '*': rest } = useParams();
+  return <Navigate to={rest ? `/team/${rest}` : '/team'} replace />;
+}
+
 // Providers (theme, identity, Niko, the shell chrome) live inside the router
 // so AppShell's usePathname and every page's params resolve.
 function Root() {
@@ -182,6 +190,11 @@ export const router = createHashRouter([
       },
       { path: '/team/planning/*', element: <Navigate to="/projects" replace /> },
       { path: '/team/planning', element: <Navigate to="/projects" replace /> },
+<<<<<<< HEAD
+=======
+      { path: '/humans/*', element: <LegacyHumansRedirect /> },
+      { path: '/humans', element: <LegacyHumansRedirect /> },
+>>>>>>> ff0f433 (three-way audience split: solo, team (renamed from humans), agents)
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },

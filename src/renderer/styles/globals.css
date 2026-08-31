@@ -921,3 +921,39 @@ span[data-duck-mark] [data-state] > span {
     stroke-dashoffset: 0;
   }
 }
+
+/* ---- Audience worlds -------------------------------------------------------
+   The shell lives in one world at a time (data-audience on <html>, kept by
+   AudienceProvider). These tokens are owned by no theme preset — presets write
+   inline vars on <html>, which would beat anything declared here — so the
+   world accent never fights a user theme. Values are the TUI's own world
+   accents (SOLO_THEME / TEAM_THEME / AGENTS_THEME in yeaboi.ai's
+   _components.py). */
+:root,
+html[data-audience='team'] {
+  --audience-accent: rgb(100, 180, 100);
+  --audience-accent-bright: rgb(80, 220, 120);
+  --audience-tint: rgba(100, 180, 100, 0.1);
+}
+html[data-audience='solo'] {
+  --audience-accent: rgb(210, 168, 80);
+  --audience-accent-bright: rgb(245, 200, 110);
+  --audience-tint: rgba(210, 168, 80, 0.1);
+}
+html[data-audience='agents'] {
+  --audience-accent: rgb(90, 160, 210);
+  --audience-accent-bright: rgb(130, 200, 255);
+  --audience-tint: rgba(90, 160, 210, 0.1);
+}
+/* The world flip is one quiet motion: the accented chrome cross-fades. */
+[data-audience-accented] {
+  transition:
+    color 250ms ease,
+    background-color 250ms ease,
+    box-shadow 250ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-audience-accented] {
+    transition: none;
+  }
+}

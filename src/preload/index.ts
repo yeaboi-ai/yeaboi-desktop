@@ -41,6 +41,10 @@ export interface YeaboiBridge {
    *  sidecar so freshly saved keys reach it). */
   getOnboarding: () => Promise<{ needed: boolean }>;
   completeOnboarding: () => Promise<void>;
+  /** The audience world the shell lives in. null means never chosen — the
+   *  chooser gates the window once, like onboarding. */
+  getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
+  setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
   /** One authed call to the yeaboi app backend, relayed through main. */
   api: (
     path: string,
@@ -109,6 +113,8 @@ const bridge: YeaboiBridge = {
   revealPath: (path) => ipcRenderer.invoke('shell:reveal-path', path),
   getOnboarding: () => ipcRenderer.invoke('onboarding:get'),
   completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),
+  getAudience: () => ipcRenderer.invoke('audience:get'),
+  setAudience: (audience) => ipcRenderer.invoke('audience:set', audience),
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),
   apiStream: (path, body, onLine) => {
     // The channel is per call, so two concurrent turns never cross lines; the

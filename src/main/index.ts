@@ -38,6 +38,7 @@ import { installPermissionHandlers, navigationAllowed } from './permissions';
 import { PlanningSidecar } from './planning';
 import { APP_ORIGIN, installAppScheme, registerAppScheme } from './protocol';
 import { needsOnboarding } from '../shared/onboarding';
+import { normalizeAudience } from '../shared/audience';
 import { loadMachineSecrets, loadSharedEnv } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
@@ -330,6 +331,16 @@ if (!gotLock) {
         await planning.stop();
         void planning.start();
       }
+    });
+
+    // The audience world (Solo, Team or Agents). Unlike onboarding there is no
+    // migration write: absent stays absent, so existing installs meet the
+    // chooser once too.
+    ipcMain.handle('audience:get', () => settings.audience ?? null);
+    ipcMain.handle('audience:set', (_event, value: unknown) => {
+      const audience = normalizeAudience(value);
+      if (audience) settings.setAudience(audience);
+      return settings.audience ?? null;
     });
 
     // The desktop duck. The renderer forwards app moments (a suggestion
