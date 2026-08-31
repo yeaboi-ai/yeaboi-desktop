@@ -8,16 +8,7 @@
 // bubble in a DOM need identical copies of.
 
 import { apiGet, apiPost } from './api';
-import type { FeedbackOptions } from './feedback';
-
-/** What POST /api/feedback/attachments answers with. */
-export interface StoredAttachment {
-  path: string;
-  name: string;
-  kind: 'image' | 'text';
-  bytes: number;
-  lines?: number;
-}
+import type { FeedbackOptions, StoredAttachment } from './feedback';
 
 export interface MusicChannel {
   name: string;
@@ -53,7 +44,7 @@ export interface ConsentRequest {
   context: string;
 }
 
-export type { FeedbackOptions } from './feedback';
+export type { FeedbackOptions, StoredAttachment } from './feedback';
 
 export interface FeedbackResult {
   ok: boolean;

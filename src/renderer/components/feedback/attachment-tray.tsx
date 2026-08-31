@@ -31,12 +31,17 @@ export function useAttachments(options: FeedbackOptions, onRefuse: (why: string)
   const [uploading, setUploading] = React.useState(0);
 
   // Object URLs outlive the render that made them, so they are revoked on the
-  // unmount rather than left to the page's lifetime.
+  // unmount. Through a ref rather than the state directly: an unmount-only
+  // cleanup closes over the render that installed it, which is the empty first
+  // one, and would revoke nothing.
+  const live = React.useRef<Attachment[]>([]);
+  React.useEffect(() => {
+    live.current = attachments;
+  }, [attachments]);
   React.useEffect(() => {
     return () => {
-      for (const a of attachments) if (a.preview) URL.revokeObjectURL(a.preview);
+      for (const a of live.current) if (a.preview) URL.revokeObjectURL(a.preview);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const accept = React.useCallback(

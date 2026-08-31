@@ -13,7 +13,7 @@
 // it: through the API when a GitHub token is configured, and otherwise by
 // opening a pre-filled issue form in the browser, since the repository is public.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Bug,
   ChevronDown,
@@ -154,11 +154,11 @@ function AreaPicker({
 
 function Outcome({
   result,
-  imagePaths,
+  filed,
   onAgain,
 }: {
   result: FeedbackResult;
-  imagePaths: string[];
+  filed: string[];
   onAgain: () => void;
 }) {
   const heading = !result.ok
@@ -183,16 +183,17 @@ function Outcome({
         </a>
       )}
       <div className="flex flex-wrap items-center gap-2 pt-1">
-        {imagePaths.length > 0 && (
+        {result.ok && filed.length > 0 && (
           // The issue body names these files and asks for them to be dragged on.
-          // Finding them is the part the app can actually help with.
+          // Finding them is the part the app can actually help with — and they
+          // share a directory, so revealing one reveals them all.
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void window.yeaboi.revealPath(imagePaths[0])}
+            onClick={() => void window.yeaboi.revealPath(filed[0]).catch(() => undefined)}
           >
             <FolderOpen className="h-3.5 w-3.5" />
-            Show the screenshots
+            {filed.length === 1 ? 'Show the file' : 'Show the files'}
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={onAgain}>
@@ -205,13 +206,14 @@ function Outcome({
 
 function Skeleton() {
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]" aria-hidden>
-      <div className="space-y-4">
+    <div role="status" aria-busy="true" className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <span className="sr-only">Loading the feedback form…</span>
+      <div className="space-y-4" aria-hidden>
         <div className="h-8 w-64 animate-pulse rounded-full bg-secondary/50" />
         <div className="h-10 w-full animate-pulse rounded-lg bg-secondary/50" />
         <div className="h-64 w-full animate-pulse rounded-2xl bg-secondary/50" />
       </div>
-      <div className="h-80 animate-pulse rounded-2xl bg-secondary/50" />
+      <div className="h-80 animate-pulse rounded-2xl bg-secondary/50" aria-hidden />
     </div>
   );
 }
@@ -238,8 +240,10 @@ function FeedbackBody() {
   const refuse = useCallback((text: string) => setNotice({ tone: 'error', text }), []);
   // A stable stand-in before the options land, so the tray's callbacks do not
   // churn on every render of a page that has not loaded yet.
-  const vocab = useMemo(() => options ?? EMPTY_OPTIONS, [options]);
-  const { attachments, uploading, accept, remove } = useAttachments(vocab, refuse);
+  const { attachments, uploading, accept, remove } = useAttachments(
+    options ?? EMPTY_OPTIONS,
+    refuse,
+  );
 
   const header = (
     <header className="mb-8">
@@ -272,7 +276,10 @@ function FeedbackBody() {
     );
 
   const ready = title.trim().length > 0 && description.trim().length > 0;
-  const working = busy !== '' || uploading > 0;
+  // Two levels: a polish or submit in flight takes the whole form, but an
+  // upload must not disable the textarea the screenshot was just pasted into.
+  const sending = busy !== '';
+  const working = sending || uploading > 0;
   const draft = { kind, area, title, description, ...attachmentPaths(attachments) };
 
   function polish(): void {
@@ -292,12 +299,12 @@ function FeedbackBody() {
   function send(): void {
     setBusy('submit');
     setNotice(null);
-    const images = draft.image_paths;
+    const sent = [...draft.image_paths, ...draft.text_paths];
     submitFeedback(draft)
       .then(
         (answer) => {
           setResult(answer);
-          setFiled(images);
+          setFiled(sent);
           // The panel behind the toast carries the whole message; repeating it
           // here would say the same thing twice.
           if (answer.ok)
@@ -317,7 +324,7 @@ function FeedbackBody() {
         {header}
         <Outcome
           result={result}
-          imagePaths={filed}
+          filed={filed}
           onAgain={() => {
             setResult(null);
             setTitle('');
@@ -396,6 +403,12 @@ function FeedbackBody() {
               setDragging(false);
               accept(filesFrom(event.dataTransfer));
             }}
+            onPaste={(event) => {
+              const files = filesFrom(event.clipboardData);
+              if (files.length === 0) return;
+              event.preventDefault();
+              accept(files);
+            }}
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && ready && !working)
                 send();
@@ -420,7 +433,7 @@ function FeedbackBody() {
                   id="feedback-title"
                   type="text"
                   value={title}
-                  disabled={working}
+                  disabled={sending}
                   placeholder="What went wrong, in one line"
                   onChange={(event) => setTitle(event.target.value)}
                   className="w-full border-0 bg-transparent font-body text-[19px] leading-snug font-medium text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/45"
@@ -435,15 +448,9 @@ function FeedbackBody() {
                   id="feedback-description"
                   rows={12}
                   value={description}
-                  disabled={working}
+                  disabled={sending}
                   placeholder="What you did. What you expected. What happened instead."
                   onChange={(event) => setDescription(event.target.value)}
-                  onPaste={(event) => {
-                    const files = filesFrom(event.clipboardData);
-                    if (files.length === 0) return;
-                    event.preventDefault();
-                    accept(files);
-                  }}
                   className="w-full resize-none border-0 bg-transparent text-[13.5px] leading-relaxed text-foreground/95 outline-none placeholder:text-muted-foreground/45"
                 />
               </div>

@@ -25,13 +25,18 @@ export interface FeedbackOptions {
   max_attachments?: number;
 }
 
-/** One file the backend has already stored, as the form holds it. */
-export interface Attachment {
+/** What POST /api/feedback/attachments answers with. */
+export interface StoredAttachment {
   path: string;
   name: string;
   kind: AttachmentKind;
   bytes: number;
+  /** Text attachments only. */
   lines?: number;
+}
+
+/** One stored file, as the form holds it. */
+export interface Attachment extends StoredAttachment {
   /** An object URL for the thumbnail. Images only, and revoked on removal. */
   preview?: string;
 }
