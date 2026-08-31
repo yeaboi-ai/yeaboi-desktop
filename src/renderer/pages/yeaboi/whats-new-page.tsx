@@ -17,12 +17,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import { apiGet, checkForUpdate, getShellMeta, type ShellMeta } from '@/lib/yeaboi/api';
 import {
+  SHELL_AREA_ACCENTS,
   SHELL_ENTRIES,
+  areasOf,
   desktopBackendEntries,
   entriesSince,
   entryHeadline,
+  formatDate,
   headVersions,
   mergeChangelogs,
+  mergeSeen,
+  monthOf,
   type AreaAccent,
   type Entry,
   type MergedEntry,
@@ -35,7 +40,7 @@ import { Button } from '@/components/ui/button';
 
 const SEEN_KEY = 'whats-new.last-seen';
 const PAGE_SIZE = 24;
-const NEUTRAL_ACCENT = 'var(--color-muted-foreground)';
+const NEUTRAL_ACCENT = 'var(--muted-foreground)';
 
 /** The reader's own markers, per ledger. Absent or unreadable means a first visit. */
 function readSeen(): SeenVersions {
@@ -48,30 +53,12 @@ function readSeen(): SeenVersions {
   }
 }
 
-function writeSeen(seen: SeenVersions) {
+function writeSeen(head: SeenVersions) {
   try {
-    window.localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
+    window.localStorage.setItem(SEEN_KEY, JSON.stringify(mergeSeen(readSeen(), head)));
   } catch {
     /* a private window costs a repeated digest, nothing more */
   }
-}
-
-/** `2026-08-31` → `31 Aug 2026`; anything unparseable passes straight through. */
-function formatDate(iso: string): string {
-  const parsed = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return iso;
-  return parsed.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function monthOf(iso: string): string {
-  const parsed = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return iso;
-  return parsed.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-}
-
-/** Every area an entry touches, first-seen order — the entry's colour signature. */
-function areasOf(entry: Entry): string[] {
-  return [...new Set(entry.highlights.flatMap((h) => h.areas))];
 }
 
 function AreaDot({ area, accents }: { area: string; accents: Map<string, string> }) {
@@ -129,11 +116,11 @@ function ChannelBadge({ channel }: { channel: MergedEntry['channel'] }) {
 function SinceYouLastLooked({
   since,
   accents,
-  onMarkRead,
+  onDismiss,
 }: {
   since: MergedEntry[];
   accents: Map<string, string>;
-  onMarkRead: () => void;
+  onDismiss: () => void;
 }) {
   if (since.length === 0) return null;
   return (
@@ -143,8 +130,8 @@ function SinceYouLastLooked({
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           {since.length} {since.length === 1 ? 'release' : 'releases'} since you last looked
         </h2>
-        <Button variant="ghost" size="xs" onClick={onMarkRead}>
-          Mark as read
+        <Button variant="ghost" size="xs" onClick={onDismiss}>
+          Dismiss
         </Button>
       </div>
       <ul className="mt-3 space-y-1.5">
@@ -160,16 +147,23 @@ function SinceYouLastLooked({
         ))}
       </ul>
       {since.length > 6 && (
-        <p className="mt-2 text-[11px] text-muted-foreground/70">
-          and {since.length - 6} more below
-        </p>
+        <p className="mt-2 text-[11px] text-muted-foreground/70">and {since.length - 6} more</p>
       )}
     </section>
   );
 }
 
 /** The newest release, given room to be read. */
-function LatestRelease({ entry, accents }: { entry: MergedEntry; accents: Map<string, string> }) {
+function LatestRelease({
+  entry,
+  accents,
+  isLatest,
+}: {
+  entry: MergedEntry;
+  accents: Map<string, string>;
+  /** False under a filter, where the top card is merely the newest match. */
+  isLatest: boolean;
+}) {
   return (
     <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5 mb-6">
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-body text-muted-foreground/70">
@@ -177,8 +171,12 @@ function LatestRelease({ entry, accents }: { entry: MergedEntry; accents: Map<st
         <span>v{entry.version}</span>
         <span aria-hidden>·</span>
         <span>{formatDate(entry.date)}</span>
-        <span aria-hidden>·</span>
-        <span className="text-primary">latest</span>
+        {isLatest && (
+          <>
+            <span aria-hidden>·</span>
+            <span className="text-primary">latest</span>
+          </>
+        )}
       </div>
       <h2 className="mt-2 font-display text-xl text-foreground">{entryHeadline(entry)}</h2>
       {entry.summary && (
@@ -332,7 +330,12 @@ function WhatsNewBody() {
   useEffect(() => {
     apiGet<{ entries: Entry[]; areas?: AreaAccent[] }>('/api/meta/changelog').then(
       ({ entries: loaded, areas }) => {
-        setAccents(new Map((areas ?? []).map((a) => [a.name, a.color])));
+        setAccents(
+          new Map([
+            ...Object.entries(SHELL_AREA_ACCENTS),
+            ...(areas ?? []).map((a) => [a.name, a.color] as const),
+          ]),
+        );
         setEntries(mergeChangelogs(desktopBackendEntries(loaded), SHELL_ENTRIES));
       },
       (e: Error) => setError(e.message),
@@ -386,17 +389,17 @@ function WhatsNewBody() {
 
   return (
     <>
-      <SinceYouLastLooked
-        since={since}
-        accents={accents}
-        onMarkRead={() => {
-          writeSeen(headVersions(entries));
-          setDismissed(true);
-        }}
-      />
+      <SinceYouLastLooked since={since} accents={accents} onDismiss={() => setDismissed(true)} />
 
       <div className="flex flex-wrap items-center gap-1.5 mb-6">
-        <button type="button" className={chip(area === null)} onClick={() => setArea(null)}>
+        <button
+          type="button"
+          className={chip(area === null)}
+          onClick={() => {
+            setArea(null);
+            setShown(PAGE_SIZE);
+          }}
+        >
           all
         </button>
         {areaNames.map((name) => (
@@ -415,7 +418,7 @@ function WhatsNewBody() {
       </div>
 
       {latest ? (
-        <LatestRelease entry={latest} accents={accents} />
+        <LatestRelease entry={latest} accents={accents} isLatest={!area} />
       ) : (
         <p className="text-[13px] text-muted-foreground">Nothing tagged that yet.</p>
       )}

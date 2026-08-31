@@ -38,6 +38,16 @@ export type MergedEntry = Entry & { channel: 'app' | 'backend' };
 
 export const SHELL_ENTRIES: Entry[] = (shellLedger as { entries: Entry[] }).entries;
 
+/** Accents for the shell ledger's own area names. The backend serves colours for
+ *  its vocabulary only, and the app's areas are not in it, so without these every
+ *  app-channel tag would fall back to the neutral chip while backend ones bloom. */
+export const SHELL_AREA_ACCENTS: Record<string, string> = {
+  onboarding: 'rgb(100,180,100)',
+  updater: 'rgb(220,160,60)',
+  packaging: 'rgb(140,120,230)',
+  shell: 'rgb(90,160,210)',
+};
+
 /** The backend entries that matter on the desktop: keep highlights whose
  *  `surfaces` is absent (an older backend, or an everywhere-change) or names
  *  'desktop'; drop entries that end up with none. */
@@ -58,7 +68,7 @@ export function desktopBackendEntries(entries: Entry[]): Entry[] {
 export function entryHeadline(entry: Entry): string {
   if (entry.headline) return entry.headline;
   const first = entry.summary.trim().split(/(?<=[.!?])\s/, 1)[0] ?? '';
-  return first.replace(/\.$/, '');
+  return first.replace(/\.+$/, '');
 }
 
 /** The last release each ledger was read at. The app and yeaboi carry separate
@@ -117,4 +127,39 @@ export function mergeChangelogs(backend: Entry[], shell: Entry[]): MergedEntry[]
     }
   }
   return merged;
+}
+
+/** `2026-08-31` → `31 Aug 2026`. An unparseable value passes straight through.
+ *  The locale is pinned, as everywhere else that formats a date in this app. */
+export function formatDate(iso: string): string {
+  const parsed = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/** The month heading a release is grouped under. */
+export function monthOf(iso: string): string {
+  const parsed = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+/** Every area an entry touches, first-seen order — its colour signature.
+ *  `general` sits on almost every release, so beside a real area it says nothing. */
+export function areasOf(entry: Entry): string[] {
+  const areas = [...new Set(entry.highlights.flatMap((h) => h.areas))];
+  const named = areas.filter((a) => a !== 'general');
+  return named.length > 0 ? named : areas;
+}
+
+/** Fold the head of each ledger into the stored markers, never backwards.
+ *  Rolling back to an older app would otherwise replay releases already read. */
+export function mergeSeen(stored: SeenVersions, head: SeenVersions): SeenVersions {
+  return {
+    app: !stored.app || isNewer(head.app, stored.app) ? head.app || stored.app : stored.app,
+    backend:
+      !stored.backend || isNewer(head.backend, stored.backend)
+        ? head.backend || stored.backend
+        : stored.backend,
+  };
 }
