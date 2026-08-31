@@ -37,6 +37,7 @@ import {
   GROUPS,
   groupConnections,
 } from '@/components/yeaboi/connection-card';
+import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
@@ -702,9 +703,13 @@ export default function YeaboiSettingsPage() {
               </Link>
             </div>
           )}
-          {/* The tab table is a non-empty literal; index 0 only looks optional
-              to noUncheckedIndexedAccess. */}
-          <EngineSettings tab={engineTab ?? SETTINGS_TABS[0]!} />
+          {engineTab?.title === 'Connections' ? (
+            <IntegrationsCatalog />
+          ) : (
+            /* The tab table is a non-empty literal; index 0 only looks optional
+               to noUncheckedIndexedAccess. */
+            <EngineSettings tab={engineTab ?? SETTINGS_TABS[0]!} />
+          )}
         </BackendGate>
       )}
     </SettingsPageShell>

@@ -5,6 +5,8 @@
 // a typo'd key or a provider added on the Python side alone still renders, just
 // as "DE" in a box. This pins the set instead.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FALLBACK_GLYPHS, ICON_PATHS } from '../src/renderer/components/yeaboi/provider-icon';
 
@@ -53,5 +55,28 @@ describe('every shipped provider has a mark', () => {
   it('marks are distinct — no provider silently reuses another’s logo', () => {
     const paths = Object.values(ICON_PATHS);
     expect(new Set(paths).size).toBe(paths.length);
+  });
+});
+
+describe('every catalogued connector has a mark', () => {
+  // The vendored identity table (contracts/v1/connectors.json) is the roster
+  // the catalog page renders — a key with no mark falls through to a monogram,
+  // which is what "we forgot" looks like.
+  const contract = JSON.parse(
+    readFileSync(join(__dirname, '..', 'contracts', 'v1', 'connectors.json'), 'utf8'),
+  ) as { connectors: { key: string; accent: string }[] };
+
+  const MARK_ALIASES: Record<string, string> = { azdevops: 'azure' };
+
+  it.each(contract.connectors.map((c) => c.key))('%s resolves, never a monogram', (key) => {
+    const name = MARK_ALIASES[key] ?? key;
+    const drawn = name in ICON_PATHS || name in FALLBACK_GLYPHS;
+    expect(drawn, `${key} would render as a two-letter monogram`).toBe(true);
+  });
+
+  it('every accent is an rgb() triple the tile can bloom', () => {
+    for (const { key, accent } of contract.connectors) {
+      expect(/^rgb\(\d{1,3},\d{1,3},\d{1,3}\)$/.test(accent), `${key} accent ${accent}`).toBe(true);
+    }
   });
 });

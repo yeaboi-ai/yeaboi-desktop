@@ -8,20 +8,30 @@
 // bundle — gets a cloud glyph. Unknown names fall back to a two-letter
 // monogram. All marks identify their owners' services.
 
-import { Cloud, Sunrise, Video } from 'lucide-react';
+import { Cloud, Siren, Sunrise, Video } from 'lucide-react';
 import {
+  siBitbucket,
   siClaude,
   siCloudflare,
+  siConfluence,
+  siDatadog,
   siDeepseek,
   siElevenlabs,
   siGithub,
+  siGitlab,
+  siGooglecloud,
   siGooglegemini,
+  siGrafana,
   siJira,
   siKimi,
+  siLinear,
   siMistralai,
   siNotion,
   siOllama,
+  siPagerduty,
   siQwen,
+  siSentry,
+  siTrello,
   siZdotai,
 } from 'simple-icons';
 
@@ -61,6 +71,17 @@ export const ICON_PATHS: Record<string, string> = {
   slack: SLACK_PATH,
   cloudflare: siCloudflare.path,
   elevenlabs: siElevenlabs.path,
+  confluence: siConfluence.path,
+  // The connector layer (contracts/v1/connectors.json keys).
+  datadog: siDatadog.path,
+  grafana: siGrafana.path,
+  pagerduty: siPagerduty.path,
+  sentry: siSentry.path,
+  gcp: siGooglecloud.path,
+  gitlab: siGitlab.path,
+  bitbucket: siBitbucket.path,
+  linear: siLinear.path,
+  trello: siTrello.path,
 };
 
 export const FALLBACK_GLYPHS: Record<
@@ -70,6 +91,11 @@ export const FALLBACK_GLYPHS: Record<
   bedrock: Cloud,
   tavus: Video,
   standup: Sunrise,
+  // simple-icons carries no AWS or Azure mark (trademark removals) and no
+  // incident.io mark — deliberate glyphs, not accidental monograms.
+  aws: Cloud,
+  azure_cloud: Cloud,
+  incidentio: Siren,
 };
 
 export function ProviderIcon({ provider, size = 40 }: { provider: string; size?: number }) {
