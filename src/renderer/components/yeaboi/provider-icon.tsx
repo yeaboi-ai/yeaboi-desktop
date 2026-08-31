@@ -3,21 +3,26 @@
 // Logomarks for the setup flow — LLM providers and connections alike —
 // rendered monochrome so the cards stay inside the design system. Path data
 // comes from simple-icons where it carries the mark; OpenAI's knot, Slack's
-// pinwheel and the Azure DevOps mark are embedded (simple-icons dropped
-// them); AWS Bedrock — no usable mark ships in any icon set we bundle — gets
-// a cloud glyph. Unknown names fall back to a two-letter monogram. All marks
-// identify their owners' services.
+// pinwheel, the Azure DevOps mark and Grok's swirl are embedded (simple-icons
+// carries none of them); AWS Bedrock — no usable mark ships in any icon set we
+// bundle — gets a cloud glyph. Unknown names fall back to a two-letter
+// monogram. All marks identify their owners' services.
 
 import { Cloud, Sunrise, Video } from 'lucide-react';
 import {
   siClaude,
   siCloudflare,
+  siDeepseek,
   siElevenlabs,
   siGithub,
   siGooglegemini,
   siJira,
+  siKimi,
+  siMistralai,
   siNotion,
   siOllama,
+  siQwen,
+  siZdotai,
 } from 'simple-icons';
 
 // The OpenAI knot, as previously published by simple-icons (CC0 path data).
@@ -32,11 +37,23 @@ const SLACK_PATH =
 const AZURE_DEVOPS_PATH =
   'M0 8.877L2.247 5.91l8.405-3.416V.022l7.37 5.393L2.966 8.338v8.225L0 15.707zm24-4.45v14.651l-5.753 4.9-9.303-3.057v3.056l-5.978-7.416 15.057 1.798V5.415z';
 
-const ICON_PATHS: Record<string, string> = {
+// Grok's swirl. simple-icons ships no xAI or Grok mark, so the path is
+// embedded like OpenAI's and Slack's above.
+const GROK_PATH =
+  'M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815';
+
+export const ICON_PATHS: Record<string, string> = {
   anthropic: siClaude.path,
   openai: OPENAI_PATH,
   google: siGooglegemini.path,
   ollama: siOllama.path,
+  // The OpenAI-wire vendors — see src/yeaboi/llm_providers.py in yeaboi.ai.
+  xai: GROK_PATH,
+  deepseek: siDeepseek.path,
+  moonshot: siKimi.path,
+  mistral: siMistralai.path,
+  qwen: siQwen.path,
+  zai: siZdotai.path,
   github: siGithub.path,
   jira: siJira.path,
   azure: AZURE_DEVOPS_PATH,
@@ -46,7 +63,7 @@ const ICON_PATHS: Record<string, string> = {
   elevenlabs: siElevenlabs.path,
 };
 
-const FALLBACK_GLYPHS: Record<
+export const FALLBACK_GLYPHS: Record<
   string,
   React.ComponentType<{ size?: number; strokeWidth?: number }>
 > = {
