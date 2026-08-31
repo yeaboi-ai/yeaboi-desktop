@@ -60,6 +60,11 @@ const AZURE_DEVOPS_PATH =
 const GROK_PATH =
   'M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815';
 
+// The incident.io mark, from SVG Logos (gilbarbara/logos, CC0). simple-icons
+// has never published one, at any version.
+const INCIDENTIO_PATH =
+  'M96.73 344.737V298.16h60.969v46.99C214.062 331.68 256 280.686 256 219.843c0-49.516-35.14-119.19-75.886-140.748c5.48 19.333-2.749 44.528-13.71 42.32c-4.13-.826-4.56-7.355-5.226-17.903C159.78 81.43 157.27 41.716 117.015 0c-3.209 29.135-49.405 88.484-79.46 127.118a3238 3238 0 0 0-11.28 14.536A129.25 129.25 0 0 0 0 219.844c-.12 58.859 39.713 110.296 96.73 124.91zm65.147-98.952a34.09 34.09 0 0 1-33.996 34.202a34.09 34.09 0 0 1-33.996-34.202c0-7.8 2.685-15.14 6.99-20.763l2.987-3.86c7.99-10.262 20.254-26.021 21.112-33.757c25.306 17.093 36.903 45.226 36.903 58.38';
+
 // The AWS wordmark, as previously published by simple-icons (CC0 path data,
 // v14.15.0 — the last release to carry it).
 const AWS_PATH =
@@ -102,6 +107,14 @@ export const ICON_PATHS: Record<string, string> = {
   trello: siTrello.path,
   aws: AWS_PATH,
   azure_cloud: AZURE_PATH,
+  incidentio: INCIDENTIO_PATH,
+};
+
+/** Marks whose source does not normalise to a 24-square. Anything absent here
+ *  is drawn in simple-icons' own 0 0 24 24 box; the browser fits and centres
+ *  whatever box is named. */
+const ICON_VIEWBOXES: Record<string, string> = {
+  incidentio: '0 0 256 346',
 };
 
 export const FALLBACK_GLYPHS: Record<
@@ -126,18 +139,6 @@ const FAMILY_GLYPHS: Record<
   cloud: Cloud,
 };
 
-/** How a vendor writes itself when no logomark is available to ship.
- *
- *  Lettering is the honest alternative to drawing one from memory: it is what
- *  the vendor calls itself, it is accurate, and inside the vendor's own accent
- *  it reads as itself. A family glyph does not, once a family holds more than
- *  one member — several vendors wearing one mark is indistinguishable from
- *  having forgotten all of them. */
-const MONOGRAMS: Record<string, string> = {
-  // No incident.io mark has ever shipped in simple-icons, at any version.
-  incidentio: 'i.io',
-};
-
 /** `rgb(r,g,b)` from the connector catalog → the same colour at `alpha`. */
 function tint(accent: string, alpha: number): string | undefined {
   const m = /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/.exec(accent.trim());
@@ -158,9 +159,8 @@ export function ProviderIcon({
   accent?: string;
 }) {
   const path = ICON_PATHS[provider];
-  const Glyph =
-    FALLBACK_GLYPHS[provider] ?? (MONOGRAMS[provider] ? undefined : FAMILY_GLYPHS[family]);
-  const lettering = MONOGRAMS[provider] ?? provider.slice(0, 2).toUpperCase();
+  const Glyph = FALLBACK_GLYPHS[provider] ?? FAMILY_GLYPHS[family];
+  const lettering = provider.slice(0, 2).toUpperCase();
   const glyph = Math.round(size * 0.52);
   const wash = tint(accent, 0.14);
   const edge = tint(accent, 0.35);
@@ -176,7 +176,7 @@ export function ProviderIcon({
       }}
     >
       {path ? (
-        <svg width={glyph} height={glyph} viewBox="0 0 24 24">
+        <svg width={glyph} height={glyph} viewBox={ICON_VIEWBOXES[provider] ?? '0 0 24 24'}>
           <path d={path} fill="currentColor" />
         </svg>
       ) : Glyph ? (
