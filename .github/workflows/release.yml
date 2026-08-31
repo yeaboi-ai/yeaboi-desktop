@@ -28,9 +28,11 @@ name: release
 # notarization" and carries on. The `Assess the signed app` step below is the only
 # thing that catches it, which is also why the release stays a draft until it passes.
 #
-# The installers go to yeaboi-ai/yeaboi-desktop-releases, a public repo, because this
-# one is private and can host nothing anybody can download. The default GITHUB_TOKEN
-# cannot write to another repository, so RELEASES_REPO_TOKEN is a PAT scoped to it.
+# The installers go to yeaboi-ai/yeaboi-desktop-releases. That repo's releases are the
+# URLs yeaboi.ai links and the packaged app-update.yml polls, so they stay there now that
+# this repo is public too — moving them would strand every installed app's updater. The
+# default GITHUB_TOKEN cannot write to another repository, so RELEASES_REPO_TOKEN is a
+# PAT scoped to it.
 
 on:
   workflow_dispatch:
@@ -58,6 +60,7 @@ jobs:
   resolve:
     name: Resolve the release
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.pick.outputs.version }}
       wheel: ${{ steps.pick.outputs.wheel }}
@@ -169,6 +172,7 @@ jobs:
     name: ${{ matrix.name }}
     needs: resolve
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     permissions:
       contents: read # the release goes to another repo, through RELEASES_REPO_TOKEN
     strategy:
@@ -283,13 +287,19 @@ jobs:
           }
 
           clear_leg_assets
-          if npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always; then
+          log=$(mktemp)
+          if npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always 2>&1 | tee "$log"; then
             exit 0
           fi
 
-          # One retry, because the dmg detach flake is intermittent and a leg costs
-          # ~35 minutes of signing and notarization to reach this point.
-          echo "::warning::electron-builder failed; clearing this leg's assets and retrying once"
+          # The dmg is built after notarization, so a retry re-runs the whole ~11-minute
+          # sign-and-notarize cycle to recover a 60-second step. Worth that for the
+          # intermittent detach flake, never for a failure a rerun cannot fix.
+          if ! grep -qE "Unable to detach device cleanly|couldn't eject|dmgbuild process failed" "$log"; then
+            echo "::error::electron-builder failed for a reason a retry does not address"
+            exit 1
+          fi
+          echo "::warning::dmg detach flake; clearing this leg's assets and retrying once"
           clear_leg_assets
           npx electron-builder --${{ matrix.flag }} --${{ matrix.arch }} --publish always
 
@@ -346,18 +356,17 @@ jobs:
           spctl --assess --type execute --verbose=4 "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
 
+      # Only the update metadata. The installers are already on the draft release by
+      # now, uploaded by --publish always, and carrying them here cost ~685MB a leg
+      # that update-metadata then downloaded to read two small YAML files. A leg that
+      # produced no metadata is caught by merge-mac-update-info.mjs, which refuses a
+      # merge covering one arch — hence `warn`, so an already-red leg is not red twice.
       - uses: actions/upload-artifact@v5
         if: always() # the merge job needs each leg's latest-mac.yml even so
         with:
           name: desktop-${{ matrix.os }}-${{ matrix.arch }}
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.exe
-            dist/*.AppImage
-            dist/*.deb
-            dist/latest*.yml
-          if-no-files-found: error
+          path: dist/latest*.yml
+          if-no-files-found: warn
 
   # The two mac legs each wrote a latest-mac.yml listing only their own arch, and
   # the second upload replaced the first — electron-builder merges architectures
@@ -367,6 +376,7 @@ jobs:
     name: Merge the update metadata
     needs: [resolve, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
