@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
@@ -12,7 +11,6 @@ import {
   Columns3,
   Settings,
   ChevronsUpDown,
-  Palette,
   Home,
   MessageSquareText,
   BarChart3,
@@ -116,7 +114,6 @@ const CMD_SHORTCUTS: Record<string, string> = {
 };
 
 export function Sidebar() {
-  const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
   const { authFetch, ready } = useAuthFetch();
@@ -126,7 +123,7 @@ export function Sidebar() {
   const updateDot = updateIndicatorVisible(updateState, null);
 
   // All nav routes in order for arrow key cycling — main nav, then bottom section
-  const allRoutes = [...NAV_ITEMS.map((n) => n.href), '/settings/themes', '/settings'];
+  const allRoutes = [...NAV_ITEMS.map((n) => n.href), '/settings'];
 
   // Detect Cmd/Ctrl held for border glow on active item
   const [cmdHeld, setCmdHeld] = useState(false);
@@ -248,17 +245,13 @@ export function Sidebar() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentOrgId, ready, fetchTeams]);
 
-  if (!session) return null;
-
   // Longest-prefix wins, so /humans/planning/roadmap lights Roadmap and not
   // Planning too.
   const activeHref = NAV_ITEMS.map((item) => item.href)
     .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
   const isActive = (href: string) =>
-    href === '/settings' || href === '/settings/themes'
-      ? pathname?.startsWith(href)
-      : activeHref === href;
+    href === '/settings' ? pathname?.startsWith(href) : activeHref === href;
 
   return (
     <aside
@@ -383,64 +376,28 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="px-2 md:px-3 pb-4 flex flex-col gap-1">
         <UpdateCard />
-        <Link
-          href="/settings/themes"
-          className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
-            pathname?.startsWith('/settings/themes')
-              ? 'bg-secondary text-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-          title="Themes"
-        >
-          <Palette className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden md:inline">Themes</span>
-        </Link>
-        <Link
-          href="/settings"
-          className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
-            isActive('/settings') && !pathname?.startsWith('/settings/themes')
-              ? 'bg-secondary text-foreground'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-          }`}
-          style={{
-            boxShadow:
-              isActive('/settings') && !pathname?.startsWith('/settings/themes') && cmdHeld
-                ? 'inset 0 0 0 1px var(--primary)'
-                : 'none',
-            transition: 'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-          }}
-          title="Settings"
-        >
-          <Settings className="h-3.5 w-3.5 shrink-0" />
-          <span className="hidden md:inline">Settings</span>
-        </Link>
-
-        {/* User profile. The theme switcher is a popover trigger, so it sits
-            beside the settings link rather than inside it — a button may not
-            live inside an anchor. */}
-        <div className="border-t border-border/40 pt-2 mt-1">
-          <div className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-secondary/50 transition-colors">
-            <Link
-              href="/settings"
-              className="flex flex-1 min-w-0 items-center gap-2.5"
-              title="Profile & Settings"
-            >
-              <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-                <span className="text-[10px] font-body font-semibold text-primary">
-                  {(session.user?.name ?? session.user?.email ?? '?').charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-body font-medium text-foreground truncate leading-tight">
-                  {session.user?.name ?? 'User'}
-                </p>
-                <p className="text-[10px] font-body text-muted-foreground/50 truncate leading-tight">
-                  {session.user?.email}
-                </p>
-              </div>
-            </Link>
-            <ThemeSwitcher />
-          </div>
+        {/* The theme switcher is a popover trigger, so it sits beside the
+            settings link rather than inside it — a button may not live inside
+            an anchor. */}
+        <div className="border-t border-border/40 pt-2 mt-1 flex flex-col md:flex-row items-center gap-1">
+          <Link
+            href="/settings"
+            className={`flex flex-1 min-w-0 items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
+              isActive('/settings')
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+            style={{
+              boxShadow:
+                isActive('/settings') && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+              transition: 'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
+            }}
+            title="Settings"
+          >
+            <Settings className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden md:inline">Settings</span>
+          </Link>
+          <ThemeSwitcher />
         </div>
       </div>
     </aside>

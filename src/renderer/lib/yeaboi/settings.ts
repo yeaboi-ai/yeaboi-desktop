@@ -111,3 +111,17 @@ export const signInStatus = () => apiGet<SignInStatus>('/api/settings/signin');
 export const signInCode = (code: string) =>
   apiPost<{ ok: boolean }>('/api/settings/signin/code', { code });
 export const signInCancel = () => apiPost<{ ok: boolean }>('/api/settings/signin/cancel');
+
+/** The Cloudflare Access doctor: what is set up and what is not.
+ *  Offline and cheap — it never resolves the cloudflared binary. */
+export interface AccessState {
+  logged_in: boolean;
+  cert_path: string;
+  jwt_installed: boolean;
+  missing_keys: string[];
+}
+
+export const loadAccessState = () => apiGet<AccessState>('/api/settings/access/state');
+/** The same preflight a board runs before publishing. Fetches JWKS; a few seconds. */
+export const verifyAccess = () =>
+  apiPost<{ ok: boolean; message: string }>('/api/settings/access/verify');

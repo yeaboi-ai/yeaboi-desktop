@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Building2,
   Check,
   Copy,
@@ -21,6 +20,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { BUILTIN_PRESETS } from '@/lib/theme/presets';
 import type { BuiltInPresetId, ColorScheme, ThemeId, TokenMap } from '@/lib/theme/types';
 import { useAuthFetch, getStoredOrgId } from '@/hooks/use-auth-fetch';
@@ -182,26 +182,11 @@ export default function ThemesSettingsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <Link
-          href="/settings"
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Settings
-        </Link>
-
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display italic text-4xl text-foreground leading-none mb-2">
-              Themes
-            </h1>
-            <p className="text-sm font-body text-muted-foreground max-w-2xl">
-              Pick a built-in theme, follow your organization's default, build a custom theme, brand
-              the app from a website, or follow your system's light/dark setting — all in one place.
-            </p>
-          </div>
-        </header>
+      <SettingsPageShell active="/settings/themes" maxWidth="max-w-6xl">
+        <p className="mb-8 max-w-2xl text-sm font-body text-muted-foreground">
+          Pick a built-in theme, follow your organization's default, build a custom theme, brand the
+          app from a website, or follow your system's light/dark setting — all in one place.
+        </p>
 
         {deleteError && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/15 border border-destructive/40 text-[11px] font-body text-destructive flex items-start justify-between gap-3">
@@ -307,7 +292,7 @@ export default function ThemesSettingsPage() {
         <p className="text-[11px] font-body text-muted-foreground/60 mt-12">
           Active theme: <span className="text-foreground">{themeId}</span>
         </p>
-      </div>
+      </SettingsPageShell>
 
       {/* Right-side drawers */}
       <Sheet open={openSheet === 'org'} onOpenChange={(o) => !o && close()}>

@@ -3,7 +3,10 @@ import { cn } from '@/lib/utils';
 
 type SettingsSectionHeaderProps = {
   title: string;
-  subtitle?: string;
+  /** One line under the title — what this is, or what it is pointed at. */
+  subtitle?: React.ReactNode;
+  /** A mark for the service or the section. */
+  icon?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
 };
@@ -11,20 +14,17 @@ type SettingsSectionHeaderProps = {
 export function SettingsSectionHeader({
   title,
   subtitle,
+  icon,
   action,
   className,
 }: SettingsSectionHeaderProps) {
   return (
-    <div
-      className={cn(
-        'flex items-start justify-between gap-4 px-5 py-4 border-b border-border',
-        className,
-      )}
-    >
-      <div className="min-w-0">
-        <h2 className="text-xs font-body font-semibold text-foreground tracking-wide">{title}</h2>
+    <div className={cn('flex items-center gap-3.5 border-b border-border/50 px-4 py-3', className)}>
+      {icon}
+      <div className="min-w-0 flex-1">
+        <h2 className="text-[13.5px] font-body font-medium text-foreground">{title}</h2>
         {subtitle && (
-          <p className="text-[11px] text-muted-foreground font-body mt-0.5">{subtitle}</p>
+          <p className="mt-0.5 truncate font-body text-[12px] text-muted-foreground">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

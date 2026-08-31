@@ -1,18 +1,22 @@
 'use client';
 
-// yeaboi Settings — the three tabs (Credentials / Sharing / System) over the
-// /api/settings snapshot. Field behaviour mirrors the TUI settings page:
-// choice rows cycle a fixed set, secrets are write-only (masked preview,
-// replace to change), and the special rows (subscription sign-in, data
-// directory, allowed paths, voice device) get their dedicated flows.
+// Settings — the config every yeaboi surface reads.
 //
-// These live beside the planning app's own /settings (profile, appearance,
-// AI provider for planning sessions): that page configures the planning
-// backend, this one configures the yeaboi engines. One nav, two backends.
+// Credentials answers "who does yeaboi talk to": the provider it thinks with,
+// then one collapsed card per integration, each showing what it is pointed at.
+// The cards and the provider grid are the same components the onboarding
+// wizard and /setup use, so the three surfaces cannot drift.
+//
+// Sharing and System stay field lists — they configure this machine, not a
+// remote service — but wear the same card, header and row vocabulary.
+//
+// Appearance and Duck configure this window rather than the engine, so they
+// are declared here rather than in the contract's settings_tabs.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLocation } from 'react-router';
+import { ArrowUpRight } from 'lucide-react';
 import { DuckMark } from '@/components/brand/duck';
 import {
   type ProviderCatalog,
@@ -27,24 +31,34 @@ import {
 import { SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { type VoiceStatus, getVoice, setVoiceOffer } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import {
+  CONNECTION_CARDS,
+  ConnectionCard,
+  GROUPS,
+  groupConnections,
+} from '@/components/yeaboi/connection-card';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
+import { ProviderPanel } from '@/components/settings/provider-panel';
+import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
+import { SystemPanel } from '@/components/settings/system-panel';
+import { SectionIcon } from '@/components/settings/section-icon';
+import { DuckVoiceCard } from '@/components/settings/duck-voice-card';
+import {
+  ChoicePills,
+  RowValue,
+  SettingRow,
+  SettingsCard,
+  SettingsSectionHeader,
+} from '@/components/settings/primitives';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
+import { AppearanceSection } from '@/components/settings/tabs/general/appearance-section';
+import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
+import { DuckTab } from '@/components/settings/tabs/duck-tab';
 import { Button } from '@/components/ui/button';
 
-const SECTION_TITLES: Record<string, string> = {
-  provider: 'LLM Provider',
-  jira: 'Jira',
-  azure: 'Azure DevOps',
-  github: 'GitHub',
-  notion: 'Notion',
-  slack: 'Slack',
-  sharing: 'Sharing',
-  storage: 'Storage',
-  standup: 'Daily Standup',
-  voice: 'Voice Input',
-  advanced: 'Advanced',
-};
+const DOT = ' · ';
 
 function activeChoice(fields: SettingField[], env: string): string {
   return fields.find((f) => f.env === env)?.active_choice ?? '';
@@ -76,16 +90,29 @@ function visibleProviderEnvs(fields: SettingField[], catalog: ProviderCatalog | 
   return visible;
 }
 
-const label = 'w-40 shrink-0 text-[11px] font-body text-muted-foreground uppercase tracking-wide';
-const valueSet = 'text-[12px] font-mono text-foreground break-all';
-const valueUnset = 'text-[12px] font-mono text-muted-foreground/50';
+/** What an integration is pointed at, once it is connected — the host, the
+ *  project, the channel. One line of fact in place of the blurb. */
+function connectionSummary(section: string, value: (env: string) => string): string {
+  const parts: Record<string, string[]> = {
+    github: [value('TEAM_ANALYSIS_GITHUB_OWNERS')],
+    jira: [value('JIRA_BASE_URL').replace(/^https?:\/\//, ''), value('JIRA_PROJECT_KEY')],
+    azure: [
+      value('AZURE_DEVOPS_ORG_URL').replace(/^https?:\/\//, ''),
+      value('AZURE_DEVOPS_PROJECT'),
+    ],
+    notion: [value('NOTION_ROOT_PAGE_ID')],
+    slack: [
+      value('SLACK_CHANNEL_ID'),
+      value('SLACK_BOT_TOKEN') && value('SLACK_CHANNEL_ID') ? 'reads back' : '',
+    ],
+  };
+  return (parts[section] ?? []).filter(Boolean).join(DOT);
+}
 
-function SettingsBody() {
-  const { pathname } = useLocation();
-  // The tab table is a non-empty literal; index 0 only looks optional to
-  // noUncheckedIndexedAccess.
-  const tab = SETTINGS_TABS.find((t) => t.route === pathname) ?? SETTINGS_TABS[0]!;
+const inputClass =
+  'flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-1.5 font-mono text-[12px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none';
 
+function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [catalog, setCatalog] = useState<ProviderCatalog | null>(null);
   const [error, setError] = useState('');
@@ -95,6 +122,8 @@ function SettingsBody() {
   const [draft, setDraft] = useState('');
   const [signingIn, setSigningIn] = useState(false);
   const [moveAsk, setMoveAsk] = useState<string | null>(null);
+  const [openCard, setOpenCard] = useState('');
+  const headerRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const refresh = () => loadSettings().then(setSnapshot, (e: Error) => setError(e.message));
   useEffect(() => {
@@ -125,6 +154,7 @@ function SettingsBody() {
 
   const shareAccess = activeChoice(snapshot.fields, 'YEABOI_SHARE_MODE') === 'access';
   const knownSections = new Set(SETTINGS_TABS.flatMap((t) => t.sections));
+  const valueOf = (env: string) => snapshot.fields.find((f) => f.env === env)?.value ?? '';
 
   const sectionFields = (section: string): SettingField[] =>
     snapshot.fields.filter((f) => {
@@ -133,12 +163,6 @@ function SettingsBody() {
       if (section === 'sharing' && f.env.startsWith('CLOUDFLARE_')) return shareAccess;
       return true;
     });
-
-  // Sections the backend grows later land on the System tab rather than nowhere.
-  const sections =
-    tab.title === 'System'
-      ? [...tab.sections, ...snapshot.sections.filter((s) => !knownSections.has(s))]
-      : [...tab.sections];
 
   const beginEdit = (field: SettingField) => {
     setEditing(field.env);
@@ -150,39 +174,43 @@ function SettingsBody() {
   const renderRow = (field: SettingField) => {
     if (field.choices.length > 0) {
       return (
-        <div className="flex flex-wrap items-center gap-2 py-2" key={field.env}>
-          <span className={label}>{field.label}</span>
-          <span className="flex flex-wrap gap-1.5">
-            {field.choices.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => void save(field.env, opt)}
-                className={`rounded-full px-3 py-1 text-[11px] font-body transition-colors ${
-                  opt === field.active_choice
-                    ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
-                    : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {field.choice_labels[opt] ?? opt}
-              </button>
-            ))}
-          </span>
-        </div>
+        <SettingRow key={field.env} label={field.label}>
+          <ChoicePills
+            options={field.choices}
+            active={field.active_choice}
+            labels={field.choice_labels}
+            onPick={(opt) => void save(field.env, opt)}
+          />
+        </SettingRow>
       );
     }
 
-    if (field.action === 'signin') {
+    if (field.action === 'data-dir') {
       return (
-        <div className="flex flex-wrap items-center gap-2 py-2" key={field.env}>
-          <span className={label}>{field.label}</span>
-          <span className={field.is_set ? valueSet : valueUnset}>
-            {field.is_set ? field.value : 'not signed in'}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => setSigningIn(true)}>
-            Sign in…
+        <SettingRow key={field.env} label={field.label}>
+          <RowValue value={field.value} fallback="~/.yeaboi (default)" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              void window.yeaboi
+                .pickDirectory({
+                  title: 'Choose a data directory',
+                  defaultPath: field.value || undefined,
+                })
+                .then((picked) => {
+                  if (picked.path) setMoveAsk(picked.path);
+                })
+            }
+          >
+            Choose…
           </Button>
-        </div>
+          {field.is_set && (
+            <Button variant="ghost" size="sm" onClick={() => setMoveAsk('')}>
+              Reset
+            </Button>
+          )}
+        </SettingRow>
       );
     }
 
@@ -202,140 +230,76 @@ function SettingsBody() {
       // the same VOICE_DEVICE *name* back, which is the part both surfaces
       // share.
       return (
-        <MicTest
-          key={field.env}
-          value={field.value}
-          onSave={(name) => void save(field.env, name)}
-        />
+        <SettingRow key={field.env} label={field.label}>
+          <MicTest value={field.value} onSave={(name) => void save(field.env, name)} />
+        </SettingRow>
       );
     }
 
     const isEditing = editing === field.env;
     return (
-      <div className="py-2" key={field.env}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={label}>{field.label}</span>
-          {isEditing ? (
-            <form
-              className="flex flex-1 items-center gap-2 min-w-[240px]"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (field.action === 'data-dir') {
-                  setEditing(null);
-                  setMoveAsk(draft.trim());
-                } else {
-                  void save(field.env, draft);
-                }
+      <SettingRow key={field.env} label={field.label}>
+        {isEditing ? (
+          <form
+            className="flex w-full flex-1 items-center gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save(field.env, draft.trim());
+            }}
+          >
+            <input
+              autoFocus
+              type={field.secret ? 'password' : 'text'}
+              value={draft}
+              aria-label={field.label}
+              placeholder={field.secret ? 'paste the new value' : ''}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setEditing(null);
               }}
-            >
-              <input
-                autoFocus
-                type={field.secret ? 'password' : 'text'}
-                value={draft}
-                placeholder={field.secret ? 'paste the new value' : ''}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') setEditing(null);
-                }}
-                className="flex-1 rounded-lg bg-secondary/40 border border-border/40 px-3 py-1.5 text-[12px] font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+              className={inputClass}
+            />
+            <Button size="sm" type="submit">
+              Save
+            </Button>
+            <Button variant="outline" size="sm" type="button" onClick={() => setEditing(null)}>
+              Cancel
+            </Button>
+          </form>
+        ) : (
+          <>
+            {field.env === 'TUNNEL_TIMEOUT_MINUTES' && field.value.trim() === '0' ? (
+              <RowValue value="never expires" tone="warning" />
+            ) : (
+              <RowValue
+                value={field.is_set ? field.value : ''}
+                fallback={field.default ? `${field.default} (default)` : 'not set'}
               />
-              <Button size="sm" type="submit">
-                Save
-              </Button>
-              <Button variant="outline" size="sm" type="button" onClick={() => setEditing(null)}>
-                Cancel
-              </Button>
-            </form>
-          ) : (
-            <>
-              <span className={field.is_set ? valueSet : valueUnset}>
-                {field.is_set
-                  ? field.value
-                  : field.default
-                    ? `${field.default} (default)`
-                    : 'not set'}
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => beginEdit(field)}>
-                Edit
-              </Button>
-            </>
-          )}
-        </div>
-        {field.help_url && (
-          <div className="mt-1 pl-40 text-[11px] text-muted-foreground/70">
-            create:{' '}
-            <a
-              href={field.help_url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary hover:underline"
-            >
-              {field.help_url}
-            </a>
-            <div>scope: {field.help_scope}</div>
-          </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => beginEdit(field)}>
+              {field.secret && field.is_set ? 'Replace' : 'Edit'}
+            </Button>
+          </>
         )}
-      </div>
+      </SettingRow>
     );
   };
 
-  const extraRows = (section: string) => {
-    if (section === 'slack') {
-      const twoWay =
-        Boolean(snapshot.fields.find((f) => f.env === 'SLACK_BOT_TOKEN')?.is_set) &&
-        Boolean(snapshot.fields.find((f) => f.env === 'SLACK_CHANNEL_ID')?.is_set);
-      return (
-        <div className="flex flex-wrap items-center gap-2 py-2">
-          <span className={label}>Reads back</span>
-          <span className={twoWay ? 'text-[12px] text-success' : valueUnset}>
-            {twoWay ? 'yes — reactions and thread replies' : 'no — a webhook cannot be answered'}
-          </span>
-        </div>
-      );
-    }
-    if (section === 'voice') return <DictationRow />;
-    if (section === 'advanced') {
-      return (
-        <div className="flex flex-wrap items-center gap-2 py-2">
-          <span className={label}>Config File</span>
-          <span className={valueSet}>{snapshot.config_path}</span>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div>
-      <h1 className="font-display text-2xl text-foreground mb-4">yeaboi Settings</h1>
-      <nav className="flex items-center gap-1.5 mb-6">
-        {SETTINGS_TABS.map((t) => (
-          <Link
-            key={t.route}
-            href={t.route}
-            aria-current={t.route === tab.route ? 'page' : undefined}
-            className={`rounded-full px-3 py-1 text-[12px] font-body transition-colors ${
-              t.route === tab.route
-                ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
-                : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.title}
-          </Link>
-        ))}
-      </nav>
-
+  const banners = (
+    <>
       {restartNeeded && (
-        <div className="mb-4 rounded-xl bg-warning/10 ring-1 ring-warning/30 px-4 py-2.5 text-[12px] text-foreground">
-          Restart yeaboi (quit and reopen the app) to fully apply the data directory.
+        <div className="mb-4 rounded-xl bg-warning/10 px-4 py-2.5 text-[12px] text-foreground ring-1 ring-warning/30">
+          Quit and reopen yeaboi to finish applying the data directory.
         </div>
       )}
       {status && (
-        <div className="mb-4 flex items-center gap-2 text-[12px] text-muted-foreground">
+        <div
+          role="status"
+          className="mb-4 flex items-center gap-2 text-[12px] text-muted-foreground"
+        >
           <DuckMark state="idle" size={20} /> {status}
         </div>
       )}
-
       {signingIn && (
         <SignInPanel
           onClose={(saved, message) => {
@@ -345,13 +309,12 @@ function SettingsBody() {
           }}
         />
       )}
-
       {moveAsk !== null && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <div className="w-[480px] max-w-[calc(100vw-3rem)] rounded-2xl bg-card shadow-2xl ring-1 ring-border/70 p-5">
+          <div className="w-[480px] max-w-[calc(100vw-3rem)] rounded-2xl bg-card p-5 shadow-2xl ring-1 ring-border/70">
             <p className="text-[13px] text-muted-foreground">
               Move the existing data (sessions, exports, logs) to{' '}
-              <code className="text-foreground">
+              <code className="font-mono text-foreground">
                 {moveAsk || '~/.yeaboi (the default location)'}
               </code>
               ?
@@ -391,27 +354,144 @@ function SettingsBody() {
           </div>
         </div>
       )}
-
-      <div className="space-y-4">
-        {sections.map((section) => {
-          const fields = sectionFields(section);
-          const extras = extraRows(section);
-          if (fields.length === 0 && !extras) return null;
-          return (
-            <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5" key={section}>
-              <h2 className="text-[13px] font-body font-medium text-foreground mb-2">
-                {SECTION_TITLES[section] ?? section}
-              </h2>
-              <div className="divide-y divide-border/40">
-                {fields.map(renderRow)}
-                {extras}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    </div>
+    </>
   );
+
+  const footer = (
+    <p className="mt-6 text-[11px] text-muted-foreground/70">
+      Written to <span className="font-mono text-muted-foreground">{snapshot.config_path}</span> —
+      the same file the terminal reads.
+    </p>
+  );
+
+  if (tab.title === 'Credentials') {
+    const providerFields = sectionFields('provider');
+    const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
+    const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
+    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS);
+
+    let flat = -1;
+    const headerKeyHandler = (index: number) => (event: React.KeyboardEvent) => {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      headerRefs.current[index + (event.key === 'ArrowDown' ? 1 : -1)]?.focus();
+    };
+
+    return (
+      <div>
+        {banners}
+        <ProviderPanel
+          card={card}
+          fields={providerFields}
+          catalog={catalog}
+          onSave={(env, value) => void save(env, value)}
+          onSignIn={() => setSigningIn(true)}
+        />
+        <div className="mt-6 space-y-4">
+          {grouped.map((group) => (
+            <div key={group.label}>
+              <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                {group.label}
+              </h3>
+              <div className="space-y-2">
+                {group.items.map(({ card: spec, fields }) => {
+                  flat += 1;
+                  const index = flat;
+                  return (
+                    <ConnectionCard
+                      key={spec.section}
+                      card={spec}
+                      fields={fields}
+                      prefillNonSecret
+                      summary={connectionSummary(spec.section, valueOf)}
+                      open={openCard === spec.section}
+                      onToggle={() => setOpenCard((s) => (s === spec.section ? '' : spec.section))}
+                      onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+                      headerRef={(el) => {
+                        headerRefs.current[index] = el;
+                      }}
+                      onHeaderKeyDown={headerKeyHandler(index)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
+  if (tab.title === 'Sharing') {
+    const shareMode = snapshot.fields.find((f) => f.env === 'YEABOI_SHARE_MODE');
+    const timeout = snapshot.fields.find((f) => f.env === 'TUNNEL_TIMEOUT_MINUTES');
+    const accessFields = sectionFields('sharing').filter((f) => f.env.startsWith('CLOUDFLARE_'));
+
+    return (
+      <div>
+        {banners}
+        <SettingsCard index={0}>
+          <SettingsSectionHeader
+            title="Sharing"
+            subtitle="Who can open a board you share"
+            icon={<SectionIcon section="sharing" />}
+          />
+          <div className="px-5 py-4">
+            {shareMode && (
+              <ShareModeChoice
+                active={shareMode.active_choice}
+                onPick={(value) => void save(shareMode.env, value)}
+              />
+            )}
+          </div>
+          {timeout && <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>}
+        </SettingsCard>
+        {/* The five keys mean nothing on the default path, so they appear with
+            the tier — the same rule the terminal's Sharing section follows. */}
+        {shareAccess && accessFields.length > 0 && (
+          <div className="mt-4">
+            <AccessCard
+              fields={accessFields}
+              open={openCard === 'cloudflare'}
+              onToggle={() => setOpenCard((s) => (s === 'cloudflare' ? '' : 'cloudflare'))}
+              onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+            />
+          </div>
+        )}
+        {footer}
+      </div>
+    );
+  }
+
+  if (tab.title === 'System') {
+    return (
+      <div>
+        {banners}
+        <SystemPanel
+          fields={snapshot.fields}
+          renderRow={renderRow}
+          dictationRow={<DictationRow />}
+          openCard={openCard}
+          onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
+          onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+          /* A section the backend grows later still lands somewhere. */
+          extras={snapshot.sections
+            .filter((section) => !knownSections.has(section))
+            .map((section) => (
+              <SettingsCard key={section}>
+                <SettingsSectionHeader title={section} />
+                <div className="py-1.5">{sectionFields(section).map(renderRow)}</div>
+              </SettingsCard>
+            ))}
+        />
+        {footer}
+      </div>
+    );
+  }
+
+  // Every tab in the contract is handled above.
+  return null;
 }
 
 function AllowedPathsRow({
@@ -430,31 +510,33 @@ function AllowedPathsRow({
     setOpen(true);
   };
 
+  const add = (raw: string) => {
+    const value = raw.trim();
+    if (value && !paths.includes(value)) setPaths((current) => [...current, value]);
+  };
+
   if (!open) {
     return (
-      <div className="flex flex-wrap items-center gap-2 py-2">
-        <span className={label}>{field.label}</span>
-        <span className={field.is_set ? valueSet : valueUnset}>
-          {field.value || 'none — sandboxed to data dir'}
-        </span>
+      <SettingRow label={field.label}>
+        <RowValue value={field.value} fallback="none — sandboxed to the data directory" />
         <Button variant="ghost" size="sm" onClick={begin}>
           Edit
         </Button>
-      </div>
+      </SettingRow>
     );
   }
 
   return (
-    <div className="py-2">
-      <span className={label}>{field.label}</span>
-      <div className="mt-2 space-y-1.5">
+    <SettingRow label={field.label}>
+      <div className="w-full space-y-1.5">
         {paths.map((p) => (
           <div key={p} className="flex items-center gap-2">
-            <code className="text-[12px] font-mono text-foreground">{p}</code>
+            <code className="font-mono text-[12px] text-foreground">{p}</code>
             <button
               type="button"
+              aria-label={`Remove ${p}`}
               onClick={() => setPaths(paths.filter((x) => x !== p))}
-              className="text-muted-foreground/60 hover:text-destructive text-[12px]"
+              className="text-[12px] text-muted-foreground/60 hover:text-destructive"
             >
               ✕
             </button>
@@ -464,19 +546,31 @@ function AllowedPathsRow({
           className="flex items-center gap-2"
           onSubmit={(event) => {
             event.preventDefault();
-            const value = next.trim();
-            if (value && !paths.includes(value)) setPaths([...paths, value]);
+            add(next);
             setNext('');
           }}
         >
           <input
             value={next}
+            aria-label="Path to allow"
             placeholder="/path/to/allow"
             onChange={(event) => setNext(event.target.value)}
-            className="flex-1 rounded-lg bg-secondary/40 border border-border/40 px-3 py-1.5 text-[12px] font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+            className={inputClass}
           />
           <Button variant="outline" size="sm" type="submit">
             Add
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={() =>
+              void window.yeaboi
+                .pickDirectory({ title: 'Allow a folder' })
+                .then((picked) => add(picked.path))
+            }
+          >
+            Choose folder…
           </Button>
         </form>
         <div className="flex items-center gap-2 pt-1">
@@ -496,7 +590,7 @@ function AllowedPathsRow({
           </Button>
         </div>
       </div>
-    </div>
+    </SettingRow>
   );
 }
 
@@ -520,15 +614,8 @@ function DictationRow() {
   if (!voice) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2">
-      <span className={label}>Dictation</span>
-      <span
-        className={
-          voice.state === 'ready' ? 'text-[12px] text-success' : 'text-[12px] text-muted-foreground'
-        }
-      >
-        {voice.detail}
-      </span>
+    <SettingRow label="Dictation">
+      <RowValue value={voice.detail} tone={voice.state === 'ready' ? 'success' : 'muted'} />
       {voice.state === 'installable' && (
         <Button variant="outline" size="sm" onClick={() => setSetup(voice)}>
           Set up ({voice.install.size_mb} MB)
@@ -559,16 +646,67 @@ function DictationRow() {
           }}
         />
       )}
+    </SettingRow>
+  );
+}
+
+/** Appearance and Duck talk to this window, not the engine, so they render
+ *  outside the backend gate — the theme still switches with the sidecar down. */
+function AppearanceTab() {
+  return (
+    <div className="space-y-4">
+      <SettingsCard index={0}>
+        <SettingsSectionHeader title="Appearance" subtitle="Colour scheme, for this window" />
+        <div className="px-5 py-5">
+          <AppearanceSection />
+        </div>
+      </SettingsCard>
+      <SettingsCard index={1}>
+        <SettingsSectionHeader
+          title="Screensaver"
+          subtitle="What the window shows when you have been away"
+        />
+        <div className="px-5 py-5">
+          <ScreensaverSection />
+        </div>
+      </SettingsCard>
     </div>
   );
 }
 
 export default function YeaboiSettingsPage() {
+  const { pathname } = useLocation();
+  const engineTab = SETTINGS_TABS.find((t) => t.route === pathname);
+
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <SettingsBody />
-      </div>
-    </BackendGate>
+    <SettingsPageShell active={pathname}>
+      {pathname === '/settings/appearance' ? (
+        <AppearanceTab />
+      ) : pathname === '/settings/duck' ? (
+        <>
+          <DuckTab />
+          <div className="mt-4">
+            <DuckVoiceCard />
+          </div>
+        </>
+      ) : (
+        <BackendGate>
+          {engineTab?.title === 'Credentials' && (
+            <div className="mb-3 flex justify-end">
+              <Link
+                href="/setup"
+                className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
+              >
+                Re-run setup
+                <ArrowUpRight className="size-3" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+          {/* The tab table is a non-empty literal; index 0 only looks optional
+              to noUncheckedIndexedAccess. */}
+          <EngineSettings tab={engineTab ?? SETTINGS_TABS[0]!} />
+        </BackendGate>
+      )}
+    </SettingsPageShell>
   );
 }

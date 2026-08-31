@@ -19,8 +19,8 @@ export function SettingsCard({
   return (
     <div
       className={cn(
-        'rounded-lg overflow-hidden bg-card',
-        variant === 'default' ? 'border border-border' : 'border border-border/40',
+        'rounded-2xl overflow-hidden bg-card ring-1',
+        variant === 'default' ? 'ring-border/60' : 'ring-border/30',
         animate && 'animate-slide-up motion-reduce:animate-none',
         className,
       )}

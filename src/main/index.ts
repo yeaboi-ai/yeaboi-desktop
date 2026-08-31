@@ -17,7 +17,7 @@
 // is a window of its own.
 
 import { join } from 'node:path';
-import { BrowserWindow, app, ipcMain, nativeImage, session, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, nativeImage, session, shell } from 'electron';
 // The 1024px master of the committed icon set. macOS reads a packaged app's
 // icon from the bundle, so this is what dresses the dev run's Dock and what
 // Windows and Linux draw on the window itself.
@@ -366,6 +366,22 @@ if (!gotLock) {
       if (clamped) notifier.post(clamped);
     });
 
+    // A folder the user points at, for the settings paths. The renderer never
+    // gets to browse — it asks, the OS asks the person, and one chosen path
+    // comes back. Cancelling returns '' rather than throwing.
+    ipcMain.handle('dialog:pick-directory', async (_event, options: unknown) => {
+      const { title, defaultPath } = (options ?? {}) as { title?: string; defaultPath?: string };
+      const opts = {
+        title,
+        defaultPath,
+        properties: ['openDirectory', 'createDirectory'] as const,
+      };
+      const result = await (mainWindow
+        ? dialog.showOpenDialog(mainWindow, { ...opts, properties: [...opts.properties] })
+        : dialog.showOpenDialog({ ...opts, properties: [...opts.properties] }));
+      return { path: result.canceled ? '' : (result.filePaths[0] ?? '') };
+    });
+
     ipcMain.handle('app:meta', () => ({
       version: app.getVersion(),
       electron: process.versions.electron,
@@ -408,7 +424,7 @@ if (!gotLock) {
       togglePet: (enabled) => void setPetPreference({ enabled }),
       nudgePet: (delta) => void setPetPreference({ raise: settings.pet.raise + delta }),
       recenterPet: () => pet.recenter(),
-      petSettings: () => openApp('/settings?tab=duck'),
+      petSettings: () => openApp('/settings/duck'),
       quit: () => app.quit(),
     });
     tray.create(settings.petEnabled);
