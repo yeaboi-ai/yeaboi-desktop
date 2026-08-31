@@ -1,10 +1,11 @@
-import { HardDrive, Mic, Share2, SlidersHorizontal, Sunrise } from 'lucide-react';
+import { HardDrive, Lock, Mic, Share2, SlidersHorizontal, Sunrise } from 'lucide-react';
 
 const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   sharing: Share2,
   storage: HardDrive,
   standup: Sunrise,
   voice: Mic,
+  privacy: Lock,
   advanced: SlidersHorizontal,
 };
 
