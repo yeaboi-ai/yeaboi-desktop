@@ -95,10 +95,15 @@ half a rename lands.
   the draft is published. There is deliberately no `push: tags` trigger: this clone shares an
   object store with the Python repo and has carried 141 of its tags, any one of which would
   otherwise start a signed build.
-- **Installers publish to `yeaboi-ai/yeaboi-desktop-releases`**, a public repo, because this one is
-  private. That needs `RELEASES_REPO_TOKEN` — a PAT scoped to that repo with Contents: write. The
-  default `GITHUB_TOKEN` cannot write to another repository, and a secret may not be named
-  `GITHUB_*`.
+- **Installers publish to `yeaboi-ai/yeaboi-desktop-releases`.** Its releases are the download
+  URLs yeaboi.ai links and the packaged `app-update.yml` polls, so they stay there now that this
+  repo is public too — moving them strands every installed app's updater. That needs
+  `RELEASES_REPO_TOKEN` — a PAT scoped to that repo with Contents: write. The default
+  `GITHUB_TOKEN` cannot write to another repository, and a secret may not be named `GITHUB_*`.
+- **A release is free only while this repo is public.** A mac leg on a private repo bills at the
+  10x macOS multiplier, most of it idling on Apple's notary queue, and a handful of dispatches is
+  enough to trip the spending limit — which then refuses to start *every* job in the repo, CI
+  included, with "the job was not started".
 - **`electron-builder.yml`'s `publish` block is what `electron-updater` polls.** Pointed at the
   wrong repository, an installed app updates itself to nothing, silently, forever.
 - **`--check` is what stops a green build shipping an empty app.** A missing `extraResources`
