@@ -23,7 +23,9 @@ describe('planningPortRange', () => {
   });
 
   it('is the historical 8000..8010 with no worktree block', () => {
-    expect(planningPortRange()).toEqual([8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010]);
+    expect(planningPortRange()).toEqual([
+      8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010,
+    ]);
   });
 
   it('follows the worktree block when there is one', () => {
@@ -70,6 +72,8 @@ describe('index.html', () => {
   });
 
   it('still declares a real viewport', () => {
-    expect(readFileSync(INDEX, 'utf8')).toContain('<meta name="viewport" content="width=device-width');
+    expect(readFileSync(INDEX, 'utf8')).toContain(
+      '<meta name="viewport" content="width=device-width',
+    );
   });
 });

@@ -30,10 +30,16 @@ export function planningPortRange(): number[] {
 export const LIVEKIT_PORT = 7880;
 
 function origins(port: number, schemes: readonly string[]): string[] {
-  return schemes.flatMap((scheme) => [`${scheme}://localhost:${port}`, `${scheme}://127.0.0.1:${port}`]);
+  return schemes.flatMap((scheme) => [
+    `${scheme}://localhost:${port}`,
+    `${scheme}://127.0.0.1:${port}`,
+  ]);
 }
 
-export function rendererCsp(opts: { planningPorts: readonly number[]; livekitPort?: number }): string {
+export function rendererCsp(opts: {
+  planningPorts: readonly number[];
+  livekitPort?: number;
+}): string {
   const livekit = opts.livekitPort ?? LIVEKIT_PORT;
   const http = opts.planningPorts.flatMap((port) => origins(port, ['http']));
   const connect = [
