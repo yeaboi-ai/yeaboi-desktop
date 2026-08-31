@@ -12,6 +12,11 @@ import Link from 'next/link';
 import { callTool } from '@/lib/yeaboi/api';
 import { loadStandup } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import {
+  ContextSourcesPanel,
+  serializeContextSpec,
+  type ContextDeps,
+} from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
 
 interface Config {
@@ -89,6 +94,7 @@ const inputClass =
 function StandupSetupBody() {
   const [sessionId, setSessionId] = useState('');
   const [config, setConfig] = useState<Config | null>(null);
+  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const [candidates, setCandidates] = useState<string[] | null>(null);
   const [owners, setOwners] = useState<{ github_owners: string[]; azdo_projects: string[] } | null>(
     null,
@@ -101,10 +107,17 @@ function StandupSetupBody() {
     loadStandup().then(
       async (dash) => {
         setSessionId(dash.session_id);
-        const envelope = await callTool<{ config: Config | null }>('standup_config_get', {
+        const envelope = await callTool<{
+          config: (Config & { context_deps?: string[] | null }) | null;
+        }>('standup_config_get', {
           session_id: dash.session_id,
         });
-        setConfig({ ...EMPTY, ...(envelope.data?.config ?? {}) });
+        // context_deps rides sibling state: the get returns a list (or null =
+        // inherit) while the set speaks the inherit/none/csv string grammar,
+        // so it must not travel in the ...config spread.
+        const { context_deps: loadedDeps, ...loaded } = envelope.data?.config ?? {};
+        setConfig({ ...EMPTY, ...loaded });
+        setContextDeps(loadedDeps ?? null);
       },
       (e: Error) => setError(e.message),
     );
@@ -149,7 +162,11 @@ function StandupSetupBody() {
     setBusy('save');
     setError('');
     setNote('');
-    const envelope = await callTool('standup_config_set', { session_id: sessionId, ...config });
+    const envelope = await callTool('standup_config_set', {
+      session_id: sessionId,
+      ...config,
+      context_deps: serializeContextSpec(contextDeps),
+    });
     setBusy('');
     if (envelope.ok) setNote('Saved.');
     else setError(envelope.error?.message ?? 'standup_config_set failed');
@@ -361,6 +378,14 @@ function StandupSetupBody() {
             Review yesterday&apos;s meeting before today&apos;s standup
           </span>
         </label>
+      </Section>
+
+      <Section title="Context">
+        <ContextSourcesPanel
+          value={contextDeps}
+          onChange={setContextDeps}
+          note="Saved with the setup — every standup run for this session reads it."
+        />
       </Section>
 
       {error && <Notice title="Could not save" items={[error]} />}

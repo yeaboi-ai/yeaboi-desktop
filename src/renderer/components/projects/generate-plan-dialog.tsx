@@ -25,6 +25,7 @@ import type { Plan } from '@/lib/yeaboi/plan';
 import { duckQuip } from '@/lib/duck-events';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
+import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 
 interface ProgressLine {
   op_id?: string;
@@ -100,6 +101,9 @@ type Phase =
 export function GeneratePlanDialog({ projectId, onClose, onGenerated }: GeneratePlanDialogProps) {
   const { authFetch, ready } = useAuthFetch();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
+  // Sibling state, not part of Phase: phases are replaced wholesale on
+  // transitions and the toggles must survive an error → retry round-trip.
+  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const opIdRef = useRef('');
   const projectRef = useRef<EngineLinkable | null>(null);
 
@@ -199,6 +203,7 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
           answers: args.answers,
           project_context: args.project_context,
           ...(engineProjectId ? { project_id: engineProjectId } : {}),
+          ...(contextDeps !== null ? { context_deps: contextDeps } : {}),
         },
         { opId },
       );
@@ -276,6 +281,14 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
               ))}
             </ul>
           </div>
+        )}
+
+        {phase.kind === 'ready' && (
+          <ContextSourcesPanel
+            value={contextDeps}
+            onChange={setContextDeps}
+            note="Inherit uses the project's saved default when one is set."
+          />
         )}
 
         {running && (
