@@ -3,6 +3,8 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 
+import { planningPortRange, rendererCsp } from './src/shared/csp';
+
 const renderer = resolve(import.meta.dirname, 'src/renderer');
 
 // The renderer is the planning UI as a React 19 SPA. It was written for
@@ -40,7 +42,23 @@ export default defineConfig({
     },
   },
   renderer: {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        // One CSP, generated from the ports this process will use, so the
+        // policy and the probe cannot disagree. A packaged build runs this at
+        // build time with no block set, so it gets the 8000-based policy.
+        name: 'yeaboi-renderer-csp',
+        transformIndexHtml(html: string) {
+          const csp = rendererCsp({ planningPorts: planningPortRange() });
+          return html.replace(
+            '<title>',
+            `<meta http-equiv="Content-Security-Policy" content="${csp}" />\n    <title>`,
+          );
+        },
+      },
+    ],
     // @yeaboi-ai/design ships SOURCE .tsx, and esbuild does not apply this
     // project's tsconfig jsx settings to files under node_modules — without
     // this it falls back to the classic transform and the window comes up
@@ -53,6 +71,12 @@ export default defineConfig({
       alias: rendererAliases,
     },
     server: {
+      // Was Vite's default 5173 with auto-increment — both a collision with
+      // retro/server.py and nondeterministic across worktrees. strictPort only
+      // when a block assigned one: with no block, 5173 genuinely is contended
+      // and today's auto-increment is the working behaviour.
+      port: Number(process.env['YEABOI_DESKTOP_DEV_PORT']) || undefined,
+      strictPort: Boolean(process.env['YEABOI_DESKTOP_DEV_PORT']),
       fs: {
         allow: [import.meta.dirname],
       },

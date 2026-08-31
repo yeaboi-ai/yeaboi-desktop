@@ -12,6 +12,7 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 import { app } from 'electron';
+import { planningPortRange } from '../shared/csp';
 import { loadMachineSecrets, loadSharedEnv, yeaboiHome } from './secrets';
 
 export type PlanningState =
@@ -22,8 +23,6 @@ const HEALTH_POLL_MS = 500;
 const RESTART_DELAYS_MS = [1_000, 5_000, 15_000];
 const MAX_RESTARTS = 3;
 const RESTART_WINDOW_MS = 5 * 60_000;
-// The renderer CSP names this range, so the port never leaves it.
-const PORT_RANGE = [8000, 8001, 8002, 8003, 8004, 8005, 8006, 8007, 8008, 8009, 8010];
 
 /** How to launch the backend. Resolution order (dev escape hatch first):
  *  1. $YEABOI_DESKTOP_PLANNING_PYTHON — an explicit interpreter
@@ -134,7 +133,7 @@ export class PlanningSidecar {
     this.setState({ kind: 'starting' });
     let port: number;
     try {
-      port = await firstFreePort(PORT_RANGE);
+      port = await firstFreePort(planningPortRange());
     } catch (error) {
       this.setState({ kind: 'down', reason: (error as Error).message });
       return;

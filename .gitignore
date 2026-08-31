@@ -18,3 +18,6 @@ backend/.venv/
 backend/dist/
 backend/.pytest_cache/
 backend/**/__pycache__/
+
+# This worktree's generated ports (written by the shared wt.sh).
+/.worktree.env
