@@ -16,6 +16,7 @@
 // The duck persists in the tray with the window closed, and the desktop pet
 // is a window of its own.
 
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { BrowserWindow, app, dialog, ipcMain, nativeImage, session, shell } from 'electron';
 // The 1024px master of the committed icon set. macOS reads a packaged app's
@@ -380,6 +381,16 @@ if (!gotLock) {
         ? dialog.showOpenDialog(mainWindow, { ...opts, properties: [...opts.properties] })
         : dialog.showOpenDialog({ ...opts, properties: [...opts.properties] }));
       return { path: result.canceled ? '' : (result.filePaths[0] ?? '') };
+    });
+
+    // Show a file in Finder/Explorer. The browser path's issue body tells the
+    // person to drag their screenshots onto the issue, which they cannot do
+    // without finding them first. Reveals only — it never opens the file.
+    ipcMain.handle('shell:reveal-path', (_event, target: unknown) => {
+      const path = String(target ?? '');
+      if (!path || !existsSync(path)) return { revealed: false };
+      shell.showItemInFolder(path);
+      return { revealed: true };
     });
 
     ipcMain.handle('app:meta', () => ({
