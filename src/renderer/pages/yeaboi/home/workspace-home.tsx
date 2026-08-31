@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { Columns3, LayoutGrid, Zap } from 'lucide-react';
 import { apiGet } from '@/lib/yeaboi/api';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
 import { ModeCardGrid, type ModeCard } from '@/components/yeaboi/mode-card-grid';
 import { MODE_ROUTES, type Tip } from '@/lib/yeaboi/tips';
@@ -103,11 +104,12 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
     <>
       <p
         data-audience-accented
-        className="text-[11px] font-body uppercase tracking-wide mb-3"
+        className="text-[11px] font-body uppercase tracking-wide mb-3 inline-flex items-center gap-2"
         style={{ color: 'var(--audience-accent)' }}
       >
         {category?.title ?? (audience === 'solo' ? 'Solo' : 'Team')} —{' '}
         {category?.verb ?? VERB_FALLBACK[audience]}
+        {audience === 'solo' && <BetaChip />}
       </p>
 
       {/* The two doors. Equal, and each explains when it is the right one. */}

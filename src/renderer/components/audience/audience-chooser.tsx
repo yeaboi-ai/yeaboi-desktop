@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DuckMark } from '@/components/brand/duck';
 import { RoboMark } from '@/components/brand/robo';
 import { TeamMark } from '@/components/brand/team';
+import { BetaChip } from '@/components/yeaboi/beta-chip';
 import type { Audience } from '@shared/audience';
 
 interface WorldCard {
@@ -24,6 +25,8 @@ interface WorldCard {
   capabilities: string[];
   accent: string;
   accentBright: string;
+  /** A whole beta world (Solo, Agents) wears the chip on its card. */
+  beta?: boolean;
   mascot: (props: { size: number }) => React.ReactElement;
 }
 
@@ -35,6 +38,7 @@ const WORLDS: WorldCard[] = [
     capabilities: ['planning', 'standups', 'analysis', 'reports'],
     accent: 'rgb(210, 168, 80)',
     accentBright: 'rgb(245, 200, 110)',
+    beta: true,
     mascot: ({ size }) => <DuckMark state="idle" size={size} />,
   },
   {
@@ -53,6 +57,7 @@ const WORLDS: WorldCard[] = [
     capabilities: ['cost', 'recoverable spend', 'daily digests', 'security posture'],
     accent: 'rgb(90, 160, 210)',
     accentBright: 'rgb(130, 200, 255)',
+    beta: true,
     mascot: ({ size }) => <RoboMark size={size} />,
   },
 ];
@@ -128,10 +133,11 @@ export function AudienceChooser({ onChoose }: { onChoose: (audience: Audience) =
             >
               <Mascot size={96} />
               <h2
-                className="mt-6 font-display text-2xl"
+                className="mt-6 font-display text-2xl inline-flex items-center gap-2"
                 style={{ color: active ? world.accentBright : 'var(--foreground)' }}
               >
                 {world.title}
+                {world.beta && <BetaChip dim={!active} />}
               </h2>
               <p className="mt-1.5 text-[13px] font-body text-foreground">{world.verb}</p>
               <p className="mt-4 text-[12px] font-body text-muted-foreground leading-relaxed">

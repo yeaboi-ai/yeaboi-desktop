@@ -11,6 +11,7 @@ import { ArrowRight } from 'lucide-react';
 import { apiGet } from '@/lib/yeaboi/api';
 import { loadAgentLatest, loadAgentModes } from '@/lib/yeaboi/ops';
 import { RoboMark } from '@/components/brand/robo';
+import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { type ModeCard } from '@/components/yeaboi/mode-card-grid';
 import { MODE_ROUTES } from '@/lib/yeaboi/tips';
 
@@ -84,10 +85,11 @@ export function AgentsHome() {
         <div>
           <p
             data-audience-accented
-            className="text-[11px] font-body uppercase tracking-wide"
+            className="text-[11px] font-body uppercase tracking-wide inline-flex items-center gap-2"
             style={{ color: 'var(--audience-accent)' }}
           >
             Agents
+            <BetaChip />
           </p>
           <h2 className="font-display text-xl text-foreground mt-0.5">
             {agents?.verb ?? 'Watch your AI agents work'}
