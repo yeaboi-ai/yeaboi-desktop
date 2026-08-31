@@ -24,12 +24,9 @@ import {
   Info,
   MessageSquare,
   MonitorDown,
-  Power,
-  Radio,
   RefreshCw,
   Send,
   Share2,
-  ToggleLeft,
 } from 'lucide-react';
 import {
   apiGet,
@@ -46,6 +43,7 @@ import {
 } from '@/lib/yeaboi/settings';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
+import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { DuckMark } from '@/components/brand/duck';
@@ -260,6 +258,13 @@ function DisclosureRow({
         <p className="mt-0.5 text-[12px] text-muted-foreground">
           {row.where} · {row.when}
         </p>
+        {/* What happens with nothing configured — the honest baseline behind
+            whatever the switch beside it currently says. */}
+        {row.default && (
+          <p className="mt-0.5 text-[11px] text-muted-foreground/70">
+            Out of the box · {row.default}
+          </p>
+        )}
         <p
           className={cn(
             'mt-1.5 text-[12px] leading-relaxed',
@@ -368,14 +373,29 @@ function PrivacyBody() {
     ) : null;
   };
 
-  const pills = [
-    { icon: Radio, label: `${payload.egress.length} paths` },
-    ...(onByDefault > 0 ? [{ icon: Power, label: `${onByDefault} on out of the box` }] : []),
-    {
-      icon: ToggleLeft,
-      label: settings ? 'every switch lives on this page' : 'every switch named below',
-    },
-  ];
+  // Whether a path fires right now: its live switch if there is one, else the
+  // group it sits in. The strip is the page's one-glance answer to "what is on".
+  const isFiring = (row: EgressRow): boolean => {
+    const entry = switchByKey.get(row.key);
+    const field = entry ? fieldByEnv.get(entry.env) : undefined;
+    if (entry && field) return field.active_choice === entry.on_value;
+    return row.group === 'always' || row.group === 'tunnel';
+  };
+  const state = (row: EgressRow): string => {
+    if (row.group === 'you') return 'only when you act';
+    if (!isFiring(row)) return 'off';
+    return row.group === 'tunnel' ? 'on when you share a board' : 'on';
+  };
+  const cells: PostureCell[] = payload.egress.map((row) => ({
+    key: row.key,
+    tone: row.group === 'you' ? 'idle' : isFiring(row) ? 'warn' : 'good',
+    title: `${row.what} — ${state(row)}`,
+  }));
+  // The user-initiated row is disclosed but cannot fire on its own, so it is not
+  // in the denominator either.
+  const automatic = payload.egress.filter((row) => row.group !== 'you');
+  const firing = automatic.filter(isFiring).length;
+  const postureLabel = `${firing} of ${automatic.length} automatic paths can fire right now`;
 
   return (
     <>
@@ -393,16 +413,17 @@ function PrivacyBody() {
         ))}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {pills.map(({ icon: Icon, label }) => (
-          <span
-            key={label}
-            className="flex items-center gap-1.5 rounded-full bg-secondary/60 px-3 py-1 text-[11.5px] text-muted-foreground ring-1 ring-border/40"
-          >
-            <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />
-            {label}
-          </span>
-        ))}
+      <div className="mt-6 max-w-2xl space-y-2">
+        <PostureStrip
+          cells={cells}
+          label={postureLabel}
+          className="animate-fade-in motion-reduce:animate-none"
+        />
+        <p className="text-[11.5px] text-muted-foreground/80">
+          {postureLabel}
+          {onByDefault > 0 && ` · ${onByDefault} on out of the box`}
+          {settings ? ' · every switch below is live' : ' · every switch is named below'}
+        </p>
       </div>
 
       <div className="mt-5 space-y-4">
@@ -480,13 +501,32 @@ function AboutFooter() {
   }, []);
 
   if (!shell && !backend) return null;
+  // A grid, not a run-on line: this is the page someone lands on to read a
+  // version number back into a bug report.
+  const facts: [string, string][] = [
+    ...(shell
+      ? ([
+          ['Desktop', shell.version],
+          ['Electron', shell.electron],
+          ['Platform', `${shell.platform}/${shell.arch}`],
+        ] as [string, string][])
+      : []),
+    ...(backend
+      ? ([
+          ['Backend', backend.version],
+          ['Python', backend.python],
+        ] as [string, string][])
+      : []),
+  ];
   return (
-    <p className="mt-10 text-[11px] text-muted-foreground/70">
-      {shell &&
-        `yeaboi.ai desktop ${shell.version} · Electron ${shell.electron} · ${shell.platform}/${shell.arch}`}
-      {shell && backend && ' · '}
-      {backend && `backend ${backend.version} · Python ${backend.python}`}
-    </p>
+    <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-1.5 border-t border-border/40 pt-5 text-[11px] sm:grid-cols-3">
+      {facts.map(([label, value]) => (
+        <div key={label} className="min-w-0">
+          <dt className="font-body tracking-wide text-muted-foreground/60 uppercase">{label}</dt>
+          <dd className="truncate font-code text-foreground/80">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
