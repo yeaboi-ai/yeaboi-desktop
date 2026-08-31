@@ -4,30 +4,23 @@
     {
       "version": "4.0.0",
       "date": "2026-08-30",
-      "summary": "The desktop app now has a life of its own: its own version number, its own release notes, a one-click updater — and a proper welcome. A fresh install opens a short setup wizard: the duck walks you through connecting a model, and optionally a voice, a face, and your tools, with progress told as the duck's own life cycle, from egg to quack. When a new version is out, an amber card appears in the sidebar — one click downloads it and restarts the app.",
+      "headline": "The desktop app grows up: setup, updates, notes",
+      "summary": "A fresh install now opens a short setup wizard, and the app updates itself in one click. It also carries its own version and release notes, separate from yeaboi.",
       "highlights": [
         {
-          "text": "First run opens a setup wizard: connect a model, then optionally voice, video and tool credentials — everything after the model is skippable",
+          "text": "First run walks you through connecting a model, then voice, video and tools",
           "areas": ["onboarding"]
         },
         {
-          "text": "Setup progress is the duck's life cycle: egg, cracked egg, hatchling, duckling, and the full duck at quack",
+          "text": "Everything after the model is skippable — get going in under a minute",
           "areas": ["onboarding"]
         },
         {
-          "text": "The app checks for updates on its own and shows an amber card when one is ready to install",
+          "text": "A new version downloads and installs in one click, then restarts for you",
           "areas": ["updater"]
         },
         {
-          "text": "One click updates: download with live progress, then an automatic restart into the new version",
-          "areas": ["updater"]
-        },
-        {
-          "text": "App releases carry their own version and release notes, independent of the yeaboi package",
-          "areas": ["packaging"]
-        },
-        {
-          "text": "What's New separates app changes from yeaboi changes and hides terminal-only notes",
+          "text": "What's New keeps app changes and yeaboi changes apart, terminal notes aside",
           "areas": ["shell"]
         }
       ]

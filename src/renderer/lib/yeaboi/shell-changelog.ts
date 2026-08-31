@@ -21,8 +21,16 @@ export interface Highlight {
 export interface Entry {
   version: string;
   date: string;
+  /** Optional so an older backend, whose entries predate headlines, still parses. */
+  headline?: string;
   summary: string;
   highlights: Highlight[];
+}
+
+/** One area tag's accent, as served by /api/meta/changelog. */
+export interface AreaAccent {
+  name: string;
+  color: string;
 }
 
 /** One What's New row, tagged with which ledger it came from. */
@@ -42,6 +50,52 @@ export function desktopBackendEntries(entries: Entry[]): Entry[] {
     if (highlights.length > 0) kept.push({ ...entry, highlights });
   }
   return kept;
+}
+
+/** The entry's title. Falls back to the summary's first sentence for an entry
+ *  written before headlines existed — the same fallback the backend loader makes,
+ *  repeated here because the shell ledger is read straight off disk. */
+export function entryHeadline(entry: Entry): string {
+  if (entry.headline) return entry.headline;
+  const first = entry.summary.trim().split(/(?<=[.!?])\s/, 1)[0] ?? '';
+  return first.replace(/\.$/, '');
+}
+
+/** The last release each ledger was read at. The app and yeaboi carry separate
+ *  version lines, so one marker cannot speak for both. */
+export interface SeenVersions {
+  app: string;
+  backend: string;
+}
+
+function isNewer(version: string, seen: string): boolean {
+  const parse = (v: string) => v.split('.').map((part) => parseInt(part, 10) || 0);
+  const cur = parse(version);
+  const was = parse(seen);
+  for (let i = 0; i < Math.max(cur.length, was.length); i += 1) {
+    const a = cur[i] ?? 0;
+    const b = was[i] ?? 0;
+    if (a !== b) return a > b;
+  }
+  return false;
+}
+
+/** The releases newer than what the reader last saw, newest-first, each channel
+ *  measured against its own marker. A channel with no marker contributes nothing:
+ *  a first visit has nothing to catch up on. */
+export function entriesSince(entries: MergedEntry[], seen: SeenVersions): MergedEntry[] {
+  return entries.filter((entry) => {
+    const marker = entry.channel === 'app' ? seen.app : seen.backend;
+    return Boolean(marker) && isNewer(entry.version, marker);
+  });
+}
+
+/** The newest version in each ledger — what to record once the reader has looked. */
+export function headVersions(entries: MergedEntry[]): SeenVersions {
+  return {
+    app: entries.find((e) => e.channel === 'app')?.version ?? '',
+    backend: entries.find((e) => e.channel === 'backend')?.version ?? '',
+  };
 }
 
 /** Interleave the two ledgers newest-first by date; the app's entry wins a

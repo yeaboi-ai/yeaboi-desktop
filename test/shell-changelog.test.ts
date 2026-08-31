@@ -6,8 +6,12 @@ import { describe, expect, it } from 'vitest';
 import {
   SHELL_ENTRIES,
   desktopBackendEntries,
+  entriesSince,
+  entryHeadline,
+  headVersions,
   mergeChangelogs,
   type Entry,
+  type MergedEntry,
 } from '../src/renderer/lib/yeaboi/shell-changelog';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -26,9 +30,10 @@ describe('the ledger', () => {
     expect([...dates].sort().reverse()).toEqual(dates);
   });
 
-  it('every entry has a summary and highlights', () => {
+  it('every entry has a headline, a summary and highlights', () => {
     for (const entry of SHELL_ENTRIES) {
       expect(entry.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(entry.headline).toBeTruthy();
       expect(entry.summary).toBeTruthy();
       expect(entry.highlights.length).toBeGreaterThan(0);
       for (const h of entry.highlights) {
@@ -36,6 +41,94 @@ describe('the ledger', () => {
         expect(h.areas.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('reads as product copy, like the backend ledger it sits beside', () => {
+    // The mirror of tests/unit/test_changelog.py::TestCopyContract in yeaboi.ai.
+    for (const entry of SHELL_ENTRIES) {
+      expect(entry.headline!.length).toBeLessThanOrEqual(60);
+      expect(entry.headline!.endsWith('.')).toBe(false);
+      expect(entry.summary.length).toBeLessThanOrEqual(240);
+      expect(entry.highlights.length).toBeLessThanOrEqual(4);
+      for (const h of entry.highlights) expect(h.text.length).toBeLessThanOrEqual(90);
+    }
+  });
+});
+
+describe('entryHeadline', () => {
+  it('uses the headline when there is one', () => {
+    expect(
+      entryHeadline({
+        version: '1.0.0',
+        date: 'd',
+        headline: 'Real',
+        summary: 'x.',
+        highlights: [],
+      }),
+    ).toBe('Real');
+  });
+
+  it('falls back to the summary first sentence for an older backend', () => {
+    expect(
+      entryHeadline({
+        version: '1.0.0',
+        date: 'd',
+        summary: 'Plans build themselves. And more.',
+        highlights: [],
+      }),
+    ).toBe('Plans build themselves');
+  });
+
+  it('is empty when there is nothing to fall back to', () => {
+    expect(entryHeadline({ version: '1.0.0', date: 'd', summary: '', highlights: [] })).toBe('');
+  });
+});
+
+describe('entriesSince', () => {
+  const merged: MergedEntry[] = [
+    { version: '4.1.0', date: '2026-09-01', summary: '', highlights: [], channel: 'app' },
+    { version: '3.33.0', date: '2026-08-31', summary: '', highlights: [], channel: 'backend' },
+    { version: '4.0.0', date: '2026-08-30', summary: '', highlights: [], channel: 'app' },
+    { version: '3.32.0', date: '2026-08-27', summary: '', highlights: [], channel: 'backend' },
+  ];
+
+  it('measures each ledger against its own marker', () => {
+    const since = entriesSince(merged, { app: '4.0.0', backend: '3.32.0' });
+    expect(since.map((e) => `${e.channel}:${e.version}`)).toEqual(['app:4.1.0', 'backend:3.33.0']);
+  });
+
+  it('a channel the reader has never seen contributes nothing', () => {
+    // Otherwise a first visit would announce the entire ledger as new.
+    expect(entriesSince(merged, { app: '', backend: '' })).toEqual([]);
+    expect(entriesSince(merged, { app: '4.0.0', backend: '' }).map((e) => e.version)).toEqual([
+      '4.1.0',
+    ]);
+  });
+
+  it('is empty when both markers are at the head', () => {
+    expect(entriesSince(merged, { app: '4.1.0', backend: '3.33.0' })).toEqual([]);
+  });
+
+  it('compares numerically, not as strings', () => {
+    const entries: MergedEntry[] = [
+      { version: '3.9.0', date: '2026-08-01', summary: '', highlights: [], channel: 'backend' },
+    ];
+    expect(entriesSince(entries, { app: '', backend: '3.10.0' })).toEqual([]);
+  });
+});
+
+describe('headVersions', () => {
+  it('takes the newest of each ledger', () => {
+    const merged: MergedEntry[] = [
+      { version: '4.0.0', date: '2026-08-30', summary: '', highlights: [], channel: 'app' },
+      { version: '3.33.0', date: '2026-08-29', summary: '', highlights: [], channel: 'backend' },
+      { version: '3.32.0', date: '2026-08-27', summary: '', highlights: [], channel: 'backend' },
+    ];
+    expect(headVersions(merged)).toEqual({ app: '4.0.0', backend: '3.33.0' });
+  });
+
+  it('leaves a missing channel empty rather than guessing', () => {
+    expect(headVersions([])).toEqual({ app: '', backend: '' });
   });
 });
 
