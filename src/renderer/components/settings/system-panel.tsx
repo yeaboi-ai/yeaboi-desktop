@@ -11,7 +11,7 @@
 //                     this window has a mic button and never sees a key release.
 //   DUCK_ENABLED      moved to Settings ▸ Duck, beside the rest of the duck.
 // Hiding a field is a desktop-side choice: parity is asserted per *section*,
-// never per field, and all four sections still render.
+// never per field, and all five sections still render.
 
 import type { ReactNode } from 'react';
 import type { SettingField } from '@/lib/yeaboi/settings';
@@ -105,6 +105,7 @@ export function SystemPanel({
   const dictation = pick(DICTATION_ENVS);
   const elevenlabs = pick(ELEVENLABS_ENVS);
   const tavus = pick(TAVUS_ENVS);
+  const privacy = bySection('privacy');
   const advanced = bySection('advanced');
 
   const card = (key: string) => ({
@@ -166,8 +167,19 @@ export function SystemPanel({
         <ConnectionCard card={TAVUS_CARD} fields={tavus} prefillNonSecret {...card('tavus')} />
       )}
 
-      {advanced.length > 0 && (
+      {privacy.length > 0 && (
         <SettingsCard index={2}>
+          <SettingsSectionHeader
+            title="Privacy"
+            subtitle="The switches the Privacy page's disclosure table names"
+            icon={<SectionIcon section="privacy" />}
+          />
+          <div className="py-1.5">{privacy.map(renderRow)}</div>
+        </SettingsCard>
+      )}
+
+      {advanced.length > 0 && (
+        <SettingsCard index={3}>
           <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
           <div className="py-1.5">{advanced.map(renderRow)}</div>
         </SettingsCard>

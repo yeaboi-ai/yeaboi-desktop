@@ -265,6 +265,15 @@ export function OnboardingWizard({ onFinished }: { onFinished: () => Promise<voi
             with, then — if you like — give it a voice and a face for calls, and the keys to your
             tools. Only the model is required.
           </p>
+          {/* The privacy statement, restated from the backend's copy owner
+              (yeaboi.privacy) — hardcoded because the backend may not be up on
+              this step, and pinned by a test so the two can't drift apart. */}
+          <p className="mt-4 max-w-md text-[12px] leading-relaxed text-muted-foreground/80">
+            yeaboi collects nothing about you. Everything stays on this machine under ~/.yeaboi;
+            your prompts go only to the AI provider you pick — Ollama keeps them fully local — and
+            nothing reaches us unless you choose to send feedback. The full disclosure lives on the
+            Privacy page.
+          </p>
           <Button size="lg" className="mt-9 px-7" onClick={() => dispatch({ type: 'NEXT' })}>
             Get started
           </Button>

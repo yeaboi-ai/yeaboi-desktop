@@ -29,6 +29,7 @@ import PerformancePage from '@/pages/yeaboi/performance/performance-page';
 import PokerBoardPage from '@/pages/yeaboi/poker/poker-board-page';
 import PokerPage from '@/pages/yeaboi/poker/poker-page';
 import PokerSetupPage from '@/pages/yeaboi/poker/poker-setup-page';
+import PrivacyPage from '@/pages/yeaboi/privacy-page';
 import ProvenancePage from '@/pages/yeaboi/provenance-page';
 import ReportingPage from '@/pages/yeaboi/reporting/reporting-page';
 import ReportingSetupPage from '@/pages/yeaboi/reporting/reporting-setup-page';
@@ -43,6 +44,7 @@ import SetupPage from '@/pages/yeaboi/settings/setup-page';
 import YeaboiSettingsPage from '@/pages/yeaboi/settings/yeaboi-settings-page';
 import ShipPage from '@/pages/yeaboi/ship/ship-page';
 import ShipRunPage from '@/pages/yeaboi/ship/ship-run-page';
+import SystemCheckPage from '@/pages/yeaboi/system-check-page';
 import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
@@ -101,6 +103,8 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
+  '/privacy': <PrivacyPage />,
+  '/system-check': <SystemCheckPage />,
   '/usage': <UsagePage />,
   '/humans/planning': <PlanningPage />,
   '/humans/planning/chat': <ChatPage />,

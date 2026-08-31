@@ -29,6 +29,8 @@ import {
   ShieldCheck,
   Gauge,
   Megaphone,
+  Stethoscope,
+  Lock,
 } from 'lucide-react';
 import {
   useAuthFetch,
@@ -100,6 +102,8 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/provenance', label: 'Provenance', icon: FileClock },
       { href: '/usage', label: 'Usage', icon: Gauge },
       { href: '/whats-new', label: "What's New", icon: Megaphone },
+      { href: '/system-check', label: 'System Check', icon: Stethoscope },
+      { href: '/privacy', label: 'Privacy', icon: Lock },
       { href: '/feedback', label: 'Feedback', icon: MessageSquareText },
     ],
   },

@@ -10,6 +10,12 @@ window.yeaboi.onNavigate((route) => {
   void router.navigate(target);
 });
 
+// The tray's About: the Privacy page doubles as About (statement + shell and
+// backend versions), so that gesture finally lands somewhere.
+window.yeaboi.onAbout(() => {
+  void router.navigate('/privacy');
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <RouterProvider router={router} />
