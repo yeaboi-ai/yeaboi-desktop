@@ -24,9 +24,9 @@ describe('the tab is catalog-first', () => {
     expect(catalog).not.toContain('ConnectedView');
   });
 
-  it('the settings tab reads Integrations over the unchanged route', () => {
+  it('the settings tab reads Catalog over the unchanged route', () => {
     const tab = routes.settings_tabs.find((t) => t.route === '/settings/connections');
-    expect(tab?.title).toBe('Integrations');
+    expect(tab?.title).toBe('Catalog');
     expect(tab?.sections).toEqual(['connections']);
   });
 

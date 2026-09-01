@@ -6,13 +6,13 @@
 
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Bird, KeyRound, Palette, Share2, SlidersHorizontal, SwatchBook, Plug } from 'lucide-react';
+import { Bird, Blocks, KeyRound, Palette, Share2, SlidersHorizontal, SwatchBook } from 'lucide-react';
 import { ALL_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { cn } from '@/lib/utils';
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/settings/credentials': KeyRound,
-  '/settings/connections': Plug,
+  '/settings/connections': Blocks,
   '/settings/sharing': Share2,
   '/settings/system': SlidersHorizontal,
   '/settings/appearance': Palette,
