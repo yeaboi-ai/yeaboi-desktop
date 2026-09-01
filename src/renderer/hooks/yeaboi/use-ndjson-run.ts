@@ -10,12 +10,16 @@ import { type ModeRunState, cancelModeRun, emptyModeRun, reduceModeRun } from '@
 
 export type RunStatus = 'idle' | 'running' | 'done' | 'error';
 
+/** How a run ended: `done` only when no line reported an error. */
+export type RunOutcome = 'done' | 'error';
+
 export interface NdjsonRun {
   run: ModeRunState;
   status: RunStatus;
   /** Every raw line, for pages whose payloads carry more than the mode shape. */
   lines: unknown[];
-  start: (path: string, body: object) => Promise<void>;
+  /** Resolves to the outcome — status is React state, so it is stale in the caller's closure. */
+  start: (path: string, body: object) => Promise<RunOutcome>;
   cancel: () => Promise<void>;
   reset: () => void;
 }
@@ -30,14 +34,18 @@ export function useNdjsonRun(): NdjsonRun {
   // person is watching, and the minutes it takes must not count toward idle.
   useScreensaverSuppression(status === 'running');
 
-  const start = useCallback(async (path: string, body: object) => {
+  const start = useCallback(async (path: string, body: object): Promise<RunOutcome> => {
     opRef.current = '';
     setRun(emptyModeRun());
     setLines([]);
     setStatus('running');
+    // The reduced state, readable after the stream ends: an `error` line
+    // resolves the stream cleanly, so the thrown path alone misses it.
+    let latest = emptyModeRun();
     try {
       await apiStream(path, body, (line) => {
         setLines((all) => [...all, line]);
+        latest = reduceModeRun(latest, line);
         setRun((state) => {
           const next = reduceModeRun(state, line);
           if (next.opId) opRef.current = next.opId;
@@ -45,11 +53,13 @@ export function useNdjsonRun(): NdjsonRun {
         });
       });
       setStatus('done');
+      return latest.error || latest.cancelled ? 'error' : 'done';
     } catch (error) {
       setRun((state) =>
         state.finished ? state : { ...state, error: (error as Error).message, finished: true },
       );
       setStatus('error');
+      return 'error';
     }
   }, []);
 

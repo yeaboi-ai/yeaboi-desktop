@@ -11,7 +11,6 @@ import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { ReviewBody } from '@/components/yeaboi/review-body';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useNdjsonRun } from '@/hooks/yeaboi/use-ndjson-run';
-import { quip } from '@/lib/yeaboi/ambience';
 import {
   type ReviewAction,
   type ReviewActionStatus,
@@ -22,7 +21,6 @@ import {
   loadReviewHome,
   nextActionStatus,
   reviewHeadline,
-  runWeeklyReview,
 } from '@/lib/yeaboi/modes';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -99,7 +97,6 @@ function ReviewHub() {
   const [home, setHome] = useState<ReviewHome | null | 'unsupported'>(null);
   const [error, setError] = useState('');
   const [marks, setMarks] = useState<Record<string, ReviewActionStatus>>({});
-  const [exportNote, setExportNote] = useState('');
   const stream = useNdjsonRun();
 
   const refresh = useCallback(async () => {
@@ -118,12 +115,12 @@ function ReviewHub() {
 
   async function run() {
     if (home === null || home === 'unsupported' || stream.status === 'running') return;
-    setExportNote('');
-    await stream.start('/api/solo/review/run', {
+    const outcome = await stream.start('/api/solo/review/run', {
       carried_statuses: carriedStatusesPayload(home.carried, marks),
     });
+    // A failed run recorded nothing, so the marks are still the user's to send.
+    if (outcome !== 'done') return;
     setMarks({});
-    quip('review_done');
     await refresh();
   }
 
@@ -174,7 +171,6 @@ function ReviewHub() {
       )}
       {error && <Notice title="Something went wrong" items={[error]} />}
       {stream.run.error && <Notice title="The review stopped" items={[stream.run.error]} />}
-      {exportNote && <Notice title={exportNote} items={[]} />}
 
       {running && (
         <Section title="Working">
@@ -231,7 +227,7 @@ function ReviewHub() {
         </Section>
       )}
 
-      {home.history.length > 1 && (
+      {home.history.length > 0 && (
         <Section title="Past weeks">
           <ul className="space-y-2">
             {home.history.map((row) => (

@@ -16,6 +16,7 @@ import {
   tipBrightness,
   tipProgress,
   tipRoute,
+  tipsForAudience,
   type Tip,
 } from '../src/renderer/lib/yeaboi/tips';
 import { COLLAPSED_WIDTH } from '../src/renderer/lib/yeaboi/niko';
@@ -117,6 +118,22 @@ describe('cleanTipText', () => {
     expect(cleanTipText('\u{1f3b5} press Ctrl+P for focus music')).toBe(
       'press Ctrl+P for focus music',
     );
+  });
+});
+
+describe('tipsForAudience', () => {
+  it('drops the tips that are not true in the world', () => {
+    const tips = [
+      tip({ key: 'retro-board', mode_key: 'retro', worlds: ['team'] }),
+      tip({ key: 'standup', mode_key: 'daily-standup', worlds: ['solo', 'team', 'agents'] }),
+    ];
+    expect(tipsForAudience(tips, 'solo').map((t) => t.key)).toEqual(['standup']);
+    expect(tipsForAudience(tips, 'team').map((t) => t.key)).toEqual(['retro-board', 'standup']);
+  });
+
+  it('passes a tip from a sidecar that predates the axis', () => {
+    const untagged = tip({ key: 'retro-board', mode_key: 'retro' });
+    expect(tipsForAudience([untagged], 'solo')).toEqual([untagged]);
   });
 });
 

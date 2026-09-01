@@ -457,11 +457,6 @@ export const loadReviewHome = (): Promise<ReviewHome | null> => apiGetOptional('
 export const loadReview = (runId: number): Promise<ReviewRun> =>
   apiGet(`/api/solo/review/runs/${runId}`);
 
-export const runWeeklyReview = (
-  body: ReviewRunBody,
-  onLine: (line: unknown) => void,
-): Promise<void> => apiStream('/api/solo/review/run', body, onLine);
-
 export const deleteReview = (runId: number): Promise<{ deleted: boolean; run_id: number }> =>
   apiPost(`/api/solo/review/runs/${runId}/delete`);
 

@@ -38,8 +38,8 @@ function Tile({ tile, onOpen }: { tile: TodayTile; onOpen: (route: string) => vo
 export function TodayStrip() {
   const router = useRouter();
   const { today, loading, unsupported } = useSoloToday();
-  // An older sidecar has no snapshot to show; the home reads the same as
-  // before this strip existed.
+  // An older sidecar has no snapshot to show, and a failed read has nothing
+  // honest to say; either way the home reads as it did before this strip.
   if (unsupported || loading) return null;
   const tiles = todayTiles(today);
   return (

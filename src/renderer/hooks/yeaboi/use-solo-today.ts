@@ -2,9 +2,10 @@
 // window comes back — a standup run in the terminal, or an agent session that
 // ended while the app was in the background, should show without a reload.
 //
-// A failure is an empty strip, never an error: the strip is a companion to the
-// home, and the home must not break because one of four readers did. A 404 is
-// different — the sidecar predates the route — and hides the strip entirely.
+// A failed read hides the strip, never breaks the home: the strip is a
+// companion, and an empty tile would assert "no standup yet" about a week the
+// app could not read. A 404 hides it the same way — the sidecar predates the
+// route.
 
 import { useCallback, useEffect, useState } from 'react';
 import { loadSoloToday, type SoloToday } from '@/lib/yeaboi/solo';
@@ -13,7 +14,7 @@ export interface SoloTodayState {
   today: SoloToday | null;
   /** False once the first read has settled either way. */
   loading: boolean;
-  /** True when the sidecar has no such route — render nothing. */
+  /** True when the sidecar has no such route, or the read failed — render nothing. */
   unsupported: boolean;
   refresh: () => void;
 }
@@ -31,6 +32,7 @@ export function useSoloToday(): SoloTodayState {
         setLoading(false);
       },
       () => {
+        setUnsupported(true);
         setToday(null);
         setLoading(false);
       },

@@ -16,7 +16,7 @@ import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
 import { TodayStrip } from '@/components/yeaboi/today-strip';
 import { ModeCardGrid, type ModeCard } from '@/components/yeaboi/mode-card-grid';
-import { MODE_ROUTES, type Tip } from '@/lib/yeaboi/tips';
+import { MODE_ROUTES, type Tip, tipsForAudience } from '@/lib/yeaboi/tips';
 
 interface CategoryCard {
   key: string;
@@ -201,7 +201,11 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
         <ModeCardGrid cards={runModes} onOpen={open} />
       </div>
 
-      <TipCompanion tips={tips} cards={runModes} onNavigate={(route) => router.push(route)} />
+      <TipCompanion
+        tips={tipsForAudience(tips, audience)}
+        cards={runModes}
+        onNavigate={(route) => router.push(route)}
+      />
     </>
   );
 }
