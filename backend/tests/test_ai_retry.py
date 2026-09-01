@@ -168,3 +168,34 @@ async def test_non_provider_exception_bubbles():
 
     with pytest.raises(TypeError, match="totally unrelated bug"):
         await with_retry(fn, provider="anthropic", scope="platform", delays=(0.0, 0.0, 0.0))
+
+
+@pytest.mark.asyncio
+async def test_open_circuit_keeps_the_recorded_diagnosis():
+    """Past the second failure the call short-circuits, and the error it raises
+    is what gets recorded next. Raising a generic transient here overwrote
+    PROVIDER_INVALID_KEY, so a placeholder key read as "Anthropic is having
+    trouble" in the banner and stayed green in Settings."""
+    from src.app.services import provider_health
+
+    provider_health.reset_for_tests()
+    try:
+        for _ in range(2):
+            await provider_health.mark_unhealthy(
+                "platform",
+                "anthropic",
+                InvalidKeyError(provider="anthropic", scope="platform", message="API key is invalid."),
+            )
+
+        calls = {"n": 0}
+
+        async def fn():
+            calls["n"] += 1
+            return "never reached"
+
+        with pytest.raises(InvalidKeyError) as excinfo:
+            await with_retry(fn, provider="anthropic", scope="platform", delays=(0.0, 0.0, 0.0))
+        assert calls["n"] == 0  # still fails fast
+        assert "circuit" not in str(excinfo.value)  # no internals in the message
+    finally:
+        provider_health.reset_for_tests()

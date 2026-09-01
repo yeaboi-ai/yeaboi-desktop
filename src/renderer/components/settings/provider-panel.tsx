@@ -7,6 +7,8 @@
 
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useProviderHealthContext } from '@/components/providers/provider-health-provider';
+import { providerFailureLabel } from '@shared/provider-copy';
 import type { ProviderCard, ProviderCatalog, SettingField } from '@/lib/yeaboi/settings';
 import { CUSTOM_MODEL, ModelChoice } from '@/components/yeaboi/model-choice';
 import { GuideLink } from '@/components/onboarding/guide-link';
@@ -85,6 +87,7 @@ export function ProviderPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState('');
+  const { summary } = useProviderHealthContext();
 
   const byEnv = (env: string) => fields.find((f) => f.env === env);
   const providerField = byEnv('LLM_PROVIDER');
@@ -116,7 +119,13 @@ export function ProviderPanel({
     if (first) return { text: first.value || first.default || 'not set', live: first.is_set };
     return { text: 'no credential needed', live: true };
   };
-  const state = credentialState();
+  // A configured credential that the provider then rejected must not keep
+  // reading as green: health is what a real call proved, and it wins.
+  const snapshot = summary?.providers?.[card?.provider_val ?? ''];
+  const unhealthy = !!snapshot?.status && snapshot.status !== 'ok';
+  const state = unhealthy
+    ? { text: providerFailureLabel(snapshot?.error_code), live: false }
+    : credentialState();
 
   return (
     <SettingsCard index={0}>
@@ -134,7 +143,15 @@ export function ProviderPanel({
           <span className="block truncate text-[12px]">
             <span className="text-muted-foreground">{model || `${recommended} (default)`}</span>
             <span className="text-muted-foreground/50">{DOT}</span>
-            <span className={state.live ? 'text-success' : 'text-muted-foreground/70'}>
+            <span
+              className={
+                unhealthy
+                  ? 'text-destructive'
+                  : state.live
+                    ? 'text-success'
+                    : 'text-muted-foreground/70'
+              }
+            >
               {state.text}
             </span>
           </span>
