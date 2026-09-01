@@ -192,6 +192,11 @@
       "title": "Settings · Credentials"
     },
     {
+      "path": "/settings/connections",
+      "capability": "connections",
+      "title": "Settings · Catalog"
+    },
+    {
       "path": "/settings/sharing",
       "capability": "settings",
       "title": "Settings · Sharing"
@@ -326,7 +331,12 @@
     {
       "route": "/settings/credentials",
       "title": "Credentials",
-      "sections": ["provider", "jira", "azure", "github", "notion", "slack"]
+      "sections": ["provider", "jira", "azure", "github", "notion", "slack", "integrations"]
+    },
+    {
+      "route": "/settings/connections",
+      "title": "Catalog",
+      "sections": ["connections"]
     },
     {
       "route": "/settings/sharing",

@@ -37,9 +37,11 @@ import {
   GROUPS,
   groupConnections,
 } from '@/components/yeaboi/connection-card';
+import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
+import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
 import { SystemPanel } from '@/components/settings/system-panel';
@@ -418,6 +420,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
             </div>
           ))}
         </div>
+        <ConnectedIntegrations />
         {footer}
       </div>
     );
@@ -702,9 +705,13 @@ export default function YeaboiSettingsPage() {
               </Link>
             </div>
           )}
-          {/* The tab table is a non-empty literal; index 0 only looks optional
-              to noUncheckedIndexedAccess. */}
-          <EngineSettings tab={engineTab ?? SETTINGS_TABS[0]!} />
+          {engineTab?.title === 'Catalog' ? (
+            <IntegrationsCatalog />
+          ) : (
+            /* The tab table is a non-empty literal; index 0 only looks optional
+               to noUncheckedIndexedAccess. */
+            <EngineSettings tab={engineTab ?? SETTINGS_TABS[0]!} />
+          )}
         </BackendGate>
       )}
     </SettingsPageShell>

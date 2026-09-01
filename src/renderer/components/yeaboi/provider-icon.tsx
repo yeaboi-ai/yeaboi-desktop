@@ -4,24 +4,46 @@
 // rendered monochrome so the cards stay inside the design system. Path data
 // comes from simple-icons where it carries the mark; OpenAI's knot, Slack's
 // pinwheel, the Azure DevOps mark and Grok's swirl are embedded (simple-icons
-// carries none of them); AWS Bedrock — no usable mark ships in any icon set we
-// bundle — gets a cloud glyph. Unknown names fall back to a two-letter
-// monogram. All marks identify their owners' services.
+// carries none of them), as are the AWS and Azure marks it used to publish and
+// later dropped. incident.io — which has never shipped in any icon set we
+// bundle — writes itself in letters instead, because a mark reconstructed from
+// memory would be a wrong logo rather than an absent one. AWS Bedrock gets a
+// family glyph. Unknown names fall back to a two-letter monogram. Every
+// vendored mark is CC0 path data and is credited in THIRD_PARTY_NOTICES.md.
+// All marks identify their owners' services.
+//
+// A connector may also pass its accent, which tints the tile rather than the
+// glyph: the mark stays monochrome and inside the design system, and a vendor
+// we ship no logo for still reads as itself in a list of several.
 
-import { Cloud, Sunrise, Video } from 'lucide-react';
+import { Activity, Bug, Cloud, Siren, Sunrise, Video } from 'lucide-react';
 import {
+  siAtlassian,
+  siBitbucket,
+  siCircleci,
   siClaude,
   siCloudflare,
+  siConfluence,
+  siDatadog,
   siDeepseek,
   siElevenlabs,
   siGithub,
+  siGitlab,
+  siGooglecloud,
   siGooglegemini,
+  siGrafana,
+  siJenkins,
   siJira,
   siKimi,
+  siLinear,
   siMistralai,
   siNotion,
   siOllama,
+  siPagerduty,
   siQwen,
+  siSentry,
+  siStatuspage,
+  siTrello,
   siZdotai,
 } from 'simple-icons';
 
@@ -42,6 +64,21 @@ const AZURE_DEVOPS_PATH =
 const GROK_PATH =
   'M9.27 15.29l7.978-5.897c.391-.29.95-.177 1.137.272.98 2.369.542 5.215-1.41 7.169-1.951 1.954-4.667 2.382-7.149 1.406l-2.711 1.257c3.889 2.661 8.611 2.003 11.562-.953 2.341-2.344 3.066-5.539 2.388-8.42l.006.007c-.983-4.232.242-5.924 2.75-9.383.06-.082.12-.164.179-.248l-3.301 3.305v-.01L9.267 15.292M7.623 16.723c-2.792-2.67-2.31-6.801.071-9.184 1.761-1.763 4.647-2.483 7.166-1.425l2.705-1.25a7.808 7.808 0 00-1.829-1A8.975 8.975 0 005.984 5.83c-2.533 2.536-3.33 6.436-1.962 9.764 1.022 2.487-.653 4.246-2.34 6.022-.599.63-1.199 1.259-1.682 1.925l7.62-6.815';
 
+// The incident.io mark, from SVG Logos (gilbarbara/logos, CC0). simple-icons
+// has never published one, at any version.
+const INCIDENTIO_PATH =
+  'M96.73 344.737V298.16h60.969v46.99C214.062 331.68 256 280.686 256 219.843c0-49.516-35.14-119.19-75.886-140.748c5.48 19.333-2.749 44.528-13.71 42.32c-4.13-.826-4.56-7.355-5.226-17.903C159.78 81.43 157.27 41.716 117.015 0c-3.209 29.135-49.405 88.484-79.46 127.118a3238 3238 0 0 0-11.28 14.536A129.25 129.25 0 0 0 0 219.844c-.12 58.859 39.713 110.296 96.73 124.91zm65.147-98.952a34.09 34.09 0 0 1-33.996 34.202a34.09 34.09 0 0 1-33.996-34.202c0-7.8 2.685-15.14 6.99-20.763l2.987-3.86c7.99-10.262 20.254-26.021 21.112-33.757c25.306 17.093 36.903 45.226 36.903 58.38';
+
+// The AWS wordmark, as previously published by simple-icons (CC0 path data,
+// v14.15.0 — the last release to carry it).
+const AWS_PATH =
+  'M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.351 3.384 1.963 7.559 3.153 11.877 3.153 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.607zM22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z';
+
+// The Microsoft Azure mark, as previously published by simple-icons (CC0 path
+// data, v12.4.0 — the last release to carry it).
+const AZURE_PATH =
+  'M22.379 23.343a1.62 1.62 0 0 0 1.536-2.14v.002L17.35 1.76A1.62 1.62 0 0 0 15.816.657H8.184A1.62 1.62 0 0 0 6.65 1.76L.086 21.204a1.62 1.62 0 0 0 1.536 2.139h4.741a1.62 1.62 0 0 0 1.535-1.103l.977-2.892 4.947 3.675c.28.208.618.32.966.32m-3.084-12.531 3.624 10.739a.54.54 0 0 1-.51.713v-.001h-.03a.54.54 0 0 1-.322-.106l-9.287-6.9h4.853m6.313 7.006c.116-.326.13-.694.007-1.058L9.79 1.76a1.722 1.722 0 0 0-.007-.02h6.034a.54.54 0 0 1 .512.366l6.562 19.445a.54.54 0 0 1-.338.684';
+
 export const ICON_PATHS: Record<string, string> = {
   anthropic: siClaude.path,
   openai: OPENAI_PATH,
@@ -61,6 +98,34 @@ export const ICON_PATHS: Record<string, string> = {
   slack: SLACK_PATH,
   cloudflare: siCloudflare.path,
   elevenlabs: siElevenlabs.path,
+  confluence: siConfluence.path,
+  // The connector layer (contracts/v1/connectors.json keys).
+  datadog: siDatadog.path,
+  grafana: siGrafana.path,
+  pagerduty: siPagerduty.path,
+  sentry: siSentry.path,
+  gcp: siGooglecloud.path,
+  gitlab: siGitlab.path,
+  bitbucket: siBitbucket.path,
+  linear: siLinear.path,
+  trello: siTrello.path,
+  aws: AWS_PATH,
+  azure_cloud: AZURE_PATH,
+  incidentio: INCIDENTIO_PATH,
+  circleci: siCircleci.path,
+  jenkins: siJenkins.path,
+  statuspage: siStatuspage.path,
+  // JSM Ops is Atlassian-branded (Opsgenie is a retired brand, so its old
+  // mark would be the wrong logo, not a nostalgic one).
+  jsm_ops: siAtlassian.path,
+  // launchdarkly ships in no icon set we bundle — it renders its wire glyph.
+};
+
+/** Marks whose source does not normalise to a 24-square. Anything absent here
+ *  is drawn in simple-icons' own 0 0 24 24 box; the browser fits and centres
+ *  whatever box is named. */
+const ICON_VIEWBOXES: Record<string, string> = {
+  incidentio: '0 0 256 346',
 };
 
 export const FALLBACK_GLYPHS: Record<
@@ -72,28 +137,78 @@ export const FALLBACK_GLYPHS: Record<
   standup: Sunrise,
 };
 
-export function ProviderIcon({ provider, size = 40 }: { provider: string; size?: number }) {
+/** The neutral mark a connector family wears when we ship no logo for the
+ *  vendor itself — so a connector always renders as something, never as a
+ *  blank, and never has to wait on a licensed asset to look finished. */
+const FAMILY_GLYPHS: Record<
+  string,
+  React.ComponentType<{ size?: number; strokeWidth?: number }>
+> = {
+  observability: Activity,
+  incidents: Siren,
+  errors: Bug,
+  cloud: Cloud,
+};
+
+/** `rgb(r,g,b)` from the connector catalog → the same colour at `alpha`. */
+function tint(accent: string, alpha: number): string | undefined {
+  const m = /^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/.exec(accent.trim());
+  return m ? `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})` : undefined;
+}
+
+export function ProviderIcon({
+  provider,
+  size = 40,
+  family = '',
+  accent = '',
+  glyph: emoji = '',
+}: {
+  provider: string;
+  size?: number;
+  /** Connector family, used to pick a fallback mark before the monogram. */
+  family?: string;
+  /** Connector accent, `rgb(r,g,b)`. Tints the tile, never the mark. */
+  accent?: string;
+  /** The wire's per-vendor emoji (contracts/v1/connectors.json since schema
+   *  3). A deliberate identity, so it beats the generic family mark — used
+   *  only when no logomark or per-key glyph ships here. */
+  glyph?: string;
+}) {
   const path = ICON_PATHS[provider];
   const Glyph = FALLBACK_GLYPHS[provider];
+  const FamilyGlyph = FAMILY_GLYPHS[family];
+  const lettering = provider.slice(0, 2).toUpperCase();
   const glyph = Math.round(size * 0.52);
+  const wash = tint(accent, 0.14);
+  const edge = tint(accent, 0.35);
   return (
     <span
       aria-hidden
       className="flex shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40 text-foreground/85"
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        ...(wash ? { background: wash } : {}),
+        ...(edge ? { boxShadow: `inset 0 0 0 1px ${edge}` } : {}),
+      }}
     >
       {path ? (
-        <svg width={glyph} height={glyph} viewBox="0 0 24 24">
+        <svg width={glyph} height={glyph} viewBox={ICON_VIEWBOXES[provider] ?? '0 0 24 24'}>
           <path d={path} fill="currentColor" />
         </svg>
       ) : Glyph ? (
         <Glyph size={glyph} strokeWidth={1.8} />
+      ) : emoji.trim() ? (
+        <span style={{ fontSize: Math.round(size * 0.5) }}>{emoji}</span>
+      ) : FamilyGlyph ? (
+        <FamilyGlyph size={glyph} strokeWidth={1.8} />
       ) : (
         <span
           className="font-mono font-semibold tracking-tight"
-          style={{ fontSize: Math.max(9, Math.round(size * 0.26)) }}
+          // Three letters need to fit the same tile two do.
+          style={{ fontSize: Math.max(9, Math.round((size * 0.72) / lettering.length)) }}
         >
-          {provider.slice(0, 2).toUpperCase()}
+          {lettering}
         </span>
       )}
     </span>
