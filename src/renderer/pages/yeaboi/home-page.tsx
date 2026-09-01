@@ -83,7 +83,7 @@ function HomeBody() {
     );
   if (!caps) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
-  const humans = caps.categories.find((c) => c.key === 'humans');
+  const team = caps.categories.find((c) => c.key === 'team');
   const agents = caps.categories.find((c) => c.key === 'agents');
   const open = (key: string) => {
     const route = MODE_ROUTES[key];
@@ -124,9 +124,9 @@ function HomeBody() {
 
       <p
         className="text-[11px] font-body uppercase tracking-wide mb-3"
-        style={{ color: humans?.color }}
+        style={{ color: team?.color }}
       >
-        Humans — {humans?.verb}
+        Team — {team?.verb}
       </p>
       <CardGrid cards={caps.modes} onOpen={open} />
       <p

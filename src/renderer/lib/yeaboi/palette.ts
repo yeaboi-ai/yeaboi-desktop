@@ -18,7 +18,7 @@ export interface PaletteEntry {
 }
 
 const GROUP_OF: [RegExp, string][] = [
-  [/^\/humans\//, 'Humans'],
+  [/^\/team\//, 'Team'],
   [/^\/agents\//, 'Agents'],
   [/^\/ceremonies/, 'Ops'],
   [/^\/provenance/, 'Ops'],

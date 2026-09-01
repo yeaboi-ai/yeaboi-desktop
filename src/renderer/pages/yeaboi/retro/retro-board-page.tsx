@@ -206,7 +206,7 @@ function RetroBoardBody({ boardId }: { boardId: string }) {
           The board is closed and the retro is saved.
         </p>
         <div className="mt-3">
-          <Link href="/humans/retro" className={buttonVariants({ size: 'sm' })}>
+          <Link href="/team/retro" className={buttonVariants({ size: 'sm' })}>
             Back to the retros
           </Link>
         </div>

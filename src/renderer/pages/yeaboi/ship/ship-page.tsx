@@ -156,7 +156,7 @@ function ShipBody() {
         check_command: check,
       });
       const suffix = cardId ? `&card=${encodeURIComponent(cardId)}` : '';
-      router.push(`/humans/ship/run?key=${encodeURIComponent(snapshot.key)}${suffix}`);
+      router.push(`/team/ship/run?key=${encodeURIComponent(snapshot.key)}${suffix}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -192,7 +192,7 @@ function ShipBody() {
               <li key={row.key}>
                 <button
                   type="button"
-                  onClick={() => router.push(`/humans/ship/run?key=${encodeURIComponent(row.key)}`)}
+                  onClick={() => router.push(`/team/ship/run?key=${encodeURIComponent(row.key)}`)}
                   className="text-[13px] text-primary hover:underline"
                 >
                   {row.story_title || row.story_id}

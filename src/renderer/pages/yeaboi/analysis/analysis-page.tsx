@@ -57,7 +57,7 @@ function AnalysisBody() {
             How this team actually delivers — read off the tracker, the code and the docs.
           </p>
         </div>
-        <Button size="sm" onClick={() => router.push('/humans/analysis/new')}>
+        <Button size="sm" onClick={() => router.push('/team/analysis/new')}>
           New analysis
         </Button>
       </header>
@@ -67,7 +67,7 @@ function AnalysisBody() {
           {profiles.map((profile) => (
             <Link
               key={profile.team_id}
-              href={`/humans/analysis/results?id=${encodeURIComponent(profile.team_id)}`}
+              href={`/team/analysis/results?id=${encodeURIComponent(profile.team_id)}`}
               className="block rounded-2xl bg-card ring-1 ring-border/60 p-5 transition-colors hover:ring-primary/40"
             >
               <h2 className="text-[13px] font-body font-medium text-foreground mb-3">
@@ -94,7 +94,7 @@ function AnalysisBody() {
             spills.
           </p>
           <div className="mt-3">
-            <Button size="sm" onClick={() => router.push('/humans/analysis/new')}>
+            <Button size="sm" onClick={() => router.push('/team/analysis/new')}>
               Run the first analysis
             </Button>
           </div>

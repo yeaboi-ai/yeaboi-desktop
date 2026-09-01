@@ -27,14 +27,14 @@ export const FADE_FRACTION = 0.16;
  * tip's open affordance resolve through this one table.
  */
 export const MODE_ROUTES: Record<string, string> = {
-  'team-analysis': '/humans/analysis',
-  'project-planning': '/humans/planning',
-  'daily-standup': '/humans/standup',
-  retro: '/humans/retro',
-  poker: '/humans/poker',
-  performance: '/humans/performance',
-  reporting: '/humans/reporting',
-  ship: '/humans/ship',
+  'team-analysis': '/team/analysis',
+  'project-planning': '/team/planning',
+  'daily-standup': '/team/standup',
+  retro: '/team/retro',
+  poker: '/team/poker',
+  performance: '/team/performance',
+  reporting: '/team/reporting',
+  ship: '/team/ship',
   usage: '/usage',
   settings: '/settings/credentials',
   'agent-usage': '/agents/usage',

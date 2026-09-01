@@ -177,9 +177,9 @@ describe('tipRoute', () => {
   it('resolves the mode keys the capabilities endpoint actually serves', () => {
     // These are _MODE_CARDS keys, not the short names — the home grid used to
     // key its table on the short ones and silently opened nothing.
-    expect(tipRoute({ mode_key: 'team-analysis' })).toBe('/humans/analysis');
-    expect(tipRoute({ mode_key: 'project-planning' })).toBe('/humans/planning');
-    expect(tipRoute({ mode_key: 'daily-standup' })).toBe('/humans/standup');
+    expect(tipRoute({ mode_key: 'team-analysis' })).toBe('/team/analysis');
+    expect(tipRoute({ mode_key: 'project-planning' })).toBe('/team/planning');
+    expect(tipRoute({ mode_key: 'daily-standup' })).toBe('/team/standup');
   });
 
   it('is null for a tip that names no mode', () => {

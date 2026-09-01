@@ -147,7 +147,7 @@ function ChatBody({ projectId }: { projectId: string }) {
       case 'shortcuts':
         return openShortcuts();
       case 'export':
-        router.push(`/humans/planning/plan?id=${encodeURIComponent(projectId)}`);
+        router.push(`/team/planning/plan?id=${encodeURIComponent(projectId)}`);
         return;
       case 'questions':
         setQuestions(true);
@@ -401,7 +401,7 @@ function Row({ bubble, projectId }: { bubble: Bubble; projectId: string }) {
           {ARTIFACT_TITLES[bubble.kind ?? ''] ?? bubble.kind}
         </strong>
         <Link
-          href={`/humans/planning/plan?id=${encodeURIComponent(projectId)}`}
+          href={`/team/planning/plan?id=${encodeURIComponent(projectId)}`}
           className="text-[11px] text-primary hover:underline"
         >
           Open the plan to read this in full →

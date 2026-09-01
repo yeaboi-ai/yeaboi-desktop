@@ -122,7 +122,7 @@ function AnalysisResultsBody() {
           </p>
         </div>
         <Link
-          href="/humans/analysis"
+          href="/team/analysis"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           All analyses

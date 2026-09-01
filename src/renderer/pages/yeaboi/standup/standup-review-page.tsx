@@ -269,7 +269,7 @@ function StandupReviewBody() {
 
       <p>
         <Link
-          href="/humans/standup"
+          href="/team/standup"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back to the standup

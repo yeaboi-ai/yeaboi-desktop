@@ -131,7 +131,7 @@ function ReportingSetupBody() {
       });
       if (state.done) {
         quip('report_done');
-        router.push('/humans/reporting');
+        router.push('/team/reporting');
       }
     } catch (e) {
       setError((e as Error).message);
@@ -149,7 +149,7 @@ function ReportingSetupBody() {
           <p className="text-[13px] text-muted-foreground mt-1">{options.sources.summary}</p>
         </div>
         <Link
-          href="/humans/reporting"
+          href="/team/reporting"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back

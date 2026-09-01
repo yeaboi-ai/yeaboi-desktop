@@ -3,7 +3,7 @@
 // The chips that float above the bar before anything is typed.
 //
 // They come from the backend per screen (`GET /api/niko/suggestions?route=`),
-// so what is offered on /agents/usage differs from /humans/retro. The glyph is
+// so what is offered on /agents/usage differs from /team/retro. The glyph is
 // the one deviation from the platform this was ported from: the payload already
 // carries an `icon`, and yeaboi.ai's test_niko_suggestions.py pins that
 // vocabulary against ICON_MAP below — dropping it would leave a tested contract

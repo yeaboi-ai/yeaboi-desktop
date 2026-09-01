@@ -183,7 +183,7 @@ function AnalysisSetupBody() {
           )}
           {run.finished && !run.error && (
             <Link
-              href="/humans/analysis"
+              href="/team/analysis"
               className="text-[13px] font-medium text-primary hover:underline"
             >
               See the results
@@ -191,7 +191,7 @@ function AnalysisSetupBody() {
           )}
           {run.finished && (
             <Link
-              href="/humans/analysis"
+              href="/team/analysis"
               className="text-[12px] text-muted-foreground hover:text-foreground"
             >
               Back to saved analyses
@@ -415,7 +415,7 @@ function AnalysisSetupBody() {
           </Button>
         )}
         <Link
-          href="/humans/analysis"
+          href="/team/analysis"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Cancel

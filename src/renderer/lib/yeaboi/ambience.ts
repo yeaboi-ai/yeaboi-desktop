@@ -110,8 +110,8 @@ export const polishFeedback = (draft: FeedbackDraft): Promise<PolishResult> =>
 /** Which gate guards which part of the app. Sub-routes are covered: opening a
  *  ship run is entering ship, and the gate is about the mode, not the page. */
 const BETA_ROOTS: ReadonlyArray<readonly [string, string]> = [
-  ['/humans/performance', 'performance'],
-  ['/humans/ship', 'ship'],
+  ['/team/performance', 'performance'],
+  ['/team/ship', 'ship'],
   ['/agents/usage', 'agent-usage'],
   ['/agents/advisor', 'agent-advisor'],
   ['/agents/standup', 'agent-standup'],

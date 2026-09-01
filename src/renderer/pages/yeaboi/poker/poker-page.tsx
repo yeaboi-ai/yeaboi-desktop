@@ -70,13 +70,13 @@ function PokerBody() {
         </div>
         {live ? (
           <Link
-            href={`/humans/poker/board?id=${encodeURIComponent(live.board_id)}`}
+            href={`/team/poker/board?id=${encodeURIComponent(live.board_id)}`}
             className={buttonVariants({ size: 'sm' })}
           >
             Rejoin the live table
           </Link>
         ) : (
-          <Link href="/humans/poker/new" className={buttonVariants({ size: 'sm' })}>
+          <Link href="/team/poker/new" className={buttonVariants({ size: 'sm' })}>
             New session
           </Link>
         )}

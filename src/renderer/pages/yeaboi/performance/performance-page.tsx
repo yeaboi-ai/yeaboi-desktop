@@ -56,7 +56,7 @@ function PerformanceBody() {
           {roster.engineers.map((engineer) => (
             <Link
               key={engineer.name}
-              href={`/humans/performance/engineer?name=${encodeURIComponent(engineer.name)}`}
+              href={`/team/performance/engineer?name=${encodeURIComponent(engineer.name)}`}
               className="block rounded-2xl bg-card ring-1 ring-border/60 p-5 transition-colors hover:ring-primary/40"
             >
               <p className="text-[13px] font-body font-medium text-foreground">{engineer.name}</p>

@@ -135,7 +135,7 @@ function PokerSetupBody() {
     setBusy(true);
     try {
       const board = await startPokerBoard({ source, scope_label: scopeLabel, tickets });
-      router.push(`/humans/poker/board?id=${encodeURIComponent(board.board_id)}`);
+      router.push(`/team/poker/board?id=${encodeURIComponent(board.board_id)}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);

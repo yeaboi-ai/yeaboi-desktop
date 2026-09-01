@@ -73,17 +73,17 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'Humans',
+    label: 'Team',
     items: [
-      { href: '/humans/planning', label: 'Planning', icon: MessageSquareText },
-      { href: '/humans/planning/roadmap', label: 'Roadmap', icon: Map },
-      { href: '/humans/analysis', label: 'Analysis', icon: BarChart3 },
-      { href: '/humans/standup', label: 'Standup', icon: Sunrise },
-      { href: '/humans/retro', label: 'Retro', icon: RotateCcw },
-      { href: '/humans/poker', label: 'Poker', icon: Spade },
-      { href: '/humans/performance', label: 'Performance', icon: TrendingUp },
-      { href: '/humans/reporting', label: 'Reporting', icon: Presentation },
-      { href: '/humans/ship', label: 'Ship', icon: Rocket },
+      { href: '/team/planning', label: 'Planning', icon: MessageSquareText },
+      { href: '/team/planning/roadmap', label: 'Roadmap', icon: Map },
+      { href: '/team/analysis', label: 'Analysis', icon: BarChart3 },
+      { href: '/team/standup', label: 'Standup', icon: Sunrise },
+      { href: '/team/retro', label: 'Retro', icon: RotateCcw },
+      { href: '/team/poker', label: 'Poker', icon: Spade },
+      { href: '/team/performance', label: 'Performance', icon: TrendingUp },
+      { href: '/team/reporting', label: 'Reporting', icon: Presentation },
+      { href: '/team/ship', label: 'Ship', icon: Rocket },
     ],
   },
   {
@@ -249,7 +249,7 @@ export function Sidebar() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentOrgId, ready, fetchTeams]);
 
-  // Longest-prefix wins, so /humans/planning/roadmap lights Roadmap and not
+  // Longest-prefix wins, so /team/planning/roadmap lights Roadmap and not
   // Planning too.
   const activeHref = NAV_ITEMS.map((item) => item.href)
     .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))

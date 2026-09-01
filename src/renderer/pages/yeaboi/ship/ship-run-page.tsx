@@ -130,7 +130,7 @@ function RunBody({ runKey, cardId }: { runKey: string; cardId: string }) {
             </Button>
           )}
           <Link
-            href="/humans/ship"
+            href="/team/ship"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Back

@@ -116,7 +116,7 @@ function RoadmapBody() {
       // from, and whether it is large enough for the full intake.
       const picked = await planProject(roadmapId, index);
       const view = await createChat(picked.description, picked.intake_mode);
-      router.push(`/humans/planning/chat?id=${encodeURIComponent(view.project_id)}`);
+      router.push(`/team/planning/chat?id=${encodeURIComponent(view.project_id)}`);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -132,7 +132,7 @@ function RoadmapBody() {
           </p>
         </div>
         <Link
-          href="/humans/planning"
+          href="/team/planning"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back

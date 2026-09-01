@@ -67,11 +67,11 @@ function ReportingBody() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/humans/reporting/new" className={buttonVariants({ size: 'sm' })}>
+          <Link href="/team/reporting/new" className={buttonVariants({ size: 'sm' })}>
             New report
           </Link>
           <Link
-            href="/humans/reporting/style"
+            href="/team/reporting/style"
             className={buttonVariants({ size: 'sm', variant: 'secondary' })}
           >
             Deck style
