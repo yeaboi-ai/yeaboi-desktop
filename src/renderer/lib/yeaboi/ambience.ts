@@ -112,6 +112,7 @@ export const polishFeedback = (draft: FeedbackDraft): Promise<PolishResult> =>
 const BETA_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ['/team/performance', 'performance'],
   ['/team/ship', 'ship'],
+  ['/solo/review', 'weekly-review'],
   ['/agents/usage', 'agent-usage'],
   ['/agents/advisor', 'agent-advisor'],
   ['/agents/standup', 'agent-standup'],

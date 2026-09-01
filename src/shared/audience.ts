@@ -67,6 +67,10 @@ export const WORLD_COPY: Record<Audience, WorldCopy> = {
 // in the room — retro, poker, performance — belong to Team alone.
 const TEAM_ONLY_PREFIXES = ['/team/retro', '/team/poker', '/team/performance'];
 
+// The one mode with no team counterpart: a review of your own week has no
+// roster to review, so its pages live under their own prefix.
+const SOLO_ONLY_PREFIXES = ['/solo'];
+
 const SHARED_WORKSPACE_PREFIXES = [
   '/team',
   '/projects',
@@ -90,6 +94,7 @@ function matches(pathname: string, prefix: string): boolean {
  *  agentwatch usage report is `/agents/usage`. */
 export function audiencesForRoute(pathname: string): readonly Audience[] {
   if (matches(pathname, '/agents')) return ['agents'];
+  if (SOLO_ONLY_PREFIXES.some((prefix) => matches(pathname, prefix))) return ['solo'];
   if (TEAM_ONLY_PREFIXES.some((prefix) => matches(pathname, prefix))) return ['team'];
   if (SHARED_WORKSPACE_PREFIXES.some((prefix) => matches(pathname, prefix)))
     return ['team', 'solo'];

@@ -29,6 +29,8 @@ import ProvenancePage from '@/pages/yeaboi/provenance-page';
 import ReportingPage from '@/pages/yeaboi/reporting/reporting-page';
 import ReportingSetupPage from '@/pages/yeaboi/reporting/reporting-setup-page';
 import ReportingStylePage from '@/pages/yeaboi/reporting/reporting-style-page';
+import ReviewPage from '@/pages/yeaboi/review/review-page';
+import ReviewReportPage from '@/pages/yeaboi/review/review-report-page';
 import RetroBoardPage from '@/pages/yeaboi/retro/retro-board-page';
 import RetroPage from '@/pages/yeaboi/retro/retro-page';
 import StandupPage from '@/pages/yeaboi/standup/standup-page';
@@ -113,6 +115,8 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/usage': <UsagePage />,
   '/team/ship': <ShipPage />,
   '/team/ship/run': <ShipRunPage />,
+  '/solo/review': <ReviewPage />,
+  '/solo/review/report': <ReviewReportPage />,
   '/team/analysis': <AnalysisPage />,
   '/team/analysis/new': <AnalysisSetupPage />,
   '/team/analysis/results': <AnalysisResultsPage />,

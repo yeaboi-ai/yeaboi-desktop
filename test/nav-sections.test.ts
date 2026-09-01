@@ -13,8 +13,10 @@ const registry = JSON.parse(
 ) as { routes: { path: string }[] };
 const REGISTERED = new Set(registry.routes.map((route) => route.path));
 
-/** Everything the one-nav sidebar listed before the audience split. */
+/** Everything the one-nav sidebar listed before the audience split, plus the
+ *  one route the split added: the Solo world's own Weekly Review. */
 const FULL_INVENTORY = [
+  '/solo/review',
   '/home',
   '/projects',
   '/board',
@@ -63,6 +65,15 @@ describe('navSections', () => {
     const hrefs = navItems('solo').map((item) => item.href);
     for (const teamOnly of ['/team/retro', '/team/poker', '/team/performance']) {
       expect(hrefs).not.toContain(teamOnly);
+    }
+  });
+
+  it('offers the weekly review to solo alone', () => {
+    expect(navItems('solo').map((item) => item.href)).toContain('/solo/review');
+    for (const audience of ['team', 'agents'] as const) {
+      for (const item of navItems(audience)) {
+        expect(item.href.startsWith('/solo/'), `${item.href} in the ${audience} nav`).toBe(false);
+      }
     }
   });
 

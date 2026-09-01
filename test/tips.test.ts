@@ -205,6 +205,7 @@ describe('tipRoute', () => {
       'agent-standup',
       'agent-security',
       'ship',
+      'weekly-review',
     ];
     for (const key of shipped) expect(MODE_ROUTES[key], key).toBeTruthy();
   });

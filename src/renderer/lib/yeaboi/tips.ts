@@ -36,6 +36,7 @@ export const MODE_ROUTES: Record<string, string> = {
   performance: '/team/performance',
   reporting: '/team/reporting',
   ship: '/team/ship',
+  'weekly-review': '/solo/review',
   usage: '/usage',
   settings: '/settings/credentials',
   'agent-usage': '/agents/usage',

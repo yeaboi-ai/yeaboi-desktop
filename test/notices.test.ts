@@ -60,6 +60,10 @@ describe('runNotice', () => {
     });
     expect(runNotice('/api/standup/run', done)?.key).toBe('run.standup');
     expect(runNotice('/api/reporting/run', done)?.key).toBe('run.reporting');
+    expect(runNotice('/api/solo/review/run', done)).toEqual({
+      key: 'run.review',
+      route: '/solo/review',
+    });
     expect(runNotice('/api/roadmap/analyze', done)?.key).toBe('run.roadmap');
     expect(runNotice('/api/agents/usage/run', done)?.key).toBe('run.agents');
     expect(runNotice('/api/ceremonies/standup/run', done)?.key).toBe('run.ceremony');

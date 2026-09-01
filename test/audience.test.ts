@@ -56,6 +56,11 @@ describe('audiencesForRoute', () => {
     }
   });
 
+  it('claims the review of your own week for solo alone', () => {
+    expect(audiencesForRoute('/solo/review')).toEqual(['solo']);
+    expect(audiencesForRoute('/solo/review/report')).toEqual(['solo']);
+  });
+
   it('keeps the modes that need a room team-only', () => {
     for (const path of [
       '/team/retro',
@@ -113,6 +118,7 @@ describe('audiencesForRoute', () => {
     expect(audiencesForRoute('/usagex')).toEqual([]);
     expect(audiencesForRoute('/agentsx')).toEqual([]);
     expect(audiencesForRoute('/teamx')).toEqual([]);
+    expect(audiencesForRoute('/solox')).toEqual([]);
   });
 });
 
@@ -125,6 +131,12 @@ describe('resolveAudience', () => {
   it('switches solo to team for a team-only mode', () => {
     expect(resolveAudience('/team/retro', 'solo')).toBe('team');
     expect(resolveAudience('/team/poker/board', 'solo')).toBe('team');
+  });
+
+  it('switches team into solo for the weekly review', () => {
+    expect(resolveAudience('/solo/review', 'team')).toBe('solo');
+    expect(resolveAudience('/solo/review', 'agents')).toBe('solo');
+    expect(resolveAudience('/solo/review/report', 'solo')).toBeNull();
   });
 
   it('switches agents to the canonical workspace owner', () => {
