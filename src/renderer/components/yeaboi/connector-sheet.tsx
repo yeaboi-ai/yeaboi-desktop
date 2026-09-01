@@ -310,10 +310,14 @@ function ConnectorSheetBody({
   onChanged: () => Promise<void> | void;
   onClose: () => void;
 }) {
-  const methods = row.auth_methods;
+  const methods = row.auth_methods ?? [];
   const [method, setMethod] = useState(
     () => methods.find((m) => m.recommended)?.key ?? methods[0]?.key ?? '',
   );
+  // The wire carries no in-force method, so the pill defaults to recommended —
+  // which may not be what a connected row actually uses. Only a deliberate
+  // pick (or a first-time connect) may rewrite the stored method env.
+  const [methodTouched, setMethodTouched] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -322,7 +326,7 @@ function ConnectorSheetBody({
   const isManaged = row.managed_by === 'credentials';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
-  const shownFields = row.fields.filter(
+  const shownFields = (row.fields ?? []).filter(
     (f) =>
       f.env !== row.auth_env && (!methods.length || !f.auth_method || f.auth_method === method),
   );
@@ -358,7 +362,10 @@ function ConnectorSheetBody({
               options={methods.map((m) => m.key)}
               labels={Object.fromEntries(methods.map((m) => [m.key, m.label]))}
               active={method}
-              onPick={setMethod}
+              onPick={(key) => {
+                setMethodTouched(true);
+                setMethod(key);
+              }}
             />
             {active && (
               <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/80">
@@ -410,7 +417,9 @@ function ConnectorSheetBody({
     setBusy(true);
     setResult(null);
     try {
-      if (row.auth_env && methods.length) await saveSetting(row.auth_env, method);
+      if (row.auth_env && methods.length && (methodTouched || !row.connected)) {
+        await saveSetting(row.auth_env, method);
+      }
       for (const field of shownFields) {
         const value = (values[field.env] ?? '').trim();
         if (value) await saveSetting(field.env, value);
@@ -619,7 +628,10 @@ function WebhookPanel({ row }: { row: ConnectionRow }) {
   }
 
   const copy = (value: string, what: string) => {
-    void navigator.clipboard.writeText(value).then(() => setNote(`${what} copied`));
+    void navigator.clipboard
+      .writeText(value)
+      .then(() => setNote(`${what} copied`))
+      .catch(() => setNote('copy failed — clipboard permission denied'));
   };
 
   return (

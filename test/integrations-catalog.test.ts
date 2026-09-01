@@ -69,6 +69,18 @@ describe('the create sheet adapts to the kind and shows its autofill', () => {
 
   it('only the chosen kind shape crosses the wire', () => {
     expect(catalog).toContain('cleanForKind(spec)');
+    // The webhook branch rebuilds events — an api-kind leftover items_key
+    // would make the receiver dig every delivery for a key that is not there.
+    expect(catalog).toMatch(/path: '', items_key: ''/);
+  });
+
+  it('a fresh open replays nothing — least of all the once-only secret', () => {
+    expect(catalog).toMatch(/if \(open\) \{[\s\S]*?setSecretOnce\(''\)/);
+  });
+
+  it('the connect sheet only rewrites the auth method on a deliberate pick', () => {
+    const sheet = read('src', 'renderer', 'components', 'yeaboi', 'connector-sheet.tsx');
+    expect(sheet).toContain('methodTouched || !row.connected');
   });
 
   it('the api kind can declare extra credentials and an events endpoint', () => {

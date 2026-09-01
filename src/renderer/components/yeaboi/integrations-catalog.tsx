@@ -328,11 +328,17 @@ function cleanForKind(spec: CustomConnectionSpec): CustomConnectionSpec {
     };
   }
   if (spec.kind === 'webhook') {
+    // Rebuilt, not spread: an api-kind leftover `path`/`items_key` would make
+    // the receiver dig every delivery for a key that is not there.
+    const events = { kind: 'alert', title_path: '', ...spec.events };
     return {
       ...spec,
+      auth_scheme: 'bearer',
       header_name: '',
+      probe_path: '/',
+      probe_ok_status: 200,
       extra_fields: [],
-      events: { kind: 'alert', title_path: '', ...spec.events },
+      events: { ...events, path: '', items_key: '' },
     };
   }
   return {
@@ -358,6 +364,18 @@ function CreateCustomSheet({
   const [saving, setSaving] = useState(false);
   const [secretOnce, setSecretOnce] = useState('');
   const [advanced, setAdvanced] = useState(false);
+
+  // The component stays mounted across opens; a fresh open must not replay the
+  // previous run's spec, problems — or its once-only webhook secret.
+  useEffect(() => {
+    if (open) {
+      setDescription('');
+      setSpec(EMPTY_SPEC);
+      setProblems([]);
+      setSecretOnce('');
+      setAdvanced(false);
+    }
+  }, [open]);
 
   const set = (patch: Partial<CustomConnectionSpec>) =>
     setSpec((current) => ({ ...current, ...patch }));
