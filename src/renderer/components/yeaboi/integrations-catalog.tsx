@@ -89,11 +89,11 @@ export function IntegrationsCatalog() {
     // that is staleness, not breakage, and it must not read as red.
     return /404|not found/i.test(error) ? (
       <p role="status" className="text-[13px] text-muted-foreground">
-        Your yeaboi backend predates the integrations catalog — update yeaboi to browse it.
+        Your yeaboi backend predates Integrations — update yeaboi to browse them.
       </p>
     ) : (
       <p role="alert" className="text-[12px] text-destructive">
-        Could not load the catalog: {error}
+        Could not load integrations: {error}
       </p>
     );
   }
@@ -124,8 +124,8 @@ export function IntegrationsCatalog() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search the catalog"
-              aria-label="Search the catalog"
+              placeholder="Search integrations"
+              aria-label="Search integrations"
               className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
             />
           </label>
@@ -149,7 +149,7 @@ export function IntegrationsCatalog() {
 
       {filtered.length === 0 ? (
         <p className="py-8 text-center text-[12px] text-muted-foreground">
-          Nothing matches — clear the search to see the whole catalog.
+          Nothing matches — clear the search to see every integration.
         </p>
       ) : (
         shelfFamilies.map((f, index) => (

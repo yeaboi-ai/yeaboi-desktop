@@ -37,7 +37,7 @@ export function ConnectedIntegrations() {
     return (
       <p role="status" className="mt-6 text-[12px] text-muted-foreground">
         {/404|not found/i.test(error)
-          ? 'Your yeaboi backend predates the integrations catalog — update yeaboi to manage those connections here.'
+          ? 'Your yeaboi backend predates Integrations — update yeaboi to manage those connections here.'
           : `Could not load connections: ${error}`}
       </p>
     );
@@ -61,7 +61,7 @@ export function ConnectedIntegrations() {
         href="/settings/connections"
         className="mt-2 inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
       >
-        Browse the catalog
+        Browse all integrations
         <ArrowUpRight className="size-3" aria-hidden />
       </Link>
       <ConnectorSheet row={openRow} onClose={() => setOpenKey('')} onChanged={refresh} />
