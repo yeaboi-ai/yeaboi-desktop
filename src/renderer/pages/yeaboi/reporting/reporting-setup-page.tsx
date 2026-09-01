@@ -25,6 +25,7 @@ import {
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
+import { useAudience } from '@/components/providers/audience-provider';
 
 const QUARTER = 'quarter';
 const WINDOW = 'window';
@@ -56,6 +57,7 @@ const inputClass =
 
 function ReportingSetupBody() {
   const router = useRouter();
+  const { audience } = useAudience();
   const [options, setOptions] = useState<ReportingOptions | null>(null);
   const [period, setPeriod] = useState('');
   const [theme, setTheme] = useState('midnight');
@@ -114,7 +116,7 @@ function ReportingSetupBody() {
     let state = emptyModeRun();
     setRun(state);
     try {
-      const body: Record<string, unknown> = { period, theme, sources };
+      const body: Record<string, unknown> = { period, theme, sources, solo: audience === 'solo' };
       if (contextDeps !== null) body.context_deps = contextDeps;
       if (period === QUARTER && sprints) {
         // Empty checks and no sprint list are different answers: with no list

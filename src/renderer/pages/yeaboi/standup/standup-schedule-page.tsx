@@ -17,6 +17,7 @@ import {
 } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
+import { useAudience } from '@/components/providers/audience-provider';
 
 const TIME_PRESETS = ['09:00', '09:30', '10:00', '10:30', '11:00'];
 const LEAD_PRESETS = [5, 10, 15, 30];
@@ -74,6 +75,7 @@ const selectClass =
   'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 function StandupScheduleBody() {
+  const { audience } = useAudience();
   const [view, setView] = useState<ScheduleView | null>(null);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [error, setError] = useState('');
@@ -100,7 +102,11 @@ function StandupScheduleBody() {
     setBusy(true);
     setError('');
     try {
-      const result = await saveSchedule({ ...view, weekdays: weekdaySpec(days) });
+      const result = await saveSchedule({
+        ...view,
+        weekdays: weekdaySpec(days),
+        solo: audience === 'solo',
+      });
       setMessage(result.message);
     } catch (e) {
       setError((e as Error).message);
