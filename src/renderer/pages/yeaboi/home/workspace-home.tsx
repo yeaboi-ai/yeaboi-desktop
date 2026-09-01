@@ -14,6 +14,7 @@ import { apiGet } from '@/lib/yeaboi/api';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
+import { TodayStrip } from '@/components/yeaboi/today-strip';
 import { ModeCardGrid, type ModeCard } from '@/components/yeaboi/mode-card-grid';
 import { MODE_ROUTES, type Tip } from '@/lib/yeaboi/tips';
 
@@ -111,6 +112,10 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
         {category?.verb ?? VERB_FALLBACK[audience]}
         {audience === 'solo' && <BetaChip />}
       </p>
+
+      {/* Where am I — before what do I want to do. Solo only: the strip is
+          the one person's own yesterday, sprint, next story and agent spend. */}
+      {audience === 'solo' && <TodayStrip />}
 
       {/* The two doors. Equal, and each explains when it is the right one. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
