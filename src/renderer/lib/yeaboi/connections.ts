@@ -42,6 +42,9 @@ export interface ConnectionRow {
   /** Where configuring happens: "connections" rows carry their own connect
    *  form; "credentials" rows deep-link to Settings > Credentials. */
   managed_by: 'connections' | 'credentials';
+  /** A custom connection's kind (api/webhook/mcp); "" on built-in and legacy
+   *  rows. What lets a surface shape the form without sniffing env names. */
+  kind: '' | 'api' | 'webhook' | 'mcp';
   docs_url: string;
   glyph: string;
   accent: string;
@@ -81,7 +84,7 @@ export interface CustomConnectionSpec {
   docs_url?: string;
   glyph: string;
   accent: string;
-  kind: 'api' | 'webhook';
+  kind: 'api' | 'webhook' | 'mcp';
   auth_scheme?: 'bearer' | 'basic' | 'header';
   header_name?: string;
   probe_path?: string;

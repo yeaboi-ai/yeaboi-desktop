@@ -144,7 +144,7 @@ function ConnectorSheetBody({
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const isCustom = row.key.startsWith('custom_');
-  const isWebhook = isCustom && row.fields.some((f) => f.env.endsWith('_WEBHOOK_SECRET'));
+  const isWebhook = row.kind === 'webhook';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
   const shownFields = row.fields.filter(

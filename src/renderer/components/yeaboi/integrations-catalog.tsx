@@ -331,9 +331,9 @@ function CreateCustomSheet({
         <SheetHeader className="pr-12">
           <SheetTitle>Create a connection</SheetTitle>
           <SheetDescription className="text-left">
-            A read-only API yeaboi polls, or an inbound webhook it receives. Describe the service
-            and let the draft fill the form, or fill it yourself — nothing saves until you create
-            it.
+            A read-only API yeaboi polls, an inbound webhook it receives, or an MCP server it
+            speaks to. Describe the service and let the draft fill the form, or fill it yourself —
+            nothing saves until you create it.
           </SheetDescription>
         </SheetHeader>
 
@@ -381,7 +381,7 @@ function CreateCustomSheet({
             <SelectField
               label="Kind"
               value={spec.kind}
-              options={['api', 'webhook']}
+              options={['api', 'webhook', 'mcp']}
               onChange={(kind) => set({ kind: kind as CustomConnectionSpec['kind'] })}
             />
             <Field
@@ -409,7 +409,16 @@ function CreateCustomSheet({
             onChange={(docs_url) => set({ docs_url })}
           />
 
-          {spec.kind === 'api' ? (
+          {spec.kind === 'mcp' ? (
+            // No HTTP shape and no events mapping — an MCP connection is a
+            // server URL plus an optional token, both entered afterwards as
+            // credentials like any other connector's fields.
+            <p className="rounded-xl bg-secondary/30 px-3 py-2.5 text-[12px] text-muted-foreground">
+              yeaboi connects over MCP streamable HTTP — paste the server URL (and its bearer
+              token, if it wants one) after creating it. Verify runs the MCP handshake and
+              reports the server's name and tool count.
+            </p>
+          ) : spec.kind === 'api' ? (
             <div className="grid grid-cols-2 gap-3">
               <SelectField
                 label="Auth scheme"
