@@ -80,7 +80,7 @@ function RetroBody() {
     setError('');
     try {
       const board = await startRetroBoard();
-      router.push(`/humans/retro/board?id=${encodeURIComponent(board.board_id)}`);
+      router.push(`/team/retro/board?id=${encodeURIComponent(board.board_id)}`);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -100,7 +100,7 @@ function RetroBody() {
         </div>
         {live ? (
           <Link
-            href={`/humans/retro/board?id=${encodeURIComponent(live.board_id)}`}
+            href={`/team/retro/board?id=${encodeURIComponent(live.board_id)}`}
             className={buttonVariants({ size: 'sm' })}
           >
             Rejoin the live board

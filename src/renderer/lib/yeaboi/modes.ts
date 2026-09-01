@@ -352,7 +352,7 @@ export const answerGate = (
 export const cancelShip = (key: string): Promise<{ cancelling: boolean }> =>
   apiPost(`/api/ship/runs/${encodeURIComponent(key)}/cancel`);
 
-/** The run key in `#/humans/ship/run?key=…`, or '' when the hash carries none. */
+/** The run key in `#/team/ship/run?key=…`, or '' when the hash carries none. */
 export function shipKeyFromHash(hash: string): string {
   const query = hash.split('?')[1] ?? '';
   return new URLSearchParams(query).get('key') ?? '';

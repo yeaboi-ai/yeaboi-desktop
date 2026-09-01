@@ -120,7 +120,7 @@ function ReportingStyleBody() {
             Reset
           </Button>
           <Link
-            href="/humans/reporting"
+            href="/team/reporting"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Back

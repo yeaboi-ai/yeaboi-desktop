@@ -40,7 +40,7 @@ function SessionsBody() {
     return (
       <p className="text-[13px] text-muted-foreground">
         Nothing yet.{' '}
-        <Link href="/humans/planning" className="text-primary hover:underline">
+        <Link href="/team/planning" className="text-primary hover:underline">
           Start a plan
         </Link>{' '}
         and it will show up here.
@@ -52,7 +52,7 @@ function SessionsBody() {
       {rows.map((row) => (
         <li key={row.session_id}>
           <Link
-            href={`/humans/planning/chat?id=${encodeURIComponent(row.session_id)}`}
+            href={`/team/planning/chat?id=${encodeURIComponent(row.session_id)}`}
             className="block rounded-2xl bg-card ring-1 ring-border/60 px-4 py-3 transition-colors hover:ring-primary/40 hover:bg-secondary/40"
           >
             <strong className="block text-[13px] font-body font-medium text-foreground">

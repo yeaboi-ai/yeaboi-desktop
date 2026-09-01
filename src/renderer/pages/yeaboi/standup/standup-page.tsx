@@ -196,19 +196,19 @@ function StandupBody() {
             {showRuns ? 'Hide past runs' : `Past runs (${data.history.length})`}
           </Button>
           <Link
-            href="/humans/standup/setup"
+            href="/team/standup/setup"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Setup
           </Link>
           <Link
-            href="/humans/standup/schedule"
+            href="/team/standup/schedule"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Schedule
           </Link>
           <Link
-            href="/humans/standup/review"
+            href="/team/standup/review"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Transcript review
@@ -450,10 +450,7 @@ function CardBody({
         <Section
           title="Transcript Review"
           actions={
-            <Link
-              href="/humans/standup/review"
-              className="text-[12px] text-primary hover:underline"
-            >
+            <Link href="/team/standup/review" className="text-[12px] text-primary hover:underline">
               Open
             </Link>
           }
@@ -482,7 +479,7 @@ function CardBody({
           title="Schedule"
           actions={
             <Link
-              href="/humans/standup/schedule"
+              href="/team/standup/schedule"
               className="text-[12px] text-primary hover:underline"
             >
               Set up

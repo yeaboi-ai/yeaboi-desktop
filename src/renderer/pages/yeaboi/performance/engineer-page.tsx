@@ -108,7 +108,7 @@ function EngineerBody({ name }: { name: string }) {
           </p>
         </div>
         <Link
-          href="/humans/performance"
+          href="/team/performance"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back
@@ -231,7 +231,7 @@ function EngineerBody({ name }: { name: string }) {
 
 export default function EngineerPage() {
   const [searchParams] = useSearchParams();
-  /** The engineer named in `/humans/performance/engineer?name=…`. */
+  /** The engineer named in `/team/performance/engineer?name=…`. */
   const name = searchParams.get('name') ?? '';
   return (
     <BackendGate>

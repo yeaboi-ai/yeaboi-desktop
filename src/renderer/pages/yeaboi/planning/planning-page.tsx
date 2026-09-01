@@ -33,7 +33,7 @@ function PlanningBody() {
     setError('');
     try {
       const view = await createChat(description.trim(), size);
-      router.push(`/humans/planning/chat?id=${encodeURIComponent(view.project_id)}`);
+      router.push(`/team/planning/chat?id=${encodeURIComponent(view.project_id)}`);
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -96,13 +96,13 @@ function PlanningBody() {
           {busy ? 'Opening…' : 'Start planning'}
         </Button>
         <Link
-          href="/humans/planning/roadmap"
+          href="/team/planning/roadmap"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           From your roadmap
         </Link>
         <Link
-          href="/humans/planning/sessions"
+          href="/team/planning/sessions"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Saved plans

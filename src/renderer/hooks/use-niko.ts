@@ -93,7 +93,7 @@ export function useNiko() {
   }, [conversationId]);
 
   // The chips follow the screen: different questions are worth asking on
-  // /agents/usage than on /humans/retro.
+  // /agents/usage than on /team/retro.
   useEffect(() => {
     let mounted = true;
     loadSuggestions(route)

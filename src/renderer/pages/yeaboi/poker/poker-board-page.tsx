@@ -195,7 +195,7 @@ function PokerBoardBody({ boardId }: { boardId: string }) {
           The table is closed and the estimates are saved.
         </p>
         <div className="mt-3">
-          <Link href="/humans/poker" className={buttonVariants({ size: 'sm' })}>
+          <Link href="/team/poker" className={buttonVariants({ size: 'sm' })}>
             Back to the sessions
           </Link>
         </div>

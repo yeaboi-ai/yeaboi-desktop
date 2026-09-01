@@ -97,7 +97,7 @@ describe('reduceTurn', () => {
   });
 
   it('carries the navigation suggestion', () => {
-    expect(fold([{ type: 'navigate', route: '/humans/retro' }]).route).toBe('/humans/retro');
+    expect(fold([{ type: 'navigate', route: '/team/retro' }]).route).toBe('/team/retro');
   });
 
   it('finishes on done, keeping the conversation id and warnings', () => {
@@ -113,10 +113,10 @@ describe('reduceTurn', () => {
 
   it('does not let an empty done route erase a navigate', () => {
     const turn = fold([
-      { type: 'navigate', route: '/humans/retro' },
+      { type: 'navigate', route: '/team/retro' },
       { type: 'done', conversation_id: 'c1', route: '', warnings: [] },
     ]);
-    expect(turn.route).toBe('/humans/retro');
+    expect(turn.route).toBe('/team/retro');
   });
 
   it('finishes on cancelled without an error', () => {
@@ -257,7 +257,7 @@ describe('slash shortcuts', () => {
   });
 
   it('ignores an argument when matching the verb', () => {
-    expect(matchSlash('/go /humans/retro').map((c) => c.cmd)).toEqual(['/go']);
+    expect(matchSlash('/go /team/retro').map((c) => c.cmd)).toEqual(['/go']);
   });
 
   it('is case-insensitive', () => {
