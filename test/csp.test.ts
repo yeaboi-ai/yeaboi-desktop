@@ -12,7 +12,14 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { LIVEKIT_PORT, planningPortRange, rendererCsp } from '../src/shared/csp';
+import {
+  APP_ORIGIN,
+  corsOrigins,
+  LIVEKIT_PORT,
+  planningPortRange,
+  rendererCsp,
+  rendererOrigins,
+} from '../src/shared/csp';
 
 const INDEX = join(import.meta.dirname, '..', 'src', 'renderer', 'index.html');
 
@@ -66,6 +73,35 @@ describe('rendererCsp', () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toContain("'unsafe-eval'");
+  });
+});
+
+describe('corsOrigins', () => {
+  // The CSP lets the renderer dial the port; CORS is the backend agreeing to
+  // answer. Letting the second keep the stock :5173 while the first followed
+  // the worktree block is what turned every request into a preflight 400.
+  it('allows the dev server electron-vite actually bound', () => {
+    expect(corsOrigins('', 'http://localhost:20662/')).toContain('http://localhost:20662');
+  });
+
+  it('always allows the packaged origin', () => {
+    expect(corsOrigins('').split(',')).toContain(APP_ORIGIN);
+  });
+
+  it('keeps an inherited list, in either spelling', () => {
+    expect(corsOrigins('http://localhost:3000,http://localhost:3001')).toContain(
+      'http://localhost:3000',
+    );
+    expect(corsOrigins('["http://localhost:3000"]')).toContain('http://localhost:3000');
+  });
+
+  it('never repeats an origin the inherited list already had', () => {
+    const parts = corsOrigins(APP_ORIGIN, 'http://localhost:20662').split(',');
+    expect(parts.filter((origin) => origin === APP_ORIGIN)).toHaveLength(1);
+  });
+
+  it('survives a malformed dev URL rather than failing the spawn', () => {
+    expect(rendererOrigins('not a url')).toEqual([APP_ORIGIN]);
   });
 });
 

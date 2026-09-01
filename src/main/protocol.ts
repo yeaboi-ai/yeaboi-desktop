@@ -1,14 +1,15 @@
-// The packaged renderer's origin. Serving index.html from file:// gives the
-// window an opaque "null" origin, which makes the backend's CORS story ugly
-// and cookies/storage flaky. A privileged custom scheme gives every packaged
-// install the same stable origin — app://yeaboi — which the planning backend
-// lists in CORS_ORIGINS next to the dev server's http://localhost:5173.
+// Serves the packaged renderer over a privileged custom scheme. The origin
+// itself lives in src/shared/csp.ts, beside the dev-server origins and ports it
+// has to agree with — planningEnv() builds the backend's CORS_ORIGINS from the
+// same place — and is re-exported here so the scheme and its origin still read
+// as one module.
 
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { protocol } from 'electron';
+import { APP_ORIGIN } from '../shared/csp';
 
-export const APP_ORIGIN = 'app://yeaboi';
+export { APP_ORIGIN };
 
 const MIME: Record<string, string> = {
   '.html': 'text/html',

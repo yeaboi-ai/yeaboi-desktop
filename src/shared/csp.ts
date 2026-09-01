@@ -29,6 +29,51 @@ export function planningPortRange(): number[] {
 /** LiveKit is machine-wide and deliberately shared between worktrees. */
 export const LIVEKIT_PORT = 7880;
 
+/** The packaged renderer's origin. Serving index.html from file:// gives the
+ *  window an opaque "null" origin, which makes the backend's CORS story ugly
+ *  and cookies/storage flaky; a privileged custom scheme gives every packaged
+ *  install the same stable one. src/main/protocol.ts re-exports it. */
+export const APP_ORIGIN = 'app://yeaboi';
+
+/** CORS_ORIGINS accepts a comma list or a JSON array; read both. */
+function parseOrigins(raw: string): string[] {
+  const value = raw.trim();
+  if (!value) return [];
+  if (value.startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      /* not JSON after all — fall through to the comma form */
+    }
+  }
+  return value.split(',');
+}
+
+/** The origins the renderer calls the backend from: the packaged scheme, plus
+ *  whatever port electron-vite bound in dev. Main is the only process that
+ *  knows the dev one — the backend's local-mode allowance is hardcoded to
+ *  :5173, which a worktree's port block never matches. */
+export function rendererOrigins(devUrl?: string): string[] {
+  const origins_ = [APP_ORIGIN];
+  if (devUrl) {
+    try {
+      origins_.push(new URL(devUrl).origin);
+    } catch {
+      /* a malformed dev URL must not stop the backend starting */
+    }
+  }
+  return origins_;
+}
+
+/** The inherited CORS list plus the origins the renderer will actually use. */
+export function corsOrigins(inherited?: string, devUrl?: string): string {
+  const all = [...parseOrigins(inherited ?? ''), ...rendererOrigins(devUrl)]
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return [...new Set(all)].join(',');
+}
+
 function origins(port: number, schemes: readonly string[]): string[] {
   return schemes.flatMap((scheme) => [
     `${scheme}://localhost:${port}`,
