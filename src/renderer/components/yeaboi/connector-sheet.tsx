@@ -50,7 +50,16 @@ export function ConnectorMark({ row, size = 40 }: { row: ConnectionRow; size?: n
   }
   // The one legacy key whose mark lives under another name: Azure DevOps
   // Boards is catalogued as `azdevops` but has always drawn the `azure` mark.
-  return <ProviderIcon provider={row.key === 'azdevops' ? 'azure' : row.key} size={size} />;
+  // The wire glyph rides along as the fallback identity for a key we ship no
+  // logomark for (LaunchDarkly today).
+  return (
+    <ProviderIcon
+      provider={row.key === 'azdevops' ? 'azure' : row.key}
+      size={size}
+      family={row.family}
+      glyph={row.glyph}
+    />
+  );
 }
 
 

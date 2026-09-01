@@ -18,7 +18,9 @@
 
 import { Activity, Bug, Cloud, Siren, Sunrise, Video } from 'lucide-react';
 import {
+  siAtlassian,
   siBitbucket,
+  siCircleci,
   siClaude,
   siCloudflare,
   siConfluence,
@@ -30,6 +32,7 @@ import {
   siGooglecloud,
   siGooglegemini,
   siGrafana,
+  siJenkins,
   siJira,
   siKimi,
   siLinear,
@@ -39,6 +42,7 @@ import {
   siPagerduty,
   siQwen,
   siSentry,
+  siStatuspage,
   siTrello,
   siZdotai,
 } from 'simple-icons';
@@ -108,6 +112,13 @@ export const ICON_PATHS: Record<string, string> = {
   aws: AWS_PATH,
   azure_cloud: AZURE_PATH,
   incidentio: INCIDENTIO_PATH,
+  circleci: siCircleci.path,
+  jenkins: siJenkins.path,
+  statuspage: siStatuspage.path,
+  // JSM Ops is Atlassian-branded (Opsgenie is a retired brand, so its old
+  // mark would be the wrong logo, not a nostalgic one).
+  jsm_ops: siAtlassian.path,
+  // launchdarkly ships in no icon set we bundle — it renders its wire glyph.
 };
 
 /** Marks whose source does not normalise to a 24-square. Anything absent here
@@ -150,6 +161,7 @@ export function ProviderIcon({
   size = 40,
   family = '',
   accent = '',
+  glyph: emoji = '',
 }: {
   provider: string;
   size?: number;
@@ -157,9 +169,14 @@ export function ProviderIcon({
   family?: string;
   /** Connector accent, `rgb(r,g,b)`. Tints the tile, never the mark. */
   accent?: string;
+  /** The wire's per-vendor emoji (contracts/v1/connectors.json since schema
+   *  3). A deliberate identity, so it beats the generic family mark — used
+   *  only when no logomark or per-key glyph ships here. */
+  glyph?: string;
 }) {
   const path = ICON_PATHS[provider];
-  const Glyph = FALLBACK_GLYPHS[provider] ?? FAMILY_GLYPHS[family];
+  const Glyph = FALLBACK_GLYPHS[provider];
+  const FamilyGlyph = FAMILY_GLYPHS[family];
   const lettering = provider.slice(0, 2).toUpperCase();
   const glyph = Math.round(size * 0.52);
   const wash = tint(accent, 0.14);
@@ -181,6 +198,10 @@ export function ProviderIcon({
         </svg>
       ) : Glyph ? (
         <Glyph size={glyph} strokeWidth={1.8} />
+      ) : emoji.trim() ? (
+        <span style={{ fontSize: Math.round(size * 0.5) }}>{emoji}</span>
+      ) : FamilyGlyph ? (
+        <FamilyGlyph size={glyph} strokeWidth={1.8} />
       ) : (
         <span
           className="font-mono font-semibold tracking-tight"
