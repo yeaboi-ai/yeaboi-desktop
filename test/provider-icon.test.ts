@@ -80,9 +80,12 @@ describe('every catalogued connector has a mark', () => {
     expect(drawn, `${key} would render as a two-letter monogram`).toBe(true);
   });
 
-  it.each([...EMOJI_ONLY])('%s stays honest — no forgotten logomark shadowed by the emoji', (key) => {
-    expect(key in ICON_PATHS || key in FALLBACK_GLYPHS).toBe(false);
-  });
+  it.each([...EMOJI_ONLY])(
+    '%s stays honest — no forgotten logomark shadowed by the emoji',
+    (key) => {
+      expect(key in ICON_PATHS || key in FALLBACK_GLYPHS).toBe(false);
+    },
+  );
 
   it('every row carries the emoji the terminal shows and a surface may fall back to', () => {
     for (const { key, glyph } of contract.connectors) {

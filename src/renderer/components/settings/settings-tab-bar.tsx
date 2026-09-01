@@ -6,7 +6,15 @@
 
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Bird, Blocks, KeyRound, Palette, Share2, SlidersHorizontal, SwatchBook } from 'lucide-react';
+import {
+  Bird,
+  Blocks,
+  KeyRound,
+  Palette,
+  Share2,
+  SlidersHorizontal,
+  SwatchBook,
+} from 'lucide-react';
 import { ALL_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { cn } from '@/lib/utils';
 
