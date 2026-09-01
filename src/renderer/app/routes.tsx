@@ -190,11 +190,8 @@ export const router = createHashRouter([
       },
       { path: '/team/planning/*', element: <Navigate to="/projects" replace /> },
       { path: '/team/planning', element: <Navigate to="/projects" replace /> },
-<<<<<<< HEAD
-=======
       { path: '/humans/*', element: <LegacyHumansRedirect /> },
       { path: '/humans', element: <LegacyHumansRedirect /> },
->>>>>>> ff0f433 (three-way audience split: solo, team (renamed from humans), agents)
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },

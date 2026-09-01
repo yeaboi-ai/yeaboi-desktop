@@ -48,73 +48,6 @@ import { useUpdateState } from '@/hooks/use-update-state';
 import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
-<<<<<<< HEAD
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutGrid;
-}
-
-interface NavSection {
-  label: string | null;
-  items: NavItem[];
-}
-
-// One nav for both surfaces: the planning workspace and the yeaboi (TUI
-// parity) modes. The yeaboi hrefs are the manifest's paths verbatim
-// (lib/yeaboi/routes.json) — the sidebar is a view over that registry, not a
-// second list of truths.
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: null,
-    items: [{ href: '/home', label: 'Home', icon: Home }],
-  },
-  {
-    label: 'Workspace',
-    items: [
-      { href: '/projects', label: 'Projects', icon: LayoutGrid },
-      { href: '/board', label: 'Board', icon: Columns3 },
-    ],
-  },
-  {
-    label: 'Team',
-    items: [
-      // Planning lives in the Workspace now: project → blueprint → plan.
-      { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: Map },
-      { href: '/team/analysis', label: 'Analysis', icon: BarChart3 },
-      { href: '/team/standup', label: 'Standup', icon: Sunrise },
-      { href: '/team/retro', label: 'Retro', icon: RotateCcw },
-      { href: '/team/poker', label: 'Poker', icon: Spade },
-      { href: '/team/performance', label: 'Performance', icon: TrendingUp },
-      { href: '/team/reporting', label: 'Reporting', icon: Presentation },
-      { href: '/team/ship', label: 'Ship', icon: Rocket },
-    ],
-  },
-  {
-    label: 'Agents',
-    items: [
-      { href: '/agents/usage', label: 'Usage', icon: Coins },
-      { href: '/agents/advisor', label: 'Advisor', icon: Sparkles },
-      { href: '/agents/standup', label: 'Standup', icon: Bot },
-      { href: '/agents/security', label: 'Security', icon: ShieldCheck },
-    ],
-  },
-  {
-    label: 'Ops',
-    items: [
-      { href: '/ceremonies', label: 'Ceremonies', icon: CalendarClock },
-      { href: '/provenance', label: 'Provenance', icon: FileClock },
-      { href: '/usage', label: 'Usage', icon: Gauge },
-      { href: '/whats-new', label: "What's New", icon: Megaphone },
-      { href: '/system-check', label: 'System Check', icon: Stethoscope },
-      { href: '/privacy', label: 'Privacy', icon: Lock },
-      { href: '/feedback', label: 'Feedback', icon: MessageSquareText },
-    ],
-  },
-];
-
-const NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
-=======
 // The nav inventory lives in lib/nav/sections.ts, per audience world; this
 // map turns its icon keys into components.
 const ICONS: Record<IconKey, typeof LayoutGrid> = {
@@ -141,7 +74,6 @@ const ICONS: Record<IconKey, typeof LayoutGrid> = {
   privacy: Lock,
   feedback: MessageSquareText,
 };
->>>>>>> ff0f433 (three-way audience split: solo, team (renamed from humans), agents)
 
 const CMD_SHORTCUTS: Record<string, string> = {
   p: '/projects',
