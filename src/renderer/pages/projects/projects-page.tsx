@@ -25,7 +25,11 @@ export default function ProjectsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!resp.ok) throw new Error(`create project failed: ${resp.status}`);
+      if (!resp.ok) {
+        // The dialog renders this verbatim, so prefer the backend's wording.
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.detail || `Couldn't create the project (${resp.status}).`);
+      }
       return resp.json();
     },
     [authFetch],
