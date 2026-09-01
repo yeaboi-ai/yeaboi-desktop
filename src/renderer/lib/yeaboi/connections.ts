@@ -47,6 +47,9 @@ export interface ConnectionRow {
   kind: '' | 'api' | 'webhook' | 'mcp';
   docs_url: string;
   glyph: string;
+  /** A custom connection's uploaded icon — a server-validated raster
+   *  data:image/(png|jpeg|webp) URI, never SVG; "" everywhere else. */
+  icon: string;
   accent: string;
   verify_kind: string;
   auth_env: string;
@@ -75,6 +78,17 @@ export interface CustomEventsMapping {
   service_path?: string;
 }
 
+/** One extra field an api-kind custom connection declares beyond its auth
+ *  scheme — an app key beside the api key, or non-secret config. The env is
+ *  derived server-side from env_suffix; never a value. */
+export interface CustomExtraField {
+  label: string;
+  env_suffix: string;
+  secret?: boolean;
+  header_name?: string;
+  hint?: string;
+}
+
 export interface CustomConnectionSpec {
   key: string;
   label: string;
@@ -83,6 +97,9 @@ export interface CustomConnectionSpec {
   detail?: string;
   docs_url?: string;
   glyph: string;
+  /** Optional uploaded icon: data:image/(png|jpeg|webp);base64 — the backend
+   *  validates mime, magic bytes and a 64KB cap, and refuses SVG. */
+  icon_data?: string;
   accent: string;
   kind: 'api' | 'webhook' | 'mcp';
   auth_scheme?: 'bearer' | 'basic' | 'header';
@@ -91,6 +108,7 @@ export interface CustomConnectionSpec {
   probe_ok_status?: number;
   webhook_verify?: 'token' | 'hmac';
   events?: CustomEventsMapping | null;
+  extra_fields?: CustomExtraField[];
 }
 
 export interface CustomDraft {

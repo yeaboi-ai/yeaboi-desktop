@@ -43,6 +43,59 @@ describe('the set-up view beside credentials', () => {
   });
 });
 
+describe('create-your-own is reachable from the top, not only the bottom', () => {
+  it('the toolbar and the empty-search state both open the sheet', () => {
+    // Three doors, one sheet: toolbar button, empty-state action, bottom tile.
+    expect(catalog.match(/setCreating\(true\)/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(catalog).toContain('Create it yourself');
+  });
+});
+
+describe('the create sheet adapts to the kind and shows its autofill', () => {
+  it('the kind control precedes the identity section', () => {
+    expect(catalog.indexOf('Connection kind')).toBeGreaterThan(-1);
+    expect(catalog.indexOf('Connection kind')).toBeLessThan(catalog.indexOf('title="Identity"'));
+  });
+
+  it('required and optional are marked', () => {
+    expect(catalog).toContain('aria-required');
+    expect(catalog).toContain('· optional');
+  });
+
+  it('the draft auto-opens the Advanced section it filled', () => {
+    expect(catalog).toContain('draftFillsAdvanced');
+    expect(catalog).toMatch(/if \(draftFillsAdvanced\(result\.draft\)\) setAdvanced\(true\)/);
+  });
+
+  it('only the chosen kind shape crosses the wire', () => {
+    expect(catalog).toContain('cleanForKind(spec)');
+  });
+
+  it('the api kind can declare extra credentials and an events endpoint', () => {
+    expect(catalog).toContain('ExtraFieldsEditor');
+    expect(catalog).toContain('Events endpoint');
+  });
+
+  it('the accent is picked from swatches or a wheel, never typed', () => {
+    expect(catalog).toContain('AccentPicker');
+    expect(catalog).toContain('type="color"');
+    expect(catalog).not.toContain('Accent rgb(r,g,b)');
+  });
+});
+
+describe('the uploaded icon is raster-only', () => {
+  it('the file input accepts the three raster types and never svg', () => {
+    expect(catalog).toContain('accept="image/png,image/jpeg,image/webp"');
+    expect(catalog).not.toContain('svg+xml');
+  });
+
+  it('the tile renders the uploaded image when the wire carries one', () => {
+    const sheet = read('src', 'renderer', 'components', 'yeaboi', 'connector-sheet.tsx');
+    expect(sheet).toContain('row.icon');
+    expect(sheet).toMatch(/src=\{row\.icon\}/);
+  });
+});
+
 describe('a stale backend is staleness, not breakage', () => {
   it.each([
     ['integrations-catalog', catalog],
