@@ -34,6 +34,8 @@ const FULL_INVENTORY = [
   '/provenance',
   '/usage',
   '/whats-new',
+  '/system-check',
+  '/privacy',
   '/feedback',
 ];
 

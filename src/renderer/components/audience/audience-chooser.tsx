@@ -6,61 +6,18 @@
 // exactly the TUI's cue (the resting mascot renders shaded, the chosen one
 // steps forward).
 //
-// Copy is hardcoded, not fetched: this screen shows before the sidecar is up,
-// and a first paint must never be a spinner. Source of truth for the words is
-// the TUI's _CATEGORY_CARDS (src/yeaboi/ui/mode_select/screens/
+// Copy is hardcoded (WORLD_COPY in @shared/audience, shared with the sidebar's
+// WorldSwitcher), not fetched: this screen shows before the sidecar is up, and
+// a first paint must never be a spinner. Source of truth for the words is the
+// TUI's _CATEGORY_CARDS (src/yeaboi/ui/mode_select/screens/
 // _screens_category.py in yeaboi.ai).
 
 import { useEffect, useRef, useState } from 'react';
-import { DuckMark } from '@/components/brand/duck';
-import { RoboMark } from '@/components/brand/robo';
-import { TeamMark } from '@/components/brand/team';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
-import type { Audience } from '@shared/audience';
+import { WORLD_MASCOT } from '@/lib/audience/worlds';
+import { AUDIENCES, WORLD_COPY, type Audience } from '@shared/audience';
 
-interface WorldCard {
-  key: Audience;
-  title: string;
-  verb: string;
-  capabilities: string[];
-  accent: string;
-  accentBright: string;
-  /** A whole beta world (Solo, Agents) wears the chip on its card. */
-  beta?: boolean;
-  mascot: (props: { size: number }) => React.ReactElement;
-}
-
-const WORLDS: WorldCard[] = [
-  {
-    key: 'solo',
-    title: 'Solo',
-    verb: 'Run your own show',
-    capabilities: ['planning', 'standups', 'analysis', 'reports'],
-    accent: 'rgb(210, 168, 80)',
-    accentBright: 'rgb(245, 200, 110)',
-    beta: true,
-    mascot: ({ size }) => <DuckMark state="idle" size={size} />,
-  },
-  {
-    key: 'team',
-    title: 'Team',
-    verb: "Run your team's scrum",
-    capabilities: ['planning', 'standups', 'retros', 'poker', 'reviews'],
-    accent: 'rgb(100, 180, 100)',
-    accentBright: 'rgb(80, 220, 120)',
-    mascot: ({ size }) => <TeamMark size={size} />,
-  },
-  {
-    key: 'agents',
-    title: 'Agents',
-    verb: 'Watch your AI agents work',
-    capabilities: ['cost', 'recoverable spend', 'daily digests', 'security posture'],
-    accent: 'rgb(90, 160, 210)',
-    accentBright: 'rgb(130, 200, 255)',
-    beta: true,
-    mascot: ({ size }) => <RoboMark size={size} />,
-  },
-];
+const WORLDS = AUDIENCES.map((key) => ({ key, ...WORLD_COPY[key] }));
 
 export function AudienceChooser({ onChoose }: { onChoose: (audience: Audience) => void }) {
   const [selected, setSelected] = useState<Audience>('team');
@@ -107,7 +64,7 @@ export function AudienceChooser({ onChoose }: { onChoose: (audience: Audience) =
       >
         {WORLDS.map((world) => {
           const active = world.key === selected;
-          const Mascot = world.mascot;
+          const Mascot = WORLD_MASCOT[world.key];
           return (
             <button
               key={world.key}

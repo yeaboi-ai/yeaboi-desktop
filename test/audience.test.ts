@@ -1,8 +1,18 @@
 // The audience split's pure decisions: what the persisted value means, which
 // worlds a route belongs to, and where a deep link should switch to.
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { audiencesForRoute, normalizeAudience, resolveAudience } from '../src/shared/audience';
+import {
+  audiencesForRoute,
+  AUDIENCES,
+  normalizeAudience,
+  resolveAudience,
+  WORLD_COPY,
+} from '../src/shared/audience';
+
+const ROOT = resolve(import.meta.dirname, '..');
 
 describe('normalizeAudience', () => {
   it('passes the three worlds through', () => {
@@ -129,5 +139,37 @@ describe('resolveAudience', () => {
   it('stays put on shared chrome', () => {
     expect(resolveAudience('/home', 'solo')).toBeNull();
     expect(resolveAudience('/settings', 'agents')).toBeNull();
+  });
+});
+
+describe('WORLD_COPY', () => {
+  it('covers every world, in the display order', () => {
+    expect(Object.keys(WORLD_COPY)).toEqual([...AUDIENCES]);
+    for (const world of AUDIENCES) {
+      const copy = WORLD_COPY[world];
+      expect(copy.title).toBeTruthy();
+      expect(copy.verb).toBeTruthy();
+      expect(copy.capabilities.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('marks the beta worlds and only those', () => {
+    expect(WORLD_COPY.solo.beta).toBe(true);
+    expect(WORLD_COPY.agents.beta).toBe(true);
+    expect(WORLD_COPY.team.beta).toBeUndefined();
+  });
+
+  // The accents are declared twice — here for JS, and as the --audience-accent
+  // tokens the accented chrome reads. Neither may drift from the other.
+  it('agrees with the accent tokens in globals.css', () => {
+    const css = readFileSync(resolve(ROOT, 'src/renderer/styles/globals.css'), 'utf8');
+    for (const world of AUDIENCES) {
+      // `team` also seeds bare :root, so match the selector's whole block.
+      const block = new RegExp(
+        `html\\[data-audience='${world}'\\]\\s*\\{[^}]*?--audience-accent:\\s*([^;]+);`,
+      ).exec(css);
+      expect(block, `no --audience-accent block for ${world}`).not.toBeNull();
+      expect(block![1]!.trim()).toBe(WORLD_COPY[world].accent);
+    }
   });
 });

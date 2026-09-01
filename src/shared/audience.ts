@@ -18,6 +18,46 @@ export function normalizeAudience(value: unknown): Audience | undefined {
   return value === 'solo' || value === 'team' || value === 'agents' ? value : undefined;
 }
 
+/** How a world names itself wherever it is offered — the chooser's cards and
+ *  the sidebar's switcher read the same copy. Accents are the TUI's own world
+ *  accents, and `styles/globals.css` declares them again as the
+ *  `--audience-accent` tokens (audience.test.ts asserts the two agree). */
+export interface WorldCopy {
+  title: string;
+  verb: string;
+  capabilities: readonly string[];
+  /** A whole beta world wears the chip wherever it is named. */
+  beta?: boolean;
+  accent: string;
+  accentBright: string;
+}
+
+export const WORLD_COPY: Record<Audience, WorldCopy> = {
+  solo: {
+    title: 'Solo',
+    verb: 'Run your own show',
+    capabilities: ['planning', 'standups', 'analysis', 'reports'],
+    beta: true,
+    accent: 'rgb(210, 168, 80)',
+    accentBright: 'rgb(245, 200, 110)',
+  },
+  team: {
+    title: 'Team',
+    verb: "Run your team's scrum",
+    capabilities: ['planning', 'standups', 'retros', 'poker', 'reviews'],
+    accent: 'rgb(100, 180, 100)',
+    accentBright: 'rgb(80, 220, 120)',
+  },
+  agents: {
+    title: 'Agents',
+    verb: 'Watch your AI agents work',
+    capabilities: ['cost', 'recoverable spend', 'daily digests', 'security posture'],
+    beta: true,
+    accent: 'rgb(90, 160, 210)',
+    accentBright: 'rgb(130, 200, 255)',
+  },
+};
+
 // Route families per world, matched whole-segment so `/board` never claims a
 // hypothetical `/boardroom`. The hrefs are the manifest's paths verbatim
 // (lib/yeaboi/routes.json) plus the planning-served set from app/routes.tsx.

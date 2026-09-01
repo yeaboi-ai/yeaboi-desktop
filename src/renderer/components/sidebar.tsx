@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
-import { BrandName, DuckMark } from '@/components/brand/duck';
-import { RoboMark } from '@/components/brand/robo';
-import { TeamMark } from '@/components/brand/team';
+import { WorldSwitcher } from '@/components/audience/world-switcher';
 import { useAudience } from '@/components/providers/audience-provider';
 import { navItems, navSections, type IconKey } from '@/lib/nav/sections';
 import { audiencesForRoute, type Audience } from '@shared/audience';
@@ -320,40 +318,10 @@ export function Sidebar() {
       // padding cannot move a fixed element — this reads the banner's height.
       style={{ top: 'var(--banner-h, 0px)' }}
     >
-      {/* The world flip: duck or robo, one silhouette, two materials. */}
-      <div
-        className="mx-2 md:mx-3 mt-3 flex rounded-lg bg-secondary/40 p-0.5"
-        role="radiogroup"
-        aria-label="Audience"
-      >
-        {(
-          [
-            { key: 'solo', label: 'Solo', mark: <DuckMark state="idle" size={16} /> },
-            { key: 'team', label: 'Team', mark: <TeamMark size={18} /> },
-            { key: 'agents', label: 'Agents', mark: <RoboMark size={16} /> },
-          ] as const
-        ).map(({ key, label, mark }) => (
-          <button
-            key={key}
-            type="button"
-            role="radio"
-            aria-checked={audience === key}
-            onClick={() => flipAudience(key)}
-            data-audience-accented
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] font-body font-medium ${
-              audience === key
-                ? 'bg-card text-foreground'
-                : 'text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100'
-            }`}
-            style={{
-              boxShadow: audience === key ? 'inset 0 0 0 1px var(--audience-accent)' : 'none',
-            }}
-            title={label}
-          >
-            {mark}
-            <span className="hidden md:inline">{label}</span>
-          </button>
-        ))}
+      {/* Brand and world are one lockup: the mascot names the world you are
+          in, and the whole thing opens the switcher. */}
+      <div className="pt-4 pb-2">
+        <WorldSwitcher onSwitch={flipAudience} />
       </div>
 
       {/* Org switcher — only shown when user belongs to multiple orgs.
@@ -395,13 +363,6 @@ export function Sidebar() {
           </div>
         </div>
       )}
-
-      {/* Logo + notification bell */}
-      <div className="flex items-center justify-between px-3 md:px-5 pt-5 pb-6">
-        <Link href={DEFAULT_ROUTE} className="flex items-center gap-2 min-w-0">
-          <BrandWordmark />
-        </Link>
-      </div>
 
       {/* Team switcher — the roster affordance, so team-world only */}
       {audience === 'team' && teams.length > 0 && (
@@ -506,16 +467,5 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
-  );
-}
-
-function BrandWordmark() {
-  // The duck is the brand. The org-configurable name/logo from the web app's
-  // BrandProvider is intentionally not consulted here.
-  return (
-    <>
-      <DuckMark state="idle" size={26} />
-      <BrandName className="hidden md:inline text-xl leading-none" />
-    </>
   );
 }
