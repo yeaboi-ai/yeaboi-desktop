@@ -49,6 +49,6 @@ describe('a stale backend is staleness, not breakage', () => {
     ['connected-integrations', credentials],
   ])('%s rewrites the 404 into honest copy', (_name, source) => {
     expect(source).toMatch(/404\|not found/);
-    expect(source).toContain('predates Integrations');
+    expect(source).toContain('predates the integrations catalog');
   });
 });
