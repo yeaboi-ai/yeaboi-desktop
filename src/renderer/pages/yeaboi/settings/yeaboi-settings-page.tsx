@@ -703,7 +703,7 @@ export default function YeaboiSettingsPage() {
               </Link>
             </div>
           )}
-          {engineTab?.title === 'Connections' ? (
+          {engineTab?.title === 'Integrations' ? (
             <IntegrationsCatalog />
           ) : (
             /* The tab table is a non-empty literal; index 0 only looks optional

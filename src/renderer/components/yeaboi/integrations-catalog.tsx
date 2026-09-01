@@ -1,12 +1,12 @@
 'use client';
 
-// The integrations catalog — Settings > Connections.
+// The integrations catalog — Settings > Integrations.
 //
-// Two views behind one segmented control. **Connected** is the quiet default:
-// only what is already wired, nothing to read for a user who has connected
-// nothing. **Catalog** is the browse view: the whole roster from
-// GET /api/connections?all=1, searchable, shelved by family, with a
-// Create-your-own tile at the end.
+// One view: the whole roster from GET /api/connections?all=1, searchable,
+// shelved by family, with a Create-your-own tile at the end. A connected
+// integration wears its badge and accent here; managing what is already set
+// up (masked fields, verify, edit) lives beside the other credentials on
+// Settings > Credentials.
 //
 // The signature is the accent bloom: every tile is monochrome at rest, takes
 // its vendor's accent on hover/focus (ring + soft glow through a per-tile
@@ -51,9 +51,6 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-const VIEWS = ['connected', 'catalog'] as const;
-const VIEW_LABELS = { connected: 'Connected', catalog: 'Catalog' };
-
 /** The tile's identity chip: a real logomark when the desktop ships one, the
  *  wire glyph for a user-created connection (its icon is the user's emoji). */
 function ConnectorMark({ row, size = 40 }: { row: ConnectionRow; size?: number }) {
@@ -86,7 +83,6 @@ function matches(row: ConnectionRow, needle: string): boolean {
 export function IntegrationsCatalog() {
   const [payload, setPayload] = useState<ConnectionsPayload | null>(null);
   const [error, setError] = useState('');
-  const [view, setView] = useState<(typeof VIEWS)[number] | null>(null);
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState('');
   const [openKey, setOpenKey] = useState('');
@@ -98,13 +94,6 @@ export function IntegrationsCatalog() {
       const next = await loadConnections(true);
       setPayload(next);
       setError('');
-      // First load decides the landing view: someone with nothing connected
-      // came here to browse, so the catalog IS the page for them. Never
-      // switches a view the user has already chosen.
-      setView(
-        (current) =>
-          current ?? (next.connectors.some((row) => row.connected) ? 'connected' : 'catalog'),
-      );
     } catch (e) {
       setError((e as Error).message);
     }
@@ -123,13 +112,19 @@ export function IntegrationsCatalog() {
   );
 
   if (error) {
-    return (
+    // A backend that predates the route answers the router's generic 404 —
+    // that is staleness, not breakage, and it must not read as red.
+    return /404|not found/i.test(error) ? (
+      <p role="status" className="text-[13px] text-muted-foreground">
+        Your yeaboi backend predates the integrations catalog — update yeaboi to browse it.
+      </p>
+    ) : (
       <p role="alert" className="text-[12px] text-destructive">
-        {error}
+        Could not load the catalog: {error}
       </p>
     );
   }
-  if (!payload || view === null) {
+  if (!payload) {
     return (
       <div className="space-y-2">
         {[0, 1, 2].map((i) => (
@@ -145,94 +140,82 @@ export function IntegrationsCatalog() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <ChoicePills
-          options={VIEWS}
-          labels={VIEW_LABELS}
-          active={view}
-          onPick={(value) => setView(value as (typeof VIEWS)[number])}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="relative min-w-56 flex-1">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground/60"
+            />
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search the catalog"
+              aria-label="Search the catalog"
+              className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+            />
+          </label>
+        </div>
         <p className="text-[12px] font-mono text-muted-foreground">
           {connected.length} of {rows.length} connected
         </p>
       </div>
 
-      {view === 'connected' ? (
-        <ConnectedView rows={connected} onOpen={setOpenKey} onBrowse={() => setView('catalog')} />
+      <div role="group" aria-label="Family filter" className="flex flex-wrap gap-1.5">
+        <FamilyChip label="All" active={!family} onPick={() => setFamily('')} />
+        {(payload?.families ?? []).map((f) => (
+          <FamilyChip
+            key={f.key}
+            label={f.label}
+            active={family === f.key}
+            onPick={() => setFamily(family === f.key ? '' : f.key)}
+          />
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-[12px] text-muted-foreground">
+          Nothing matches — clear the search to see the whole catalog.
+        </p>
       ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative min-w-56 flex-1">
-              <Search
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground/60"
-              />
-              <input
-                ref={searchRef}
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search the catalog"
-                aria-label="Search the catalog"
-                className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
-              />
-            </label>
-            <div role="group" aria-label="Family filter" className="flex flex-wrap gap-1.5">
-              <FamilyChip label="All" active={!family} onPick={() => setFamily('')} />
-              {(payload?.families ?? []).map((f) => (
-                <FamilyChip
-                  key={f.key}
-                  label={f.label}
-                  active={family === f.key}
-                  onPick={() => setFamily(family === f.key ? '' : f.key)}
-                />
-              ))}
-            </div>
-          </div>
-
-          {filtered.length === 0 ? (
-            <p className="py-8 text-center text-[12px] text-muted-foreground">
-              Nothing matches — clear the search to see the whole catalog.
-            </p>
-          ) : (
-            shelfFamilies.map((f, index) => (
-              <section
-                key={f.key}
-                className="animate-slide-up motion-reduce:animate-none"
-                style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
-              >
-                <h3 className="mb-2 text-[10px] font-body tracking-[0.14em] text-muted-foreground uppercase">
-                  {f.label}
-                </h3>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {filtered
-                    .filter((row) => row.family === f.key)
-                    .map((row) => (
-                      <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
-                    ))}
-                </div>
-              </section>
-            ))
-          )}
-
-          <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
+        shelfFamilies.map((f, index) => (
+          <section
+            key={f.key}
+            className="animate-slide-up motion-reduce:animate-none"
+            style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
-              <Plus aria-hidden className="size-5 text-muted-foreground" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[13.5px] font-body font-medium text-foreground">
-                Create your own
-              </span>
-              <span className="block text-[12px] text-muted-foreground/70">
-                A generic API or an inbound webhook — describe it, or fill the form.
-              </span>
-            </span>
-          </button>
-        </>
+            <h3 className="mb-2 text-[10px] font-body tracking-[0.14em] text-muted-foreground uppercase">
+              {f.label}
+            </h3>
+            <div className="grid gap-2 md:grid-cols-2">
+              {filtered
+                .filter((row) => row.family === f.key)
+                .map((row) => (
+                  <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
+                ))}
+            </div>
+          </section>
+        ))
       )}
+
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
+          <Plus aria-hidden className="size-5 text-muted-foreground" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[13.5px] font-body font-medium text-foreground">
+            Create your own
+          </span>
+          <span className="block text-[12px] text-muted-foreground/70">
+            A generic API, an inbound webhook or an MCP server — describe it, or fill the form.
+          </span>
+        </span>
+      </button>
 
       <ConnectorSheet row={openRow} onClose={() => setOpenKey('')} onChanged={refresh} />
       <CreateCustomSheet
@@ -311,37 +294,6 @@ function ConnectorTile({ row, onOpen }: { row: ConnectionRow; onOpen: () => void
         <span className="block truncate text-[12px] text-muted-foreground/70">{row.summary}</span>
       </span>
     </button>
-  );
-}
-
-function ConnectedView({
-  rows,
-  onOpen,
-  onBrowse,
-}: {
-  rows: ConnectionRow[];
-  onOpen: (key: string) => void;
-  onBrowse: () => void;
-}) {
-  if (!rows.length) {
-    return (
-      <div className="rounded-2xl bg-card px-6 py-10 text-center ring-1 ring-border/60">
-        <p className="text-[13px] text-foreground">Nothing connected yet.</p>
-        <p className="mt-1 text-[12px] text-muted-foreground">
-          The catalog has every integration yeaboi can read — pick one to start.
-        </p>
-        <Button size="sm" variant="outline" className="mt-4" onClick={onBrowse}>
-          Browse the catalog
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <div className="grid gap-2 md:grid-cols-2">
-      {rows.map((row) => (
-        <ConnectorTile key={row.key} row={row} onOpen={() => onOpen(row.key)} />
-      ))}
-    </div>
   );
 }
 

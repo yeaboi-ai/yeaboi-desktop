@@ -194,7 +194,7 @@
     {
       "path": "/settings/connections",
       "capability": "connections",
-      "title": "Settings · Connections"
+      "title": "Settings · Integrations"
     },
     {
       "path": "/settings/sharing",
@@ -331,11 +331,11 @@
     {
       "route": "/settings/credentials",
       "title": "Credentials",
-      "sections": ["provider", "jira", "azure", "github", "notion", "slack"]
+      "sections": ["provider", "jira", "azure", "github", "notion", "slack", "integrations"]
     },
     {
       "route": "/settings/connections",
-      "title": "Connections",
+      "title": "Integrations",
       "sections": ["connections"]
     },
     {
