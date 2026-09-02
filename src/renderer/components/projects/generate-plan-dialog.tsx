@@ -17,6 +17,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useAudience } from '@/components/providers/audience-provider';
 import { callTool, newOpId, onAmbientEvent } from '@/lib/yeaboi/api';
 import { mapBlueprintToIntake, type IntakeArgs } from '@/lib/yeaboi/blueprint-intake';
 import { ensureEngineProject, type EngineLinkable } from '@/lib/yeaboi/engine-project';
@@ -100,6 +101,7 @@ type Phase =
 
 export function GeneratePlanDialog({ projectId, onClose, onGenerated }: GeneratePlanDialogProps) {
   const { authFetch, ready } = useAuthFetch();
+  const { audience } = useAudience();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   // Sibling state, not part of Phase: phases are replaced wholesale on
   // transitions and the toggles must survive an error → retry round-trip.
@@ -204,6 +206,8 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
           project_context: args.project_context,
           ...(engineProjectId ? { project_id: engineProjectId } : {}),
           ...(contextDeps !== null ? { context_deps: contextDeps } : {}),
+          // A Solo-world plan is for one developer: the intake defaults the team questions.
+          ...(audience === 'solo' ? { solo: true } : {}),
         },
         { opId },
       );
