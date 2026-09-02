@@ -100,19 +100,25 @@ export function loadSchedule(sessionId: string): Promise<ScheduleView> {
   return apiGet<ScheduleView>(`/api/standup/schedule?session_id=${encodeURIComponent(sessionId)}`);
 }
 
+/** `solo` is not saved — it rides on the installed job's command line, so a
+ *  Solo-world schedule runs one-person standups. */
 export function saveSchedule(
-  body: Partial<ScheduleView> & { session_id: string },
+  body: Partial<ScheduleView> & { session_id: string; solo?: boolean },
 ): Promise<{ message: string }> {
   return apiPost<{ message: string }>('/api/standup/schedule', body);
 }
 
+/** `solo` is the Solo world: a self-only run with a first-person summary. */
 export function runStandup(
   sessionId: string,
   deliver: boolean,
   onLine: (line: RunLine) => void,
+  opts: { solo?: boolean } = {},
 ): Promise<void> {
-  return apiStream('/api/standup/run', { session_id: sessionId, deliver }, (line) =>
-    onLine(line as RunLine),
+  return apiStream(
+    '/api/standup/run',
+    { session_id: sessionId, deliver, solo: opts.solo ?? false },
+    (line) => onLine(line as RunLine),
   );
 }
 

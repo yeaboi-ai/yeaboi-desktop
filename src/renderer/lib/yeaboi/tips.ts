@@ -11,6 +11,18 @@ export interface Tip {
   mode_key: string | null;
   is_new: boolean;
   is_beta: boolean;
+  /** Landing worlds the tip is true in; absent on a sidecar older than the axis. */
+  worlds?: string[];
+}
+
+/**
+ * The tips a world's home may rotate. A Team-only tip (retro, poker, performance)
+ * opens a route the Solo world does not own, and following it flips the world
+ * — so the Solo home never shows one. A tip without `worlds` predates the axis
+ * and passes.
+ */
+export function tipsForAudience(tips: Tip[], audience: string): Tip[] {
+  return tips.filter((tip) => !tip.worlds || tip.worlds.includes(audience));
 }
 
 /** How long each tip holds before the next rotates in. Matches TIP_ROTATE_SECONDS. */
@@ -36,6 +48,7 @@ export const MODE_ROUTES: Record<string, string> = {
   performance: '/team/performance',
   reporting: '/team/reporting',
   ship: '/team/ship',
+  'weekly-review': '/solo/review',
   usage: '/usage',
   settings: '/settings/credentials',
   'agent-usage': '/agents/usage',

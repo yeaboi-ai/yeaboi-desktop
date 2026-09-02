@@ -19,6 +19,7 @@ export type IconKey =
   | 'performance'
   | 'reporting'
   | 'ship'
+  | 'review'
   | 'agent-usage'
   | 'agent-advisor'
   | 'agent-standup'
@@ -89,7 +90,8 @@ const TEAM_SECTIONS: NavSectionSpec[] = [
 ];
 
 // Solo shares the Team world's routes — the pages are the same screens run
-// for one person; the nav simply never offers the modes that need a room.
+// for one person; the nav simply never offers the modes that need a room —
+// and adds the one mode that is its own: the Weekly Review.
 const SOLO_SECTIONS: NavSectionSpec[] = [
   HOME,
   WORKSPACE,
@@ -101,6 +103,7 @@ const SOLO_SECTIONS: NavSectionSpec[] = [
       { href: '/team/standup', label: 'Standup', icon: 'standup' },
       { href: '/team/reporting', label: 'Reporting', icon: 'reporting' },
       { href: '/team/ship', label: 'Ship', icon: 'ship' },
+      { href: '/solo/review', label: 'Weekly Review', icon: 'review' },
     ],
   },
   OPS,

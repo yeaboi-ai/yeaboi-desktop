@@ -8,7 +8,7 @@
 // for the full intake, and what a repo resolves to are all backend answers —
 // a second copy of any of them is a second thing to drift.
 
-import { type Envelope, apiGet, apiPost, apiStream, callTool } from './api';
+import { type Envelope, apiGet, apiGetOptional, apiPost, apiStream, callTool } from './api';
 
 // ── A streamed run ─────────────────────────────────────────────────────────
 
@@ -364,4 +364,149 @@ export function numberFromHash(hash: string, name: string): number {
   const raw = new URLSearchParams(query).get(name) ?? '';
   const value = Number.parseInt(raw, 10);
   return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+// ── Weekly Review (Solo) ───────────────────────────────────────────────────
+//
+// The Solo world's own mode: a review of your week over your standups,
+// delivered work and sprint plan. Shapes mirror the backend's WeeklyReview
+// and ReviewAction dataclasses field for field.
+
+export type ReviewActionStatus = 'pending' | 'done' | 'dropped' | 'carried';
+
+export interface ReviewAction {
+  id: string;
+  text: string;
+  status: ReviewActionStatus | string;
+  origin: string;
+  week_label: string;
+}
+
+export interface DeliveredItem {
+  key: string;
+  title: string;
+  status: string;
+  source: string;
+  assignee: string;
+}
+
+export interface WeeklyReview {
+  week_label: string;
+  week_start: string;
+  week_end: string;
+  project_id: string;
+  project_name: string;
+  session_id: string;
+  my_name: string;
+  standup_dates: string[];
+  standup_lines: string[];
+  confidence_start: number;
+  confidence_end: number;
+  confidence_label: string;
+  sprint_name: string;
+  sprint_day: number;
+  sprint_total_days: number;
+  delivered_items: DeliveredItem[];
+  planned_story_count: number;
+  plan_status: string;
+  plan_line: string;
+  summary: string;
+  went_well: string[];
+  to_change: string[];
+  actions: ReviewAction[];
+  carried_actions: ReviewAction[];
+  warnings: string[];
+  generated_at: string;
+}
+
+export interface ReviewHistoryRow {
+  id: number;
+  session_id: string;
+  project_id: string;
+  run_at: string;
+  week_label: string;
+  week_start: string;
+  week_end: string;
+  project_name: string;
+  action_count: number;
+}
+
+export interface ReviewRun {
+  run_id: number;
+  review: WeeklyReview;
+}
+
+export interface ReviewHome {
+  latest: ReviewRun | null;
+  history: ReviewHistoryRow[];
+  carried: ReviewAction[];
+  beta_notice: string;
+}
+
+export interface ReviewRunBody {
+  session_id?: string;
+  project_id?: string;
+  context_deps?: string[];
+  week_end?: string;
+  carried_statuses?: Record<string, ReviewActionStatus>;
+}
+
+/** null on 404: a sidecar older than the Solo world's review routes. */
+export const loadReviewHome = (): Promise<ReviewHome | null> => apiGetOptional('/api/solo/review');
+
+export const loadReview = (runId: number): Promise<ReviewRun> =>
+  apiGet(`/api/solo/review/runs/${runId}`);
+
+export const deleteReview = (runId: number): Promise<{ deleted: boolean; run_id: number }> =>
+  apiPost(`/api/solo/review/runs/${runId}/delete`);
+
+export const exportReview = (
+  runId: number,
+): Promise<Envelope<{ paths?: Record<string, string>; path?: string }>> =>
+  callTool('weekly_review_export', { run_id: runId });
+
+/** The marks a person can put on a carried action. `carried` is the engine's
+ *  own word for "still open, rolled forward" — a person only ever says done,
+ *  dropped, or nothing. */
+export const MARKABLE_STATUSES: readonly ReviewActionStatus[] = ['pending', 'done', 'dropped'];
+
+/** Space-bar cycle over the marks: pending → done → dropped → pending. An
+ *  engine status outside the cycle (`carried`) starts from pending. */
+export function nextActionStatus(status: string): ReviewActionStatus {
+  const index = Math.max(0, MARKABLE_STATUSES.indexOf(status as ReviewActionStatus));
+  return MARKABLE_STATUSES[(index + 1) % MARKABLE_STATUSES.length]!;
+}
+
+/** The `carried_statuses` body for the next run: only the actions whose mark
+ *  differs from what the engine already holds, so an untouched list sends
+ *  nothing and the engine's own carry-forward rule decides. */
+export function carriedStatusesPayload(
+  carried: readonly ReviewAction[],
+  marks: Readonly<Record<string, ReviewActionStatus>>,
+): Record<string, ReviewActionStatus> {
+  const payload: Record<string, ReviewActionStatus> = {};
+  for (const action of carried) {
+    const mark = marks[action.id];
+    if (mark && mark !== action.status) payload[action.id] = mark;
+  }
+  return payload;
+}
+
+/** One line for a review's card: the week, then the plan verdict when there
+ *  is one. */
+export function reviewHeadline(review: Pick<WeeklyReview, 'week_label' | 'plan_line'>): string {
+  const week = review.week_label ? `Week ${review.week_label}` : 'This week';
+  return review.plan_line ? `${week} · ${review.plan_line}` : week;
+}
+
+/** The confidence movement across the week as a short phrase, or '' when the
+ *  week had no standups to measure it by. */
+export function confidenceDrift(
+  review: Pick<WeeklyReview, 'confidence_start' | 'confidence_end' | 'standup_dates'>,
+): string {
+  if (!review.standup_dates.length) return '';
+  const delta = review.confidence_end - review.confidence_start;
+  if (delta === 0) return `${review.confidence_end}%, steady`;
+  const arrow = delta > 0 ? '↑' : '↓';
+  return `${review.confidence_end}% ${arrow} ${Math.abs(delta)} since Monday`;
 }

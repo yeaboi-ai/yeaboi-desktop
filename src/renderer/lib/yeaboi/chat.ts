@@ -48,10 +48,18 @@ export interface Bubble {
   kind?: string;
 }
 
-export function createChat(description: string, intakeMode = ''): Promise<SessionView> {
+/** `solo` opens a one-person intake: team questions default to one developer
+ *  and there is no member picker. Sent only when set — the body's keys are
+ *  all optional on the wire. */
+export function createChat(
+  description: string,
+  intakeMode = '',
+  opts: { solo?: boolean } = {},
+): Promise<SessionView> {
   return apiPost<SessionView>('/api/chat/sessions', {
     description,
     ...(intakeMode ? { intake_mode: intakeMode } : {}),
+    ...(opts.solo ? { solo: true } : {}),
   });
 }
 

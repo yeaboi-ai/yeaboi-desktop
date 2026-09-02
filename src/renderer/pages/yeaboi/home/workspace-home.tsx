@@ -14,8 +14,9 @@ import { apiGet } from '@/lib/yeaboi/api';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
+import { TodayStrip } from '@/components/yeaboi/today-strip';
 import { ModeCardGrid, type ModeCard } from '@/components/yeaboi/mode-card-grid';
-import { MODE_ROUTES, type Tip } from '@/lib/yeaboi/tips';
+import { MODE_ROUTES, type Tip, tipsForAudience } from '@/lib/yeaboi/tips';
 
 interface CategoryCard {
   key: string;
@@ -112,6 +113,10 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
         {audience === 'solo' && <BetaChip />}
       </p>
 
+      {/* Where am I — before what do I want to do. Solo only: the strip is
+          the one person's own yesterday, sprint, next story and agent spend. */}
+      {audience === 'solo' && <TodayStrip />}
+
       {/* The two doors. Equal, and each explains when it is the right one. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
         <button
@@ -196,7 +201,11 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
         <ModeCardGrid cards={runModes} onOpen={open} />
       </div>
 
-      <TipCompanion tips={tips} cards={runModes} onNavigate={(route) => router.push(route)} />
+      <TipCompanion
+        tips={tipsForAudience(tips, audience)}
+        cards={runModes}
+        onNavigate={(route) => router.push(route)}
+      />
     </>
   );
 }

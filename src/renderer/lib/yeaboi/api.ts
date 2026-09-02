@@ -52,6 +52,17 @@ export async function apiGet<T>(path: string): Promise<T> {
   return body as T;
 }
 
+/** GET a route an older sidecar may not have: null on 404, throws on anything
+ *  else. The only way to tell "not there yet" from a failure — apiGet folds
+ *  the status into the message. */
+export async function apiGetOptional<T>(path: string): Promise<T | null> {
+  const { status, body } = await bridge().api(path);
+  if (status === 404) return null;
+  if (status !== 200)
+    throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
+  return body as T;
+}
+
 export async function apiPost<T>(path: string, body: object = {}): Promise<T> {
   const { status, body: resp } = await bridge().api(path, { method: 'POST', body });
   if (status !== 200)

@@ -10,6 +10,7 @@ export const RUNS: readonly { match: RegExp; key: string; route: string }[] = [
   { match: /^\/api\/analysis\/run/, key: 'run.analysis', route: '/analysis' },
   { match: /^\/api\/standup\/run/, key: 'run.standup', route: '/standup' },
   { match: /^\/api\/reporting\/run/, key: 'run.reporting', route: '/reporting' },
+  { match: /^\/api\/solo\/review\/run/, key: 'run.review', route: '/solo/review' },
   { match: /^\/api\/roadmap\/analyze/, key: 'run.roadmap', route: '/planning/roadmap' },
   { match: /^\/api\/agents\/[^/]+\/run/, key: 'run.agents', route: '/agents' },
   { match: /^\/api\/ceremonies\/[^/]+\/run/, key: 'run.ceremony', route: '/ceremonies' },

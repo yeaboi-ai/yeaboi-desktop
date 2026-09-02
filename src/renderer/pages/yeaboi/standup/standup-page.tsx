@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { quip } from '@/lib/yeaboi/ambience';
+import { useAudience } from '@/components/providers/audience-provider';
 import {
   type ArtifactEdits,
   type ArtifactRef,
@@ -106,6 +107,7 @@ const inputClass =
   'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 function StandupBody() {
+  const { audience } = useAudience();
   const [data, setData] = useState<StandupDashboard | null>(null);
   const [error, setError] = useState('');
   const [run, setRun] = useState(emptyRun());
@@ -144,10 +146,15 @@ function StandupBody() {
     let state = emptyRun();
     setRun(state);
     try {
-      await runStandup(data.session_id, deliver, (line: RunLine) => {
-        state = reduceRun(state, line);
-        setRun(state);
-      });
+      await runStandup(
+        data.session_id,
+        deliver,
+        (line: RunLine) => {
+          state = reduceRun(state, line);
+          setRun(state);
+        },
+        { solo: audience === 'solo' },
+      );
     } catch (e) {
       setError((e as Error).message);
     }
