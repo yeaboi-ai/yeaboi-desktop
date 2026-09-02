@@ -23,6 +23,7 @@ import {
   runReport,
 } from '@/lib/yeaboi/modes';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
 
 const QUARTER = 'quarter';
@@ -63,6 +64,7 @@ function ReportingSetupBody() {
   const [checked, setChecked] = useState<number[]>([]);
   const [range, setRange] = useState({ start: '', end: '' });
   const [run, setRun] = useState<ModeRunState>(emptyModeRun());
+  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -113,6 +115,7 @@ function ReportingSetupBody() {
     setRun(state);
     try {
       const body: Record<string, unknown> = { period, theme, sources };
+      if (contextDeps !== null) body.context_deps = contextDeps;
       if (period === QUARTER && sprints) {
         // Empty checks and no sprint list are different answers: with no list
         // at all the backend already handed back the calendar-quarter window.
@@ -272,6 +275,14 @@ function ReportingSetupBody() {
           </div>
         </Section>
       )}
+
+      <Section title="Context">
+        <ContextSourcesPanel
+          value={contextDeps}
+          onChange={setContextDeps}
+          note="The plan source frames the report with the project's latest sprint plan."
+        />
+      </Section>
 
       <Section title="Presentation theme">
         <div className="flex flex-wrap gap-2">

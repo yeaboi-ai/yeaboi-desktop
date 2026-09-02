@@ -5,10 +5,10 @@
 // Four of planning's tools (plan_get, plan_export, plan_publish, plan_sync)
 // are called from here. Publish and sync both write somewhere real, so
 // neither runs on a click alone — each asks once, in the words of what it is
-// about to do.
+// about to do. Rendered inside a project (the Plan tab) with the owning
+// project pre-selected for the board push.
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
 import type { Envelope } from '@/lib/yeaboi/api';
 import {
   PLAN_DESTINATIONS,
@@ -24,7 +24,6 @@ import {
   storiesOf,
   syncPlan,
 } from '@/lib/yeaboi/plan';
-import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { PlanImportDialog } from '@/components/yeaboi/plan-import-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function PlanBody({ sessionId }: { sessionId: string }) {
+export interface PlanPanelProps {
+  sessionId: string;
+  /** The owning platform project — pre-selects the board push target. */
+  projectId?: string;
+  /** The blueprint changed since this plan was generated. */
+  stale?: boolean;
+  /** Shown instead of the plan's own project name (the page already says it). */
+  hideHeading?: boolean;
+}
+
+export function PlanPanel({ sessionId, projectId, stale, hideHeading }: PlanPanelProps) {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
@@ -86,18 +95,26 @@ function PlanBody({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="font-display text-2xl text-foreground">{project.name || 'The plan'}</h1>
-        {project.description && (
-          <p className="text-[13px] text-muted-foreground mt-1">{project.description}</p>
-        )}
-      </div>
+      {!hideHeading && (
+        <div>
+          <h1 className="font-display text-2xl text-foreground">{project.name || 'The plan'}</h1>
+          {project.description && (
+            <p className="text-[13px] text-muted-foreground mt-1">{project.description}</p>
+          )}
+        </div>
+      )}
+
+      {stale && (
+        <div className="rounded-xl bg-secondary/40 ring-1 ring-border/60 px-4 py-3 text-[12px] text-muted-foreground">
+          The blueprint has changed since this plan was generated — regenerate it to catch up.
+        </div>
+      )}
 
       {isEmptyPlan(plan) ? (
         <Section title="Nothing to show yet">
           <p className="text-[13px] text-muted-foreground">
-            This conversation has not produced a plan yet — finish the intake and the epics,
-            stories, tasks and sprints appear here.
+            This run has not produced a plan yet — generate one and the epics, stories, tasks and
+            sprints appear here.
           </p>
         </Section>
       ) : (
@@ -177,8 +194,8 @@ function PlanBody({ sessionId }: { sessionId: string }) {
 
       <Section title="Put it on the board">
         <p className="text-[12px] text-muted-foreground mb-3">
-          Stories become cards on a project&apos;s kanban board here in the app — sprints as waves,
-          epics as labels. Ship can pick them up from there.
+          Stories become cards on the kanban board here in the app — sprints as waves, epics as
+          labels. Ship can pick them up from there. Re-running updates the cards it made before.
         </p>
         <Button size="sm" disabled={isEmptyPlan(plan)} onClick={() => setImporting(true)}>
           Send to board
@@ -220,7 +237,9 @@ function PlanBody({ sessionId }: { sessionId: string }) {
         </Section>
       )}
 
-      {importing && <PlanImportDialog plan={plan} onClose={() => setImporting(false)} />}
+      {importing && (
+        <PlanImportDialog plan={plan} projectId={projectId} onClose={() => setImporting(false)} />
+      )}
 
       {confirm && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -251,17 +270,5 @@ function PlanBody({ sessionId }: { sessionId: string }) {
         </div>
       )}
     </div>
-  );
-}
-
-export default function PlanPage() {
-  const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('id') ?? '';
-  return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <PlanBody key={sessionId} sessionId={sessionId} />
-      </div>
-    </BackendGate>
   );
 }

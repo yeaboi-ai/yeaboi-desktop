@@ -12,6 +12,7 @@ import { useSearchParams } from 'react-router';
 import { maskText } from '@/lib/yeaboi/boards';
 import { type AnalysisResult, loadAnalysisResult } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { useAudience } from '@/components/providers/audience-provider';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Badge } from '@/components/ui/badge';
 
@@ -82,6 +83,7 @@ const cell = 'py-1.5 pr-3 border-t border-border/40';
 function AnalysisResultsBody() {
   // The result's team id rides the query string so the route path stays a
   // literal (the old page read it off the hash).
+  const { audience } = useAudience();
   const [searchParams] = useSearchParams();
   const teamId = searchParams.get('id') ?? '';
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -95,14 +97,14 @@ function AnalysisResultsBody() {
       setError('No analysis was named — pick one from Team Analysis.');
       return;
     }
-    loadAnalysisResult(teamId).then(
+    loadAnalysisResult(teamId, { solo: audience === 'solo' }).then(
       (body) => {
         setResult(body);
         setOpen(body.cards[0]?.key ?? '');
       },
       (e: Error) => setError(e.message),
     );
-  }, [teamId]);
+  }, [teamId, audience]);
 
   if (error) return <Notice title="Could not open that analysis" items={[error]} />;
   if (!result) return <p className="text-[13px] text-muted-foreground">Loading…</p>;

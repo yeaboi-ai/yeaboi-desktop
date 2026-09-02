@@ -18,28 +18,38 @@ interface CreateProjectDialogProps {
   onCreated?: () => void;
 }
 
+/** A rejected fetch is a TypeError worded for a browser; anything else already
+ *  carries the backend's `detail`. */
+function createErrorMessage(err: unknown): string {
+  if (err instanceof TypeError) return 'Network error. Please check your connection.';
+  if (err instanceof Error && err.message) return err.message;
+  return "Couldn't create the project. Please try again.";
+}
+
 export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { authFetch } = useAuthFetch();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!description.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       await onCreate({ description: description.trim() });
       setOpen(false);
       setDescription('');
       onCreated?.();
+    } catch (err) {
+      setError(createErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }
-
-  const [error, setError] = useState<string | null>(null);
 
   async function handleRewrite() {
     if (!description.trim() || rewriting) return;

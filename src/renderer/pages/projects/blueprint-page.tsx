@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Lock, Sparkles } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { BlueprintDocument } from '@/components/blueprint/blueprint-document';
 import { BlueprintExportMenu } from '@/components/blueprint/blueprint-export-menu';
 import type { BulletSource } from '@/components/blueprint/bullet-source-chip';
+import { GeneratePlanDialog } from '@/components/projects/generate-plan-dialog';
 
 interface Iteration {
   id: string;
@@ -46,6 +47,8 @@ export default function BlueprintPage() {
   const [coverage, setCoverage] = useState<CoverageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const router = useRouter();
 
   // Initial fetch — project name + iterations list. Selects the latest
   // iteration as active by default.
@@ -137,12 +140,22 @@ export default function BlueprintPage() {
   const headerActions = useMemo(() => {
     if (!activeIteration) return null;
     return (
-      <BlueprintExportMenu
-        projectId={projectId}
-        iterationId={activeIteration.id}
-        initialShareEnabled={activeIteration.share_enabled ?? false}
-        initialShareToken={activeIteration.share_token ?? null}
-      />
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => setGenerating(true)}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+          title="Turn the blueprint into epics, stories, tasks and sprints"
+        >
+          <Sparkles className="h-3 w-3" />
+          Generate plan
+        </button>
+        <BlueprintExportMenu
+          projectId={projectId}
+          iterationId={activeIteration.id}
+          initialShareEnabled={activeIteration.share_enabled ?? false}
+          initialShareToken={activeIteration.share_token ?? null}
+        />
+      </div>
     );
   }, [projectId, activeIteration]);
 
@@ -206,6 +219,14 @@ export default function BlueprintPage() {
         <div className="max-w-4xl mx-auto px-6 py-20 text-center text-muted-foreground">
           No blueprint yet — start a session to build one.
         </div>
+      )}
+
+      {generating && (
+        <GeneratePlanDialog
+          projectId={projectId}
+          onClose={() => setGenerating(false)}
+          onGenerated={() => router.push(`/projects/${projectId}/plan`)}
+        />
       )}
     </div>
   );

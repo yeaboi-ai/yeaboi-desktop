@@ -19,11 +19,6 @@ import CeremoniesSlackPage from '@/pages/yeaboi/ceremonies/ceremonies-slack-page
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/yeaboi/home-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
-import ChatPage from '@/pages/yeaboi/planning/chat-page';
-import PlanPage from '@/pages/yeaboi/planning/plan-page';
-import PlanningPage from '@/pages/yeaboi/planning/planning-page';
-import RoadmapPage from '@/pages/yeaboi/planning/roadmap-page';
-import PlanningSessionsPage from '@/pages/yeaboi/planning/sessions-page';
 import EngineerPage from '@/pages/yeaboi/performance/engineer-page';
 import PerformancePage from '@/pages/yeaboi/performance/performance-page';
 import PokerBoardPage from '@/pages/yeaboi/poker/poker-board-page';
@@ -49,7 +44,9 @@ import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
 import BoardSettingsPage from '@/pages/projects/board-settings-page';
+import FromRoadmapPage from '@/pages/projects/from-roadmap-page';
 import ProjectDetailPage from '@/pages/projects/project-page';
+import ProjectPlanPage from '@/pages/projects/project-plan-page';
 import ProjectsPage from '@/pages/projects/projects-page';
 import SessionCompletedPage from '@/pages/session/session-completed-page';
 import NewSessionPage from '@/pages/session/session-new-page';
@@ -87,6 +84,14 @@ function ProjectBoardRedirect() {
   return <Navigate to={`/board?project=${id}`} replace />;
 }
 
+// The Humans world became Team; a pre-rename deep link (a tray notice, a
+// pinned URL) lands on the same page under its new prefix. The planning
+// redirects below then chain for the oldest links of all.
+function LegacyHumansRedirect() {
+  const { '*': rest } = useParams();
+  return <Navigate to={rest ? `/team/${rest}` : '/team'} replace />;
+}
+
 // Providers (theme, identity, Niko, the shell chrome) live inside the router
 // so AppShell's usePathname and every page's params resolve.
 function Root() {
@@ -106,11 +111,6 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/privacy': <PrivacyPage />,
   '/system-check': <SystemCheckPage />,
   '/usage': <UsagePage />,
-  '/team/planning': <PlanningPage />,
-  '/team/planning/chat': <ChatPage />,
-  '/team/planning/plan': <PlanPage />,
-  '/team/planning/sessions': <PlanningSessionsPage />,
-  '/team/planning/roadmap': <RoadmapPage />,
   '/team/ship': <ShipPage />,
   '/team/ship/run': <ShipRunPage />,
   '/team/analysis': <AnalysisPage />,
@@ -154,6 +154,8 @@ const PLANNING_SERVED = new Set([
   '/projects/:id',
   '/projects/:id/board-settings',
   '/projects/:id/blueprint',
+  '/projects/:id/plan',
+  '/projects/new/from-roadmap',
   '/projects/:id/sessions/new',
   '/projects/:id/sessions/:sessionId',
   '/projects/:id/sessions/:sessionId/completed',
@@ -180,11 +182,24 @@ export const router = createHashRouter([
     children: [
       { path: '/', element: <Navigate to="/home" replace /> },
       ...yeaboiRoutes,
+      // The standalone planning pages folded into the project flow; anything
+      // that still links to them (an old tray notice, muscle memory) lands on
+      // the workspace rather than a placeholder.
+      {
+        path: '/team/planning/roadmap',
+        element: <Navigate to="/projects/new/from-roadmap" replace />,
+      },
+      { path: '/team/planning/*', element: <Navigate to="/projects" replace /> },
+      { path: '/team/planning', element: <Navigate to="/projects" replace /> },
+      { path: '/humans/*', element: <LegacyHumansRedirect /> },
+      { path: '/humans', element: <LegacyHumansRedirect /> },
       { path: '/projects', element: <ProjectsPage /> },
+      { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },
       { path: '/projects/:id/board', element: <ProjectBoardRedirect /> },
       { path: '/projects/:id/board-settings', element: <BoardSettingsRoute /> },
       { path: '/projects/:id/blueprint', element: <BlueprintPage /> },
+      { path: '/projects/:id/plan', element: <ProjectPlanPage /> },
       { path: '/projects/:id/sessions/new', element: <NewSessionPage /> },
       { path: '/projects/:id/sessions/:sessionId', element: <SessionPage /> },
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },

@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
-import { BrandName, DuckMark } from '@/components/brand/duck';
+import { WorldSwitcher } from '@/components/audience/world-switcher';
+import { useAudience } from '@/components/providers/audience-provider';
+import { navItems, navSections, type IconKey } from '@/lib/nav/sections';
+import { audiencesForRoute, type Audience } from '@shared/audience';
 import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import {
   LayoutGrid,
@@ -45,71 +48,32 @@ import { useUpdateState } from '@/hooks/use-update-state';
 import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutGrid;
-}
-
-interface NavSection {
-  label: string | null;
-  items: NavItem[];
-}
-
-// One nav for both surfaces: the planning workspace and the yeaboi (TUI
-// parity) modes. The yeaboi hrefs are the manifest's paths verbatim
-// (lib/yeaboi/routes.json) — the sidebar is a view over that registry, not a
-// second list of truths.
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: null,
-    items: [{ href: '/home', label: 'Home', icon: Home }],
-  },
-  {
-    label: 'Workspace',
-    items: [
-      { href: '/projects', label: 'Projects', icon: LayoutGrid },
-      { href: '/board', label: 'Board', icon: Columns3 },
-    ],
-  },
-  {
-    label: 'Team',
-    items: [
-      { href: '/team/planning', label: 'Planning', icon: MessageSquareText },
-      { href: '/team/planning/roadmap', label: 'Roadmap', icon: Map },
-      { href: '/team/analysis', label: 'Analysis', icon: BarChart3 },
-      { href: '/team/standup', label: 'Standup', icon: Sunrise },
-      { href: '/team/retro', label: 'Retro', icon: RotateCcw },
-      { href: '/team/poker', label: 'Poker', icon: Spade },
-      { href: '/team/performance', label: 'Performance', icon: TrendingUp },
-      { href: '/team/reporting', label: 'Reporting', icon: Presentation },
-      { href: '/team/ship', label: 'Ship', icon: Rocket },
-    ],
-  },
-  {
-    label: 'Agents',
-    items: [
-      { href: '/agents/usage', label: 'Usage', icon: Coins },
-      { href: '/agents/advisor', label: 'Advisor', icon: Sparkles },
-      { href: '/agents/standup', label: 'Standup', icon: Bot },
-      { href: '/agents/security', label: 'Security', icon: ShieldCheck },
-    ],
-  },
-  {
-    label: 'Ops',
-    items: [
-      { href: '/ceremonies', label: 'Ceremonies', icon: CalendarClock },
-      { href: '/provenance', label: 'Provenance', icon: FileClock },
-      { href: '/usage', label: 'Usage', icon: Gauge },
-      { href: '/whats-new', label: "What's New", icon: Megaphone },
-      { href: '/system-check', label: 'System Check', icon: Stethoscope },
-      { href: '/privacy', label: 'Privacy', icon: Lock },
-      { href: '/feedback', label: 'Feedback', icon: MessageSquareText },
-    ],
-  },
-];
-
-const NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
+// The nav inventory lives in lib/nav/sections.ts, per audience world; this
+// map turns its icon keys into components.
+const ICONS: Record<IconKey, typeof LayoutGrid> = {
+  home: Home,
+  projects: LayoutGrid,
+  board: Columns3,
+  roadmap: Map,
+  analysis: BarChart3,
+  standup: Sunrise,
+  retro: RotateCcw,
+  poker: Spade,
+  performance: TrendingUp,
+  reporting: Presentation,
+  ship: Rocket,
+  'agent-usage': Coins,
+  'agent-advisor': Sparkles,
+  'agent-standup': Bot,
+  'agent-security': ShieldCheck,
+  ceremonies: CalendarClock,
+  provenance: FileClock,
+  usage: Gauge,
+  'whats-new': Megaphone,
+  'system-check': Stethoscope,
+  privacy: Lock,
+  feedback: MessageSquareText,
+};
 
 const CMD_SHORTCUTS: Record<string, string> = {
   p: '/projects',
@@ -120,14 +84,26 @@ const CMD_SHORTCUTS: Record<string, string> = {
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { audience, setAudience } = useAudience();
   const { authFetch, ready } = useAuthFetch();
+  const sections = navSections(audience);
+  const items = navItems(audience);
+
+  // Flipping the world while standing in the other world's route would leave
+  // the page orphaned from the nav — go home instead.
+  const flipAudience = (next: Audience) => {
+    if (next === audience) return;
+    setAudience(next);
+    const worlds = pathname ? audiencesForRoute(pathname) : [];
+    if (worlds.length > 0 && !worlds.includes(next)) router.push(DEFAULT_ROUTE);
+  };
   // The nav dot ignores dismissal — it is the quiet permanent reminder that
   // What's New has something; the dismissible card is the loud half.
   const updateState = useUpdateState();
   const updateDot = updateIndicatorVisible(updateState, null);
 
   // All nav routes in order for arrow key cycling — main nav, then bottom section
-  const allRoutes = [...NAV_ITEMS.map((n) => n.href), '/settings'];
+  const allRoutes = [...items.map((n) => n.href), '/settings'];
 
   // Detect Cmd/Ctrl held for border glow on active item
   const [cmdHeld, setCmdHeld] = useState(false);
@@ -188,6 +164,13 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!ready) return;
+    // Orgs and teams scope the planning workspace, which Solo and Team share
+    // (the stored ids scope /api/projects); the agents world reads local
+    // session telemetry and has neither.
+    if (audience === 'agents') {
+      setLoaded(true);
+      return;
+    }
     const storedOrg = getStoredOrgId();
     const storedTeam = getStoredTeamId();
     setCurrentOrgId(storedOrg);
@@ -223,7 +206,7 @@ export function Sidebar() {
     };
 
     loadAll();
-  }, [ready, authFetch]);
+  }, [ready, authFetch, audience]);
 
   // Re-fetch teams when window regains focus
   const fetchTeams = useCallback(
@@ -249,9 +232,10 @@ export function Sidebar() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentOrgId, ready, fetchTeams]);
 
-  // Longest-prefix wins, so /team/planning/roadmap lights Roadmap and not
-  // Planning too.
-  const activeHref = NAV_ITEMS.map((item) => item.href)
+  // Longest-prefix wins, so /projects/new/from-roadmap lights Roadmap and
+  // not Projects too.
+  const activeHref = items
+    .map((item) => item.href)
     .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
   const isActive = (href: string) =>
@@ -266,8 +250,15 @@ export function Sidebar() {
       // padding cannot move a fixed element — this reads the banner's height.
       style={{ top: 'var(--banner-h, 0px)' }}
     >
-      {/* Org switcher — only shown when user belongs to multiple orgs */}
-      {orgs.length > 1 && (
+      {/* Brand and world are one lockup: the mascot names the world you are
+          in, and the whole thing opens the switcher. */}
+      <div className="pt-4 pb-2">
+        <WorldSwitcher onSwitch={flipAudience} />
+      </div>
+
+      {/* Org switcher — only shown when user belongs to multiple orgs.
+          Team-world only: solo keeps the scoping data, not the roster UI. */}
+      {audience === 'team' && orgs.length > 1 && (
         <div className="px-3 md:px-5 pt-3 hidden md:block">
           <div className="relative mb-2">
             <select
@@ -305,15 +296,8 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Logo + notification bell */}
-      <div className="flex items-center justify-between px-3 md:px-5 pt-5 pb-6">
-        <Link href={DEFAULT_ROUTE} className="flex items-center gap-2 min-w-0">
-          <BrandWordmark />
-        </Link>
-      </div>
-
-      {/* Team switcher */}
-      {teams.length > 0 && (
+      {/* Team switcher — the roster affordance, so team-world only */}
+      {audience === 'team' && teams.length > 0 && (
         <div className="px-3 md:px-5 pb-3 hidden md:block">
           <div className="relative">
             <select
@@ -338,41 +322,51 @@ export function Sidebar() {
 
       {/* Nav — sectioned, and scrollable now that both surfaces live in it. */}
       <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3 overflow-y-auto min-h-0">
-        {NAV_SECTIONS.map((section, index) => (
+        {sections.map((section, index) => (
           <div key={section.label ?? `top-${index}`} className="flex flex-col gap-0.5">
             {section.label && (
-              <p className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest text-muted-foreground/50">
+              <p
+                data-audience-accented
+                className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest"
+                style={{
+                  color: 'color-mix(in srgb, var(--audience-accent) 55%, var(--muted-foreground))',
+                }}
+              >
                 {section.label}
               </p>
             )}
-            {section.items.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
-                  isActive(href)
-                    ? 'bg-secondary text-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                }`}
-                style={{
-                  boxShadow: isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-                  transition:
-                    'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-                }}
-                title={label}
-              >
-                <span className="relative shrink-0">
-                  <Icon className="h-3.5 w-3.5" />
+            {section.items.map(({ href, label, icon }) => {
+              const Icon = ICONS[icon];
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
+                    isActive(href)
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  }`}
+                  style={{
+                    boxShadow:
+                      isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+                    transition:
+                      'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
+                  }}
+                  title={label}
+                >
+                  <span className="relative shrink-0">
+                    <Icon className="h-3.5 w-3.5" />
+                    {href === '/whats-new' && updateDot && (
+                      <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    )}
+                  </span>
+                  <span className="hidden md:inline">{label}</span>
                   {href === '/whats-new' && updateDot && (
-                    <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
                   )}
-                </span>
-                <span className="hidden md:inline">{label}</span>
-                {href === '/whats-new' && updateDot && (
-                  <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
-                )}
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         ))}
       </nav>
@@ -405,16 +399,5 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
-  );
-}
-
-function BrandWordmark() {
-  // The duck is the brand. The org-configurable name/logo from the web app's
-  // BrandProvider is intentionally not consulted here.
-  return (
-    <>
-      <DuckMark state="idle" size={26} />
-      <BrandName className="hidden md:inline text-xl leading-none" />
-    </>
   );
 }

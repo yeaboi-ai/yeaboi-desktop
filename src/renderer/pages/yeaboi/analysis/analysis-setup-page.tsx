@@ -23,6 +23,7 @@ import {
   reduceRun,
 } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { useAudience } from '@/components/providers/audience-provider';
 import { Button } from '@/components/ui/button';
 
 const STEP_TITLES: Record<string, string> = {
@@ -81,6 +82,7 @@ const checkRow = 'flex items-start gap-2.5 cursor-pointer';
 const checkInput = 'mt-0.5 accent-[var(--primary)]';
 
 function AnalysisSetupBody() {
+  const { audience } = useAudience();
   const [options, setOptions] = useState<AnalysisOptions | null>(null);
   const [answers, setAnswers] = useState<Answers | null>(null);
   const [plan, setPlan] = useState<StepPlan | null>(null);
@@ -116,10 +118,15 @@ function AnalysisSetupBody() {
   // re-asked rather than patched.
   useEffect(() => {
     if (!answers || !options) return;
-    planSteps({ ...answers, grid: options.grid, model_offered: false }).then(setPlan, (e: Error) =>
-      setError(e.message),
-    );
-  }, [answers, options]);
+    // Solo runs never ask the members step; the backend also coerces a stale
+    // pick out of the run payload (contracts/v1/app_http.md).
+    planSteps({
+      ...answers,
+      grid: options.grid,
+      model_offered: false,
+      solo: audience === 'solo',
+    }).then(setPlan, (e: Error) => setError(e.message));
+  }, [answers, options, audience]);
 
   if (error && !options) return <Notice title="Could not open the setup" items={[error]} />;
   if (!options || !answers || !plan) {

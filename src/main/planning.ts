@@ -12,7 +12,7 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { join, resolve } from 'node:path';
 import { app } from 'electron';
-import { planningPortRange } from '../shared/csp';
+import { corsOrigins, planningPortRange } from '../shared/csp';
 import { loadMachineSecrets, loadSharedEnv, yeaboiHome } from './secrets';
 
 export type PlanningState =
@@ -67,9 +67,14 @@ export function resolvePlanningCommand(port: number): {
 export function planningEnv(port: number): Record<string, string> {
   const home = yeaboiHome();
   const secrets = loadMachineSecrets();
+  const shared = loadSharedEnv();
   return {
     ...process.env,
-    ...loadSharedEnv(),
+    ...shared,
+    CORS_ORIGINS: corsOrigins(
+      shared['CORS_ORIGINS'] ?? process.env['CORS_ORIGINS'],
+      process.env['ELECTRON_RENDERER_URL'],
+    ),
     YEABOI_LOCAL_MODE: '1',
     YEABOI_HOME: home,
     DATABASE_URL: `sqlite+aiosqlite:///${join(home, 'planning', 'planning.db')}`,

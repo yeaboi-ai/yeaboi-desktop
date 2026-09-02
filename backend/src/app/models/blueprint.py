@@ -34,6 +34,15 @@ class BlueprintIteration(TimestampMixin, Base):
     # the flag rather than dropping the token so links 410 instead of 404.
     share_token: Mapped[str | None] = mapped_column(String(64), index=True, default=None)
     share_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # The yeaboi engine planning session that generated this iteration's plan.
+    # A SessionStore id in the sidecar's own database — soft reference, no FK.
+    # Re-generating overwrites it; the plan panel uses it for plan_get.
+    yeaboi_session_id: Mapped[str | None] = mapped_column(String(64), default=None)
+    plan_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    # Snapshot the plan was generated from — soft reference (no FK) so a
+    # pruned snapshot can't orphan the row. Newer snapshots than this mean
+    # the blueprint changed since the plan: the UI shows a staleness banner.
+    plan_source_snapshot_id: Mapped[str | None] = mapped_column(String(36), default=None)
 
 
 class BlueprintSnapshot(TimestampMixin, Base):

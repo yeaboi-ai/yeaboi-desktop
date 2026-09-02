@@ -14,6 +14,8 @@ import { NikoBar } from '@/components/niko/niko-bar';
 import { ScreensaverHost } from '@/components/screensaver/screensaver-host';
 import { CapturePicker } from '@/components/session/capture-picker';
 import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
+import { AudienceProvider } from '@/components/providers/audience-provider';
+import { AudienceGate } from '@/components/audience/audience-gate';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -26,11 +28,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 {/* First run, the wizard is the whole window; the shell and its
                     chrome mount only once onboarding is done or not needed. */}
                 <OnboardingGate>
-                  <ProviderHealthBanner />
-                  <AppShell>{children}</AppShell>
-                  <NikoBar />
-                  <AmbienceHost />
-                  <ScreensaverHost />
+                  {/* Once onboarding is done, the audience question gates the
+                      window the same way — once, and never again. */}
+                  <AudienceProvider>
+                    <AudienceGate>
+                      <ProviderHealthBanner />
+                      <AppShell>{children}</AppShell>
+                      <NikoBar />
+                      <AmbienceHost />
+                      <ScreensaverHost />
+                    </AudienceGate>
+                  </AudienceProvider>
                 </OnboardingGate>
                 <CapturePicker />
                 <Toaster />

@@ -20,11 +20,28 @@ from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
 from . import provider_health
-from .provider_errors import ProviderError, ProviderTransientError, RateLimitError, classify
+from .provider_errors import (
+    CreditExhaustedError,
+    InvalidKeyError,
+    ProviderError,
+    ProviderTransientError,
+    RateLimitError,
+    classify,
+)
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+# Rebuilds the recorded classification when the circuit short-circuits a call.
+# Without it every failure past the second is reported as PROVIDER_TRANSIENT,
+# and a bad key reads to the user as "the provider is having trouble".
+_ERROR_BY_CODE: dict[str, type[ProviderError]] = {
+    CreditExhaustedError.code: CreditExhaustedError,
+    InvalidKeyError.code: InvalidKeyError,
+    RateLimitError.code: RateLimitError,
+    ProviderTransientError.code: ProviderTransientError,
+}
 
 # 3 attempts → ~0.5s, ~2s, ~5s between (plus ±20% jitter). Total ceiling
 # of ~8 seconds before we give up and try the failover chain or surface
@@ -92,14 +109,14 @@ async def with_retry(
                 "consecutive_failures": snap.get("consecutive_failures"),
             },
         )
-        raise ProviderTransientError(
+        # Re-raise what actually broke, not a generic transient: the caller
+        # records this on the snapshot, so a wrong classification here is what
+        # the banner and the settings page end up telling the user.
+        recorded = str(snap.get("error_code") or "")
+        raise _ERROR_BY_CODE.get(recorded, ProviderTransientError)(
             provider=provider,
             scope=scope,
-            message=(
-                f"Provider {provider} circuit open "
-                f"(consecutive_failures={snap.get('consecutive_failures')}); "
-                "failing fast to prevent retry amplification."
-            ),
+            message=str(snap.get("message") or "") or f"{provider} is failing; calls are paused.",
         )
 
     last_exc: Exception | None = None

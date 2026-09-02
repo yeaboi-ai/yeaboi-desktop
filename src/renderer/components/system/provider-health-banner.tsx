@@ -7,6 +7,7 @@ import { AlertTriangle, ExternalLink, X } from 'lucide-react';
 import { useProviderHealthContext } from '@/components/providers/provider-health-provider';
 import { cn } from '@/lib/utils';
 import type { FeatureAvailability, HealthSummary } from '@/lib/types/health';
+import { providerFailureDetail, providerLabel } from '@shared/provider-copy';
 
 const DISMISS_KEY_PREFIX = 'provider-health-banner.dismissed.';
 
@@ -44,22 +45,6 @@ const FEATURE_LABELS: Record<string, string> = {
   voice: 'Voice agent',
   video: 'Video',
 };
-
-const PROVIDER_LABELS: Record<string, string> = {
-  anthropic: 'Anthropic',
-  openai: 'OpenAI',
-  gemini: 'Gemini',
-  google: 'Google',
-  deepseek: 'DeepSeek',
-  qwen: 'Qwen',
-  deepgram: 'Deepgram',
-  elevenlabs: 'ElevenLabs',
-  cartesia: 'Cartesia',
-};
-
-function providerLabel(name: string): string {
-  return PROVIDER_LABELS[name] ?? titleCase(name);
-}
 
 function pickBanner(summary: HealthSummary): BannerContent | null {
   if (summary.usage?.status === 'hard_blocked') {
@@ -104,11 +89,10 @@ function pickBanner(summary: HealthSummary): BannerContent | null {
       title = `${provNames} API key is invalid`;
     }
 
-    const detail = unhealthyProviders[0].message
-      ? unhealthyProviders[0].message
-      : byok
-        ? 'Update the key in Settings → Integrations to restore the affected features.'
-        : 'Recharge or update the API key to restore the affected features.';
+    const worst =
+      unhealthyProviders.find((p) => p.error_code === 'PROVIDER_INVALID_KEY') ??
+      unhealthyProviders[0];
+    const detail = providerFailureDetail(worst.error_code, worst.name, byok);
 
     return {
       variant: 'credit',
@@ -131,16 +115,12 @@ function pickBanner(summary: HealthSummary): BannerContent | null {
     return {
       variant: 'degraded',
       title: `${primary} is degraded — ${featureLabel} is using ${backup} as a backup`,
-      detail: first.info.message ?? `Responses may differ in style until ${primary} recovers.`,
+      detail: `Responses may differ in style until ${primary} recovers.`,
       affectedFeatures: degradedFeatures.map((d) => d.name),
     };
   }
 
   return null;
-}
-
-function titleCase(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export function ProviderHealthBanner() {

@@ -202,6 +202,13 @@ class _RegenerateSingleTaskBody(BaseModel):
     context_titles: list[str] = Field(default_factory=list)
 
 
+# ─── DORMANT: the platform's own story generator ─────────────────────────────
+# preview_stories / preview_stories_async / the jobs routes / regenerate-task
+# are no longer called by the shell — story generation moved to the yeaboi
+# engine (the renderer's Generate dialog runs plan_generate and lands cards
+# through /stories/commit, which stays). Kept for one release so an older
+# shell build against this wheel keeps working; delete with task_generator*,
+# task_generation_job and their tables in the follow-up sweep.
 @router.post("/api/projects/{project_id}/stories/preview")
 async def preview_stories(
     project_id: str,

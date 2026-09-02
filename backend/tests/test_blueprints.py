@@ -643,8 +643,7 @@ async def test_section_completed_does_not_refire_for_already_complete_section(cl
         manager.disconnect_internal_watcher(session_id, fake)
 
     completion_events = [
-        e for e in received
-        if e.get("type") == "section_completed" and e["payload"].get("section") == "tech_stack"
+        e for e in received if e.get("type") == "section_completed" and e["payload"].get("section") == "tech_stack"
     ]
     assert completion_events == [], (
         f"section_completed should not re-fire for already-complete sections, got {completion_events}"
@@ -673,3 +672,48 @@ async def test_user_edit_records_bullet_level_provenance(client, auth_headers):
     assert detail.status_code == 200
     bullet_sources = detail.json()["bullet_sources"]["tech_stack"]
     assert bullet_sources == {"react": "user_stated", "postgres": "user_stated"}
+
+
+# ─── Plan link (yeaboi engine session) ───────────────────────────────────────
+
+
+async def test_iteration_patch_round_trips_plan_link(client, auth_headers):
+    """PATCHing yeaboi_session_id stores the link, stamps plan_generated_at
+    server-side, and the iterations list returns all three plan fields."""
+    proj = await client.post("/api/projects", json={"name": "Plan Link"}, headers=auth_headers)
+    project_id = proj.json()["id"]
+    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    iters = await client.get(f"/api/projects/{project_id}/iterations", headers=auth_headers)
+    iter_id = iters.json()[0]["id"]
+    assert iters.json()[0]["yeaboi_session_id"] is None
+    assert iters.json()[0]["plan_generated_at"] is None
+
+    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshot_id = snapshots.json()[0]["id"]
+
+    resp = await client.patch(
+        f"/api/projects/{project_id}/iterations/{iter_id}",
+        json={"yeaboi_session_id": "session-abc123", "plan_source_snapshot_id": snapshot_id},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["yeaboi_session_id"] == "session-abc123"
+    assert body["plan_source_snapshot_id"] == snapshot_id
+    assert body["plan_generated_at"] is not None
+
+    # Re-generation overwrites the pointer and refreshes the stamp.
+    resp = await client.patch(
+        f"/api/projects/{project_id}/iterations/{iter_id}",
+        json={"yeaboi_session_id": "session-def456"},
+        headers=auth_headers,
+    )
+    assert resp.json()["yeaboi_session_id"] == "session-def456"
+
+    # A label-only PATCH leaves the plan link untouched.
+    resp = await client.patch(
+        f"/api/projects/{project_id}/iterations/{iter_id}",
+        json={"label": "v1-renamed"},
+        headers=auth_headers,
+    )
+    assert resp.json()["yeaboi_session_id"] == "session-def456"
