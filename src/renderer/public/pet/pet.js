@@ -512,6 +512,26 @@ window.pet.onNotice((notice) => {
   say(notice.quip, !!notice.sticky);
 });
 
+// The duck has jumped out of the app window. He arrives at the point he left
+// from, above the floor and falling — so the landing is the physics the rig
+// already has, squash and all, rather than a second animation that has to be
+// kept in step with it.
+window.pet.onArrive((point) => {
+  if (!point) return;
+  dragging = false;
+  tumbling = false;
+  mode = 'wander';
+  // The point is where the in-app duck's box was; the rig is drawn from its
+  // top-left, so centre him on it.
+  x = Math.max(0, Math.min(window.innerWidth - DUCK_W, point.x - DUCK_W / 2));
+  baseY = Math.min(point.y - RIGH / 2, groundBaseY(x + DUCK_W / 2));
+  vx = 0;
+  vy = 0;
+  grounded = false;
+  say('yeaboi!');
+  pickTarget();
+});
+
 window.pet.onRecenter(() => {
   dragging = false;
   mode = 'wander';

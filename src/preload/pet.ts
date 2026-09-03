@@ -11,6 +11,8 @@ export interface PetBridge {
   /** Size, colour, gait and whether the duck dodges the cursor. */
   onPrefs: (fn: (prefs: unknown) => void) => void;
   onRecenter: (fn: () => void) => void;
+  /** The duck has just jumped out of the app window — land him here. */
+  onArrive: (fn: (point: { x: number; y: number }) => void) => void;
   /** Something happened while nobody was looking — say it. */
   onNotice: (fn: (notice: { quip: string; sticky: boolean; route: string }) => void) => void;
   /** A click on a duck holding a question: open the page that answers it. */
@@ -30,6 +32,9 @@ const bridge: PetBridge = {
   },
   onRecenter: (fn) => {
     ipcRenderer.on('pet:recenter', () => fn());
+  },
+  onArrive: (fn) => {
+    ipcRenderer.on('pet:arrive', (_event, point) => fn(point));
   },
   onNotice: (fn) => {
     ipcRenderer.on('pet:notice', (_event, notice) => fn(notice));

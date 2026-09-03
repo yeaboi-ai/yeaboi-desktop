@@ -486,6 +486,28 @@ span[data-duck-mark] [data-state] > span {
   }
 }
 
+/* The duck leaving for the desktop: a crouch, then an arc out through the
+   bottom-right corner — the direction the desktop pet arrives from. The
+   hand-off fires when this ends, so the two halves read as one jump. */
+@keyframes duck-leap-out {
+  0% {
+    transform: translate(0, 0) scale(1, 1);
+    opacity: 1;
+  }
+  18% {
+    transform: translate(0, 6px) scale(1.12, 0.86);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(26px, -46px) scale(0.92, 1.12) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(74px, 34px) scale(0.8, 1) rotate(16deg);
+    opacity: 0;
+  }
+}
+
 @keyframes chipFloat {
   0% {
     opacity: 0;

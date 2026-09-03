@@ -28,6 +28,7 @@ import {
   type Tip,
 } from '@/lib/yeaboi/tips';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
+import { PetOfferBubble, usePetOffer } from '@/components/yeaboi/pet-offer';
 
 /** How often the clock is sampled. Fine enough for the cross-fade and the
  *  hairline, coarse enough that it is one style update rather than a loop. */
@@ -74,6 +75,10 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
   // flashing on and then hiding itself.
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [duckState, pulse] = useDuckPulse('idle');
+  const offer = usePetOffer();
+  // The duck's own box, so a hand-off starts from where he actually is rather
+  // than from a guess at the corner.
+  const duckRef = useRef<HTMLDivElement>(null);
 
   const elapsedRef = useRef(0);
   elapsedRef.current = elapsed;
@@ -165,7 +170,23 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
         onFocusCapture={() => setEngaged(true)}
         onBlurCapture={() => setEngaged(false)}
       >
-        {mode === 'bubble' && tip && (
+        {offer.open && (
+          <div
+            className="absolute bottom-full right-2 mb-2.5 rounded-2xl bg-card shadow-lg ring-1 ring-border/60"
+            style={{
+              width: `${dockWidth(innerWidth, COLLAPSED_WIDTH)}px`,
+              transformOrigin: 'bottom right',
+              animation: reduced ? undefined : 'tip-bubble-in 200ms ease-out',
+            }}
+          >
+            <PetOfferBubble
+              onAccept={() => offer.accept(duckRef.current?.getBoundingClientRect() ?? null)}
+              onDecline={offer.decline}
+            />
+          </div>
+        )}
+
+        {mode === 'bubble' && tip && !offer.open && (
           <div
             className="absolute bottom-full right-2 mb-2.5 rounded-2xl bg-card shadow-lg ring-1 ring-border/60"
             style={{
@@ -279,27 +300,40 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
             so he stays out of the tab order and off the a11y tree. Retracted he
             is the only thing left, so he becomes the way in — otherwise there is
             no route to the tips at all while Niko's bar is open. */}
-        {mode === 'duck' ? (
-          <button
-            type="button"
-            onClick={() => setGalleryOpen(true)}
-            title="See all tips"
-            aria-label="See all tips"
-            className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
-          >
-            <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            onClick={() => pulse('startled')}
-            className="block cursor-pointer border-0 bg-transparent p-0"
-          >
-            <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-          </button>
-        )}
+        {/* The leap. `--leap-*` is the arc; the desktop duck is asked to appear
+            when it ends, so the two halves read as one movement. */}
+        <div
+          ref={duckRef}
+          style={
+            offer.leaping && !reduced
+              ? { animation: 'duck-leap-out 420ms cubic-bezier(0.4, 0, 0.6, 1) forwards' }
+              : offer.leaping
+                ? { opacity: 0 }
+                : undefined
+          }
+        >
+          {mode === 'duck' ? (
+            <button
+              type="button"
+              onClick={() => setGalleryOpen(true)}
+              title="See all tips"
+              aria-label="See all tips"
+              className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
+            >
+              <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              onClick={() => pulse('startled')}
+              className="block cursor-pointer border-0 bg-transparent p-0"
+            >
+              <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
+            </button>
+          )}
+        </div>
       </div>
 
       <AllTipsSheet

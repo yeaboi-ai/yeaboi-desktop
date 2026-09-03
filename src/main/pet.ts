@@ -171,6 +171,30 @@ export class Pet {
     if (window && !window.isDestroyed()) window.webContents.send('pet:recenter');
   }
 
+  /**
+   * The duck leaves the app window for the desktop, landing where he jumped
+   * from rather than materialising mid-screen.
+   *
+   * `screenPoint` is where the in-app duck was, in screen coordinates. The
+   * overlay covers a whole display, so the arrival is that point less the
+   * overlay's own origin. Sending it after `setEnabled` is deliberate: the
+   * window may not exist yet, and `pet:arrive` has to reach the one that gets
+   * created — hence the retry on `did-finish-load` rather than a bare send.
+   */
+  handoff(screenPoint: { x: number; y: number }): void {
+    this.setEnabled(true);
+    const window = this.window;
+    if (!window || window.isDestroyed()) return;
+    const bounds = window.getBounds();
+    const local = { x: screenPoint.x - bounds.x, y: screenPoint.y - bounds.y };
+    const send = (): void => {
+      if (window.isDestroyed()) return;
+      window.webContents.send('pet:arrive', local);
+    };
+    if (window.webContents.isLoading()) window.webContents.once('did-finish-load', send);
+    else send();
+  }
+
   /** Tear the duck down for app quit. Latches: nothing revives him after. */
   hide(): void {
     this.quitting = true;

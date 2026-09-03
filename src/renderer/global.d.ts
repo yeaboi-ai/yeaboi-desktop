@@ -55,6 +55,8 @@ interface YeaboiBridge {
   petNotify: (notice: { quip: string; sticky?: boolean; route?: string }) => void;
   getPetPrefs: () => Promise<unknown>;
   setPetPrefs: (patch: unknown) => Promise<unknown>;
+  /** Turn the duck on and land him where he jumped from, in screen coords. */
+  petHandoff: (point: { x: number; y: number }) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;

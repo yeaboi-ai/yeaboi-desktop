@@ -371,6 +371,18 @@ if (!gotLock) {
     ipcMain.handle('pet:set-prefs', (_event, patch: unknown) =>
       setPetPreference((patch ?? {}) as Partial<PetPrefs>),
     );
+    // The duck accepted an invitation out. Coordinates come from the renderer,
+    // so they are clamped to numbers before anything positions a window by them.
+    ipcMain.handle('pet:handoff', (_event, point: unknown) => {
+      const p = (point ?? {}) as { x?: unknown; y?: unknown };
+      const at = {
+        x: typeof p.x === 'number' && Number.isFinite(p.x) ? p.x : 0,
+        y: typeof p.y === 'number' && Number.isFinite(p.y) ? p.y : 0,
+      };
+      setPetPreference({ enabled: true, offer: { state: 'accepted', askedAt: Date.now() } });
+      pet.handoff(at);
+      return { enabled: pet.on };
+    });
 
     // The renderer reports the active theme's background so the next window
     // opens in the right colour. Fire-and-forget; bad values are dropped.
