@@ -101,8 +101,11 @@ function DayCell({
   const date = isoDate(day);
   return (
     <div
-      className={`rounded-xl p-1.5 ring-1 transition-colors ${
-        date === today ? 'bg-secondary/60 ring-border' : 'bg-card ring-border/40'
+      // A tint rather than an outlined card. On a light theme a white cell with
+      // a grey ring on a near-white page reads as a row of boxes; the day is
+      // the shape, and it only needs to be a shade off the page.
+      className={`rounded-xl p-1.5 transition-colors ${
+        date === today ? 'bg-secondary ring-1 ring-border/60' : 'bg-secondary/40'
       } ${dim ? 'opacity-40' : ''}`}
       style={{ minHeight: height }}
     >

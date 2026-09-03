@@ -66,6 +66,8 @@ const HOME_HREF = '/home';
  *  the notch means "show me where I can go", which the icons answer; the words
  *  are for staying. */
 const LABEL_DWELL_MS = 520;
+/** How close to the bottom of the window the open rail may come. */
+const EDGE_GAP = 12;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -86,8 +88,17 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [markerTop, setMarkerTop] = useState<number | null>(null);
 
+  // Where the notch sat when the cursor arrived. The rail is centred, so growing
+  // it moved every icon — including Home, which is why clicking Home from a
+  // panel missed: by the time the click landed the icon had moved out from under
+  // it. Open, the rail keeps that top edge and grows downward instead.
+  const navRef = useRef<HTMLElement>(null);
+  const [anchor, setAnchor] = useState<number | null>(null);
+
   const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enter = () => {
+    const box = navRef.current?.getBoundingClientRect();
+    if (box) setAnchor(box.top);
     setOpen(true);
     if (activeHref === HOME_HREF) {
       setWide(true);
@@ -97,6 +108,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   };
   const leave = () => {
     if (dwell.current) clearTimeout(dwell.current);
+    setAnchor(null);
     setOpen(false);
     setWide(false);
   };
@@ -111,6 +123,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // rows are still here, collapsed to no height, so the list grows back out of
   // the notch on hover rather than appearing beside it.
   const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+  // Rows, plus a divider between sections, plus the rail's own padding.
+  const listHeight = items.length * ROW + (sections.length - 1) * 13 + 12;
 
   // The marker travels on a page turn and only then. Hovering changes the rows'
   // heights, and a marker that animates to catch up reads as a second thing
@@ -130,6 +144,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     const navigated = lastHref.current !== activeHref;
     lastHref.current = activeHref;
     setTravelling(navigated);
+    if (navigated) {
+      setOpen(false);
+      setWide(false);
+      setAnchor(null);
+      if (dwell.current) clearTimeout(dwell.current);
+    }
     measure();
 
     let frame = 0;
@@ -144,6 +164,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
 
   return (
     <nav
+      ref={navRef}
       aria-label="Modes"
       onMouseLeave={leave}
       onFocusCapture={() => {
@@ -151,8 +172,17 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
         setWide(true);
       }}
       onBlurCapture={leave}
-      className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
-      style={{ width: wide ? WIDE : NARROW }}
+      className={`fixed left-0 z-40 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out ${
+        anchor === null ? 'top-1/2 -translate-y-1/2' : ''
+      }`}
+      style={{
+        width: wide ? WIDE : NARROW,
+        // Held to the notch's own top while open, clamped so a long list cannot
+        // run off the bottom of the window.
+        ...(anchor === null
+          ? {}
+          : { top: Math.min(anchor, window.innerHeight - EDGE_GAP - listHeight) }),
+      }}
     >
       <div ref={listRef} className="relative">
         {markerTop !== null && (

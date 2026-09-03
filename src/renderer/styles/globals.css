@@ -1040,6 +1040,15 @@ html[data-audience='agents'] {
   .deck-page > * > * {
     animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  /* The heading stays put and decodes instead — whether the page writes its
+     title bare or wraps it in a header with its actions beside it. */
+  .deck-page > * > h1,
+  .deck-page > * > h1 + p,
+  .deck-page > * > :has(> h1),
+  .deck-page > * > :has(> h1) + p {
+    animation: none;
+  }
   .deck-page > * > *:nth-child(2) {
     animation-delay: 50ms;
   }
@@ -1199,4 +1208,11 @@ html[data-audience='agents'] {
     #000 calc(100% - 22px),
     transparent 100%
   );
+}
+
+/* The heading holds its ground while the surface behind it pulls back: the deck
+   measures it and gives it the exact inverse of what it is doing to it. */
+.deck-steady {
+  transform-origin: top left;
+  transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
 }

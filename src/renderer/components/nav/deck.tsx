@@ -23,6 +23,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAudience } from '@/components/providers/audience-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { railSections } from '@/lib/nav/sections';
+import { durationFor, revealedAt, scramble } from '@shared/decrypt';
 
 /** A wheel event arriving this long after the last one starts a new gesture.
  *  This, not the size of the delta, is what tells a wheel from a trackpad: a
@@ -49,6 +50,10 @@ const SETTLE_MS = 900;
 const PREVIEW_EDGES = { left: 56, top: 42, right: 16, bottom: 56 };
 /** The transit easing: long and almost entirely decelerating, so the surface
  *  arrives rather than stops. */
+/** How long to wait for a surface's heading to appear before giving up on
+ *  decoding it. A page renders its backend gate first. */
+const HEADING_WAIT_MS = 1200;
+
 const PREVIEW_EASE = '620ms cubic-bezier(0.16, 1, 0.3, 1)';
 
 /** Whether anything under the pointer can still scroll the way the wheel is
@@ -87,6 +92,8 @@ export function Deck({ children }: { children: React.ReactNode }) {
 
   const [preview, setPreview] = useState(false);
   const [held, setHeld] = useState('none');
+  /** The scale and offset the port is applying, so the heading can undo it. */
+  const [shrink, setShrink] = useState<[number, number, number, number]>([1, 1, 0, 0]);
   const travel = useRef(0);
   const lastWheel = useRef(0);
   const lockedUntil = useRef(0);
@@ -115,7 +122,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
         // shrunken surface where those insets say rather than in the middle.
         const sx = 1 - (left + right) / window.innerWidth;
         const sy = 1 - (top + bottom) / window.innerHeight;
-        setHeld(`translate(${(left - right) / 2}px, ${(top - bottom) / 2}px) scale(${sx}, ${sy})`);
+        const tx = (left - right) / 2;
+        const ty = (top - bottom) / 2;
+        setHeld(`translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`);
+        setShrink([sx, sy, tx, ty]);
         setPreview(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         settleTimer.current = setTimeout(settle, SETTLE_MS);
@@ -182,6 +192,86 @@ export function Deck({ children }: { children: React.ReactNode }) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [deal]);
+
+  // The title and its line of description are the two things you read to find
+  // out where you have landed, so they neither rise with the rest of the surface
+  // nor travel with its pull-back: they hold their ground and resolve in place.
+  // Driven from here because every page writes its own heading — the deck is
+  // what knows a surface has arrived, and by how much it is being held back.
+  useEffect(() => {
+    let frame = 0;
+    let stop = () => {};
+
+    const begin = (title: HTMLElement) => {
+      const lines = [title, title.nextElementSibling, title.parentElement?.nextElementSibling]
+        .filter((el): el is HTMLElement => el instanceof HTMLElement)
+        .filter((el) => el === title || el.tagName === 'P')
+        // Only plain text: anything with markup of its own would lose it.
+        .filter((el) => el.children.length === 0 && el.textContent!.trim().length > 0)
+        .map((el) => ({ el, text: el.textContent! }));
+      if (lines.length === 0) return () => {};
+
+      // Undoing the port's transform, per element, because the offset a scale
+      // gives you depends on how far from its centre you sit.
+      const [sx, sy, tx, ty] = shrink;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      for (const { el } of lines) {
+        el.classList.add('deck-steady');
+        if (!preview || (sx === 1 && sy === 1)) {
+          el.style.transform = '';
+          continue;
+        }
+        const box = el.getBoundingClientRect();
+        el.style.transform =
+          `translate(${(box.left - cx) * (1 / sx - 1) - tx / sx}px, ` +
+          `${(box.top - cy) * (1 / sy - 1) - ty / sy}px) scale(${1 / sx}, ${1 / sy})`;
+      }
+
+      if (reduced) return () => {};
+      const started = performance.now();
+      const runs = lines.map(({ text }) => durationFor(text.length));
+      let tickFrame = requestAnimationFrame(function tick(now: number) {
+        const elapsed = now - started;
+        let running = false;
+        lines.forEach(({ el, text }, index) => {
+          const progress = elapsed / runs[index]!;
+          el.textContent = scramble(
+            text,
+            revealedAt(text.length, progress),
+            Math.floor(elapsed / 40),
+          );
+          if (progress < 1) running = true;
+        });
+        if (running) tickFrame = requestAnimationFrame(tick);
+      });
+
+      return () => {
+        cancelAnimationFrame(tickFrame);
+        // Whatever happens, the words end up as themselves.
+        for (const { el, text } of lines) el.textContent = text;
+      };
+    };
+
+    // The heading is not there the moment a route commits — a page renders its
+    // backend gate first — so wait for it rather than looking once and giving
+    // up, which is why none of this was happening at all.
+    const waiting = performance.now();
+    const look = () => {
+      const title = document.querySelector('.deck-page h1');
+      if (!(title instanceof HTMLElement)) {
+        if (performance.now() - waiting < HEADING_WAIT_MS) frame = requestAnimationFrame(look);
+        return;
+      }
+      stop = begin(title);
+    };
+
+    look();
+    return () => {
+      cancelAnimationFrame(frame);
+      stop();
+    };
+  }, [pathname, reduced, preview, shrink]);
 
   useEffect(
     () => () => {
