@@ -34,20 +34,20 @@ export function WorldSwitcher({ onSwitch }: { onSwitch: (audience: Audience) => 
           <button
             type="button"
             aria-label={`World: ${WORLD_COPY[audience].title}`}
-            className="group flex w-full items-center gap-2.5 rounded-lg px-3 md:px-5 py-2 justify-center md:justify-start hover:bg-secondary/50 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="group flex h-full w-full items-center gap-2 rounded-lg px-2 transition-colors duration-200 hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <Mascot size={26} />
-            <span className="hidden md:flex min-w-0 flex-col items-start leading-none">
-              <BrandName className="text-xl leading-none" />
-              <span
-                data-audience-accented
-                className="mt-1 text-[10px] font-body font-semibold uppercase tracking-widest"
-                style={{ color: 'var(--audience-accent)' }}
-              >
-                {WORLD_COPY[audience].title}
-              </span>
+            {/* One line, because it sits in a 32px row. The world is the accent
+                on its name, not a second line under it. */}
+            <Mascot size={18} />
+            <BrandName className="text-[15px] leading-none" />
+            <span
+              data-audience-accented
+              className="font-body text-[9px] font-semibold uppercase leading-none tracking-widest"
+              style={{ color: 'var(--audience-accent)' }}
+            >
+              {WORLD_COPY[audience].title}
             </span>
-            <ChevronsUpDown className="hidden md:block ml-auto h-3 w-3 shrink-0 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity duration-200" />
+            <ChevronsUpDown className="ml-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-40 transition-opacity duration-200 group-hover:opacity-100" />
           </button>
         }
       />

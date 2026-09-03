@@ -8,7 +8,14 @@
 // wearing seven titles.
 
 export function Surface({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-[calc(100vh-var(--titlebar-h))] px-8 py-8">{children}</div>;
+  return (
+    <div className="min-h-[calc(100vh-var(--titlebar-h))] px-8 py-8">
+      {/* Capped on a wide screen. Past about this width a row of tiles stops
+          being a row and becomes a stripe, and the eye has to travel the whole
+          window to read three words. Centred in the space the rail leaves. */}
+      <div className="mx-auto w-full max-w-[1360px]">{children}</div>
+    </div>
+  );
 }
 
 export function Panel({ title, children }: { title: string; children: React.ReactNode }) {

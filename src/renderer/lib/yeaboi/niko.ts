@@ -254,7 +254,9 @@ const COLLAPSED_CHROME = 2 * 1 + 2 * 24 + 16 + 8;
 
 /** Sized from its content, so the box it renders always fits. */
 export const COLLAPSED_WIDTH = COLLAPSED_TEXT_WIDTH + COLLAPSED_CHROME;
-export const COLLAPSED_HEIGHT = 44;
+/** The same 32px as the floating controls in the dock row: the collapsed pill
+ *  is one of them, and sat 12px taller than everything beside it. */
+export const COLLAPSED_HEIGHT = 32;
 export const INPUT_HEIGHT = 52;
 export const DEFAULT_EXPANDED_HEIGHT = 440;
 export const MIN_EXPANDED_HEIGHT = 200;

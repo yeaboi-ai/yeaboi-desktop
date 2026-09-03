@@ -41,6 +41,10 @@ const TICK_MS = 50;
 
 const DUCK_SIZE = 72;
 /** The duck, once tips are off — present enough to click, quiet enough to ignore. */
+/** As long as the leaving animation in globals.css, so he is unmounted the
+ *  frame after it ends rather than mid-step. */
+const DUCK_LEAVE_MS = 220;
+
 const QUIET_DUCK_SIZE = 40;
 
 interface ModeCard {
@@ -95,11 +99,24 @@ export function TipCompanion() {
   const [offset, setOffset] = useState(0);
   const [engaged, setEngaged] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  // He is drawn for a moment longer than he is here, so the walk out can play
+  // before the overlay picks him up on the desktop.
+  const [leaving, setLeaving] = useState(false);
   // null until the backend answers — the dock stays out of the way rather than
   // flashing on and then hiding itself.
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [duckState, pulse] = useDuckPulse('idle');
   const offer = usePetOffer();
+
+  useEffect(() => {
+    if (offer.where !== 'away') {
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    const done = setTimeout(() => setLeaving(false), DUCK_LEAVE_MS);
+    return () => clearTimeout(done);
+  }, [offer.where]);
   // The duck's own box, so a hand-off starts from where he actually is rather
   // than from a guess at the corner.
   const duckRef = useRef<HTMLDivElement>(null);
@@ -177,10 +194,11 @@ export function TipCompanion() {
     return (
       <button
         type="button"
+        data-duck-dock
         onClick={() => setEnabledSetting(true)}
         title="Show tips"
         aria-label="Show tips"
-        className="fixed bottom-6 right-6 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
+        className="fixed bottom-4 right-4 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
       >
         <DuckMark size={QUIET_DUCK_SIZE} facing="left" />
       </button>
@@ -204,7 +222,7 @@ export function TipCompanion() {
   return (
     <>
       <div
-        className="group fixed bottom-6 right-6 z-30"
+        className="group fixed bottom-4 right-4 z-30"
         onMouseEnter={() => setEngaged(true)}
         onMouseLeave={() => setEngaged(false)}
         onFocusCapture={() => setEngaged(true)}
@@ -228,20 +246,24 @@ export function TipCompanion() {
 
         {mode === 'bubble' && tip && !offer.open && (
           <div
-            className="absolute bottom-full right-2 mb-2.5 rounded-2xl bg-card shadow-lg ring-1 ring-border/60"
+            className="absolute bottom-full right-2 mb-2.5 overflow-hidden rounded-2xl bg-card shadow-lg ring-1 ring-border/60"
             style={{
               width: `${dockWidth(innerWidth, COLLAPSED_WIDTH)}px`,
               transformOrigin: 'bottom right',
               animation: reduced ? undefined : 'tip-bubble-in 200ms ease-out',
             }}
           >
-            {/* The rotation clock, as the bubble's top edge. Left out under
-                reduced motion, where the always-visible counter carries it. */}
+            {/* The rotation clock, as the bubble's own top edge — full width and
+                clipped by the corners, rather than a bar laid across the card.
+                Left out under reduced motion, where the counter carries it. */}
             {!reduced && (
-              <div className="absolute left-4 right-4 top-0 h-0.5 overflow-hidden rounded-full bg-border/40">
+              <div className="absolute inset-x-0 top-0 h-px bg-transparent">
                 <div
-                  className="h-full"
-                  style={{ width: `${tipProgress(elapsed) * 100}%`, background: accent }}
+                  className="h-full transition-[width] duration-200 ease-linear"
+                  style={{
+                    width: `${tipProgress(elapsed) * 100}%`,
+                    background: `color-mix(in srgb, ${accent} 55%, transparent)`,
+                  }}
                 />
               </div>
             )}
@@ -343,8 +365,10 @@ export function TipCompanion() {
         {/* Nothing is drawn here while he is 'away': he is up on the desktop
             overlay, which draws him at this exact spot and then jumps him out
             of it. Hiding is the whole of the app's part in the hand-off. */}
-        {offer.where !== 'away' && (
-          <div ref={duckRef}>
+        {/* Kept mounted through the leaving animation, so the hand-off to the
+            desktop overlay is a walk out rather than a disappearance. */}
+        {(offer.where !== 'away' || leaving) && (
+          <div ref={duckRef} data-duck-dock data-leaving={offer.where === 'away'}>
             {mode === 'duck' ? (
               <button
                 type="button"

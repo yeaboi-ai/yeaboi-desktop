@@ -1061,3 +1061,28 @@ html[data-audience='agents'] {
     animation-delay: 290ms;
   }
 }
+
+/* The duck arriving and leaving. He walks in from off the corner rather than
+   appearing at it — a thing that pops into a window reads as a rendering
+   glitch, and he is the one element on screen that is supposed to be alive. */
+@keyframes duck-emerge {
+  from {
+    opacity: 0;
+    transform: translate(14px, 6px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-duck-dock] {
+    animation: duck-emerge 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  /* Leaving is the same move backwards, and it has to finish before he goes:
+     the dock keeps him mounted for the length of it. */
+  [data-duck-dock][data-leaving='true'] {
+    animation: duck-emerge 220ms cubic-bezier(0.4, 0, 1, 1) reverse forwards;
+  }
+}
