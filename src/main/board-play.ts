@@ -1,30 +1,22 @@
-// Playing a live board from inside the app.
+// The app playing a live board — the board's own front end, served from here.
 //
-// The table itself is drawn by the app, in the app's own hand — but the game is
-// the board server's: it owns the round, the votes and the reveal, and every
-// participant's browser is talking to the same state machine. So the app plays
-// by calling that server, and this is the only place that can: the host link
-// carries the token *and* the admin secret, and it is served only to main
-// (`api-proxy.ts`'s MAIN_ONLY). The renderer names a board and an action.
+// The board is a React app (yeaboi-frontend's `src/poker`), and the desktop
+// renders it directly rather than pointing a window at the board's HTTP page.
+// What it cannot have is the address: the host link carries the token *and* the
+// admin secret, and it is served only to main (`api-proxy.ts`'s MAIN_ONLY). So
+// the board's HTTP client is swapped for one that names a board and a path, and
+// this relays it — the credentials go on here and never cross back.
 //
-// The actions are an allowlist rather than a path pass-through. A relay that
-// forwards whatever it is handed is the admin secret with extra steps.
+// Paths are checked rather than passed through. `/api/…` on the board's own
+// origin, nothing else, no matter what the renderer asks for.
 
 import { ipcMain } from 'electron';
 
 import type { Sidecar } from './sidecar';
 
-/** What the app may ask a board to do. `admin/*` is the host's own hand — the
- *  app is the host, which is why they are here at all. */
-const ACTIONS = new Set([
-  'presence',
-  'vote',
-  'vote/clear',
-  'admin/reveal',
-  'admin/revote',
-  'admin/goto',
-  'admin/finalize',
-]);
+/** What a board path may look like. The board's own routes and no others: no
+ *  scheme, no host, no `..`, no query of the caller's choosing. */
+const PATH = /^\/api\/[a-z0-9/_-]{0,60}$/i;
 
 interface Host {
   base: string;
@@ -32,9 +24,8 @@ interface Host {
   admin: string;
 }
 
-/** Host links, by board. Fetched once per board and dropped when the board
- *  ends — the link is stable for the life of a board, and the round-trip is on
- *  every poll otherwise. */
+/** Host links, by board — stable for the life of a board, and the round-trip
+ *  would otherwise ride on every poll. */
 const hosts = new Map<string, Host>();
 
 export function forgetBoard(boardId: string): void {
@@ -61,53 +52,74 @@ async function hostOf(sidecar: Sidecar, boardId: string): Promise<Host | null> {
   return host;
 }
 
-/** The app's own seat at the table. Stable for the process, so the board sees
- *  one participant rather than a new one per request. */
-const PID = `desktop-${Math.random().toString(36).slice(2, 10)}`;
+function board(value: unknown): string | null {
+  return typeof value === 'string' && /^[a-f0-9]{1,32}$/.test(value) ? value : null;
+}
+
+function address(host: Host, path: string, extra: Record<string, string>): string {
+  const params = new URLSearchParams(extra);
+  params.set('token', host.token);
+  return `${host.base}${path}?${params.toString()}`;
+}
+
+async function readBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return {};
+  }
+}
 
 export function registerBoardPlay(sidecar: Sidecar): void {
-  const address = (host: Host, path: string) =>
-    `${host.base}${path}?token=${encodeURIComponent(host.token)}&admin=${encodeURIComponent(host.admin)}&pid=${encodeURIComponent(PID)}`;
-
-  ipcMain.handle('board-play:state', async (_event, boardId: unknown) => {
-    if (typeof boardId !== 'string' || !/^[a-f0-9]{1,32}$/.test(boardId)) {
-      return { ok: false, error: 'invalid board id' };
-    }
-    const host = await hostOf(sidecar, boardId);
-    if (!host) return { ok: false, error: 'no live board' };
-    try {
-      const response = await fetch(address(host, '/api/state'));
-      if (!response.ok) return { ok: false, error: `board said ${response.status}` };
-      return { ok: true, state: await response.json() };
-    } catch (error) {
-      return { ok: false, error: (error as Error).message };
-    }
-  });
-
+  /** A read, including the board's long-poll: the ETag is the cursor, so it
+   *  travels in and out of here unchanged. */
   ipcMain.handle(
-    'board-play:act',
-    async (_event, boardId: unknown, action: unknown, payload: unknown) => {
-      if (typeof boardId !== 'string' || !/^[a-f0-9]{1,32}$/.test(boardId)) {
-        return { ok: false, error: 'invalid board id' };
+    'board-play:get',
+    async (_event, boardId: unknown, path: unknown, extra: unknown, etag: unknown) => {
+      const id = board(boardId);
+      if (!id || typeof path !== 'string' || !PATH.test(path)) {
+        return { status: 400, body: { error: 'not a board path' } };
       }
-      if (typeof action !== 'string' || !ACTIONS.has(action)) {
-        return { ok: false, error: 'not an action this app may take' };
-      }
-      const host = await hostOf(sidecar, boardId);
-      if (!host) return { ok: false, error: 'no live board' };
-      const body = { ...(payload as object), pid: PID, admin: host.admin, token: host.token };
+      const host = await hostOf(sidecar, id);
+      if (!host) return { status: 503, body: { error: 'no live board' } };
       try {
-        const response = await fetch(address(host, `/api/${action}`), {
+        const response = await fetch(address(host, path, (extra ?? {}) as Record<string, string>), {
+          cache: 'no-store',
+          headers: typeof etag === 'string' && etag ? { 'If-None-Match': etag } : {},
+        });
+        return {
+          status: response.status,
+          etag: response.headers.get('ETag') ?? '',
+          body: response.status === 304 ? {} : await readBody(response),
+        };
+      } catch (error) {
+        return { status: 0, body: { error: (error as Error).message } };
+      }
+    },
+  );
+
+  /** A write. `pid` comes from the caller; `admin` is added here, which is the
+   *  whole reason the host secret can stay in this process. */
+  ipcMain.handle(
+    'board-play:post',
+    async (_event, boardId: unknown, path: unknown, body: unknown) => {
+      const id = board(boardId);
+      if (!id || typeof path !== 'string' || !PATH.test(path)) {
+        return { status: 400, body: { error: 'not a board path' } };
+      }
+      const host = await hostOf(sidecar, id);
+      if (!host) return { status: 503, body: { error: 'no live board' } };
+      try {
+        const response = await fetch(address(host, path, {}), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ ...(body as object), admin: host.admin, token: host.token }),
         });
-        const answer = (await response.json()) as { state?: unknown; error?: string };
-        if (!response.ok)
-          return { ok: false, error: answer.error ?? `board said ${response.status}` };
-        return { ok: true, state: answer.state };
+        return { status: response.status, body: await readBody(response) };
       } catch (error) {
-        return { ok: false, error: (error as Error).message };
+        return { status: 0, body: { error: (error as Error).message } };
       }
     },
   );

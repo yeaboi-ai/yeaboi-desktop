@@ -18,7 +18,8 @@ import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { PokerSetup } from '@/components/yeaboi/poker-setup';
-import { PokerTable, canPlayBoards } from '@/components/yeaboi/poker-table';
+import { PokerBoard } from '@/components/yeaboi/poker-board';
+import { canPlayBoards } from '@/board/board-api';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Surface } from '@/components/yeaboi/surface';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
@@ -153,7 +154,20 @@ function PokerBody() {
         </p>
       </header>
 
-      {playing && board && <PokerTable boardId={board.board_id} onLeave={() => setStaged(false)} />}
+      {playing && board && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-end">
+            <button
+              type="button"
+              onClick={() => setStaged(false)}
+              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Leave the table
+            </button>
+          </div>
+          <PokerBoard boardId={board.board_id} scope={board.title} />
+        </div>
+      )}
 
       {!playing && (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
