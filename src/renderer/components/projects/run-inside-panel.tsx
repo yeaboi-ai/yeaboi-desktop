@@ -16,7 +16,7 @@ import {
   runModesFor,
   type Capabilities,
 } from '@/lib/yeaboi/capabilities';
-import { sessionRows } from '@/lib/yeaboi/home';
+import { sessionRows } from '@/lib/yeaboi/glimpse';
 import { runInsideHref } from '@/lib/yeaboi/project-scope';
 import {
   loadEngineProjectSessions,

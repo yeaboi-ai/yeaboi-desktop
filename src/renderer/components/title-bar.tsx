@@ -15,7 +15,8 @@ import {
   MessageSquareText,
   Stethoscope,
 } from 'lucide-react';
-import { WORLD_MASCOT } from '@/lib/audience/worlds';
+import { DOOR_MASCOT, WORLD_MASCOT } from '@/lib/audience/worlds';
+import { doorForPath } from '@/lib/yeaboi/home';
 import { useAudience } from '@/components/providers/audience-provider';
 import { pageTitle } from '@/lib/yeaboi/routes';
 import { ABOUT_PAGES } from '@shared/menu';
@@ -72,7 +73,9 @@ export function TitleBar() {
   const { audience } = useAudience();
   const edges = useHistoryEdges();
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
-  const Mascot = WORLD_MASCOT[audience];
+  // On a door's screens the door's own duck leads; elsewhere the world's mark.
+  const door = doorForPath(pathname);
+  const Mascot = door ? DOOR_MASCOT[audience][door] : WORLD_MASCOT[audience];
 
   return (
     <header

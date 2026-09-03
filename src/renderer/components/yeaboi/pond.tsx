@@ -6,30 +6,38 @@
 // the window is hidden; a theme or world change repaints from the tokens.
 //
 // The canvas is decoration with a click: the two words remain the accessible
-// doors, and this only lets the pointer reach for a lobe. The diptych drives
-// it through the handle so hovering a word or a list pulls the duck too.
+// doors, and this only lets the pointer reach a duck. The home drives it
+// through the handle so hovering a word brings its duck forward too.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useAudience } from '@/components/providers/audience-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { DIVE_SECONDS, createPondScene, type PondScene, type Side } from '@/lib/home/pond-scene';
-import { duckArtNow, loadDuckArt, loadRoboArt, roboArtNow } from '@/lib/screensaver/duck-art';
+import { DIVE_SECONDS, createPondScene, type PondScene } from '@/lib/home/pond-scene';
+import {
+  duckArtNow,
+  loadDuckArt,
+  loadOutfits,
+  loadRoboKit,
+  outfitsNow,
+  roboKitNow,
+} from '@/lib/screensaver/duck-art';
 import { onPaletteChange, readPalette } from '@/lib/screensaver/palette';
 import { seeded } from '@/lib/screensaver/scene';
+import type { Door } from '@/lib/yeaboi/home';
 
 const MAX_DPR = 2;
 
 export interface PondHandle {
-  lean(side: Side | null): void;
-  dive(side: Side): void;
+  forward(door: Door | null): void;
+  dive(door: Door): void;
 }
 
 export const Pond = forwardRef<
   PondHandle,
   {
-    /** Where each lobe opens. */
-    hrefs: Record<Side, string>;
+    /** Where each duck's door opens. */
+    hrefs: Record<Door, string>;
     className?: string;
   }
 >(function Pond({ hrefs, className }, ref) {
@@ -82,18 +90,27 @@ export const Pond = forwardRef<
     });
     const art = duckArtNow();
     if (art) scene.setArt(art);
-    scene.setMark(roboArtNow());
+    scene.setOutfits(outfitsNow());
+    scene.setRoboKit(roboKitNow());
     sceneRef.current = scene;
 
+    const arrived = (): void => {
+      if (reduced && !disposed) scene.draw(ctx);
+    };
     void loadDuckArt().then((loaded) => {
       if (disposed) return;
       scene.setArt(loaded);
-      if (reduced) scene.draw(ctx);
+      arrived();
     });
-    void loadRoboArt().then((loaded) => {
+    void loadOutfits().then((loaded) => {
       if (disposed) return;
-      scene.setMark(loaded);
-      if (reduced) scene.draw(ctx);
+      scene.setOutfits(loaded);
+      arrived();
+    });
+    void loadRoboKit().then((loaded) => {
+      if (disposed) return;
+      scene.setRoboKit(loaded);
+      arrived();
     });
 
     const paint = (now: number): void => {
@@ -148,23 +165,23 @@ export const Pond = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audience]);
 
-  const lean = (side: Side | null): void => {
-    sceneRef.current?.lean(side);
+  const forward = (door: Door | null): void => {
+    sceneRef.current?.forward(door);
     repaintIfStill();
   };
 
-  const dive = (side: Side): void => {
-    sceneRef.current?.dive(side);
-    const href = hrefsRef.current[side];
+  const dive = (door: Door): void => {
+    sceneRef.current?.dive(door);
+    const href = hrefsRef.current[door];
     if (reduced) navigate(href);
     else window.setTimeout(() => navigate(href), DIVE_SECONDS * 1000);
   };
 
-  useImperativeHandle(ref, () => ({ lean, dive }));
+  useImperativeHandle(ref, () => ({ forward, dive }));
 
-  const sideOf = (event: MouseEvent<HTMLCanvasElement>): Side | null => {
+  const doorOf = (event: MouseEvent<HTMLCanvasElement>): Door | null => {
     const rect = event.currentTarget.getBoundingClientRect();
-    return sceneRef.current?.sideAt(event.clientX - rect.left, event.clientY - rect.top) ?? null;
+    return sceneRef.current?.doorAt(event.clientX - rect.left, event.clientY - rect.top) ?? null;
   };
 
   return (
@@ -173,17 +190,17 @@ export const Pond = forwardRef<
       className={className}
       aria-hidden="true"
       onPointerMove={(event) => {
-        const side = sideOf(event);
-        event.currentTarget.style.cursor = side ? 'pointer' : '';
-        lean(side);
+        const door = doorOf(event);
+        event.currentTarget.style.cursor = door ? 'pointer' : '';
+        forward(door);
       }}
       onPointerLeave={(event) => {
         event.currentTarget.style.cursor = '';
-        lean(null);
+        forward(null);
       }}
       onClick={(event) => {
-        const side = sideOf(event);
-        if (side) dive(side);
+        const door = doorOf(event);
+        if (door) dive(door);
       }}
     />
   );

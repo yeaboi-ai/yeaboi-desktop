@@ -128,21 +128,3 @@ export async function loadEngineProjectSessions(
   );
   return body ? body.sessions : null;
 }
-
-/** Runs grouped by the project they ran inside, newest first each; unscoped
- *  runs are left out. The key is the engine's `proj-<8hex>` id. */
-export function runsByProject(rows: RecentSession[]): Map<string, RecentSession[]> {
-  const groups = new Map<string, RecentSession[]>();
-  for (const row of [...rows].sort((a, b) => stamp(b).localeCompare(stamp(a)))) {
-    if (!row.project_id) continue;
-    const list = groups.get(row.project_id);
-    if (list) list.push(row);
-    else groups.set(row.project_id, [row]);
-  }
-  return groups;
-}
-
-/** The runs that belong to no project: what the Sessions half lists. */
-export function oneOffRuns(rows: RecentSession[]): RecentSession[] {
-  return rows.filter((row) => !row.project_id);
-}

@@ -297,7 +297,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
           Projects
         </Link>
         <div className="mt-3 flex items-center gap-4">
-          <RoboMark size={40} />
+          <RoboMark door="projects" size={40} />
           <h1 className="font-display italic text-[40px] leading-none text-foreground">
             {project.name}
           </h1>

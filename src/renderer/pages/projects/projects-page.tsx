@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocation } from 'react-router';
+import { DoorDuckMark } from '@/components/brand/duck';
 import { CreateProjectDialog } from '@/components/create-project-dialog';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { PROJECTS_HEADER_LINKS } from '@/lib/nav/sections';
@@ -92,9 +93,12 @@ export default function ProjectsPage() {
       <main className="mx-auto max-w-5xl px-6 py-14 pb-40">
         <header className="flex flex-wrap items-end justify-between gap-6 animate-slide-up stagger-1">
           <div>
-            <h1 className="font-display italic text-[40px] leading-none text-foreground">
-              Projects
-            </h1>
+            <div className="flex items-center gap-4">
+              <DoorDuckMark door="projects" size={40} />
+              <h1 className="font-display italic text-[40px] leading-none text-foreground">
+                Projects
+              </h1>
+            </div>
             <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
               A durable home for one piece of work. Every run inside it shares context with the
               rest.

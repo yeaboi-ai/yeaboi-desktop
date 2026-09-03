@@ -8,8 +8,16 @@
 import baseSrc from '@yeaboi-ai/design/assets/duck/base.png';
 import glassesSrc from '@yeaboi-ai/design/assets/duck/glasses.png';
 import wingSrc from '@yeaboi-ai/design/assets/duck/wing.png';
+import hardhatSrc from '@/assets/brand/outfit-hardhat.png';
+import ringSrc from '@/assets/brand/outfit-ring.png';
+import roboHardhatSrc from '@/assets/brand/robo-hardhat.png';
+import roboRingSrc from '@/assets/brand/robo-ring.png';
 import roboSrc from '@/assets/brand/robo.png';
-import type { DuckArt } from './duck-rig';
+import type { Door } from '@/lib/yeaboi/home';
+import type { DuckArt, OutfitLayer } from './duck-rig';
+
+/** Rows above the sprite on every kit's canvas; the generator's OUTFIT_HEADROOM. */
+export const OUTFIT_HEADROOM = 40;
 
 let loaded: DuckArt | null = null;
 let loading: Promise<DuckArt> | null = null;
@@ -55,4 +63,45 @@ export function loadRoboArt(): Promise<HTMLImageElement> {
 
 export function roboArtNow(): HTMLImageElement | null {
   return robo;
+}
+
+/** A kit per door, once; and the robo already wearing each. */
+export type Outfits = Record<Door, OutfitLayer>;
+export type RoboKit = Record<Door, HTMLImageElement>;
+
+let outfits: Outfits | null = null;
+let outfitsLoading: Promise<Outfits> | null = null;
+
+export function loadOutfits(): Promise<Outfits> {
+  if (outfits) return Promise.resolve(outfits);
+  outfitsLoading ??= Promise.all([image(hardhatSrc), image(ringSrc)]).then(([hardhat, ring]) => {
+    outfits = {
+      projects: { image: hardhat, headroom: OUTFIT_HEADROOM, slot: 'top' },
+      sessions: { image: ring, headroom: OUTFIT_HEADROOM, slot: 'body' },
+    };
+    return outfits;
+  });
+  return outfitsLoading;
+}
+
+export function outfitsNow(): Outfits | null {
+  return outfits;
+}
+
+let roboKit: RoboKit | null = null;
+let roboKitLoading: Promise<RoboKit> | null = null;
+
+export function loadRoboKit(): Promise<RoboKit> {
+  if (roboKit) return Promise.resolve(roboKit);
+  roboKitLoading ??= Promise.all([image(roboHardhatSrc), image(roboRingSrc)]).then(
+    ([projects, sessions]) => {
+      roboKit = { projects, sessions };
+      return roboKit;
+    },
+  );
+  return roboKitLoading;
+}
+
+export function roboKitNow(): RoboKit | null {
+  return roboKit;
 }

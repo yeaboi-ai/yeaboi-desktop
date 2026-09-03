@@ -2,6 +2,10 @@
 // here rather than deep-importing @design paths everywhere.
 
 import { Duck, type DuckState } from '@design/primitives/Duck';
+import hardhatSrc from '@/assets/brand/outfit-hardhat.png';
+import ringSrc from '@/assets/brand/outfit-ring.png';
+import { OUTFIT_HEADROOM } from '@/lib/screensaver/duck-art';
+import type { Door } from '@/lib/yeaboi/home';
 
 export { Duck, useDuckPulse } from '@design/primitives/Duck';
 export type { DuckPulse, DuckRest, DuckState } from '@design/primitives/Duck';
@@ -50,6 +54,53 @@ export function DuckMark({ size = 24, state = 'idle', jamming, className }: Duck
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
       <Duck state={state} size={size} jamming={jamming} />
+    </span>
+  );
+}
+
+/** The sprite's width in source pixels; the kits are drawn on the same canvas. */
+const SPRITE_WIDTH = 128;
+
+const OUTFIT_SRC: Record<Door, string> = { projects: hardhatSrc, sessions: ringSrc };
+
+/**
+ * The duck in a door's kit: the hard hat at Projects, the swim ring at
+ * Sessions. The kit is a layer laid over the ordinary mark, mirrored the way
+ * the primitive mirrors its body, on a canvas taller than the sprite so the
+ * hat rises above the crown; at mark sizes the body's bob is under a pixel,
+ * so the kit sits still.
+ */
+export function DoorDuckMark({
+  door,
+  size = 24,
+  className,
+}: {
+  door: Door;
+  size?: number;
+  className?: string;
+}) {
+  const rise = (OUTFIT_HEADROOM / SPRITE_WIDTH) * size;
+  return (
+    <span
+      data-duck-mark
+      className={className}
+      style={{ width: size, display: 'inline-block', lineHeight: 0, position: 'relative' }}
+    >
+      <Duck state="idle" size={size} />
+      <img
+        src={OUTFIT_SRC[door]}
+        alt=""
+        draggable={false}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: -rise,
+          width: size,
+          height: 'auto',
+          scale: '-1 1',
+          pointerEvents: 'none',
+        }}
+      />
     </span>
   );
 }

@@ -68,8 +68,8 @@ icons: ## Re-render the committed icon set from the yeaboi-site duck art (needs 
 sprites: ## Re-render the onboarding lifecycle sprites from the yeaboi-site duck art (needs uv)
 	uv run --with pillow --no-project python scripts/gen_lifecycle_sprites.py
 
-robo: ## Re-render the Agents world's robo mascot from the vendored pixel duck (needs uv)
-	uv run --with pillow --no-project python scripts/gen_robo_sprites.py
+mascots: ## Re-render the robo and the two door kits from the vendored pixel duck (needs uv)
+	uv run --with pillow --no-project python scripts/gen_mascot_sprites.py
 
 pack: ## Unsigned local package into dist/ (a smoke test, not a release)
 	$(MAKE) build

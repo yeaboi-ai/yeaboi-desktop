@@ -6,7 +6,7 @@
 // page and the project's run panel.
 
 import Link from 'next/link';
-import type { GlimpseRow } from '@/lib/yeaboi/home';
+import type { GlimpseRow } from '@/lib/yeaboi/glimpse';
 
 export function GlimpseList({
   rows,

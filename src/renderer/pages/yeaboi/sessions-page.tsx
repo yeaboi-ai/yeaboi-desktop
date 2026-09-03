@@ -14,6 +14,7 @@ import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GlimpseList } from '@/components/yeaboi/glimpse-list';
 import { ModeList } from '@/components/yeaboi/mode-list';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
+import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { SESSIONS_FOOT_LINKS } from '@/lib/nav/sections';
 import { apiGet } from '@/lib/yeaboi/api';
 import {
@@ -22,7 +23,12 @@ import {
   runModesFor,
   type Capabilities,
 } from '@/lib/yeaboi/capabilities';
-import { SESSIONS_UNSUPPORTED, agentGlimpse, homeCopy, sessionRows } from '@/lib/yeaboi/home';
+import {
+  SESSIONS_UNSUPPORTED,
+  agentGlimpse,
+  sessionRows,
+  sessionsEmpty,
+} from '@/lib/yeaboi/glimpse';
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
 import { loadRecentSessions, shapeSessions, type RecentSession } from '@/lib/yeaboi/sessions';
 import { MODE_ROUTES, startRouteFor, tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
@@ -62,6 +68,7 @@ function SessionsBody() {
   const [sessions, setSessions] = useState<RecentSession[] | null | 'error'>([]);
   const [ceremonies, setCeremonies] = useState<CeremonyRow[]>([]);
   const workspace = audience !== 'agents';
+  const Mascot = DOOR_MASCOT[audience].sessions;
   const now = new Date();
 
   useEffect(() => {
@@ -94,7 +101,6 @@ function SessionsBody() {
   if (!caps) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
   const cards = allCards(caps);
-  const copy = homeCopy(audience);
   const recent = workspace
     ? Array.isArray(sessions)
       ? sessionRows(shapeSessions(sessions, cards, now))
@@ -105,12 +111,15 @@ function SessionsBody() {
       ? SESSIONS_UNSUPPORTED
       : sessions === 'error'
         ? 'The recent runs could not be read.'
-        : copy.sessions.empty;
+        : sessionsEmpty(audience);
 
   return (
     <>
       <header className="animate-slide-up stagger-1">
-        <h1 className="font-display italic text-[40px] leading-none text-foreground">Sessions</h1>
+        <div className="flex items-center gap-4">
+          <Mascot size={40} />
+          <h1 className="font-display italic text-[40px] leading-none text-foreground">Sessions</h1>
+        </div>
         <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
           A one-off run of one mode. Nothing is scoped to a project and nothing carries over.
         </p>
