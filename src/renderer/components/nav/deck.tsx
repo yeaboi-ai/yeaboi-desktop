@@ -153,6 +153,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
     <div
       // Clicking a held-back surface takes it now rather than waiting.
       onPointerDownCapture={preview ? settle : undefined}
+      data-deck
       className="h-screen overflow-y-auto"
       style={{
         transform: preview ? `scale(${PREVIEW_SCALE})` : 'scale(1)',
@@ -165,7 +166,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
         overflow: preview ? 'hidden' : undefined,
       }}
     >
-      {children}
+      <div className="pl-[72px] pt-[var(--titlebar-h)]">{children}</div>
     </div>
   );
 }

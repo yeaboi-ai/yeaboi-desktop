@@ -1009,3 +1009,14 @@ html[data-audience='agents'] {
     transition: none;
   }
 }
+
+/* Inside the deck, a full-screen page means the deck's port, not the display.
+   The port sits below the titlebar, so a page asking for 100vh would overflow
+   it by that much — enough scroll room to swallow the gesture that should have
+   paged, and never enough to read. */
+[data-deck] .min-h-screen {
+  min-height: calc(100vh - var(--titlebar-h));
+}
+[data-deck] .h-screen {
+  height: calc(100vh - var(--titlebar-h));
+}

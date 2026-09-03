@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
       <AppNav />
-      <main className="min-h-screen pl-[72px] pt-[var(--titlebar-h)]">
+      <main>
         <Deck>{children}</Deck>
       </main>
       {/* The duck belongs to the shell, not to a page. Outside the deck so a
