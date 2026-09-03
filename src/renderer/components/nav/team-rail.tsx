@@ -66,9 +66,6 @@ const HOME_HREF = '/home';
  *  the notch means "show me where I can go", which the icons answer; the words
  *  are for staying. */
 const LABEL_DWELL_MS = 520;
-/** How close to the top or bottom of the window the rail may be pushed while
- *  it holds a row still. */
-const EDGE_GAP = 12;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -89,21 +86,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [markerTop, setMarkerTop] = useState<number | null>(null);
 
-  // Where the active row sat on screen when the cursor arrived. The rail is
-  // vertically centred, so growing it out of the notch would slide that row —
-  // the one being pointed at — out from under the cursor. Pinning it holds the
-  // row still and lets the list grow around it instead.
-  const navRef = useRef<HTMLElement>(null);
-  const pinned = useRef<number | null>(null);
-  const [shift, setShift] = useState(0);
-  const rowCentre = () => {
-    const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
-    return row ? row.getBoundingClientRect().top + ROW / 2 : null;
-  };
-
   const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enter = () => {
-    pinned.current = rowCentre();
     setOpen(true);
     if (activeHref === HOME_HREF) {
       setWide(true);
@@ -113,10 +97,6 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   };
   const leave = () => {
     if (dwell.current) clearTimeout(dwell.current);
-    // The pin stays for the collapse. Dropping it here would re-centre the rail
-    // while the rows were still shrinking, and the row would bounce on its way
-    // back. The layout it collapses to is the one it grew from, so the shift
-    // converges to nothing by itself.
     setOpen(false);
     setWide(false);
   };
@@ -137,8 +117,6 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // sliding about the rail — so there it is glued to its row frame by frame.
   const [travelling, setTravelling] = useState(false);
   const lastHref = useRef(activeHref);
-  const shiftRef = useRef(0);
-  shiftRef.current = shift;
 
   useLayoutEffect(() => {
     // Only where the row is, never how tall: the active row is always ROW high,
@@ -147,25 +125,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     const measure = () => {
       const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
       setMarkerTop(row ? row.offsetTop : null);
-
-      const nav = navRef.current;
-      const centre = rowCentre();
-      if (pinned.current === null || centre === null || !nav) return;
-      // The rect already includes the shift, so this converges in a frame.
-      // Clamped so holding the row still can never push the rail off screen.
-      const room = Math.max(0, (window.innerHeight - nav.offsetHeight) / 2 - EDGE_GAP);
-      const wanted = shiftRef.current + (pinned.current - centre);
-      setShift(Math.max(-room, Math.min(room, wanted)));
     };
 
     const navigated = lastHref.current !== activeHref;
     lastHref.current = activeHref;
     setTravelling(navigated);
-    if (navigated) {
-      // A page turn is not a hover: there is no row to hold still.
-      pinned.current = null;
-      setShift(0);
-    }
     measure();
 
     let frame = 0;
@@ -176,11 +140,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     };
     frame = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(frame);
-  }, [activeHref, open, wide, audience, notch, shift]);
+  }, [activeHref, open, wide, audience, notch]);
 
   return (
     <nav
-      ref={navRef}
       aria-label="Modes"
       onMouseLeave={leave}
       onFocusCapture={() => {
@@ -188,11 +151,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
         setWide(true);
       }}
       onBlurCapture={leave}
-      className="fixed left-0 top-1/2 z-40 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
-      style={{
-        width: wide ? WIDE : NARROW,
-        transform: `translateY(calc(-50% + ${shift}px))`,
-      }}
+      className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
+      style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
         {markerTop !== null && (
