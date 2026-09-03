@@ -52,14 +52,23 @@ const CHROME = 24 + 8 + 44 + 2;
 /** The shortest the panel gets: one exchange still needs somewhere to sit. */
 const FIT_MIN = 140;
 
+/** How many controls sit beside the composer. */
+const CONTROLS_COUNT = 2;
+
 /** The controls beside the composer, in the order they detach in. */
 const CONTROLS = [
   { key: 'new', title: 'New conversation', Icon: MessageSquarePlus },
   { key: 'close', title: 'Minimise', Icon: X },
 ] as const;
 
-/** Their width, animated from nothing when they detach. */
+/** Their width, animated from nothing when they detach, and the gap each one
+ *  carries with it. */
 const CONTROL_SIZE = 44;
+const CONTROL_GAP = 8;
+/** What the panel gains when they detach: the pair, with their gaps. The
+ *  composer keeps its own width, so they open into new space rather than out of
+ *  the room the question is written in. */
+const CONTROLS_WIDTH = CONTROLS_COUNT * (CONTROL_SIZE + CONTROL_GAP);
 
 /** A conversation control: its own object on the composer's line, the same
  *  height as it. Two of them side by side, not one panel holding two. */
@@ -420,6 +429,8 @@ export function NikoBar() {
     </div>
   ) : null;
 
+  const extra = state === 'expanded' ? CONTROLS_WIDTH : 0;
+
   // How far right of centre the panel sits when it has stepped aside: hard
   // against the window's edge, by the same margin as everything else there.
   const asideShift =
@@ -434,8 +445,11 @@ export function NikoBar() {
         // Centred by default; docked right while a screen it opened is being
         // read. A transform either way, so the move is one animation rather
         // than a swap between two anchors.
-        transform: `translateX(calc(-50% + ${asideShift}px))`,
-        width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width}px`,
+        // The extra width goes on the right: the composer stays where it was and
+        // the controls open out beyond it, rather than the panel staying put and
+        // the question giving up room to them.
+        transform: `translateX(calc(-50% + ${asideShift + extra / 2}px))`,
+        width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width + extra}px`,
         height: `${height}px`,
         transition: dragging
           ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`
@@ -477,10 +491,17 @@ export function NikoBar() {
       {/* ── The pill ─────────────────────────────────────────────────── */}
       <button
         onClick={() => setIsOpen(true)}
-        className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full border border-border bg-popover px-6 shadow-xl transition-all duration-150 hover:border-primary/30 hover:shadow-primary/5"
+        className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full border border-border bg-popover px-6 shadow-xl hover:border-primary/30 hover:shadow-primary/5"
         style={{
           opacity: state === 'collapsed' ? 1 : 0,
           pointerEvents: state === 'collapsed' ? 'auto' : 'none',
+          // It takes over the instant the bar closes rather than fading up into
+          // it: whatever is painting has to be the only thing painting, or the
+          // retraction reads as two objects.
+          transition:
+            state === 'collapsed'
+              ? 'border-color 150ms ease, box-shadow 150ms ease'
+              : 'opacity 150ms ease',
         }}
         title="Ask Niko (Cmd+.)"
         aria-label="Ask Niko"
@@ -491,7 +512,7 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl transition-opacity duration-300"
+        className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl"
         style={{
           // The shell paints nothing while the bar is open. Everything visible
           // is its own object — the bubbles, the composer, the two controls —
@@ -501,6 +522,11 @@ export function NikoBar() {
           border: 'none',
           opacity: state === 'collapsed' ? 0 : 1,
           pointerEvents: state === 'collapsed' ? 'none' : 'auto',
+          // Instant on the way out, a fade on the way in. Fading it out left
+          // the composer's own pill painted at full width while the panel was
+          // still shrinking — two backgrounds retracting at once, one of them
+          // belonging to something that had already closed.
+          transition: state === 'collapsed' ? 'none' : 'opacity 300ms ease',
         }}
       >
         <div
@@ -611,7 +637,7 @@ export function NikoBar() {
                 className="shrink-0 overflow-hidden transition-all duration-300 ease-out"
                 style={{
                   width: state === 'expanded' ? CONTROL_SIZE : 0,
-                  marginLeft: state === 'expanded' ? 8 : 0,
+                  marginLeft: state === 'expanded' ? CONTROL_GAP : 0,
                   opacity: state === 'expanded' ? 1 : 0,
                   pointerEvents: state === 'expanded' ? 'auto' : 'none',
                 }}
