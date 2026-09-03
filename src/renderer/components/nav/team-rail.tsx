@@ -57,6 +57,11 @@ const ICONS: Partial<Record<IconKey, typeof Home>> = {
 /** Collapsed and expanded widths. The icon column is the same in both. */
 const NARROW = 48;
 const WIDE = 176;
+/** Row height, as a number because the rows collapse to nothing in the notch. */
+const ROW = 36;
+/** The one surface that keeps the whole map: it is the one you go to in order
+ *  to see where everything is. */
+const HOME_HREF = '/home';
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -71,14 +76,27 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // far, which a lit row on its own never tells you.
   const listRef = useRef<HTMLDivElement>(null);
   const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
+
+  // On a panel the rail is a notch: the icon you are on, and nothing else. The
+  // rows are still here, collapsed to no height, so the list grows back out of
+  // the notch on hover rather than appearing beside it.
+  const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+
   useLayoutEffect(() => {
-    const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
-    if (!row || !listRef.current) {
-      setMarker(null);
-      return;
-    }
-    setMarker({ top: row.offsetTop, height: row.offsetHeight });
-  }, [activeHref, open, audience]);
+    const measure = () => {
+      const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
+      if (!row || !listRef.current) {
+        setMarker(null);
+        return;
+      }
+      setMarker({ top: row.offsetTop, height: row.offsetHeight });
+    };
+    measure();
+    // Again once the rows have finished collapsing: the first pass reads the
+    // layout they are leaving, not the one they are going to.
+    const settled = setTimeout(measure, 260);
+    return () => clearTimeout(settled);
+  }, [activeHref, open, audience, notch]);
 
   return (
     <nav
@@ -102,7 +120,17 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
           <div key={section.label ?? `top-${index}`}>
             {/* A hairline instead of a heading: at 48px wide there is nowhere to
               put the word, and the group still needs to read as a group. */}
-            {index > 0 && <div className="mx-2 my-1.5 h-px bg-border/50" />}
+            {index > 0 && (
+              <div
+                className="mx-2 bg-border/50 transition-all duration-200 ease-out"
+                style={{
+                  height: notch ? 0 : 1,
+                  opacity: notch ? 0 : 1,
+                  marginTop: notch ? 0 : 6,
+                  marginBottom: notch ? 0 : 6,
+                }}
+              />
+            )}
             {section.items.map(({ href, label, icon }) => {
               const Icon = ICONS[icon] ?? Bot;
               const active = activeHref === href;
@@ -112,12 +140,17 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   href={href}
                   title={label}
                   data-active={active}
-                  className={`relative flex h-9 items-center gap-3 rounded-xl px-[11px] text-xs font-body font-medium transition-colors duration-200 ${
+                  aria-hidden={notch && !active}
+                  tabIndex={notch && !active ? -1 : undefined}
+                  className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
                     active
                       ? 'text-foreground'
                       : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                   }`}
                   style={{
+                    height: notch && !active ? 0 : ROW,
+                    opacity: notch && !active ? 0 : 1,
+                    pointerEvents: notch && !active ? 'none' : undefined,
                     boxShadow: active && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
                   }}
                 >
