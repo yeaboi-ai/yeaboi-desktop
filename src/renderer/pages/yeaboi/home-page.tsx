@@ -15,14 +15,16 @@ export default function HomePage() {
   const { audience } = useAudience();
   return (
     <BackendGate>
-      {/* The tip dock and Niko's pill both float over the bottom of the window;
-          the padding is what keeps the last card row reachable under them. The
-          dock is 24 + 72 duck + 10, and a three-line bubble another ~112 — the
-          common case at the 960px minimum width, not the edge. */}
-      <div className="mx-auto max-w-5xl px-6 py-10 pb-64">
-        <h1 className="font-display text-2xl text-foreground mb-6">Home</h1>
-        {audience === 'agents' ? <AgentsHome /> : <WorkspaceHome audience={audience} />}
-      </div>
+      {/* No page heading: the dashboard names itself, and the deck gives every
+          surface the whole window — a second title above it is a title for the
+          frame rather than for what is in it. */}
+      {audience === 'agents' ? (
+        <div className="mx-auto max-w-5xl px-6 py-10 pb-64">
+          <AgentsHome />
+        </div>
+      ) : (
+        <WorkspaceHome audience={audience} />
+      )}
     </BackendGate>
   );
 }

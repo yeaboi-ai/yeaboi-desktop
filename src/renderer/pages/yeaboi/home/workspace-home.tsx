@@ -10,7 +10,8 @@ import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/yeaboi/api';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
 import { TodayStrip } from '@/components/yeaboi/today-strip';
-import { ModeCardGrid, type ModeCard } from '@/components/yeaboi/mode-card-grid';
+import { type ModeCard } from '@/components/yeaboi/mode-card-grid';
+import { HomeDashboard } from './dashboard';
 import { MODE_ROUTES, type Tip, tipsForAudience } from '@/lib/yeaboi/tips';
 
 interface Capabilities {
@@ -62,14 +63,10 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
 
   return (
     <>
-      {/* Where am I — before what do I want to do. Solo only: the strip is
-          the one person's own yesterday, sprint, next story and agent spend. */}
-      {audience === 'solo' && <TodayStrip />}
-
-      <h2 className="text-[13px] font-body font-medium text-foreground mb-3">
-        One-off sessions — pick a mode
-      </h2>
-      <ModeCardGrid cards={runModes} onOpen={open} />
+      {/* Where the work stands. The modes are one scroll away in the deck, so
+          this surface answers what happened and what is next rather than
+          listing what can be launched. */}
+      <HomeDashboard audience={audience} />
 
       <TipCompanion
         tips={tipsForAudience(tips, audience)}

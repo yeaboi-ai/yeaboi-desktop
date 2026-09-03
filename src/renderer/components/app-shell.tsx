@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AppNav } from './nav/app-nav';
+import { Deck } from './nav/deck';
 import { ThemePreviewBar } from './theme-preview-bar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -41,7 +42,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-hidden="true"
       />
       <AppNav />
-      <main className="min-h-screen pl-[72px] pt-[var(--titlebar-h)]">{children}</main>
+      <main className="min-h-screen pl-[72px] pt-[var(--titlebar-h)]">
+        <Deck>{children}</Deck>
+      </main>
       <ThemePreviewBar />
     </>
   );
