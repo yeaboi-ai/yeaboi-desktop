@@ -1169,3 +1169,24 @@ html[data-audience='agents'] {
     animation: niko-ring-spin 3s linear infinite;
   }
 }
+
+/* A scrolling conversation fades where it continues, and only there: a fade at
+   the top when nothing is above it says there is more to see when there is
+   not. */
+[data-fade='top'] {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+}
+
+[data-fade='bottom'] {
+  mask-image: linear-gradient(to top, transparent 0, #000 22px);
+}
+
+[data-fade='both'] {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 22px,
+    #000 calc(100% - 22px),
+    transparent 100%
+  );
+}

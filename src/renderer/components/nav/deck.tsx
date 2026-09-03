@@ -127,6 +127,9 @@ export function Deck({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
+      // Something is open over the deck and has the window: paging beneath it
+      // moves a surface nobody is looking at.
+      if (document.documentElement.dataset['overlay']) return;
       const now = Date.now();
       const fresh = now - lastWheel.current > GESTURE_GAP_MS;
       lastWheel.current = now;
@@ -169,6 +172,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (document.documentElement.dataset['overlay']) return;
       const focused = document.activeElement as HTMLElement | null;
       if (focused && (isEditable(focused) || focused.closest('[role="dialog"], [role="menu"]')))
         return;

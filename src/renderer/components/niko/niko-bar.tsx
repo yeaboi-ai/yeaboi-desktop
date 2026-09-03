@@ -45,15 +45,17 @@ import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from
 const ASIDE_MARGIN = 16;
 
 /** Everything in the expanded panel that is not the conversation: the resize
- *  grip, the gap under it, the composer, and the list's own padding. */
-const CHROME = 24 + 8 + 44 + 8;
+ *  grip, the gap under it, and the composer, plus two pixels of slack — a
+ *  measurement that lands a fraction short puts a scrollbar on a conversation
+ *  that fits. The list's own padding is inside the measurement. */
+const CHROME = 24 + 8 + 44 + 2;
 /** The shortest the panel gets: one exchange still needs somewhere to sit. */
 const FIT_MIN = 140;
 
 /** A conversation control: its own object on the composer's line, the same
  *  height as it. Two of them side by side, not one panel holding two. */
 const CONTROL =
-  'flex size-11 shrink-0 items-center justify-center rounded-2xl bg-popover text-muted-foreground/50 shadow-xl ring-1 ring-border/60 transition-colors hover:bg-foreground/5 hover:text-foreground';
+  'flex size-11 shrink-0 items-center justify-center rounded-full bg-popover text-muted-foreground/50 shadow-xl ring-1 ring-border/60 transition-colors hover:bg-foreground/5 hover:text-foreground';
 
 const MORPH = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
@@ -98,6 +100,8 @@ export function NikoBar() {
   const [pinned, setPinned] = useState(false);
   const [fit, setFit] = useState(FIT_MIN);
   const listRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState<'none' | 'top' | 'bottom' | 'both'>('none');
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -178,21 +182,54 @@ export function NikoBar() {
     return () => clearTimeout(timer);
   }, [state]);
 
+  // While the bar is open it owns the window: the deck must not turn a page
+  // under it when the conversation runs out of scroll. Claimed on the document
+  // so the deck needs to know nothing about Niko.
+  useEffect(() => {
+    if (state === 'collapsed') return;
+    document.documentElement.dataset['overlay'] = 'niko';
+    return () => {
+      delete document.documentElement.dataset['overlay'];
+    };
+  }, [state]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /** Which ends the conversation carries on past. */
+  const readFade = useCallback(() => {
+    const box = scrollRef.current;
+    if (!box) return;
+    const above = box.scrollTop > 2;
+    const below = box.scrollTop + box.clientHeight < box.scrollHeight - 2;
+    setFade(above && below ? 'both' : above ? 'top' : below ? 'bottom' : 'none');
+  }, []);
+
   // Measured rather than counted: a message's height depends on what is in it,
-  // and a streaming one changes while you watch.
+  // and a streaming one changes while you watch. The scroll box is what is
+  // measured — the list inside it under-reports by its own padding and the gap
+  // above its last child, which is enough to leave a scrollbar on a
+  // conversation that fits.
   useEffect(() => {
+    const box = scrollRef.current;
     const list = listRef.current;
-    if (!list) return;
-    const measure = () => setFit(list.scrollHeight);
-    measure();
+    if (!box || !list) return;
+    const measure = () => {
+      setFit(Math.ceil(box.scrollHeight));
+      readFade();
+    };
+    // Collapsed first, then measured: `scrollHeight` never reports less than the
+    // box it is in, so a panel that has grown could otherwise never shrink.
+    setFit(0);
+    const first = requestAnimationFrame(measure);
     const observer = new ResizeObserver(measure);
     observer.observe(list);
-    return () => observer.disconnect();
-  }, [state]);
+    return () => {
+      cancelAnimationFrame(first);
+      observer.disconnect();
+    };
+  }, [state, messages.length, readFade]);
 
   useEffect(() => {
     if (state !== 'input') {
@@ -426,7 +463,12 @@ export function NikoBar() {
           }}
         >
           {state === 'expanded' && (
-            <div className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
+            <div
+              ref={scrollRef}
+              onScroll={readFade}
+              data-fade={fade}
+              className="min-h-0 flex-1 overflow-y-auto px-1 py-1"
+            >
               <div ref={listRef} className="space-y-3">
                 {messages.map((message, i) => (
                   <NikoMessage
@@ -456,7 +498,7 @@ export function NikoBar() {
             <div
               className={`flex flex-1 items-center gap-2 ${
                 state === 'expanded'
-                  ? 'min-h-11 rounded-2xl bg-popover px-3 py-2 shadow-xl ring-1 ring-border/60'
+                  ? 'min-h-11 rounded-full bg-popover px-4 shadow-xl ring-1 ring-border/60'
                   : ''
               }`}
             >
@@ -476,7 +518,7 @@ export function NikoBar() {
                 placeholder={
                   down ? 'Waiting for the yeaboi backend…' : 'Ask Niko anything, or / for shortcuts'
                 }
-                className="flex-1 resize-none bg-transparent text-[13px] font-body text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
+                className="flex-1 resize-none self-center bg-transparent py-0 text-[13px] font-body leading-5 text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
                 rows={1}
                 disabled={down}
                 style={{ maxHeight: COMPOSER_MAX_PX }}
