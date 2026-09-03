@@ -110,7 +110,15 @@ function createMainWindow(): void {
     title: app.getName(),
     // The last theme's background, so no flash of the wrong scheme while the
     // renderer boots. The renderer keeps it current over theme:background.
-    backgroundColor: settings.windowBackground,
+    //
+    // On macOS the window is transparent instead and the page paints that
+    // colour itself, because the corners are the page's to round: the OS
+    // rounds a normal window and squares it the moment it fills the screen,
+    // and this app is a panel at every size. Transparency is what lets the
+    // four corners' worth of pixels fall through.
+    ...(process.platform === 'darwin'
+      ? { transparent: true, backgroundColor: '#00000000' }
+      : { backgroundColor: settings.windowBackground }),
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),
       contextIsolation: true,

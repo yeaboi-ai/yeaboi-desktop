@@ -92,6 +92,10 @@
   /* Room at the top of the page for the traffic lights, when the window runs
      without a title bar. main.tsx sets the attribute on macOS only. */
   --titlebar-h: 0px;
+  /* The window's own corner radius. macOS rounds a normal window for us and
+     squares it off when it fills the screen; the app keeps its corners either
+     way, so it paints them itself. */
+  --window-radius: 12px;
 
   --background: #fafaf9;
   --foreground: #171717;
@@ -414,6 +418,17 @@ body::before {
 /* ── Chat widget animated border ────────────────────────────────────── */
 
 /* ── Chromeless window ──────────────────────────────────────────────── */
+
+/* The rounded corners, painted by the page rather than the OS. macOS drops a
+   window's own radius the moment it fills the screen, and this app is a panel
+   whatever size it is — so `body` clips to the radius and the window behind is
+   transparent for exactly the four corners' worth of pixels. */
+:root[data-chrome='hidden'] body {
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  /* The window is transparent there, so the page is what paints the app. */
+  background: var(--background);
+}
 
 /* `titleBarStyle: 'hiddenInset'` puts the traffic lights over the page itself,
    at the position main/index.ts pins them to. The reserve below clears them,

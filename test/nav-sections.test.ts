@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
-import { navItems, navSections } from '../src/renderer/lib/nav/sections';
+import { navItems, navSections, railSections } from '../src/renderer/lib/nav/sections';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const registry = JSON.parse(
@@ -106,5 +106,38 @@ describe('navSections', () => {
         expect(section.items.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  describe('railSections', () => {
+    it('opens on Home in every world', () => {
+      for (const audience of AUDIENCES) {
+        expect(railSections(audience)[0]!.items[0]!.href).toBe('/home');
+      }
+    });
+
+    it('leaves Ops out', () => {
+      // The rail is icons by default; Ops would make twenty of them out of
+      // nine, and it is a drawer of settings-adjacent pages rather than a set
+      // of things you run.
+      for (const audience of AUDIENCES) {
+        const hrefs = railSections(audience).flatMap((s) => s.items.map((i) => i.href));
+        expect(hrefs).not.toContain('/system-check');
+        expect(hrefs).not.toContain('/privacy');
+        expect(hrefs).not.toContain('/usage');
+      }
+    });
+
+    it('keeps every mode the world offers', () => {
+      for (const audience of AUDIENCES) {
+        const rail = railSections(audience).flatMap((s) => s.items.map((i) => i.href));
+        const opsHrefs = navSections(audience)
+          .filter((s) => s.label === 'Ops')
+          .flatMap((s) => s.items.map((i) => i.href));
+        const expected = navItems(audience)
+          .map((i) => i.href)
+          .filter((href) => !opsHrefs.includes(href));
+        expect(rail).toEqual(expected);
+      }
+    });
   });
 });

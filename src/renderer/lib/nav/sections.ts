@@ -137,3 +137,13 @@ export function navSections(audience: Audience): NavSectionSpec[] {
 export function navItems(audience: Audience): NavItemSpec[] {
   return navSections(audience).flatMap((section) => section.items);
 }
+
+/** The floating rail's inventory: Home, then the world's own modes.
+ *
+ * Ops is deliberately absent — it is a drawer of settings-adjacent pages
+ * rather than a set of things you run, and putting it in a rail that is icons
+ * by default makes twenty icons out of nine. It gets its own surface.
+ */
+export function railSections(audience: Audience): NavSectionSpec[] {
+  return navSections(audience).filter((section) => section.label !== OPS.label);
+}
