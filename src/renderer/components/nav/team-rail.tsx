@@ -111,6 +111,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // the notch on hover rather than appearing beside it.
   const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
+  // The marker travels on a page turn and only then. Hovering changes the rows'
+  // heights, and a marker that animates to catch up reads as a second thing
+  // sliding about the rail — so there it is glued to its row frame by frame.
+  const [travelling, setTravelling] = useState(false);
+  const lastHref = useRef(activeHref);
+
   useLayoutEffect(() => {
     const measure = () => {
       const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
@@ -120,11 +126,21 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       }
       setMarker({ top: row.offsetTop, height: row.offsetHeight });
     };
+
+    const navigated = lastHref.current !== activeHref;
+    lastHref.current = activeHref;
+    setTravelling(navigated);
     measure();
-    // Again once the rows have finished collapsing: the first pass reads the
-    // layout they are leaving, not the one they are going to.
-    const settled = setTimeout(measure, 260);
-    return () => clearTimeout(settled);
+    if (navigated) return;
+
+    let frame = 0;
+    const until = performance.now() + 320;
+    const follow = (now: number) => {
+      measure();
+      if (now < until) frame = requestAnimationFrame(follow);
+    };
+    frame = requestAnimationFrame(follow);
+    return () => cancelAnimationFrame(frame);
   }, [activeHref, open, wide, audience, notch]);
 
   return (
@@ -144,8 +160,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
         {marker && (
           <span
             aria-hidden
-            className="pointer-events-none absolute left-0 right-0 rounded-xl bg-secondary transition-[top] duration-300 ease-out"
-            style={{ top: marker.top, height: marker.height }}
+            className="pointer-events-none absolute left-0 right-0 rounded-xl bg-secondary"
+            style={{
+              top: marker.top,
+              height: marker.height,
+              transition: travelling ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
+            }}
           />
         )}
         {sections.map((section, index) => (
