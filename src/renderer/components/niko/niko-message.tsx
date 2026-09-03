@@ -42,7 +42,10 @@ export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
     <div className="group flex justify-start gap-2">
       <DuckMark size={24} state={isStreaming ? 'urgent' : 'idle'} className="mt-0.5 shrink-0" />
       <div
-        className="max-w-[85%] rounded-2xl rounded-bl-md border border-border/40 px-3.5 py-2 backdrop-blur-sm"
+        // A line's worth of room from the moment the turn starts, so the panel
+        // grows once — for the question and the space the answer will need —
+        // rather than a second time when the answer arrives in it.
+        className="min-h-9 max-w-[85%] rounded-2xl rounded-bl-md border border-border/40 px-3.5 py-2 backdrop-blur-sm"
         style={{ background: 'color-mix(in srgb, var(--popover) 92%, transparent)' }}
       >
         {hasTools && (
