@@ -89,6 +89,10 @@
   --font-code: 'JetBrains Mono';
   --radius: 0.5rem;
 
+  /* Room at the top of the page for the traffic lights, when the window runs
+     without a title bar. main.tsx sets the attribute on macOS only. */
+  --titlebar-h: 0px;
+
   --background: #fafaf9;
   --foreground: #171717;
   --card: #ffffff;
@@ -408,6 +412,29 @@ body::before {
 }
 
 /* ── Chat widget animated border ────────────────────────────────────── */
+
+/* ── Chromeless window ──────────────────────────────────────────────── */
+
+/* `titleBarStyle: 'hiddenInset'` puts the traffic lights over the page itself,
+   at the position main/index.ts pins them to. The reserve below clears them,
+   and `.titlebar-drag` is the strip that moves the window in their place — a
+   frameless window has nothing else to grab. */
+:root[data-chrome='hidden'] {
+  --titlebar-h: 34px;
+}
+
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+/* Anything clickable inside the strip has to opt back out, or the drag region
+   swallows the click. */
+.titlebar-drag button,
+.titlebar-drag a,
+.titlebar-drag input,
+.titlebar-drag select {
+  -webkit-app-region: no-drag;
+}
 
 /* The duck as a small UI mark. The sprite is 128px and the primitive sets
    `image-rendering: pixelated` so it stays blocky when it scales UP; every mark

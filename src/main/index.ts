@@ -88,6 +88,13 @@ function createMainWindow(): void {
     minHeight: 640,
     show: false,
     icon: iconPath,
+    // No title bar: the traffic lights float over the sidebar's top-left and
+    // the renderer paints its own drag strip across the window's top edge.
+    // macOS only — `hiddenInset` is not a value the other platforms take, and
+    // there the stock frame is what people expect.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 18 } }
+      : {}),
     // What the window is called until index.html's own <title> loads.
     title: app.getName(),
     // The last theme's background, so no flash of the wrong scheme while the

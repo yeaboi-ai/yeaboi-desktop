@@ -38,8 +38,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // keeps content clear of it.
   return (
     <>
+      {/* The window has no title bar, so this is the only thing left to drag it
+          by. Above the sidebar so the strip is unbroken across the top edge;
+          the traffic lights sit inside it and the OS draws them over the top. */}
+      <div
+        className="titlebar-drag fixed top-0 left-0 right-0 z-50 h-[var(--titlebar-h)]"
+        aria-hidden="true"
+      />
       <Sidebar />
-      <main className="min-h-screen ml-[56px] md:ml-[180px]">{children}</main>
+      <main className="min-h-screen ml-[56px] md:ml-[180px] pt-[var(--titlebar-h)]">
+        {children}
+      </main>
       <ThemePreviewBar />
     </>
   );

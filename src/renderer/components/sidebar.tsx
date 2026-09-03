@@ -250,7 +250,9 @@ export function Sidebar() {
       }`}
       // The provider-health banner pads <html> to push page content down, but
       // padding cannot move a fixed element — this reads the banner's height.
-      style={{ top: 'var(--banner-h, 0px)' }}
+      // `--titlebar-h` is the room the traffic lights need when the window runs
+      // without a title bar; it is 0 everywhere else.
+      style={{ top: 'calc(var(--banner-h, 0px) + var(--titlebar-h))' }}
     >
       {/* Brand and world are one lockup: the mascot names the world you are
           in, and the whole thing opens the switcher. */}
