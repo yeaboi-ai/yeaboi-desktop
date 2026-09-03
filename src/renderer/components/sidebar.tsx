@@ -1,41 +1,29 @@
 'use client';
 
+// The rail: the world lockup, the roster (Team), and three rows — Projects,
+// Sessions, Settings. Everything else in the app hangs off one of those two
+// ways of working, so nothing else is listed here. Which row is lit is
+// lib/nav/sections.ts's activeRailRow, so a mode page opened inside a project
+// keeps Projects lit.
+
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useLocation } from 'react-router';
 import Link from 'next/link';
 import { ThemeSwitcher } from './theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
 import { useAudience } from '@/components/providers/audience-provider';
-import { navItems, navSections, type IconKey } from '@/lib/nav/sections';
+import {
+  SETTINGS_ITEM,
+  activeRailRow,
+  navItems,
+  projectsHref,
+  type IconKey,
+  type RailRow,
+} from '@/lib/nav/sections';
 import { audiencesForRoute, type Audience } from '@shared/audience';
 import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
-import {
-  LayoutGrid,
-  Columns3,
-  Settings,
-  ChevronsUpDown,
-  Home,
-  MessageSquareText,
-  BarChart3,
-  Sunrise,
-  RotateCcw,
-  Spade,
-  TrendingUp,
-  Presentation,
-  Rocket,
-  Bot,
-  CalendarCheck,
-  CalendarClock,
-  Coins,
-  Sparkles,
-  Map,
-  FileClock,
-  ShieldCheck,
-  Gauge,
-  Megaphone,
-  Stethoscope,
-  Lock,
-} from 'lucide-react';
+import { LayoutGrid, Settings, ChevronsUpDown, Sunrise } from 'lucide-react';
 import {
   useAuthFetch,
   getStoredOrgId,
@@ -49,47 +37,23 @@ import { useUpdateState } from '@/hooks/use-update-state';
 import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
-// The nav inventory lives in lib/nav/sections.ts, per audience world; this
-// map turns its icon keys into components.
 const ICONS: Record<IconKey, typeof LayoutGrid> = {
-  home: Home,
   projects: LayoutGrid,
-  board: Columns3,
-  roadmap: Map,
-  analysis: BarChart3,
-  standup: Sunrise,
-  retro: RotateCcw,
-  poker: Spade,
-  performance: TrendingUp,
-  reporting: Presentation,
-  ship: Rocket,
-  review: CalendarCheck,
-  'agent-usage': Coins,
-  'agent-advisor': Sparkles,
-  'agent-standup': Bot,
-  'agent-security': ShieldCheck,
-  ceremonies: CalendarClock,
-  provenance: FileClock,
-  usage: Gauge,
-  'whats-new': Megaphone,
-  'system-check': Stethoscope,
-  privacy: Lock,
-  feedback: MessageSquareText,
+  sessions: Sunrise,
+  settings: Settings,
 };
 
-const CMD_SHORTCUTS: Record<string, string> = {
-  p: '/projects',
-  b: '/board',
-  s: '/settings',
-};
+const ROW_CLASS =
+  'flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium justify-center md:justify-start';
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { search } = useLocation();
   const router = useRouter();
   const { audience, setAudience } = useAudience();
   const { authFetch, ready } = useAuthFetch();
-  const sections = navSections(audience);
   const items = navItems(audience);
+  const active = activeRailRow(pathname ?? '', search);
 
   // Flipping the world while standing in the other world's route would leave
   // the page orphaned from the nav — go home instead.
@@ -99,13 +63,17 @@ export function Sidebar() {
     const worlds = pathname ? audiencesForRoute(pathname) : [];
     if (worlds.length > 0 && !worlds.includes(next)) router.push(DEFAULT_ROUTE);
   };
-  // The nav dot ignores dismissal — it is the quiet permanent reminder that
-  // What's New has something; the dismissible card is the loud half.
+  // The dot ignores dismissal — it is the quiet permanent reminder that
+  // What's new has something; the dismissible card is the loud half.
   const updateState = useUpdateState();
   const updateDot = updateIndicatorVisible(updateState, null);
 
-  // All nav routes in order for arrow key cycling — main nav, then bottom section
-  const allRoutes = [...items.map((n) => n.href), '/settings'];
+  // The three rows in order, for Cmd+Up/Down.
+  const rows: { key: RailRow; href: string }[] = [
+    { key: 'projects', href: projectsHref(audience) },
+    { key: 'sessions', href: '/sessions' },
+    { key: 'settings', href: SETTINGS_ITEM.href },
+  ];
 
   // Detect Cmd/Ctrl held for border glow on active item
   const [cmdHeld, setCmdHeld] = useState(false);
@@ -127,36 +95,39 @@ export function Sidebar() {
     };
   }, []);
 
-  // Cmd+P/B/D/A/S + Cmd+Arrow shortcuts for navigation
+  // Cmd+P / Cmd+S for the rows, Cmd+B for the board (kept, unlisted), and
+  // Cmd+Up/Down to cycle the three rows.
   useEffect(() => {
+    const shortcuts: Record<string, string> = {
+      p: projectsHref(audience),
+      b: '/board',
+      s: SETTINGS_ITEM.href,
+    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!e.metaKey && !e.ctrlKey) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-      // Letter shortcuts
-      const href = CMD_SHORTCUTS[e.key.toLowerCase()];
+      const href = shortcuts[e.key.toLowerCase()];
       if (href) {
         e.preventDefault();
         router.push(href);
         return;
       }
 
-      // Arrow up/down to cycle through tabs
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
-        const currentIdx = allRoutes.findIndex((r) => pathname?.startsWith(r));
-        const idx = currentIdx === -1 ? 0 : currentIdx;
+        const currentIdx = rows.findIndex((row) => row.key === active);
+        const idx = currentIdx === -1 ? (e.key === 'ArrowDown' ? -1 : 0) : currentIdx;
         const next =
-          e.key === 'ArrowDown'
-            ? (idx + 1) % allRoutes.length
-            : (idx - 1 + allRoutes.length) % allRoutes.length;
-        router.push(allRoutes[next]);
+          e.key === 'ArrowDown' ? (idx + 1) % rows.length : (idx - 1 + rows.length) % rows.length;
+        router.push(rows[next]!.href);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [router, pathname, allRoutes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, audience, active]);
 
   const [orgs, setOrgs] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [teams, setTeams] = useState<{ id: string; name: string; slug: string }[]>([]);
@@ -178,7 +149,6 @@ export function Sidebar() {
     setCurrentOrgId(storedOrg);
     setCurrentTeamId(storedTeam);
 
-    // Fetch orgs and teams in parallel, then reveal
     const loadAll = async () => {
       try {
         const orgResp = await authFetch('/api/orgs');
@@ -234,14 +204,16 @@ export function Sidebar() {
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentOrgId, ready, fetchTeams]);
 
-  // Longest-prefix wins, so /projects/new/from-roadmap lights Roadmap and
-  // not Projects too.
-  const activeHref = items
-    .map((item) => item.href)
-    .filter((href) => pathname === href || pathname?.startsWith(`${href}/`))
-    .sort((a, b) => b.length - a.length)[0];
-  const isActive = (href: string) =>
-    href === '/settings' ? pathname?.startsWith(href) : activeHref === href;
+  const rowStyle = (lit: boolean) => ({
+    boxShadow: lit && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+    transition: 'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
+  });
+  const rowClass = (lit: boolean) =>
+    `${ROW_CLASS} ${
+      lit
+        ? 'bg-secondary text-foreground'
+        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+    }`;
 
   return (
     <aside
@@ -252,10 +224,9 @@ export function Sidebar() {
       // padding cannot move a fixed element — this reads the banner's height.
       style={{ top: 'var(--banner-h, 0px)' }}
     >
-      {/* Brand and world are one lockup: the mascot names the world you are
-          in, and the whole thing opens the switcher. */}
+      {/* The lockup names the world and goes home; its chevron flips the world. */}
       <div className="pt-4 pb-2">
-        <WorldSwitcher onSwitch={flipAudience} />
+        <WorldSwitcher onSwitch={flipAudience} onHome={() => router.push(DEFAULT_ROUTE)} />
       </div>
 
       {/* Org switcher — only shown when user belongs to multiple orgs.
@@ -271,7 +242,6 @@ export function Sidebar() {
                 setCurrentOrgId(newOrgId);
                 localStorage.removeItem('current_team_id');
                 setCurrentTeamId(null);
-                // Re-fetch teams for the new org
                 try {
                   const r = await authFetch(`/api/orgs/${newOrgId}/teams`);
                   const data = r.ok ? await r.json() : [];
@@ -322,55 +292,25 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Nav — sectioned, and scrollable now that both surfaces live in it. */}
-      <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3 overflow-y-auto min-h-0">
-        {sections.map((section, index) => (
-          <div key={section.label ?? `top-${index}`} className="flex flex-col gap-0.5">
-            {section.label && (
-              <p
-                data-audience-accented
-                className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-body font-semibold uppercase tracking-widest"
-                style={{
-                  color: 'color-mix(in srgb, var(--audience-accent) 55%, var(--muted-foreground))',
-                }}
-              >
-                {section.label}
-              </p>
-            )}
-            {section.items.map(({ href, label, icon }) => {
-              const Icon = ICONS[icon];
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`flex items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all duration-250 justify-center md:justify-start ${
-                    isActive(href)
-                      ? 'bg-secondary text-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                  }`}
-                  style={{
-                    boxShadow:
-                      isActive(href) && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-                    transition:
-                      'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-                  }}
-                  title={label}
-                >
-                  <span className="relative shrink-0">
-                    <Icon className="h-3.5 w-3.5" />
-                    {href === '/whats-new' && updateDot && (
-                      <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    )}
-                  </span>
-                  <span className="hidden md:inline">{label}</span>
-                  {href === '/whats-new' && updateDot && (
-                    <span className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+      {/* The two ways to work. */}
+      <nav className="flex-1 flex flex-col gap-0.5 px-2 md:px-3 pt-3 min-h-0">
+        {items.map(({ href, label, icon }) => {
+          const Icon = ICONS[icon];
+          const lit = active === icon;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={rowClass(lit)}
+              style={rowStyle(lit)}
+              title={label}
+              aria-current={lit ? 'page' : undefined}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden md:inline">{label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Bottom section */}
@@ -381,21 +321,25 @@ export function Sidebar() {
             an anchor. */}
         <div className="border-t border-border/40 pt-2 mt-1 flex flex-col md:flex-row items-center gap-1">
           <Link
-            href="/settings"
-            className={`flex flex-1 min-w-0 items-center gap-2.5 px-2 md:px-3 py-1.5 rounded-lg text-xs font-body font-medium transition-all justify-center md:justify-start ${
-              isActive('/settings')
-                ? 'bg-secondary text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-            }`}
-            style={{
-              boxShadow:
-                isActive('/settings') && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-              transition: 'background-color 250ms ease, box-shadow 150ms ease, color 150ms ease',
-            }}
-            title="Settings"
+            href={SETTINGS_ITEM.href}
+            className={`flex-1 min-w-0 ${rowClass(active === 'settings')}`}
+            style={rowStyle(active === 'settings')}
+            title={SETTINGS_ITEM.label}
+            aria-current={active === 'settings' ? 'page' : undefined}
           >
-            <Settings className="h-3.5 w-3.5 shrink-0" />
-            <span className="hidden md:inline">Settings</span>
+            <span className="relative shrink-0">
+              <Settings className="h-3.5 w-3.5" />
+              {updateDot && (
+                <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+              )}
+            </span>
+            <span className="hidden md:inline">{SETTINGS_ITEM.label}</span>
+            {updateDot && (
+              <span
+                className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400"
+                title="An update is ready. See What's new."
+              />
+            )}
           </Link>
           <ThemeSwitcher />
         </div>

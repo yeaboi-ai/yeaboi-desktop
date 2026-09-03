@@ -34,6 +34,7 @@ import {
 import { attachmentPaths, submitLabel, type FeedbackOptions } from '@/lib/yeaboi/feedback';
 import { toast } from '@/components/ui/toast';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { Button } from '@/components/ui/button';
 import { FilingSlip, toneFor } from '@/components/feedback/filing-slip';
 import {
@@ -247,10 +248,9 @@ function FeedbackBody() {
 
   const header = (
     <header className="mb-8">
-      <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+      <h2 className="text-[16px] font-body font-medium text-foreground">
         Bugs, requests and complaints
-      </p>
-      <h1 className="font-display mt-0.5 text-3xl text-foreground">Feedback</h1>
+      </h2>
       <p className="mt-1 text-[13px] text-muted-foreground">
         Goes to a public issue tracker. Nothing leaves this machine until you send it.
       </p>
@@ -486,10 +486,10 @@ function FeedbackBody() {
 
 export default function FeedbackPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 pt-10 pb-28">
+    <SettingsPageShell active="/feedback" maxWidth="max-w-5xl">
+      <BackendGate>
         <FeedbackBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </SettingsPageShell>
   );
 }
