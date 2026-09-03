@@ -206,49 +206,62 @@ export function Deck({ children }: { children: React.ReactNode }) {
         .map((el) => ({ el }));
       if (lines.length === 0) return () => {};
 
-      // Undoing the port's transform, every frame, from the matrix the port is
-      // actually showing — the two have to cancel at every instant, not only at
-      // the end.
+      // The heading is drawn outside the surface while the surface is held back.
       //
-      // The layout position is measured once, with the compensation cleared,
-      // and reused: deriving it each frame from a rect that already includes
-      // the transform feeds the result back into its own input, and the heading
-      // jitters against whatever the surface is doing.
+      // Counter-transforming it in place kept it still but scaled it down and
+      // straight back up, so every glyph was resampled twice and it came out
+      // soft and jittery. Nothing that is scaled can stay sharp: the way to
+      // have it both still and crisp is for it not to be in the thing that
+      // scales. So for the length of the transit it is copied into a layer of
+      // its own, at the coordinates it holds at rest, and the original is
+      // hidden underneath.
       const port = document.querySelector<HTMLElement>('[data-deck]');
       const matrix = () => new DOMMatrix(port ? getComputedStyle(port).transform : 'none');
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
 
-      let anchors = lines.map(({ el }) => ({ el, left: 0, top: 0 }));
+      let anchors = lines.map(({ el }) => ({ el, left: 0, top: 0, width: 0 }));
+      let layer: HTMLDivElement | null = null;
       let hold = 0;
+
+      const drop = () => {
+        layer?.remove();
+        layer = null;
+        for (const { el } of lines) el.style.visibility = '';
+      };
+
+      const raise = () => {
+        if (layer) return;
+        layer = document.createElement('div');
+        layer.dataset['deckHeading'] = '';
+        layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:30';
+        for (const { el, left, top, width } of anchors) {
+          const copy = el.cloneNode(true) as HTMLElement;
+          copy.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${width}px;margin:0`;
+          layer.append(copy);
+          el.style.visibility = 'hidden';
+        }
+        document.body.append(layer);
+      };
 
       const steady = () => {
         const m = matrix();
-        const still = m.a === 1 && m.d === 1 && m.e === 0 && m.f === 0;
-        if (still) {
-          // At rest the heading wears nothing, and this is when its layout
-          // position is read — content loading underneath it moves the line, and
-          // holding a stale anchor through that is what made it jitter.
+        if (m.a === 1 && m.d === 1 && m.e === 0 && m.f === 0) {
+          drop();
+          // At rest is when its position is read: content loading underneath it
+          // moves the line, and a stale anchor would place the copy wrongly.
           anchors = lines.map(({ el }) => {
-            el.style.transform = '';
             const box = el.getBoundingClientRect();
-            return { el, left: box.left, top: box.top };
+            return { el, left: box.left, top: box.top, width: box.width };
           });
         } else {
-          for (const { el, left, top } of anchors) {
-            el.style.transform =
-              `translate(${(left - cx) * (1 / m.a - 1) - m.e / m.a}px, ` +
-              `${(top - cy) * (1 / m.d - 1) - m.f / m.d}px) scale(${1 / m.a}, ${1 / m.d})`;
-          }
+          raise();
         }
         hold = requestAnimationFrame(steady);
       };
-      for (const { el } of lines) el.classList.add('deck-steady');
       steady();
 
       return () => {
         cancelAnimationFrame(hold);
-        for (const { el } of lines) el.style.transform = '';
+        drop();
       };
     };
 

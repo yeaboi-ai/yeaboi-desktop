@@ -92,7 +92,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const navRef = useRef<HTMLElement>(null);
 
   const opening = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Arriving somewhere leaves the cursor sitting on the row that was clicked,
+  // which would open the rail again the moment you got there. It stays shut
+  // until the cursor has actually left and come back.
+  const sealed = useRef(false);
   const enter = () => {
+    if (sealed.current) return;
     // A beat before it opens, and then it opens whole — rows and labels
     // together. The list grows from the rail's centre, so opening moves every
     // row: a cursor merely crossing one on its way to Home would otherwise
@@ -104,6 +109,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     }, OPEN_DWELL_MS);
   };
   const leave = () => {
+    sealed.current = false;
     if (opening.current) clearTimeout(opening.current);
     setOpen(false);
     setLabelled(false);
@@ -144,6 +150,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     if (navigated) {
       setOpen(false);
       setLabelled(false);
+      sealed.current = true;
       if (opening.current) clearTimeout(opening.current);
     }
     measure();
@@ -163,7 +170,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       ref={navRef}
       aria-label="Modes"
       onMouseLeave={leave}
-      onFocusCapture={() => {
+      // Only the keyboard opens the rail by focus. A mouse focuses a row when
+      // the button goes down, which opened the list under the cursor and moved
+      // the row out from beneath it — the mouseup then landed somewhere else,
+      // so the first click never completed and only ever opened the menu.
+      onFocusCapture={(event) => {
+        if (!(event.target as HTMLElement).matches(':focus-visible')) return;
         setOpen(true);
         setLabelled(true);
       }}
