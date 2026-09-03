@@ -44,14 +44,6 @@ import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from
 /** The gap left between the panel and the window when it steps aside. */
 const ASIDE_MARGIN = 16;
 
-/** Everything in the expanded panel that is not the conversation: the resize
- *  grip, the gap under it, and the composer, plus two pixels of slack — a
- *  measurement that lands a fraction short puts a scrollbar on a conversation
- *  that fits. The list's own padding is inside the measurement. */
-const CHROME = 24 + 8 + 44 + 2;
-/** The shortest the panel gets: one exchange still needs somewhere to sit. */
-const FIT_MIN = 140;
-
 /** How many controls sit beside the composer. */
 const CONTROLS_COUNT = 2;
 
@@ -81,6 +73,9 @@ const COMPOSER_GIVE = 64;
 const BUBBLE_IN_MS = 320;
 const BUBBLE_OUT_MS = 200;
 const BUBBLE_STAGGER = 45;
+/** How long the composer takes to fold its controls back in and draw down to
+ *  the pill: the controls' own animation, and their stagger. */
+const SHRINK_MS = 340;
 /** The most bubbles that stagger. Past this they leave together — waiting out a
  *  long conversation to close the panel is a wait. */
 const BUBBLE_STAGGER_CAP = 6;
@@ -129,15 +124,13 @@ export function NikoBar() {
   const [value, setValue] = useState('');
   const [slashIndex, setSlashIndex] = useState(0);
   const [showChips, setShowChips] = useState(false);
+  // The panel opens at its full size and keeps it. Fitting it to the
+  // conversation meant it grew with every reply, and a box that resizes under
+  // what you are reading is a second movement on top of the one the bubbles
+  // already carry. The conversation hangs from the bottom of it instead.
   const [expandedHeight, setExpandedHeight] = useState(DEFAULT_EXPANDED_HEIGHT);
-  // The conversation's own height, so the panel fits it rather than standing at
-  // full size around one message. Dragging the grip pins it: past that point
-  // the height is a decision somebody made, not a measurement.
-  const [pinned, setPinned] = useState(false);
-  const [fit, setFit] = useState(FIT_MIN);
   const listRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const seen = useRef(0);
   const [fade, setFade] = useState<'none' | 'top' | 'bottom' | 'both'>('none');
   // The panel animates to its new height while the conversation is already at
   // full size, so for those few hundred milliseconds the box genuinely does
@@ -147,9 +140,12 @@ export function NikoBar() {
   // is, this frame. Animating towards it makes the grip feel like it is on a
   // rubber band and every frame restarts the transition.
   const [dragging, setDragging] = useState(false);
-  // Closing is a phase, not an instant: the bubbles are still on screen,
-  // leaving, while it lasts.
-  const [leaving, setLeaving] = useState(false);
+  // Closing is a sequence, not an instant, and it is the opening run
+  // backwards: the bubbles leave, then the controls fold back into the
+  // composer and it draws itself down to the pill's width — so what the pill
+  // takes over from is the size the pill already is.
+  const [closingPhase, setClosingPhase] = useState<'idle' | 'bubbles' | 'shrink'>('idle');
+  const leaving = closingPhase !== 'idle';
   /** Each bubble's place in the opening stagger, fixed when it first appears —
    *  recomputing it as the conversation grows would send finished animations
    *  back to their start. */
@@ -185,22 +181,14 @@ export function NikoBar() {
   const matches = useMemo(() => matchSlash(value), [value]);
   const slashOpen = isSlashQuery(value) && matches.length > 0;
 
-  const grown = Math.min(expandedHeight, Math.max(FIT_MIN, fit + CHROME));
-
   const height =
-    state === 'expanded'
-      ? pinned
-        ? expandedHeight
-        : grown
-      : state === 'collapsed'
-        ? COLLAPSED_HEIGHT
-        : INPUT_HEIGHT;
+    state === 'expanded' ? expandedHeight : state === 'collapsed' ? COLLAPSED_HEIGHT : INPUT_HEIGHT;
 
   // The conversation leaves the way it arrived: the bubbles go first, one after
   // another from the top, and the panel follows them down once they have gone.
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const finish = useCallback(() => {
-    setLeaving(false);
+    setClosingPhase('idle');
     setIsOpen(false);
     setValue('');
     inputRef.current?.blur();
@@ -210,15 +198,16 @@ export function NikoBar() {
       finish();
       return;
     }
-    setLeaving(true);
-    closeTimer.current = setTimeout(
-      finish,
-      BUBBLE_OUT_MS + BUBBLE_STAGGER * Math.min(messages.length, BUBBLE_STAGGER_CAP),
-    );
+    const gone = BUBBLE_OUT_MS + BUBBLE_STAGGER * Math.min(messages.length, BUBBLE_STAGGER_CAP);
+    setClosingPhase('bubbles');
+    closeTimers.current = [
+      setTimeout(() => setClosingPhase('shrink'), gone),
+      setTimeout(finish, gone + SHRINK_MS),
+    ];
   }, [state, leaving, messages.length, finish]);
   useEffect(
     () => () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current);
+      for (const timer of closeTimers.current) clearTimeout(timer);
     },
     [],
   );
@@ -310,28 +299,14 @@ export function NikoBar() {
     setFade(above && below ? 'both' : above ? 'top' : below ? 'bottom' : 'none');
   }, []);
 
-  // Measured rather than counted: a message's height depends on what is in it,
-  // and a streaming one changes while you watch. The scroll box is what is
-  // measured — the list inside it under-reports by its own padding and the gap
-  // above its last child, which is enough to leave a scrollbar on a
-  // conversation that fits.
+  // Which ends the conversation runs past changes as it grows and as a reply
+  // streams, neither of which is a scroll — so it is watched rather than only
+  // read on one.
   useEffect(() => {
-    const box = scrollRef.current;
     const list = listRef.current;
-    if (!box || !list) return;
-    const measure = () => {
-      setFit(Math.ceil(box.scrollHeight));
-      readFade();
-    };
-    // `scrollHeight` never reports less than the box it is in, so a panel that
-    // has grown could not otherwise shrink — collapse it first and measure what
-    // is actually there. Only when the conversation got shorter, though: doing
-    // it on every message squashes the panel flat for a frame each time one
-    // arrives.
-    if (messages.length < seen.current) setFit(0);
-    seen.current = messages.length;
-    const first = requestAnimationFrame(measure);
-    const observer = new ResizeObserver(measure);
+    if (!list) return;
+    const first = requestAnimationFrame(readFade);
+    const observer = new ResizeObserver(readFade);
     observer.observe(list);
     return () => {
       cancelAnimationFrame(first);
@@ -358,7 +333,6 @@ export function NikoBar() {
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
 
   const startFresh = useCallback(() => {
-    setPinned(false);
     startNewConversation();
   }, [startNewConversation]);
 
@@ -427,12 +401,7 @@ export function NikoBar() {
 
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
-    setPinned(true);
     setDragging(true);
-    // From the height on screen, not the one stored: the panel fits its
-    // conversation until you take hold of it, and the grip has to continue
-    // from what your hand is on.
-    setExpandedHeight(height);
     dragRef.current = { startY: e.clientY, startHeight: height };
     const move = (ev: MouseEvent) => {
       if (!dragRef.current) return;
@@ -489,7 +458,7 @@ export function NikoBar() {
   ) : null;
 
   const shell =
-    state === 'collapsed'
+    state === 'collapsed' || closingPhase === 'shrink'
       ? COLLAPSED_WIDTH
       : state === 'expanded'
         ? Math.min(width + CONTROLS_WIDTH - COMPOSER_GIVE, window.innerWidth - 2 * ASIDE_MARGIN)
@@ -619,11 +588,11 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              className={`niko-scroll min-h-0 flex-1 px-1 py-1 ${
+              className={`niko-scroll flex min-h-0 flex-1 flex-col px-1 py-1 ${
                 settling ? 'overflow-hidden' : 'overflow-y-auto'
               }`}
             >
-              <div ref={listRef} className="space-y-3">
+              <div ref={listRef} className="mt-auto space-y-3">
                 {messages.map((message, i) => (
                   <div
                     key={message.id}
@@ -710,7 +679,7 @@ export function NikoBar() {
                 Kept mounted and inert when closed, or unmounting them mid-
                 animation leaves the half-drawn object behind. */}
             {CONTROLS.map(({ key, title, Icon }, index) => {
-              const shown = state === 'expanded';
+              const shown = state === 'expanded' && closingPhase !== 'shrink';
               // Later ones arrive later and leave first, so the pair reads as
               // two things rather than one wide thing.
               const delay = (shown ? index : CONTROLS_COUNT - 1 - index) * CONTROL_STAGGER;

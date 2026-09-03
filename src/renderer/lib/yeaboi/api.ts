@@ -45,10 +45,16 @@ function bridge(): Bridge {
   return found;
 }
 
+/** Every 2xx is a yes. The sidecar answers 201 to a create, and reading only
+ *  200 as success turned "your conversation was made" into "I couldn't reach
+ *  the backend". */
+function ok(status: number): boolean {
+  return status >= 200 && status < 300;
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const { status, body } = await bridge().api(path);
-  if (status !== 200)
-    throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
+  if (!ok(status)) throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
   return body as T;
 }
 
@@ -58,14 +64,13 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiGetOptional<T>(path: string): Promise<T | null> {
   const { status, body } = await bridge().api(path);
   if (status === 404) return null;
-  if (status !== 200)
-    throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
+  if (!ok(status)) throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
   return body as T;
 }
 
 export async function apiPost<T>(path: string, body: object = {}): Promise<T> {
   const { status, body: resp } = await bridge().api(path, { method: 'POST', body });
-  if (status !== 200)
+  if (!ok(status))
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
   return resp as T;
 }
@@ -85,7 +90,7 @@ export async function apiStream(
     if (notice) duckQuip(notice.key, { route: notice.route });
     onLine(line);
   });
-  if (status !== 200)
+  if (!ok(status))
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
 }
 
@@ -98,7 +103,7 @@ export async function callTool<T = unknown>(
     method: 'POST',
     body: { arguments: args, ...(options.opId ? { op_id: options.opId } : {}) },
   });
-  if (status !== 200)
+  if (!ok(status))
     throw new Error((body as { error?: string }).error ?? `tool ${name} → ${status}`);
   return body as Envelope<T>;
 }
