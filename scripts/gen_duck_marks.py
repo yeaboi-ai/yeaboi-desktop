@@ -1,33 +1,28 @@
-"""Render the in-app duck's sprites at the resolution the UI actually needs.
+"""Re-draw the duck's UI sprites as curves instead of stairs.
 
-The duck is drawn as a UI mark at 18-72px. Its art was 128x136, which is
-*below* every one of those sizes only in the sense that matters least: the
-staircase in a 128px outline is still a staircase at 72px, and no filter
-removes it — smoothing it just trades a hard stair for a blurry one. The
-corner duck looked jagged for that reason and no other.
+The mascot is a 128x136 pixel drawing and it is used as a mark at 18-72px. At
+those sizes its own outline staircase lands on roughly one to two screen
+pixels, so it reads as jagged — and nothing about filtering fixes that. Scaling
+a bigger copy of a staircase gives a softer staircase; anti-aliasing gives a
+blurry one. The steps have to stop being steps.
 
-The same duck already exists at 480x509, as the desktop pet's layer set, and
-their geometry lines up: every layer's bounding box matches the design set's
-to within half a percent, because they are one drawing exported twice. So the
-mark sprites are rendered from the pet art rather than redrawn.
+So each layer is re-drawn: every colour in it is treated as a region, that
+region's mask is blown up, blurred and re-thresholded — which rounds a stair
+into an edge — and the regions are laid back down largest first. Blurring the
+composite instead would bleed every colour into its neighbour; doing one mask
+at a time moves an edge without touching what is either side of it.
 
-  base    = foot-back + body + foot-front, composited
-  wing    = the pet's wing layer
-  glasses = the pet's glasses layer
+`src/renderer/assets/duck-master/` holds the 128px drawing this renders from.
+It is the mascot as drawn, kept here because the render is lossy and there
+would otherwise be nothing to re-render from.
 
-The canvas is 480x510 rather than the pet's 480x509, so the aspect stays
-exactly 136/128 — `components/brand/team.tsx` hard-codes that ratio to size a
-three-duck cluster to the same box as one mark, and a sprite an eighth of a
-percent off would put the Team card's text off its neighbours' baseline.
+The canvas is 480x510, so the aspect stays exactly 136/128 —
+`components/brand/team.tsx` hard-codes that ratio to size a three-duck cluster
+to the same box as a single mark.
 
-Edges are deliberately left anti-aliased. This art is a smooth render of a
-pixel drawing, not pixel art to be preserved: `DuckMark` stamps
-`data-duck-mark`, and the rule that hangs off it in globals.css hands these
-images to the browser's own filter at every size they are drawn.
-
-The design package is **vendored** — its source of truth is the yeaboi-frontend
-repo — so this rewrites the committed tarball. Port the same render upstream,
-or the next design bump puts the 128px art back.
+The design package is **vendored**, its source of truth the yeaboi-frontend
+repo, so this rewrites the committed tarball. Port the same render upstream or
+the next design bump puts the stairs back.
 
 Run with `make duck-marks`. The output is committed; not part of the build.
 """
@@ -40,33 +35,62 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
-PET = ROOT / "src" / "renderer" / "public" / "pet" / "assets"
+MASTER = ROOT / "src" / "renderer" / "assets" / "duck-master"
 DESIGN_TARBALL = ROOT / "vendor" / "yeaboi-ai-design-1.1.0-dev.1.tgz"
 INSTALLED = ROOT / "node_modules" / "@yeaboi-ai" / "design"
 
-#: The mark canvas. Width is the pet art's; height is width * 136/128, which is
-#: the ratio team.tsx assumes. See the module docstring.
+LAYERS = ("base", "wing", "glasses")
+
+#: The mark canvas. Height is width * 136/128 — the ratio team.tsx assumes.
 CANVAS = (480, 510)
 
-#: Which pet layers make each design layer, in composite order.
-LAYERS: dict[str, tuple[str, ...]] = {
-    "base": ("duck-foot-back", "duck-body", "duck-foot-front"),
-    "wing": ("duck-wing",),
-    "glasses": ("duck-glasses",),
-}
+#: How far the masks are blown up before smoothing. Every source pixel becomes
+#: this many, which is the resolution the reconstructed curve is drawn at.
+FACTOR = 8
+
+#: Blur radius as a fraction of FACTOR. Below about a third the stairs survive;
+#: above about a half the beak's own corners start rounding off with them.
+SOFTEN = 0.42
 
 
-def render(sources: tuple[str, ...]) -> Image.Image:
-    """Composite the named pet layers and fit them to the mark canvas."""
-    out = Image.open(PET / f"{sources[0]}.png").convert("RGBA")
-    for name in sources[1:]:
-        out = Image.alpha_composite(out, Image.open(PET / f"{name}.png").convert("RGBA"))
-    if out.size != CANVAS:
-        out = out.resize(CANVAS, Image.LANCZOS)
+def smooth_layer(image: Image.Image) -> Image.Image:
+    """Re-draw one pixel-art layer with curved edges."""
+    image = image.convert("RGBA")
+    width, height = image.size
+    px = image.load()
+
+    counts: dict[tuple[int, int, int], int] = {}
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = px[x, y]
+            if a < 128:
+                continue
+            counts[(r, g, b)] = counts.get((r, g, b), 0) + 1
+
+    big = (width * FACTOR, height * FACTOR)
+    out = Image.new("RGBA", big, (0, 0, 0, 0))
+    radius = FACTOR * SOFTEN
+    # Largest first, so the small details — the beak's highlight, the glare on
+    # the lenses — are laid over the mass rather than swallowed by it.
+    for colour in sorted(counts, key=lambda c: -counts[c]):
+        mask = Image.new("L", (width, height), 0)
+        mp = mask.load()
+        for y in range(height):
+            for x in range(width):
+                r, g, b, a = px[x, y]
+                if a >= 128 and (r, g, b) == colour:
+                    mp[x, y] = 255
+        grown = mask.resize(big, Image.NEAREST).filter(ImageFilter.GaussianBlur(radius))
+        grown = grown.point(lambda v: 255 if v >= 128 else 0)
+        out.paste(Image.new("RGBA", big, colour + (255,)), (0, 0), grown)
     return out
+
+
+def render(name: str) -> Image.Image:
+    return smooth_layer(Image.open(MASTER / f"{name}.png")).resize(CANVAS, Image.LANCZOS)
 
 
 def main() -> int:
@@ -74,6 +98,10 @@ def main() -> int:
     if not DESIGN_TARBALL.exists():
         print(f"missing: {DESIGN_TARBALL}")
         return 1
+    for name in LAYERS:
+        if not (MASTER / f"{name}.png").exists():
+            print(f"missing master: {MASTER / f'{name}.png'}")
+            return 1
 
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
@@ -82,13 +110,16 @@ def main() -> int:
             archive.extractall(work, filter="data")
 
         dirty = False
-        for name, sources in LAYERS.items():
+        for name in LAYERS:
             target = work / "package" / "assets" / "duck" / f"{name}.png"
-            fresh = render(sources)
+            fresh = render(name)
             existing = Image.open(target).convert("RGBA") if target.exists() else None
-            same = existing is not None and existing.size == fresh.size and existing.tobytes() == fresh.tobytes()
-            before = f"{existing.size[0]}x{existing.size[1]}" if existing else "absent"
-            print(f"{name}.png  {before} -> {fresh.size[0]}x{fresh.size[1]}")
+            same = (
+                existing is not None
+                and existing.size == fresh.size
+                and existing.tobytes() == fresh.tobytes()
+            )
+            print(f"{name}.png  {'unchanged' if same else 'redrawn'}  {fresh.size[0]}x{fresh.size[1]}")
             if same:
                 continue
             dirty = True
@@ -103,8 +134,8 @@ def main() -> int:
             return 0
 
         # A .tgz is a stream, so three members cannot be replaced in place. The
-        # members are re-added in their original order with their original
-        # metadata, so the only difference is the three sprites.
+        # members go back in their original order with their original metadata,
+        # so the only difference is the three sprites.
         with tarfile.open(DESIGN_TARBALL, "w:gz") as archive:
             for member in members:
                 source = work / member.name

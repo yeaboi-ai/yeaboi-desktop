@@ -87,6 +87,12 @@ export class Pet {
     ipcMain.on('pet:intro-done', () => {
       if (!this.introducing) return;
       this.introducing = false;
+      // He went back *inside*, so he is suppressed by definition — the same
+      // state a focused app window puts him in. Inferring it from focus does
+      // not work here: the click that sent him home landed on an overlay that
+      // never takes focus, so nothing tells this process the app is in front.
+      // The next blur releases him, as it does for any other duck.
+      this.suppressed = true;
       this.applyVisibility();
       this.onIntroDone();
     });

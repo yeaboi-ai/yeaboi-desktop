@@ -154,6 +154,14 @@ let homePoint = null;
 /** An arc flown under its own steam rather than under gravity: the trip home.
  *  `{ from, to, apex, start }`, all window-local. */
 let homing = null;
+/** He is home, and the app is drawing him again. Physics stays off until the
+ *  window hides him — otherwise gravity resumes the frame the arc ends and he
+ *  drops straight back out of the corner he just climbed into. */
+let parked = false;
+/** boot() has run. Until it has, the rig is unmeasured and the floor unknown. */
+let booted = false;
+/** An arrival that landed before boot did, replayed once it has. */
+let pendingArrival = null;
 
 function say(line, sticky = false) {
   if (stickyLine && !sticky) return;
@@ -350,6 +358,11 @@ function step() {
   const near =
     evadeCursor && Math.abs(gap) < BASE.fleeRadius * S && my > baseY - BASE.fleeCeiling * S;
 
+  // Parked: standing in the app's corner, waiting to be hidden. Holding the
+  // last frame is the whole job — one tick of gravity here is a duck falling
+  // back out of the window he has just climbed into.
+  if (parked) return;
+
   if (homing) {
     flyHome(t);
     driveFeet();
@@ -513,11 +526,21 @@ window.pet.onPrefs(applyPrefs);
 // --- boot -----------------------------------------------------------------
 function boot() {
   measure();
-  x = window.innerWidth * 0.5 - DUCK_W / 2;
-  baseY = groundBaseY(x + DUCK_W / 2);
+  booted = true;
   walker.classList.remove('unloaded');
-  walker.classList.add('hatch');
-  say('yeaboi! 🦆');
+  if (pendingArrival) {
+    // He is taking over from the duck the app was drawing, at a known point.
+    // No hatch, no greeting, no centre-screen default: each of them is a
+    // visible seam in something meant to read as one continuous duck.
+    const arrival = pendingArrival;
+    pendingArrival = null;
+    applyArrival(arrival);
+  } else {
+    x = window.innerWidth * 0.5 - DUCK_W / 2;
+    baseY = groundBaseY(x + DUCK_W / 2);
+    walker.classList.add('hatch');
+    say('yeaboi! 🦆');
+  }
   requestAnimationFrame(step);
 }
 
@@ -551,8 +574,8 @@ const INTRO_BEAT_MS = 2600;
 /** How long the trip back to the app window takes. */
 const HOMING_MS = 780;
 
-window.pet.onArrive((arrival) => {
-  if (!arrival) return;
+function applyArrival(arrival) {
+  parked = false;
   dragging = false;
   tumbling = false;
   homing = null;
@@ -572,11 +595,20 @@ window.pet.onArrive((arrival) => {
     return;
   }
   homePoint = { x, y: baseY };
-  // A shove up and away from the nearer wall; gravity does the rest. The jump
-  // out of the window is the rig's own physics rather than a second animation
-  // that has to be kept in step with it.
-  vy = -BASE.startleVy * S * 1.35;
-  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 2.2;
+  // A shove up and away from the nearer wall; gravity does the rest, so the
+  // jump out of the window is the rig's own physics rather than a second
+  // animation that has to be kept in step with it.
+  //
+  // `startleVy` is already negative — up is negative here — so it is used as
+  // it stands. Negating it is a duck fired at the floor.
+  vy = BASE.startleVy * S * 1.6;
+  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 9;
+  // Thrown, not walking: the horizontal intent that damps `vx` to nothing in
+  // three frames is skipped while tumbling, so the leap keeps its momentum and
+  // he travels instead of dropping where he stood.
+  tumbling = true;
+  mode = 'throw';
+  walker.classList.add('airborne');
   introducing = true;
   clearTimeout(introTimer);
   // He stands where he lands: wandering off mid-sentence would drag the bubble
@@ -587,6 +619,18 @@ window.pet.onArrive((arrival) => {
   introTimer = setTimeout(() => {
     if (introducing) say(INTRO_STICKY, true);
   }, INTRO_BEAT_MS);
+}
+
+// The arrival can beat `boot()` — main sends it on did-finish-load, and boot
+// waits for the sprite to decode. Held until then, or boot would put him back
+// in the middle of the screen a frame after he took over from the app.
+window.pet.onArrive((arrival) => {
+  if (!arrival) return;
+  if (!booted) {
+    pendingArrival = arrival;
+    return;
+  }
+  applyArrival(arrival);
 });
 
 /** Send him home: an arc back to the exact spot in the app he came from. */
@@ -625,11 +669,13 @@ function flyHome(t) {
   vy = 0;
   if (k >= 1) {
     homing = null;
+    parked = true;
     window.pet.introDone();
   }
 }
 
 window.pet.onRecenter(() => {
+  parked = false;
   dragging = false;
   mode = 'wander';
   x = window.innerWidth * 0.5 - DUCK_W / 2;
