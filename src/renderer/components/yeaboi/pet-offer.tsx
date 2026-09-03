@@ -16,21 +16,19 @@ import { X } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { normalizePetPrefs, shouldOfferPet, type PetOfferState } from '@shared/pet-prefs';
 
-/** How long a leap runs, out or back. The arc climbs 150px and comes back
- *  down, so it needs long enough to be watched — at 420ms it was a flicker.
- *  Matches the keyframes in globals.css. */
-export const LEAP_MS = 900;
+// No leap animation lives here any more. The pet overlay is full-screen and
+// above every window, so the duck who jumps out is the *desktop* duck, drawn
+// on top of the app at the exact spot the app was drawing its own. The app's
+// job is to stop drawing his at that instant — one duck, no hand-off, and an
+// arc with the whole screen to travel through instead of 24px of dock margin.
 
 /** Where the duck is, from the app's point of view. */
 export type DuckWhereabouts =
   /** In the corner, as ever. */
   | 'here'
-  /** Mid-leap, on his way out. */
-  | 'leaving'
-  /** Out on the desktop, introducing himself. Nothing is drawn in the corner. */
-  | 'away'
-  /** Mid-leap, on his way back in. */
-  | 'returning';
+  /** The desktop duck has him. Nothing is drawn in the corner — he is up on
+   *  the overlay, which is where every frame of the leap is drawn. */
+  | 'away';
 
 export interface PetOffer {
   /** The question is live and the bubble should show it. */
@@ -82,15 +80,16 @@ export function usePetOffer(): PetOffer {
   // He is out on the desktop showing where he lives; when he is done there,
   // main says so and he comes back in through the corner he left by.
   useEffect(() => {
-    window.yeaboi.onPetReturned(() => {
-      setWhere('returning');
-      setTimeout(() => setWhere('here'), LEAP_MS);
-    });
+    // He has flown back to the exact spot the corner draws him, so the corner
+    // can take him back with no transition at all: the pixels do not move.
+    window.yeaboi.onPetReturned(() => setWhere('here'));
   }, []);
 
   const accept = useCallback((from: DOMRect | null) => {
     setOpen(false);
-    setWhere('leaving');
+    // Hidden here before the desktop duck is asked for, so the two never
+    // overlap; the overlay draws him at the same place a frame later.
+    setWhere('away');
     // Where he is now, in screen coordinates — the desktop overlay spans a
     // display, so this is what lets him land where he jumped rather than
     // appearing somewhere else entirely. `screenX/screenY` and the rect are
@@ -101,16 +100,11 @@ export function usePetOffer(): PetOffer {
           y: window.screenY + from.top + from.height / 2,
         }
       : { x: window.screenX + window.innerWidth / 2, y: window.screenY + window.innerHeight / 2 };
-    // He is gone from the corner before the desktop duck is asked for, so
-    // there is never a moment with a duck in both places.
-    setTimeout(() => {
-      setWhere('away');
-      void window.yeaboi.petHandoff(at).catch(() => {
-        logger.warn('Failed to let the duck out');
-        // Nothing out there to come back, so put him where he was.
-        setWhere('here');
-      });
-    }, LEAP_MS);
+    void window.yeaboi.petHandoff(at).catch(() => {
+      logger.warn('Failed to let the duck out');
+      // Nothing out there to come back, so put him where he was.
+      setWhere('here');
+    });
   }, []);
 
   return { open, where, accept, decline };

@@ -28,7 +28,7 @@ import {
   type Tip,
 } from '@/lib/yeaboi/tips';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
-import { LEAP_MS, PetOfferBubble, usePetOffer } from '@/components/yeaboi/pet-offer';
+import { PetOfferBubble, usePetOffer } from '@/components/yeaboi/pet-offer';
 
 /** How often the clock is sampled. Fine enough for the cross-fade and the
  *  hairline, coarse enough that it is one style update rather than a loop. */
@@ -300,24 +300,11 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
             so he stays out of the tab order and off the a11y tree. Retracted he
             is the only thing left, so he becomes the way in — otherwise there is
             no route to the tips at all while Niko's bar is open. */}
-        {/* The leap out and the leap back. While he is 'away' the corner holds
-            nothing at all — he is on the desktop, and a duck in both places at
-            once would undo the whole point of the hand-off. Under reduced
-            motion the arcs are skipped and only the presence changes. */}
+        {/* Nothing is drawn here while he is 'away': he is up on the desktop
+            overlay, which draws him at this exact spot and then jumps him out
+            of it. Hiding is the whole of the app's part in the hand-off. */}
         {offer.where !== 'away' && (
-          <div
-            ref={duckRef}
-            style={
-              reduced || offer.where === 'here'
-                ? undefined
-                : {
-                    // Linear between keyframes: the arc's own percentages
-                    // already carry the gravity — fast off the ground, slow at
-                    // the apex — and an ease on top of that fights them.
-                    animation: `duck-leap-${offer.where === 'leaving' ? 'out' : 'in'} ${LEAP_MS}ms linear forwards`,
-                  }
-            }
-          >
+          <div ref={duckRef}>
             {mode === 'duck' ? (
               <button
                 type="button"

@@ -148,6 +148,12 @@ let noticeRoute = '';
 // While this is set a click means "head back in" rather than "open a page".
 let introducing = false;
 let introTimer = 0;
+/** Where in the app window he came from, so he can go back to exactly there.
+ *  Window-local, because that is the space this overlay works in. */
+let homePoint = null;
+/** An arc flown under its own steam rather than under gravity: the trip home.
+ *  `{ from, to, apex, start }`, all window-local. */
+let homing = null;
 
 function say(line, sticky = false) {
   if (stickyLine && !sticky) return;
@@ -344,6 +350,15 @@ function step() {
   const near =
     evadeCursor && Math.abs(gap) < BASE.fleeRadius * S && my > baseY - BASE.fleeCeiling * S;
 
+  if (homing) {
+    flyHome(t);
+    driveFeet();
+    walker.style.transform = `translate(${x.toFixed(1)}px, ${baseY.toFixed(1)}px) scaleX(${dir})`;
+    body.style.transform = `rotate(${lean.p.toFixed(2)}deg)`;
+    positionBubble();
+    return;
+  }
+
   if (dragging) {
     const nx = Math.max(0, Math.min(window.innerWidth - DUCK_W, mx - dragDX));
     const ny = my - dragDY;
@@ -533,33 +548,39 @@ const ARRIVAL_DROP = 120;
 const INTRO_STICKY = 'Settings \u25b8 Duck sets where I stand. Click me to head back in.';
 /** How long the arrival line holds before the sticky one replaces it. */
 const INTRO_BEAT_MS = 2600;
+/** How long the trip back to the app window takes. */
+const HOMING_MS = 780;
 
 window.pet.onArrive((arrival) => {
   if (!arrival) return;
   dragging = false;
   tumbling = false;
+  homing = null;
   mode = 'wander';
-  // The point is where the in-app duck's box was; the rig is drawn from its
-  // top-left, so centre him on it. Only the horizontal is taken from the jump:
-  // he belongs on the floor, and the app window's own height has nothing to say
-  // about where that is. The drop is what gives the landing its bounce.
+  // He appears exactly where the app was drawing him. This overlay is
+  // full-screen and sits above every window, so "inside the app" is just a
+  // position on it — the app hides its own duck at the same instant, and there
+  // is one duck throughout with nothing handed between two of them.
   x = Math.max(0, Math.min(window.innerWidth - DUCK_W, arrival.x - DUCK_W / 2));
-  baseY = groundBaseY(x + DUCK_W / 2) - ARRIVAL_DROP * S;
+  baseY = arrival.y - RIGH / 2;
   vx = 0;
   vy = 0;
   grounded = false;
-  pickTarget();
   if (!arrival.intro) {
     say('yeaboi!');
+    pickTarget();
     return;
   }
-  // Two beats: what this place is, then how to change it and how to send him
-  // back. The second is sticky, so it waits for an answer rather than timing
-  // out on somebody who looked away.
+  homePoint = { x, y: baseY };
+  // A shove up and away from the nearer wall; gravity does the rest. The jump
+  // out of the window is the rig's own physics rather than a second animation
+  // that has to be kept in step with it.
+  vy = -BASE.startleVy * S * 1.35;
+  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 2.2;
   introducing = true;
   clearTimeout(introTimer);
-  // He stands still while he explains himself. Wandering off mid-sentence
-  // would make the bubble chase him across the screen.
+  // He stands where he lands: wandering off mid-sentence would drag the bubble
+  // across the screen behind him.
   targetX = x;
   idleUntil = Number.POSITIVE_INFINITY;
   say("yeaboi! this is where I'll be when the app's out of the way.");
@@ -568,17 +589,44 @@ window.pet.onArrive((arrival) => {
   }, INTRO_BEAT_MS);
 });
 
-/** Send him home: a leap back at the window, then main is told he has landed.
- *  The hop is the rig's own startle, so the return reads like the duck rather
- *  than like a transition played over him. */
+/** Send him home: an arc back to the exact spot in the app he came from. */
 function headBackIn() {
   introducing = false;
   clearTimeout(introTimer);
   idleUntil = 0;
   hideBubble();
-  jumpCd = 0;
-  startle(x < window.innerWidth / 2 ? 1 : -1);
-  setTimeout(() => window.pet.introDone(), 420);
+  if (!homePoint) {
+    window.pet.introDone();
+    return;
+  }
+  homing = {
+    from: { x, y: baseY },
+    to: { ...homePoint },
+    apex: Math.min(baseY, homePoint.y) - 150 * S,
+    start: now(),
+  };
+}
+
+/** Advance the trip home. Owns the duck's position while it runs. */
+function flyHome(t) {
+  const k = Math.min(1, (t - homing.start) / HOMING_MS);
+  const ease = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+  x = homing.from.x + (homing.to.x - homing.from.x) * ease;
+  // Quadratic through from → apex → to, so the height is a real arc rather
+  // than a straight line with a wobble on it.
+  const a = homing.from.y;
+  const b = homing.apex;
+  const c = homing.to.y;
+  baseY = (1 - k) * (1 - k) * a + 2 * (1 - k) * k * b + k * k * c;
+  dir = homing.to.x < homing.from.x ? 1 : -1;
+  lean.p = -14 * dir * (1 - Math.abs(0.5 - k) * 2);
+  grounded = false;
+  vx = 0;
+  vy = 0;
+  if (k >= 1) {
+    homing = null;
+    window.pet.introDone();
+  }
 }
 
 window.pet.onRecenter(() => {
