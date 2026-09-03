@@ -57,6 +57,9 @@ const FIT_MIN = 140;
 const CONTROL =
   'flex size-11 shrink-0 items-center justify-center rounded-full bg-popover text-muted-foreground/50 shadow-xl ring-1 ring-border/60 transition-colors hover:bg-foreground/5 hover:text-foreground';
 
+/** How long the panel takes to reach a new size. */
+const HEIGHT_MS = 350;
+
 const MORPH = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 /** How long the chips wait before floating in, so they follow the morph. */
@@ -102,6 +105,14 @@ export function NikoBar() {
   const listRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState<'none' | 'top' | 'bottom' | 'both'>('none');
+  // The panel animates to its new height while the conversation is already at
+  // full size, so for those few hundred milliseconds the box genuinely does
+  // overflow. Nobody can act on a scrollbar that is about to go away.
+  const [settling, setSettling] = useState(false);
+  // A drag is a direct manipulation: the panel is the size the cursor says it
+  // is, this frame. Animating towards it makes the grip feel like it is on a
+  // rubber band and every frame restarts the transition.
+  const [dragging, setDragging] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -121,6 +132,7 @@ export function NikoBar() {
   const slashOpen = isSlashQuery(value) && matches.length > 0;
 
   const grown = Math.min(expandedHeight, Math.max(FIT_MIN, fit + CHROME));
+
   const height =
     state === 'expanded'
       ? pinned
@@ -181,6 +193,13 @@ export function NikoBar() {
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
   }, [state]);
+
+  useEffect(() => {
+    if (dragging) return;
+    setSettling(true);
+    const done = setTimeout(() => setSettling(false), HEIGHT_MS + 40);
+    return () => clearTimeout(done);
+  }, [height, dragging]);
 
   // While the bar is open it owns the window: the deck must not turn a page
   // under it when the conversation runs out of scroll. Claimed on the document
@@ -315,13 +334,19 @@ export function NikoBar() {
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     setPinned(true);
-    dragRef.current = { startY: e.clientY, startHeight: expandedHeight };
+    setDragging(true);
+    // From the height on screen, not the one stored: the panel fits its
+    // conversation until you take hold of it, and the grip has to continue
+    // from what your hand is on.
+    setExpandedHeight(height);
+    dragRef.current = { startY: e.clientY, startHeight: height };
     const move = (ev: MouseEvent) => {
       if (!dragRef.current) return;
       const delta = dragRef.current.startY - ev.clientY;
       setExpandedHeight(draggedHeight(dragRef.current.startHeight, delta, window.innerHeight));
     };
     const end = () => {
+      setDragging(false);
       dragRef.current = null;
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', end);
@@ -386,7 +411,9 @@ export function NikoBar() {
         transform: `translateX(calc(-50% + ${asideShift}px))`,
         width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width}px`,
         height: `${height}px`,
-        transition: `width 350ms ${MORPH}, height 350ms ${MORPH}, transform 420ms ${MORPH}`,
+        transition: dragging
+          ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`
+          : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`,
       }}
     >
       {showChips && state === 'input' && (
@@ -467,7 +494,9 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              className="min-h-0 flex-1 overflow-y-auto px-1 py-1"
+              className={`min-h-0 flex-1 px-1 py-1 ${
+                settling ? 'overflow-hidden' : 'overflow-y-auto'
+              }`}
             >
               <div ref={listRef} className="space-y-3">
                 {messages.map((message, i) => (

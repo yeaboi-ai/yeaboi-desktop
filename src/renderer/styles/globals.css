@@ -1126,36 +1126,29 @@ html[data-audience='agents'] {
   }
 }
 
-/* Niko's live border. A conic gradient masked down to the edge itself, rather
-   than a large gradient spun behind a one-pixel gap — at that width the sweep
-   was being sampled a sector at a time, which is what made the ring look
-   blotchy and thicker on one side than the other. */
-@property --niko-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
+/* Niko's live border. A gradient masked down to the edge itself, rather than a
+   large gradient spun behind a one-pixel gap — at that width the sweep was
+   sampled a sector at a time, which made the ring blotchy and uneven.
 
-@keyframes niko-ring-spin {
-  to {
-    --niko-angle: 360deg;
-  }
-}
-
+   The highlight travels along the bar rather than rotating: a conic sweep on a
+   shape this wide races along the long edges and dwells at the two ends, so the
+   edge reads as patchy however cleanly it is drawn. */
 .niko-ring::after {
   content: '';
   position: absolute;
   inset: 0;
   padding: 1px;
   border-radius: inherit;
-  background: conic-gradient(
-    from var(--niko-angle),
-    var(--border) 0deg,
-    var(--border) 170deg,
-    var(--primary) 250deg,
-    var(--border) 330deg,
-    var(--border) 360deg
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 38%,
+    color-mix(in srgb, var(--primary) 85%, var(--border)) 50%,
+    var(--border) 62%,
+    var(--border) 100%
   );
+  background-size: 250% 100%;
+  background-position: 125% 0;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -1164,9 +1157,18 @@ html[data-audience='agents'] {
   pointer-events: none;
 }
 
+@keyframes niko-ring-sweep {
+  from {
+    background-position: 125% 0;
+  }
+  to {
+    background-position: -125% 0;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .niko-ring::after {
-    animation: niko-ring-spin 3s linear infinite;
+    animation: niko-ring-sweep 3.2s linear infinite;
   }
 }
 
