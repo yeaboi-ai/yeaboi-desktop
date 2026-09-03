@@ -491,7 +491,10 @@ export function NikoBar() {
       {/* ── The pill ─────────────────────────────────────────────────── */}
       <button
         onClick={() => setIsOpen(true)}
-        className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full border border-border bg-popover px-6 shadow-xl hover:border-primary/30 hover:shadow-primary/5"
+        // Pill-high and on the floor, never `inset-0`: sized to the panel it was
+        // drawn at the height of whatever was open a moment ago, so closing a
+        // conversation painted an enormous rounded box that then shrank to this.
+        className="group absolute inset-x-0 bottom-0 flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-popover px-6 shadow-xl hover:border-primary/30 hover:shadow-primary/5"
         style={{
           opacity: state === 'collapsed' ? 1 : 0,
           pointerEvents: state === 'collapsed' ? 'auto' : 'none',
@@ -534,15 +537,11 @@ export function NikoBar() {
           // panel's height is doing. Stacked from the top it had nothing holding
           // it down once the conversation went, and slid down the window as the
           // height animated back to the pill.
-          className={`relative z-10 flex min-h-0 flex-1 flex-col justify-end ${
-            state === 'expanded' ? 'gap-2 overflow-visible' : 'overflow-hidden'
-          }`}
-          style={{
-            // Expanded there is nothing to hold: the bubbles, the composer and
-            // the conversation's own buttons each sit on the page.
-            background: state === 'expanded' ? 'transparent' : 'var(--popover)',
-            borderRadius: state === 'input' ? '15px' : 'inherit',
-          }}
+          // Paints nothing, in any state. Filling it while the bar was open drew
+          // a popover-coloured box the height of whatever had just closed, with
+          // the composer sitting inside it — the larger div with a background
+          // that is not there any more. The composer is the only pill.
+          className="relative z-10 flex min-h-0 flex-1 flex-col justify-end gap-2 overflow-visible"
         >
           {state === 'expanded' && (
             <div

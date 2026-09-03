@@ -1133,6 +1133,14 @@ html[data-audience='agents'] {
    The highlight travels along the bar rather than rotating: a conic sweep on a
    shape this wide races along the long edges and dwells at the two ends, so the
    edge reads as patchy however cleanly it is drawn. */
+/* Its own containing block, or `inset: 0` on the ring below resolves against
+   whatever positioned ancestor happens to be up the tree — which drew the edge
+   at the size of the whole panel, a large rounded outline standing around the
+   bar while the panel animated. */
+.niko-ring {
+  position: relative;
+}
+
 .niko-ring::after {
   content: '';
   position: absolute;
