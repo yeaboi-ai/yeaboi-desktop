@@ -28,6 +28,10 @@ const RESTART_DELAYS_MS = [1_000, 5_000, 15_000];
 const MAX_RESTARTS = 3;
 const RESTART_WINDOW_MS = 5 * 60_000;
 
+/** Python extras the desktop cannot run without: tool dispatch goes through
+ *  the in-process MCP app, and the export paths write PDF and Office files. */
+const DESKTOP_EXTRAS = ['mcp', 'pdf', 'docs'];
+
 /** How to launch the backend. Resolution order (dev escape hatch first):
  *  1. $YEABOI_DESKTOP_PYTHON — an explicit interpreter; runs `-m yeaboi app`
  *  2. packaged: the bundled python in resources/py
@@ -61,7 +65,12 @@ export function resolveCommand(): { command: string; args: string[]; cwd?: strin
         'interpreter that can import yeaboi.',
     );
   }
-  return { command: 'uv', args: ['run', 'yeaboi', 'app'], cwd: repo };
+  // `uv run` syncs the checkout's environment to exactly what it is asked for,
+  // so anything installed by hand is removed on the next launch. The desktop
+  // needs the extras named here: the backend hosts the MCP app in-process to
+  // serve tool calls, and Reporting writes PDF and Office files.
+  const extras = DESKTOP_EXTRAS.flatMap((extra) => ['--extra', extra]);
+  return { command: 'uv', args: ['run', ...extras, 'yeaboi', 'app'], cwd: repo };
 }
 
 export class Sidecar {
