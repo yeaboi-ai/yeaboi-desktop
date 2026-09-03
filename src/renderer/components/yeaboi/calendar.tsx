@@ -356,7 +356,10 @@ export function NextUp({ modes }: { modes: string[] }) {
   const mine = ceremonies.filter((ceremony) => modes.includes(ceremony.mode));
   if (mine.length === 0) return null;
   return (
-    <div className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+    // Its own spacing, because it is its own decision whether to draw at all —
+    // a wrapper carrying the margin left 16px of nothing above the page title
+    // on every surface where nothing is scheduled.
+    <div className="mb-4 rounded-2xl bg-card p-4 ring-1 ring-border/60">
       <h2 className="font-body text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         Scheduled
       </h2>

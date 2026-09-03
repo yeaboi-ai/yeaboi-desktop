@@ -114,9 +114,7 @@ export default function ReportingPage() {
   return (
     <BackendGate>
       <Surface>
-        <div className="mb-4">
-          <NextUp modes={['report']} />
-        </div>
+        <NextUp modes={['report']} />
         <ReportingBody />
       </Surface>
     </BackendGate>

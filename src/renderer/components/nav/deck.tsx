@@ -42,14 +42,10 @@ const LOCK_MS = 60;
  *  restarts it, so a fast run through the deck stays held back until it
  *  stops. */
 const SETTLE_MS = 900;
-/** Where the surface's edges sit while it is in transit: not pulled evenly in
- *  from the window, but tucked past the chrome that does not travel with it —
- *  the rail on the left, the traffic lights above, the dock row below. The
- *  right has nothing beside it, so it barely comes in at all.
- *
- *  Applied as a clip rather than a scale. Scaling resamples every glyph on the
- *  surface, which is why the page went soft for as long as it was held back;
- *  a clip moves the edges and leaves the pixels alone. */
+/** Where the surface sits while it is in transit: not pulled evenly in from the
+ *  window, but tucked past the chrome that does not travel with it — the rail on
+ *  the left, the traffic lights above, the dock row below. The right has nothing
+ *  beside it, so it barely comes in at all. */
 const PREVIEW_EDGES = { left: 56, top: 42, right: 16, bottom: 56 };
 /** The transit easing: long and almost entirely decelerating, so the surface
  *  arrives rather than stops. */
@@ -115,7 +111,11 @@ export function Deck({ children }: { children: React.ReactNode }) {
       router.push(routes[next]!);
       if (!reduced) {
         const { left, top, right, bottom } = PREVIEW_EDGES;
-        setHeld(`inset(${top}px ${right}px ${bottom}px ${left}px round var(--window-radius))`);
+        // Per-axis, because the four insets differ, with a translate to put the
+        // shrunken surface where those insets say rather than in the middle.
+        const sx = 1 - (left + right) / window.innerWidth;
+        const sy = 1 - (top + bottom) / window.innerHeight;
+        setHeld(`translate(${(left - right) / 2}px, ${(top - bottom) / 2}px) scale(${sx}, ${sy})`);
         setPreview(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         settleTimer.current = setTimeout(settle, SETTLE_MS);
@@ -197,11 +197,20 @@ export function Deck({ children }: { children: React.ReactNode }) {
       data-deck
       className="h-screen overflow-y-auto"
       style={{
+        // It shrinks in transit rather than being clipped to size: the pull-back
+        // is the whole cue that the surface is in hand and not yet yours. Text
+        // is resampled while it is scaled, so it is a little soft for as long as
+        // the surface is held — the price of the movement.
+        transform: preview ? held : 'translate(0px, 0px) scale(1, 1)',
+        transformOrigin: 'center center',
         // The window's own radius, so the corner in transit runs parallel to the
         // one around it rather than being a second, differently curved one.
-        clipPath: preview ? held : 'inset(0px round 0px)',
-        transition: reduced ? undefined : `clip-path ${PREVIEW_EASE}`,
-        willChange: 'clip-path',
+        borderRadius: preview ? 'var(--window-radius)' : '0px',
+        overflow: preview ? 'hidden' : undefined,
+        transition: reduced
+          ? undefined
+          : `transform ${PREVIEW_EASE}, border-radius ${PREVIEW_EASE}`,
+        willChange: 'transform',
         // Inert while held back: a half-dealt card should not take a click
         // meant for the one underneath it.
         pointerEvents: preview ? 'none' : undefined,

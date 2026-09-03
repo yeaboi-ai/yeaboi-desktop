@@ -65,6 +65,8 @@ const CONTROLS = [
  *  carries with it. */
 const CONTROL_SIZE = 44;
 const CONTROL_GAP = 8;
+/** How far apart in time the two of them arrive. */
+const CONTROL_STAGGER = 70;
 /** What the panel gains when they detach: the pair, with their gaps. The
  *  composer keeps its own width, so they open into new space rather than out of
  *  the room the question is written in. */
@@ -631,29 +633,43 @@ export function NikoBar() {
                 every frame of the animation, so one transition moves both.
                 Kept mounted and inert when closed, or unmounting them mid-
                 animation leaves the half-drawn object behind. */}
-            {CONTROLS.map(({ key, title, Icon }) => (
-              <div
-                key={key}
-                className="shrink-0 overflow-hidden transition-all duration-300 ease-out"
-                style={{
-                  width: state === 'expanded' ? CONTROL_SIZE : 0,
-                  marginLeft: state === 'expanded' ? CONTROL_GAP : 0,
-                  opacity: state === 'expanded' ? 1 : 0,
-                  pointerEvents: state === 'expanded' ? 'auto' : 'none',
-                }}
-                aria-hidden={state !== 'expanded'}
-              >
-                <button
-                  onClick={key === 'new' ? startFresh : close}
-                  className={CONTROL}
-                  title={title}
-                  aria-label={title}
-                  tabIndex={state === 'expanded' ? undefined : -1}
+            {CONTROLS.map(({ key, title, Icon }, index) => {
+              const shown = state === 'expanded';
+              // Later ones arrive later and leave first, so the pair reads as
+              // two things rather than one wide thing.
+              const delay = (shown ? index : CONTROLS_COUNT - 1 - index) * CONTROL_STAGGER;
+              return (
+                <div
+                  key={key}
+                  // Holds the space and nothing else. Clipping the reveal cut
+                  // the ring and the shadow, which paint outside the button's
+                  // box — the flattened tops and bottoms.
+                  className="shrink-0"
+                  style={{
+                    width: shown ? CONTROL_SIZE : 0,
+                    marginLeft: shown ? CONTROL_GAP : 0,
+                    transition: `width 260ms ease-out ${delay}ms, margin-left 260ms ease-out ${delay}ms`,
+                  }}
+                  aria-hidden={!shown}
                 >
-                  <Icon className="size-3.5" />
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={key === 'new' ? startFresh : close}
+                    className={CONTROL}
+                    title={title}
+                    aria-label={title}
+                    tabIndex={shown ? undefined : -1}
+                    style={{
+                      opacity: shown ? 1 : 0,
+                      transform: shown ? 'none' : 'translateY(6px) scale(0.9)',
+                      pointerEvents: shown ? 'auto' : 'none',
+                      transition: `opacity 260ms ease-out ${delay}ms, transform 300ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`,
+                    }}
+                  >
+                    <Icon className="size-3.5" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

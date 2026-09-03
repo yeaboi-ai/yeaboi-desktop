@@ -81,9 +81,7 @@ export default function PerformancePage() {
   return (
     <BackendGate>
       <Surface>
-        <div className="mb-4">
-          <NextUp modes={['weekly-review']} />
-        </div>
+        <NextUp modes={['weekly-review']} />
         <PerformanceBody />
       </Surface>
     </BackendGate>

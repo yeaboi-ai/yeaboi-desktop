@@ -762,9 +762,7 @@ export default function StandupPage() {
   return (
     <BackendGate>
       <Surface>
-        <div className="mb-4">
-          <NextUp modes={['standup']} />
-        </div>
+        <NextUp modes={['standup']} />
         <StandupBody />
       </Surface>
     </BackendGate>
