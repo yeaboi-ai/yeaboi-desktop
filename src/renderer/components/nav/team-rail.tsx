@@ -62,17 +62,15 @@ const ROW = 36;
 /** The one surface that keeps the whole map: it is the one you go to in order
  *  to see where everything is. */
 const HOME_HREF = '/home';
-/** How long a hover on a panel dwells before the labels arrive. Approaching
- *  the notch means "show me where I can go", which the icons answer; the words
- *  are for staying. */
-const LABEL_DWELL_MS = 520;
+/** How long the cursor has to stay on the rail before the list opens. Long
+ *  enough that passing over a row on the way to another one does not. */
+const OPEN_DWELL_MS = 180;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
-  // Two stages. `open` grows the rows back out of the notch, `wide` brings the
-  // labels — on a panel the second waits, so a passing cursor does not throw
-  // the whole nav across the page. Either way it is a row that opens the rail,
-  // never the rail itself; leaving the rail closes it.
+  // A row opens the rail, never the rail itself; leaving it closes it. Rows and
+  // labels arrive together — a list that widens a beat after it opens is two
+  // movements where the cursor only asked for one.
   const [open, setOpen] = useState(false);
   const [labelled, setLabelled] = useState(false);
   // Labels only while the list is open. Held separately they could outlive it —
@@ -93,19 +91,26 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
 
   const navRef = useRef<HTMLElement>(null);
 
-  const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opening = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enter = () => {
-    setOpen(true);
-    dwell.current = setTimeout(() => setLabelled(true), LABEL_DWELL_MS);
+    // A beat before it opens, and then it opens whole — rows and labels
+    // together. The list grows from the rail's centre, so opening moves every
+    // row: a cursor merely crossing one on its way to Home would otherwise
+    // throw the list open and take Home out from under the click.
+    if (opening.current) clearTimeout(opening.current);
+    opening.current = setTimeout(() => {
+      setOpen(true);
+      setLabelled(true);
+    }, OPEN_DWELL_MS);
   };
   const leave = () => {
-    if (dwell.current) clearTimeout(dwell.current);
+    if (opening.current) clearTimeout(opening.current);
     setOpen(false);
     setLabelled(false);
   };
   useEffect(
     () => () => {
-      if (dwell.current) clearTimeout(dwell.current);
+      if (opening.current) clearTimeout(opening.current);
     },
     [],
   );
@@ -139,7 +144,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     if (navigated) {
       setOpen(false);
       setLabelled(false);
-      if (dwell.current) clearTimeout(dwell.current);
+      if (opening.current) clearTimeout(opening.current);
     }
     measure();
 

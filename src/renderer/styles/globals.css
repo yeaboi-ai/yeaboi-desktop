@@ -1064,7 +1064,14 @@ html[data-audience='agents'] {
     animation-delay: 150ms;
   }
 
-  /* The heading itself, wherever it sits: still, and decoding. */
+  /* Nor does anything deeper that holds the heading — a page that puts its
+     title in a header beside its actions was rising the whole header, taking
+     the title 16px with it. */
+  .deck-page > * > :has(h1) > :has(h1) {
+    animation: none;
+  }
+
+  /* The heading itself, wherever it sits. */
   .deck-page h1,
   .deck-page h1 + p,
   .deck-page :has(> h1),

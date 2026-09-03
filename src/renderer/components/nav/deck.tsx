@@ -46,7 +46,7 @@ const SETTLE_MS = 900;
  *  window, but tucked past the chrome that does not travel with it — the rail on
  *  the left, the traffic lights above, the dock row below. The right has nothing
  *  beside it, so it barely comes in at all. */
-const PREVIEW_EDGES = { left: 56, top: 42, right: 16, bottom: 56 };
+const PREVIEW_EDGES = { left: 56, top: 42, right: 56, bottom: 56 };
 /** The transit easing: long and almost entirely decelerating, so the surface
  *  arrives rather than stops. */
 /** How long to wait for a surface's heading to appear before giving up on
@@ -207,30 +207,39 @@ export function Deck({ children }: { children: React.ReactNode }) {
       if (lines.length === 0) return () => {};
 
       // Undoing the port's transform, every frame, from the matrix the port is
-      // actually showing. Computing it once from the target and letting CSS
-      // animate towards it made the heading lag the surface and drift: the two
-      // transforms have to cancel at every instant, not only at the end.
+      // actually showing — the two have to cancel at every instant, not only at
+      // the end.
+      //
+      // The layout position is measured once, with the compensation cleared,
+      // and reused: deriving it each frame from a rect that already includes
+      // the transform feeds the result back into its own input, and the heading
+      // jitters against whatever the surface is doing.
       const port = document.querySelector<HTMLElement>('[data-deck]');
+      const matrix = () => new DOMMatrix(port ? getComputedStyle(port).transform : 'none');
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+
+      let anchors = lines.map(({ el }) => ({ el, left: 0, top: 0 }));
       let hold = 0;
+
       const steady = () => {
-        if (!port) return;
-        const m = new DOMMatrix(getComputedStyle(port).transform);
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        for (const { el } of lines) {
-          if (m.a === 1 && m.d === 1 && m.e === 0 && m.f === 0) {
+        const m = matrix();
+        const still = m.a === 1 && m.d === 1 && m.e === 0 && m.f === 0;
+        if (still) {
+          // At rest the heading wears nothing, and this is when its layout
+          // position is read — content loading underneath it moves the line, and
+          // holding a stale anchor through that is what made it jitter.
+          anchors = lines.map(({ el }) => {
             el.style.transform = '';
-            continue;
+            const box = el.getBoundingClientRect();
+            return { el, left: box.left, top: box.top };
+          });
+        } else {
+          for (const { el, left, top } of anchors) {
+            el.style.transform =
+              `translate(${(left - cx) * (1 / m.a - 1) - m.e / m.a}px, ` +
+              `${(top - cy) * (1 / m.d - 1) - m.f / m.d}px) scale(${1 / m.a}, ${1 / m.d})`;
           }
-          // The element's own layout position, which its transform does not
-          // change — read it back off the transform currently applied.
-          const box = el.getBoundingClientRect();
-          const applied = new DOMMatrix(getComputedStyle(el).transform);
-          const left = (box.left - m.e - cx * (1 - m.a)) / m.a - applied.e;
-          const top = (box.top - m.f - cy * (1 - m.d)) / m.d - applied.f;
-          el.style.transform =
-            `translate(${(left - cx) * (1 / m.a - 1) - m.e / m.a}px, ` +
-            `${(top - cy) * (1 / m.d - 1) - m.f / m.d}px) scale(${1 / m.a}, ${1 / m.d})`;
         }
         hold = requestAnimationFrame(steady);
       };
