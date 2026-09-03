@@ -42,11 +42,13 @@ const LOCK_MS = 60;
  *  restarts it, so a fast run through the deck stays held back until it
  *  stops. */
 const SETTLE_MS = 900;
-/** How far the surface pulls in from the window while it is in transit. An
- *  even margin on all four sides, which a uniform scale cannot give on a
- *  window that is not square — it would leave the sides further in than the
- *  top and bottom. */
-const PREVIEW_INSET = 26;
+/** How far the surface pulls in from the window while it is in transit. Enough
+ *  to clear the chrome that does not travel with it — the rail is 48 wide and
+ *  the dock row 48 tall — so in transit the card sits just inside both rather
+ *  than passing behind them. An even margin on all four sides, which a uniform
+ *  scale cannot give on a window that is not square: it would leave the sides
+ *  further in than the top and bottom. */
+const PREVIEW_INSET = 56;
 
 /** Whether anything under the pointer can still scroll the way the wheel is
  *  pointing. Walks the real scroll ancestry rather than an opt-in attribute, so
