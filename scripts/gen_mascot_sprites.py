@@ -9,11 +9,11 @@ crisp at every size it shares:
 * ``robo.png`` — the Agents world's mascot, the TUI's own law (``_mascot.py``
   in yeaboi.ai): plumage to steel, the shades' shine to a cyan LED, an antenna
   from the crown.
-* ``outfit-hardhat.png`` / ``outfit-ring.png`` — the two doors' kits as
-  transparent layers the canvas rig stacks on the duck: the Projects duck's
-  hard hat and the Sessions duck's swim ring, coloured only with the sprite's
-  own bill amber, belly white and outline navy.
-* ``robo-hardhat.png`` / ``robo-ring.png`` — the robo in each kit, flattened,
+* ``outfit-<kit>.png`` — the six kits as transparent layers the canvas rig
+  stacks on the duck, one per world and door (src/renderer/lib/yeaboi/kits.ts
+  says which is which), coloured only with the sprite's own bill amber, belly
+  white, shade black and outline navy.
+* ``robo-<kit>.png`` — the robo in the Agents world's two kits, flattened,
   the antenna rooted in whatever is now the top of its head.
 
 **Not a build step.** This repo has no Python environment; Pillow arrives for
@@ -39,8 +39,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "node_modules" / "@yeaboi-ai" / "design" / "assets" / "duck"
 OUT = ROOT / "src" / "renderer" / "assets" / "brand"
 ROBO = "robo.png"
-OUTFITS = {"hardhat": "outfit-hardhat.png", "ring": "outfit-ring.png"}
-DRESSED = {"hardhat": "robo-hardhat.png", "ring": "robo-ring.png"}
+KITS = ("hardhat", "ring", "cap", "headset", "propeller", "bowtie")
+OUTFITS = {kit: f"outfit-{kit}.png" for kit in KITS}
+#: The kits the Agents world wears, so the robo is rendered in these alone.
+ROBO_KITS = ("propeller", "bowtie")
+DRESSED = {kit: f"robo-{kit}.png" for kit in ROBO_KITS}
 
 #: The design package's sprite canvas.
 SOURCE_SIZE = (128, 136)
@@ -86,6 +89,34 @@ RING_CENTRE = (64, 98)
 RING_OUTER = (64, 26)
 RING_INNER = (46, 11)
 RING_SEGMENTS = 4
+
+#: The captain's cap: a white top, a navy band, a black visor over the bill
+#: and an amber badge on the band's front.
+CAP_TOP = (14, -16, 66, -2)
+CAP_BAND = (14, -3, 66, 8)
+CAP_VISOR = ((30, 6), (2, 8), (2, 13), (30, 12))
+CAP_BADGE = (24, -1, 34, 6)
+
+#: The headset: a band over the crown, a cup on the ear at the back of the
+#: head, and a boom to a mic under the bill.
+HEADSET_BAND = (10, -6, 68, 44)
+HEADSET_BAND_CUT = 16
+HEADSET_CUP = (54, 16, 70, 34)
+HEADSET_BOOM = ((60, 30), (40, 44), (16, 46))
+HEADSET_MIC = (8, 42, 18, 50)
+
+#: The propeller beanie: a small striped dome, a stem, and the blade on top.
+BEANIE_DOME = (20, -12, 58, 10)
+BEANIE_CUT = 4
+BEANIE_STRIPES = ((28, 34), (44, 50))
+PROP_STEM = (37, -18, 41, -10)
+PROP_BLADE = (20, -22, 58, -17)
+PROP_HUB = (35, -23, 43, -15)
+
+#: The bow tie, on the chest under the bill.
+BOW_LEFT = ((26, 57), (12, 50), (12, 64))
+BOW_RIGHT = ((30, 57), (44, 50), (44, 64))
+BOW_KNOT = (25, 54, 31, 61)
 
 
 def _steel(pixel: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
@@ -146,35 +177,129 @@ def _layers():
     return {name: Image.open(SRC / f"{name}.png").convert("RGBA") for name in ("base", "wing", "glasses")}
 
 
-def _sprite_colours(base) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-    """The bill's amber and the belly's white, the commonest of each in the
-    art itself, so the kits never introduce a colour the duck does not wear."""
-    from collections import Counter
+class Colours:
+    """The kits' whole palette, read off the art itself: the bill's amber, the
+    belly's white and the shades' black, the commonest of each, so a kit never
+    introduces a colour the duck does not already wear."""
 
-    opaque = [(r, g, b) for r, g, b, a in _pixels(base) if a > 0]
-    amber = Counter(p for p in opaque if p[0] > 200 and p[0] > p[1] + 40).most_common(1)
-    white = Counter(p for p in opaque if min(p) > 200).most_common(1)
-    if not amber or not white:
-        raise SystemExit("could not find the bill amber or belly white in base.png; the art moved")
-    return amber[0][0], white[0][0]
+    def __init__(self, base, glasses):
+        from collections import Counter
+
+        opaque = [(r, g, b) for r, g, b, a in _pixels(base) if a > 0]
+        amber = Counter(p for p in opaque if p[0] > 200 and p[0] > p[1] + 40).most_common(1)
+        white = Counter(p for p in opaque if min(p) > 200).most_common(1)
+        shade = Counter(
+            (r, g, b) for r, g, b, a in _pixels(glasses) if a > 0 and 10 < 0.299 * r + 0.587 * g + 0.114 * b < 60
+        ).most_common(1)
+        if not amber or not white or not shade:
+            raise SystemExit("could not find the amber, white or shade black in the art; it moved")
+        self.amber = amber[0][0]
+        self.white = white[0][0]
+        self.black = shade[0][0]
+        self.navy = OUTLINE
 
 
-def _hardhat(amber, white):
-    from PIL import Image, ImageDraw
+def _blank():
+    from PIL import Image
 
-    layer = Image.new("RGBA", outfit_size(), (0, 0, 0, 0))
-    dome = Image.new("RGBA", outfit_size(), (0, 0, 0, 0))
-    ImageDraw.Draw(dome).ellipse(_shift(HAT_DOME), fill=amber, outline=OUTLINE, width=STROKE)
+    return Image.new("RGBA", outfit_size(), (0, 0, 0, 0))
+
+
+def _clear_below(img, y: int) -> None:
+    """Erase everything from source row `y` down."""
+    img.paste((0, 0, 0, 0), (0, OUTFIT_HEADROOM + y, img.width, img.height))
+
+
+def _clear_above(img, y: int) -> None:
+    img.paste((0, 0, 0, 0), (0, 0, img.width, OUTFIT_HEADROOM + y))
+
+
+def _hardhat(c: Colours):
+    from PIL import ImageDraw
+
+    layer = _blank()
+    dome = _blank()
+    ImageDraw.Draw(dome).ellipse(_shift(HAT_DOME), fill=c.amber, outline=c.navy, width=STROKE)
     # Only the crown of the ellipse survives: everything under the brim goes.
-    dome.paste((0, 0, 0, 0), (0, OUTFIT_HEADROOM + HAT_BRIM_Y, dome.width, dome.height))
+    _clear_below(dome, HAT_BRIM_Y)
     layer.alpha_composite(dome)
     d = ImageDraw.Draw(layer)
-    d.rectangle(_shift(HAT_BRIM), fill=amber, outline=OUTLINE, width=STROKE)
-    d.rectangle(_shift(HAT_SHINE), fill=white)
+    d.rectangle(_shift(HAT_BRIM), fill=c.amber, outline=c.navy, width=STROKE)
+    d.rectangle(_shift(HAT_SHINE), fill=c.white)
     return layer
 
 
-def _ring(amber, white):
+def _cap(c: Colours):
+    from PIL import ImageDraw
+
+    layer = _blank()
+    d = ImageDraw.Draw(layer)
+    d.polygon([_pt(p) for p in CAP_VISOR], fill=c.black, outline=c.navy)
+    d.rounded_rectangle(_shift(CAP_TOP), radius=6, fill=c.white, outline=c.navy, width=STROKE)
+    d.rectangle(_shift(CAP_BAND), fill=c.navy)
+    d.ellipse(_shift(CAP_BADGE), fill=c.amber, outline=c.white, width=1)
+    return layer
+
+
+def _headset(c: Colours):
+    from PIL import ImageDraw
+
+    band = _blank()
+    ImageDraw.Draw(band).ellipse(_shift(HEADSET_BAND), outline=c.navy, width=STROKE + 2)
+    _clear_below(band, HEADSET_BAND_CUT)
+    layer = _blank()
+    layer.alpha_composite(band)
+    d = ImageDraw.Draw(layer)
+    d.line([_pt(p) for p in HEADSET_BOOM], fill=c.navy, width=STROKE + 1, joint="curve")
+    d.rounded_rectangle(_shift(HEADSET_CUP), radius=5, fill=c.navy, outline=c.white, width=1)
+    d.ellipse(_shift(HEADSET_MIC), fill=c.amber, outline=c.navy, width=STROKE)
+    return layer
+
+
+def _propeller(c: Colours):
+    from PIL import ImageDraw
+
+    dome = _blank()
+    dd = ImageDraw.Draw(dome)
+    dd.ellipse(_shift(BEANIE_DOME), fill=c.white, outline=c.navy, width=STROKE)
+    x0, y0, x1, y1 = BEANIE_DOME
+    for left, right in BEANIE_STRIPES:
+        stripe = _blank()
+        ImageDraw.Draw(stripe).ellipse(_shift(BEANIE_DOME), fill=c.amber)
+        stripe.paste((0, 0, 0, 0), (0, 0, left, stripe.height))
+        stripe.paste((0, 0, 0, 0), (right, 0, stripe.width, stripe.height))
+        inner = _blank()
+        ImageDraw.Draw(inner).ellipse(_shift((x0 + STROKE, y0 + STROKE, x1 - STROKE, y1 - STROKE)), fill=(255, 255, 255, 255))
+        stripe.putalpha(_and_alpha(stripe, inner))
+        dome.alpha_composite(stripe)
+    _clear_below(dome, BEANIE_CUT)
+    layer = _blank()
+    layer.alpha_composite(dome)
+    d = ImageDraw.Draw(layer)
+    d.rectangle(_shift(PROP_STEM), fill=c.navy)
+    d.rounded_rectangle(_shift(PROP_BLADE), radius=2, fill=c.amber, outline=c.navy, width=1)
+    d.ellipse(_shift(PROP_HUB), fill=c.navy)
+    return layer
+
+
+def _and_alpha(a, b):
+    from PIL import ImageChops
+
+    return ImageChops.multiply(a.getchannel("A"), b.getchannel("A"))
+
+
+def _bowtie(c: Colours):
+    from PIL import ImageDraw
+
+    layer = _blank()
+    d = ImageDraw.Draw(layer)
+    for wing in (BOW_LEFT, BOW_RIGHT):
+        d.polygon([_pt(p) for p in wing], fill=c.amber, outline=c.navy)
+    d.rectangle(_shift(BOW_KNOT), fill=c.navy)
+    return layer
+
+
+def _ring(c: Colours):
     from PIL import Image
 
     layer = Image.new("RGBA", outfit_size(), (0, 0, 0, 0))
@@ -193,7 +318,8 @@ def _ring(amber, white):
             edge = not inside(dx, dy, ox - STROKE, oy - STROKE) or inside(dx, dy, ix + STROKE, iy + STROKE)
             angle = math.atan2(dy / oy, dx / ox) + math.pi
             segment = int(angle / (2 * math.pi / RING_SEGMENTS)) % 2
-            layer.putpixel((x, y), (*OUTLINE, 255) if edge else (*(amber if segment else white), 255))
+            colour = c.navy if edge else (c.amber if segment else c.white)
+            layer.putpixel((x, y), (*colour, 255))
     return layer
 
 
@@ -203,10 +329,24 @@ def _shift(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
     return (x0, y0 + OUTFIT_HEADROOM, x1, y1 + OUTFIT_HEADROOM)
 
 
+def _pt(point: tuple[int, int]) -> tuple[int, int]:
+    return (point[0], point[1] + OUTFIT_HEADROOM)
+
+
+DRAW = {
+    "hardhat": _hardhat,
+    "ring": _ring,
+    "cap": _cap,
+    "headset": _headset,
+    "propeller": _propeller,
+    "bowtie": _bowtie,
+}
+
+
 def outfits():
     layers = _layers()
-    amber, white = _sprite_colours(layers["base"])
-    return {"hardhat": _hardhat(amber, white), "ring": _ring(amber, white)}
+    colours = Colours(layers["base"], layers["glasses"])
+    return {kit: DRAW[kit](colours) for kit in KITS}
 
 
 def robo(outfit=None, kit: str | None = None):
@@ -219,13 +359,13 @@ def robo(outfit=None, kit: str | None = None):
     layers = _layers()
     staged = Image.new("RGBA", size, (0, 0, 0, 0))
     staged.alpha_composite(_recolour_body(layers["base"]), (0, headroom))
-    # The ring sits under the wing, as a ring around a body does; the hat goes
-    # over everything.
+    # The ring sits under the wing, as a ring around a body does; every other
+    # kit goes over everything.
     if outfit is not None and kit == "ring":
         staged.alpha_composite(outfit)
     staged.alpha_composite(_recolour_body(layers["wing"]), (0, headroom))
     staged.alpha_composite(_recolour_shine(layers["glasses"]), (0, headroom))
-    if outfit is not None and kit == "hardhat":
+    if outfit is not None and kit != "ring":
         staged.alpha_composite(outfit)
 
     top = _crown_top(staged)
@@ -263,7 +403,8 @@ def render() -> None:
     kits = outfits()
     for kit, layer in kits.items():
         layer.save(OUT / OUTFITS[kit])
-        robo(layer, kit).save(OUT / DRESSED[kit])
+        if kit in DRESSED:
+            robo(layer, kit).save(OUT / DRESSED[kit])
     for name in expected():
         print(f"wrote {OUT.relative_to(ROOT) / name}")
 

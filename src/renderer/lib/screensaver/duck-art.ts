@@ -8,12 +8,16 @@
 import baseSrc from '@yeaboi-ai/design/assets/duck/base.png';
 import glassesSrc from '@yeaboi-ai/design/assets/duck/glasses.png';
 import wingSrc from '@yeaboi-ai/design/assets/duck/wing.png';
+import bowtieSrc from '@/assets/brand/outfit-bowtie.png';
+import capSrc from '@/assets/brand/outfit-cap.png';
 import hardhatSrc from '@/assets/brand/outfit-hardhat.png';
+import headsetSrc from '@/assets/brand/outfit-headset.png';
+import propellerSrc from '@/assets/brand/outfit-propeller.png';
 import ringSrc from '@/assets/brand/outfit-ring.png';
-import roboHardhatSrc from '@/assets/brand/robo-hardhat.png';
-import roboRingSrc from '@/assets/brand/robo-ring.png';
+import roboBowtieSrc from '@/assets/brand/robo-bowtie.png';
+import roboPropellerSrc from '@/assets/brand/robo-propeller.png';
 import roboSrc from '@/assets/brand/robo.png';
-import type { Door } from '@/lib/yeaboi/home';
+import { KIT_SLOT, type Kit } from '@/lib/yeaboi/kits';
 import type { DuckArt, OutfitLayer } from './duck-rig';
 
 /** Rows above the sprite on every kit's canvas; the generator's OUTFIT_HEADROOM. */
@@ -65,20 +69,37 @@ export function roboArtNow(): HTMLImageElement | null {
   return robo;
 }
 
-/** A kit per door, once; and the robo already wearing each. */
-export type Outfits = Record<Door, OutfitLayer>;
-export type RoboKit = Record<Door, HTMLImageElement>;
+/** Every kit's layer, once; and the robo already wearing the Agents world's two. */
+export type Outfits = Record<Kit, OutfitLayer>;
+export type RoboKit = Partial<Record<Kit, HTMLImageElement>>;
+
+export const OUTFIT_SRC: Record<Kit, string> = {
+  hardhat: hardhatSrc,
+  ring: ringSrc,
+  cap: capSrc,
+  headset: headsetSrc,
+  propeller: propellerSrc,
+  bowtie: bowtieSrc,
+};
+
+const ROBO_SRC: Partial<Record<Kit, string>> = {
+  propeller: roboPropellerSrc,
+  bowtie: roboBowtieSrc,
+};
 
 let outfits: Outfits | null = null;
 let outfitsLoading: Promise<Outfits> | null = null;
 
 export function loadOutfits(): Promise<Outfits> {
   if (outfits) return Promise.resolve(outfits);
-  outfitsLoading ??= Promise.all([image(hardhatSrc), image(ringSrc)]).then(([hardhat, ring]) => {
-    outfits = {
-      projects: { image: hardhat, headroom: OUTFIT_HEADROOM, slot: 'top' },
-      sessions: { image: ring, headroom: OUTFIT_HEADROOM, slot: 'body' },
-    };
+  const kits = Object.keys(OUTFIT_SRC) as Kit[];
+  outfitsLoading ??= Promise.all(kits.map((kit) => image(OUTFIT_SRC[kit]))).then((images) => {
+    outfits = Object.fromEntries(
+      kits.map((kit, i) => [
+        kit,
+        { image: images[i]!, headroom: OUTFIT_HEADROOM, slot: KIT_SLOT[kit] },
+      ]),
+    ) as Outfits;
     return outfits;
   });
   return outfitsLoading;
@@ -93,12 +114,11 @@ let roboKitLoading: Promise<RoboKit> | null = null;
 
 export function loadRoboKit(): Promise<RoboKit> {
   if (roboKit) return Promise.resolve(roboKit);
-  roboKitLoading ??= Promise.all([image(roboHardhatSrc), image(roboRingSrc)]).then(
-    ([projects, sessions]) => {
-      roboKit = { projects, sessions };
-      return roboKit;
-    },
-  );
+  const kits = Object.keys(ROBO_SRC) as Kit[];
+  roboKitLoading ??= Promise.all(kits.map((kit) => image(ROBO_SRC[kit]!))).then((images) => {
+    roboKit = Object.fromEntries(kits.map((kit, i) => [kit, images[i]!]));
+    return roboKit;
+  });
   return roboKitLoading;
 }
 

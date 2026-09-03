@@ -8,9 +8,10 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocation } from 'react-router';
-import { DoorDuckMark } from '@/components/brand/duck';
 import { CreateProjectDialog } from '@/components/create-project-dialog';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useAudience } from '@/components/providers/audience-provider';
+import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { PROJECTS_HEADER_LINKS } from '@/lib/nav/sections';
 import { relativeDay } from '@/lib/yeaboi/sessions';
 import { logger } from '@/lib/logger';
@@ -24,6 +25,8 @@ interface Project {
 
 export default function ProjectsPage() {
   const { authFetch, ready, teamVersion } = useAuthFetch();
+  const { audience } = useAudience();
+  const Mascot = DOOR_MASCOT[audience].projects;
   const router = useRouter();
   // Was a Next server action; the desktop talks to FastAPI directly.
   const createProject = useCallback(
@@ -94,7 +97,7 @@ export default function ProjectsPage() {
         <header className="flex flex-wrap items-end justify-between gap-6 animate-slide-up stagger-1">
           <div>
             <div className="flex items-center gap-4">
-              <DoorDuckMark door="projects" size={40} />
+              <Mascot size={40} />
               <h1 className="font-display italic text-[40px] leading-none text-foreground">
                 Projects
               </h1>

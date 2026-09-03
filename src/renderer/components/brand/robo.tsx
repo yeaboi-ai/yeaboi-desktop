@@ -3,19 +3,19 @@
 // antenna — the same derivation law as the TUI's robo (_mascot.py in
 // yeaboi.ai). One silhouette, two materials.
 
-import roboHardhat from '@/assets/brand/robo-hardhat.png';
-import roboRing from '@/assets/brand/robo-ring.png';
+import roboBowtie from '@/assets/brand/robo-bowtie.png';
+import roboPropeller from '@/assets/brand/robo-propeller.png';
 import roboSprite from '@/assets/brand/robo.png';
-import type { Door } from '@/lib/yeaboi/home';
+import type { Kit } from '@/lib/yeaboi/kits';
 
-/** The robo in each door's kit, flattened by the same generator. */
-const DRESSED: Record<Door, string> = { projects: roboHardhat, sessions: roboRing };
+/** The robo in the Agents world's kits, flattened by the same generator. */
+const DRESSED: Partial<Record<Kit, string>> = { propeller: roboPropeller, bowtie: roboBowtie };
 
 export interface RoboMarkProps {
   /** Rendered width in px. */
   size?: number;
-  /** Wearing that door's kit: the hard hat at Projects, the swim ring at Sessions. */
-  door?: Door;
+  /** Wearing a kit the generator rendered the robo in. */
+  kit?: Kit;
   className?: string;
 }
 
@@ -24,7 +24,7 @@ export interface RoboMarkProps {
  * every mark is a minification, where the browser's own filter beats
  * nearest-neighbour.
  */
-export function RoboMark({ size = 24, door, className }: RoboMarkProps) {
+export function RoboMark({ size = 24, kit, className }: RoboMarkProps) {
   return (
     <span
       data-duck-mark
@@ -32,7 +32,7 @@ export function RoboMark({ size = 24, door, className }: RoboMarkProps) {
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
       <img
-        src={door ? DRESSED[door] : roboSprite}
+        src={(kit && DRESSED[kit]) || roboSprite}
         alt=""
         style={{ width: '100%', height: 'auto', display: 'block' }}
       />

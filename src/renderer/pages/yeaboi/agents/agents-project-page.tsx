@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'react-router';
 import { RoboMark } from '@/components/brand/robo';
+import { KITS } from '@/lib/yeaboi/kits';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -297,7 +298,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
           Projects
         </Link>
         <div className="mt-3 flex items-center gap-4">
-          <RoboMark door="projects" size={40} />
+          <RoboMark kit={KITS.agents.projects} size={40} />
           <h1 className="font-display italic text-[40px] leading-none text-foreground">
             {project.name}
           </h1>

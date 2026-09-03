@@ -25,6 +25,7 @@ import type { Palette } from '@/lib/screensaver/palette';
 import { drawRings, spawnRing, stepRings, type Ring } from '@/lib/screensaver/rings';
 import { between, type Scene, type SceneOptions } from '@/lib/screensaver/scene';
 import type { Door } from '@/lib/yeaboi/home';
+import { kitFor, type Kit } from '@/lib/yeaboi/kits';
 
 /** One lap of the whole figure. */
 export const LAP_SECONDS = 16;
@@ -114,16 +115,18 @@ export interface Mascot {
   alpha: number;
   scale: number;
   kind: 'duck' | 'mark';
+  /** What it wears: the world's kit for its door. */
+  kit: Kit;
 }
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 const easeOut = (p: number): number => 1 - (1 - p) * (1 - p);
 
 export interface PondScene extends Scene {
-  /** The two kits, once they load; ducks swim bare until then. */
-  setOutfits(outfits: Record<Door, OutfitLayer> | null): void;
-  /** The robo in each kit, for the Agents world. */
-  setRoboKit(kit: Record<Door, HTMLImageElement> | null): void;
+  /** The kits, once they load; ducks swim bare until then. */
+  setOutfits(outfits: Partial<Record<Kit, OutfitLayer>> | null): void;
+  /** The robo already wearing the Agents world's kits. */
+  setRoboKit(kit: Partial<Record<Kit, HTMLImageElement>> | null): void;
   setWorld(world: Audience): void;
   /** Bring one duck forward and soften the other; null lets both settle. */
   forward(door: Door | null): void;
@@ -168,8 +171,8 @@ class Pond implements PondScene {
   private world: Audience;
   private geo: PondGeometry;
   private art: DuckArt | null = null;
-  private outfits: Record<Door, OutfitLayer> | null = null;
-  private roboKit: Record<Door, HTMLImageElement> | null = null;
+  private outfits: Partial<Record<Kit, OutfitLayer>> | null = null;
+  private roboKit: Partial<Record<Kit, HTMLImageElement>> | null = null;
   private clock = 0;
   private entrance = 0;
   private lap: number;
@@ -220,11 +223,11 @@ class Pond implements PondScene {
     this.art = art;
   }
 
-  setOutfits(outfits: Record<Door, OutfitLayer> | null): void {
+  setOutfits(outfits: Partial<Record<Kit, OutfitLayer>> | null): void {
     this.outfits = outfits;
   }
 
-  setRoboKit(kit: Record<Door, HTMLImageElement> | null): void {
+  setRoboKit(kit: Partial<Record<Kit, HTMLImageElement>> | null): void {
     this.roboKit = kit;
   }
 
@@ -413,6 +416,7 @@ class Pond implements PondScene {
       alpha: duck.alpha * this.arrival(duck),
       scale: duck.scale,
       kind,
+      kit: kitFor(this.world, duck.door),
     }));
     // The forward duck is drawn last, so it is drawn over the other.
     return out.sort((a, b) => a.scale - b.scale);
@@ -455,14 +459,14 @@ class Pond implements PondScene {
         alpha: m.alpha,
         smooth: w < CRISP_WIDTH,
       };
-      const robo = this.roboKit?.[m.door] ?? null;
+      const robo = this.roboKit?.[m.kit] ?? null;
       if (m.kind === 'mark' && robo) {
         // The kit's canvas is taller than the sprite; centre the body, not the image.
         const extra = w * (robo.naturalHeight / robo.naturalWidth - DUCK_ASPECT);
         ctx.translate(0, extra / 2);
         drawMark(ctx, robo, pose);
       } else if (this.art) {
-        const outfit = this.outfits?.[m.door];
+        const outfit = this.outfits?.[m.kit];
         drawDuck(ctx, outfit ? { ...this.art, outfit } : this.art, {
           ...pose,
           peek: m.door === 'projects' ? peekAt(this.clock, PEEK_EVERY) : 0,

@@ -2,10 +2,8 @@
 // here rather than deep-importing @design paths everywhere.
 
 import { Duck, type DuckState } from '@design/primitives/Duck';
-import hardhatSrc from '@/assets/brand/outfit-hardhat.png';
-import ringSrc from '@/assets/brand/outfit-ring.png';
-import { OUTFIT_HEADROOM } from '@/lib/screensaver/duck-art';
-import type { Door } from '@/lib/yeaboi/home';
+import { OUTFIT_HEADROOM, OUTFIT_SRC } from '@/lib/screensaver/duck-art';
+import type { Kit } from '@/lib/yeaboi/kits';
 
 export { Duck, useDuckPulse } from '@design/primitives/Duck';
 export type { DuckPulse, DuckRest, DuckState } from '@design/primitives/Duck';
@@ -61,21 +59,18 @@ export function DuckMark({ size = 24, state = 'idle', jamming, className }: Duck
 /** The sprite's width in source pixels; the kits are drawn on the same canvas. */
 const SPRITE_WIDTH = 128;
 
-const OUTFIT_SRC: Record<Door, string> = { projects: hardhatSrc, sessions: ringSrc };
-
 /**
- * The duck in a door's kit: the hard hat at Projects, the swim ring at
- * Sessions. The kit is a layer laid over the ordinary mark, mirrored the way
- * the primitive mirrors its body, on a canvas taller than the sprite so the
- * hat rises above the crown; at mark sizes the body's bob is under a pixel,
- * so the kit sits still.
+ * The duck in a kit (see lib/yeaboi/kits.ts for who wears what). The kit is
+ * a layer laid over the ordinary mark, mirrored the way the primitive mirrors
+ * its body, on a canvas taller than the sprite so a hat rises above the
+ * crown; at mark sizes the body's bob is under a pixel, so the kit sits still.
  */
-export function DoorDuckMark({
-  door,
+export function KitDuckMark({
+  kit,
   size = 24,
   className,
 }: {
-  door: Door;
+  kit: Kit;
   size?: number;
   className?: string;
 }) {
@@ -88,7 +83,7 @@ export function DoorDuckMark({
     >
       <Duck state="idle" size={size} />
       <img
-        src={OUTFIT_SRC[door]}
+        src={OUTFIT_SRC[kit]}
         alt=""
         draggable={false}
         style={{

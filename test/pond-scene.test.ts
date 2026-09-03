@@ -26,6 +26,7 @@ import {
 import { FALLBACK_PALETTE } from '../src/renderer/lib/screensaver/palette';
 import { MAX_RINGS } from '../src/renderer/lib/screensaver/rings';
 import { seeded } from '../src/renderer/lib/screensaver/scene';
+import { KITS } from '../src/renderer/lib/yeaboi/kits';
 
 const WIDTH = 520;
 const HEIGHT = 320;
@@ -293,15 +294,18 @@ describe('the worlds', () => {
     ).toBe(true);
   });
 
-  it('keep the Projects duck and the Sessions duck in every world', () => {
+  it('keep the Projects duck and the Sessions duck in every world, each in the world’s kit', () => {
+    const worn = new Set<string>();
     for (const world of ['solo', 'team', 'agents'] as const) {
-      expect(
-        pond({ world })
-          .mascots()
-          .map((m) => m.door)
-          .sort(),
-      ).toEqual(['projects', 'sessions']);
+      const ducks = pond({ world }).mascots();
+      expect(ducks.map((m) => m.door).sort()).toEqual(['projects', 'sessions']);
+      for (const m of ducks) {
+        expect(m.kit).toBe(KITS[world][m.door]);
+        worn.add(m.kit);
+      }
     }
+    // Team is not Solo in another colour: no kit is worn twice across the worlds.
+    expect(worn.size).toBe(6);
   });
 
   it('hop once when the world flips', () => {

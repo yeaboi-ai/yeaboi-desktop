@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { KITS as WORN, KIT_NAMES } from '../src/renderer/lib/yeaboi/kits';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const GENERATOR = readFileSync(resolve(ROOT, 'scripts/gen_mascot_sprites.py'), 'utf8');
@@ -21,9 +22,9 @@ function constant(name: string): string {
   return match[1]!;
 }
 
-/** The file names in a `{"kit": "file.png", ...}` constant. */
-function files(name: string): string[] {
-  return [...constant(name).matchAll(/"([^"]+\.png)"/g)].map((m) => m[1]!);
+/** The kit names in a `("a", "b", ...)` constant. */
+function names(name: string): string[] {
+  return [...constant(name).matchAll(/"([a-z]+)"/g)].map((m) => m[1]!);
 }
 
 const HEADROOM = Number.parseInt(constant('HEADROOM'), 10);
@@ -32,8 +33,10 @@ const [SOURCE_W, SOURCE_H] = [...constant('SOURCE_SIZE').matchAll(/\d+/g)].map((
   Number(m[0]),
 ) as [number, number];
 const ROBO = constant('ROBO').replaceAll('"', '');
-const OUTFITS = files('OUTFITS');
-const DRESSED = files('DRESSED');
+const KITS = names('KITS');
+const ROBO_KITS = names('ROBO_KITS');
+const OUTFITS = KITS.map((kit) => `outfit-${kit}.png`);
+const DRESSED = ROBO_KITS.map((kit) => `robo-${kit}.png`);
 
 function pngSize(path: string): { width: number; height: number } {
   const bytes = readFileSync(path);
@@ -51,9 +54,10 @@ describe('mascot sprites', () => {
     expect(pngSize(brand(ROBO))).toEqual({ width: SOURCE_W, height: SOURCE_H + HEADROOM });
   });
 
-  it('committed both outfit layers and both dressed robos on the outfit canvas', () => {
-    expect(OUTFITS).toHaveLength(2);
+  it('committed every kit layer and the dressed robos on the outfit canvas', () => {
+    expect(KITS.length).toBeGreaterThanOrEqual(6);
     expect(DRESSED).toHaveLength(2);
+    for (const kit of ROBO_KITS) expect(KITS).toContain(kit);
     for (const file of [...OUTFITS, ...DRESSED]) {
       expect(pngSize(brand(file)), file).toEqual({
         width: SOURCE_W,
@@ -72,11 +76,16 @@ describe('mascot sprites', () => {
     });
   });
 
-  it('is what the marks and the canvas rig actually import', () => {
+  it('is what the marks and the canvas rig actually import, kit for kit', () => {
     const mark = readFileSync(resolve(ROOT, 'src/renderer/components/brand/robo.tsx'), 'utf8');
     const art = readFileSync(resolve(ROOT, 'src/renderer/lib/screensaver/duck-art.ts'), 'utf8');
     expect(mark).toContain(`@/assets/brand/${ROBO}`);
     for (const file of [...OUTFITS, ...DRESSED]) expect(art).toContain(`@/assets/brand/${file}`);
+    for (const file of DRESSED) expect(mark).toContain(`@/assets/brand/${file}`);
+    // The TypeScript kit list is the generator's, in the same order.
+    expect([...KIT_NAMES]).toEqual(KITS);
+    // The robo is rendered in exactly the kits the Agents world wears.
+    expect([WORN.agents.projects, WORN.agents.sessions].sort()).toEqual([...ROBO_KITS].sort());
     // The rig offsets an outfit layer by the same headroom the generator drew it with.
     expect(art).toMatch(new RegExp(`OUTFIT_HEADROOM = ${OUTFIT_HEADROOM}\\b`));
   });

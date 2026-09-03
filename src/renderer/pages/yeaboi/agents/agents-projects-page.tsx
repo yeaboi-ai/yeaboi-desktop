@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RoboMark } from '@/components/brand/robo';
+import { KITS } from '@/lib/yeaboi/kits';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { repoHost } from '@/lib/yeaboi/project-scope';
 import { relativeDay } from '@/lib/yeaboi/sessions';
@@ -43,7 +44,7 @@ export default function AgentsProjectsPage() {
     <div className="mx-auto max-w-5xl px-6 py-14 pb-40">
       <header className="animate-slide-up stagger-1">
         <div className="flex items-center gap-4">
-          <RoboMark door="projects" size={40} />
+          <RoboMark kit={KITS.agents.projects} size={40} />
           <h1 className="font-display italic text-[40px] leading-none text-foreground">Projects</h1>
         </div>
         <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
