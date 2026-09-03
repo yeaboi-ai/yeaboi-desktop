@@ -20,15 +20,21 @@ import { useAudience } from '@/components/providers/audience-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { railSections } from '@/lib/nav/sections';
 
-/** Wheel distance that counts as one page. High enough that a flick of a
- *  trackpad does not deal three cards. */
-const NOTCH = 260;
-/** After a page turn, wheel input is ignored for this long — a trackpad keeps
- *  emitting for a while after the fingers stop, and every one of those events
- *  would be another page. */
-const LOCK_MS = 620;
-/** How long the arriving surface stays shrunk before it settles by itself. */
-const SETTLE_MS = 1500;
+/** A wheel event this big is one detent of a mouse wheel, and one detent is
+ *  one page. Trackpads emit a stream of small deltas instead, which is what
+ *  the accumulator below is for. */
+const DETENT = 40;
+/** Trackpad distance that counts as one page. Short enough to feel immediate,
+ *  long enough that resting two fingers does not page. */
+const SWIPE = 90;
+/** The floor between page turns. Small — scrolling fast should whizz through
+ *  the deck, not queue up behind a lock. It exists only so one physical
+ *  detent, which browsers can report as several events, is one page. */
+const LOCK_MS = 90;
+/** How long after the *last* page turn the surface settles. Paging again
+ *  restarts it, so a fast run through the deck stays held back until it
+ *  stops. */
+const SETTLE_MS = 900;
 /** How far it shrinks. Enough to read as held back; not so far it becomes a
  *  thumbnail of itself. */
 const PREVIEW_SCALE = 0.93;
@@ -92,8 +98,18 @@ export function Deck({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // A mouse detent is a page on its own; a trackpad's stream has to add up
+      // to one. Reading them the same way makes a wheel feel dead and a
+      // trackpad feel hair-triggered.
+      const detent = Math.abs(e.deltaY) >= DETENT || e.deltaMode !== 0;
+      if (detent) {
+        travel.current = 0;
+        if (deal(e.deltaY > 0 ? 1 : -1)) lockedUntil.current = now + LOCK_MS;
+        return;
+      }
+
       travel.current += e.deltaY;
-      if (Math.abs(travel.current) < NOTCH) return;
+      if (Math.abs(travel.current) < SWIPE) return;
       const step = travel.current > 0 ? 1 : -1;
       travel.current = 0;
       if (deal(step)) lockedUntil.current = now + LOCK_MS;

@@ -117,6 +117,12 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* The world switcher leads the row: it is the widest choice on it —
+              everything else is scoped inside whichever world it names. */}
+          <div className={`${FLOAT} ${CONTROL} flex items-center px-1`}>
+            <WorldSwitcher onSwitch={flip} />
+          </div>
+
           <Link
             href="/settings"
             title="Settings"
@@ -159,13 +165,6 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
             />
           )}
         </div>
-      </div>
-
-      {/* Bottom centre, above Niko's bar rather than under it — that bar owns
-          this column and is the thing people reach for; the world switcher is
-          a rare, deliberate flip. */}
-      <div className={`fixed bottom-[92px] left-1/2 z-40 -translate-x-1/2 ${FLOAT} p-1`}>
-        <WorldSwitcher onSwitch={flip} />
       </div>
     </>
   );
