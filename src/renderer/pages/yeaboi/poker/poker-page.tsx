@@ -1,112 +1,231 @@
 'use client';
 
-// Planning poker — the saved-sessions hub, and the way into a live table.
+// Planning poker, as one surface.
+//
+// Everything a session needs is here: the table when one is live, the questions
+// that start one when none is, what is scheduled, and what has been played. The
+// setup used to be a page you left for and came back from, which made starting
+// a session a journey through three routes to reach a room the host is meant to
+// be sitting in already.
+//
+// The table is served from the app for whoever is running it. Guests with the
+// app can be handed the same board; everyone else joins the web board through
+// the participant link, which is what `BoardHost` copies.
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { DuckMark } from '@/components/brand/duck';
-import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
-import { ResultActions } from '@/components/yeaboi/result-actions';
+import { useCallback, useEffect, useState } from 'react';
+
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { RunCard, Surface } from '@/components/yeaboi/surface';
-import { buttonVariants } from '@/components/ui/button';
+import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
+import { Upcoming, useSchedule } from '@/components/yeaboi/calendar';
+import { PokerSetup } from '@/components/yeaboi/poker-setup';
+import { ResultActions } from '@/components/yeaboi/result-actions';
+import { Surface } from '@/components/yeaboi/surface';
+import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** Which ceremonies belong on this surface. */
+const MODES = ['poker'];
+
+/** How many past sessions are listed before the rest are left to the export. */
+const RECENT = 8;
+
+interface PokerState {
+  phase?: string;
+  ticket_index?: number;
+  ticket_count?: number;
+  ticket?: { key?: string; summary?: string } | null;
+  progress?: { estimated: number; total: number };
+  presence?: { name: string }[];
+}
+
+function Panel({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5">
-      <h2 className="text-[13px] font-body font-medium text-foreground mb-3">{title}</h2>
+    <section className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
+      <header className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="font-body text-[13px] font-medium text-foreground">{title}</h2>
+        {aside}
+      </header>
       {children}
     </section>
   );
 }
 
-function Notice({ title, items }: { title: string; items: string[] }) {
+/** The live table's own line: where the room is up to, in one row. */
+function TableState({ board }: { board: BoardSnapshot }) {
+  const state = (board.state ?? {}) as PokerState;
+  const at = state.presence?.length ?? 0;
+  const figures = [
+    ['Ticket', `${(state.ticket_index ?? 0) + 1} / ${state.ticket_count ?? 0}`],
+    ['Estimated', `${state.progress?.estimated ?? 0} / ${state.progress?.total ?? 0}`],
+    ['At the table', String(at)],
+    ['Phase', state.phase === 'voting' ? 'voting' : 'revealed'],
+  ] as const;
   return (
-    <div className="rounded-2xl bg-card ring-1 ring-destructive/30 p-4">
-      <p className="text-[13px] font-medium text-foreground">{title}</p>
-      {items.map((item) => (
-        <p key={item} className="text-[12px] text-muted-foreground mt-1">
-          {item}
-        </p>
+    <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {figures.map(([label, value]) => (
+        <div key={label} className="rounded-xl bg-secondary/40 px-3 py-2">
+          <p className="font-body text-[10px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <p className="font-code text-[12px] text-foreground">{value}</p>
+        </div>
       ))}
+      {state.ticket && (
+        <p className="col-span-2 truncate font-body text-[12px] text-muted-foreground sm:col-span-4">
+          <span className="font-code text-[11px] text-foreground">{state.ticket.key}</span>{' '}
+          {state.ticket.summary}
+        </p>
+      )}
     </div>
   );
 }
 
-function PokerBody() {
-  const [runs, setRuns] = useState<PokerRun[] | null>(null);
-  const [live, setLive] = useState<BoardSnapshot | null>(null);
-  const [error, setError] = useState('');
+/** A past session as one line. Twenty of these used to be twenty cards; what
+ *  anyone reads on the way past is the date, the scope and the two numbers. */
+function PastRun({ run }: { run: PokerRun }) {
+  return (
+    <li className="group flex items-baseline gap-3 py-2">
+      <span className="w-20 shrink-0 font-code text-[11px] text-muted-foreground">
+        {run.poker_date}
+      </span>
+      <span className="min-w-0 flex-1 truncate font-body text-[12px] text-foreground">
+        {run.scope_label || 'Session'}
+      </span>
+      <span className="shrink-0 font-code text-[11px] text-muted-foreground/70">
+        {run.estimated_count ?? 0}/{run.ticket_count ?? 0}
+      </span>
+      {/* The export lives on the row it belongs to, and stays out of the way
+          until the row is under the cursor. */}
+      <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <ResultActions
+          refer={{ kind: 'poker', session_id: run.session_id, run_id: run.id }}
+          mode="poker"
+        />
+      </span>
+    </li>
+  );
+}
 
-  useEffect(() => {
+function PokerBody() {
+  const { ceremonies } = useSchedule();
+  const [runs, setRuns] = useState<PokerRun[] | null>(null);
+  const [error, setError] = useState('');
+  const [liveId, setLiveId] = useState('');
+  const [board] = useBoard(liveId);
+  const [all, setAll] = useState(false);
+
+  const history = useCallback(() => {
     pokerHistory().then(
       (envelope) => setRuns(envelope.data?.history ?? []),
       (e: Error) => setError(e.message),
     );
-    loadBoards().then(
-      (body) => setLive(body.boards.find((board) => board.kind === 'poker') ?? null),
-      () => undefined,
-    );
   }, []);
 
-  if (error && !runs) return <Notice title="Could not load past sessions" items={[error]} />;
+  useEffect(() => {
+    history();
+    loadBoards().then(
+      (body) => setLiveId(body.boards.find((one) => one.kind === 'poker')?.board_id ?? ''),
+      () => undefined,
+    );
+  }, [history]);
+
+  const mine = ceremonies.filter((ceremony) => MODES.includes(ceremony.mode));
+  const listed = all ? (runs ?? []) : (runs ?? []).slice(0, RECENT);
 
   return (
     <div className="space-y-4">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            The team estimates from their own browsers; the points go back to the board.
-          </p>
-        </div>
-        {live ? (
-          <Link
-            href={`/team/poker/board?id=${encodeURIComponent(live.board_id)}`}
-            className={buttonVariants({ size: 'sm' })}
-          >
-            Rejoin the live table
-          </Link>
-        ) : (
-          <Link href="/team/poker/new" className={buttonVariants({ size: 'sm' })}>
-            New session
-          </Link>
-        )}
+      <header>
+        <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
+        <p className="mt-1 font-body text-[13px] text-muted-foreground">
+          The team estimates from their own browsers; the points go back to the board.
+        </p>
       </header>
 
-      {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+        {board ? (
+          <Panel
+            title="At the table"
+            aside={
+              <a
+                href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
+                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Full view
+              </a>
+            }
+          >
+            <TableState board={board} />
+            <BoardHost
+              board={board}
+              onClosed={() => {
+                setLiveId('');
+                history();
+              }}
+            />
+          </Panel>
+        ) : (
+          <Panel title="New session">
+            {/* Dealing does not go anywhere: the panel this replaces is the
+                table, on the surface the host is already looking at. */}
+            <PokerSetup onOpened={setLiveId} />
+          </Panel>
+        )}
 
-      {runs && runs.length > 0 && (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {runs.map((run) => (
-            <RunCard
-              key={run.id}
-              title={run.scope_label || run.poker_date}
-              meta={run.poker_date}
-              figures={[
-                { label: 'Tickets', value: String(run.ticket_count ?? 0) },
-                { label: 'Estimated', value: String(run.estimated_count ?? 0) },
-              ]}
+        <Panel
+          title="Scheduled"
+          aside={
+            <a
+              href="#/ceremonies"
+              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
             >
-              {/* Export only. A poker session has no share document in any
-                  surface — the estimates go back to the tracker instead. */}
-              <ResultActions
-                refer={{ kind: 'poker', session_id: run.session_id, run_id: run.id }}
-                mode="poker"
-              />
-            </RunCard>
-          ))}
-        </div>
-      )}
+              All ceremonies
+            </a>
+          }
+        >
+          <Upcoming
+            ceremonies={mine}
+            count={4}
+            empty="No poker on the calendar — declare one in Ceremonies and it will show up here."
+          />
+        </Panel>
+      </div>
 
-      {runs && runs.length === 0 && (
-        <Section title="No sessions yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <DuckMark state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and
-            everyone votes at once — no anchoring on whoever spoke first.
+      <Panel
+        title="Past sessions"
+        aside={
+          runs && runs.length > RECENT ? (
+            <button
+              type="button"
+              onClick={() => setAll(!all)}
+              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {all ? 'Show recent' : `All ${runs.length}`}
+            </button>
+          ) : undefined
+        }
+      >
+        {!runs && <p className="font-body text-[12px] text-muted-foreground">Loading…</p>}
+        {runs && runs.length === 0 && (
+          <p className="font-body text-[12px] text-muted-foreground">
+            {error ||
+              'Nothing played yet. Pick a sprint above, send the invite, and everyone votes at once — no anchoring on whoever spoke first.'}
           </p>
-        </Section>
-      )}
+        )}
+        {listed.length > 0 && (
+          <ul className="divide-y divide-border/40">
+            {listed.map((run) => (
+              <PastRun key={run.id} run={run} />
+            ))}
+          </ul>
+        )}
+      </Panel>
     </div>
   );
 }
