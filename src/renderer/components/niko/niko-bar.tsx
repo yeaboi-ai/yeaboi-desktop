@@ -355,7 +355,7 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className={`relative flex flex-1 flex-col rounded-2xl transition-opacity duration-300 ${
+        className={`relative flex min-h-0 flex-1 flex-col rounded-2xl transition-opacity duration-300 ${
           state === 'expanded' ? 'overflow-visible' : 'overflow-hidden shadow-2xl'
         }`}
         style={{
@@ -393,7 +393,7 @@ export function NikoBar() {
         )}
 
         <div
-          className={`relative z-10 flex flex-1 flex-col ${
+          className={`relative z-10 flex min-h-0 flex-1 flex-col ${
             state === 'expanded' ? 'gap-2 overflow-visible' : 'overflow-hidden'
           }`}
           style={{
@@ -404,7 +404,7 @@ export function NikoBar() {
           }}
         >
           {state === 'expanded' && (
-            <div className="flex-1 space-y-3 overflow-y-auto px-1 py-1">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-1">
               {messages.map((message, i) => (
                 <NikoMessage
                   key={message.id}
