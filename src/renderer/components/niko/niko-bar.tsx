@@ -104,6 +104,7 @@ export function NikoBar() {
   const [fit, setFit] = useState(FIT_MIN);
   const listRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const seen = useRef(0);
   const [fade, setFade] = useState<'none' | 'top' | 'bottom' | 'both'>('none');
   // The panel animates to its new height while the conversation is already at
   // full size, so for those few hundred milliseconds the box genuinely does
@@ -238,9 +239,13 @@ export function NikoBar() {
       setFit(Math.ceil(box.scrollHeight));
       readFade();
     };
-    // Collapsed first, then measured: `scrollHeight` never reports less than the
-    // box it is in, so a panel that has grown could otherwise never shrink.
-    setFit(0);
+    // `scrollHeight` never reports less than the box it is in, so a panel that
+    // has grown could not otherwise shrink — collapse it first and measure what
+    // is actually there. Only when the conversation got shorter, though: doing
+    // it on every message squashes the panel flat for a frame each time one
+    // arrives.
+    if (messages.length < seen.current) setFit(0);
+    seen.current = messages.length;
     const first = requestAnimationFrame(measure);
     const observer = new ResizeObserver(measure);
     observer.observe(list);
