@@ -9,7 +9,8 @@ import { maskText } from '@/lib/yeaboi/boards';
 import { type ReportRun, reportingHistory } from '@/lib/yeaboi/modes';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { Surface } from '@/components/yeaboi/surface';
+import { NextUp } from '@/components/yeaboi/calendar';
+import { RunCard, Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -30,15 +31,6 @@ function Notice({ title, items }: { title: string; items: string[] }) {
           {item}
         </p>
       ))}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-secondary/40 px-3 py-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-[12px] text-foreground break-all">{value}</p>
     </div>
   );
 }
@@ -86,12 +78,12 @@ function ReportingBody() {
       {runs && runs.length > 0 && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
-            <Section key={run.id} title={maskText(run.period || run.period_end, mask)}>
-              <div className="grid grid-cols-3 gap-3">
-                <Stat label="Period end" value={run.period_end} />
-                <Stat label="Items" value={String(run.item_count ?? 0)} />
-                <Stat label="Project" value={maskText(run.project_name || '—', mask)} />
-              </div>
+            <RunCard
+              key={run.id}
+              title={maskText(run.period || run.period_end, mask)}
+              meta={`${run.period_end} · ${maskText(run.project_name || 'No project', mask)}`}
+              figures={[{ label: 'Items', value: String(run.item_count ?? 0) }]}
+            >
               <ResultActions
                 refer={{ kind: 'reporting', session_id: '', run_id: run.id }}
                 mode="reporting"
@@ -101,7 +93,7 @@ function ReportingBody() {
                   setAnonNote(note);
                 }}
               />
-            </Section>
+            </RunCard>
           ))}
         </div>
       )}
@@ -122,6 +114,9 @@ export default function ReportingPage() {
   return (
     <BackendGate>
       <Surface>
+        <div className="mb-4">
+          <NextUp modes={['report']} />
+        </div>
         <ReportingBody />
       </Surface>
     </BackendGate>

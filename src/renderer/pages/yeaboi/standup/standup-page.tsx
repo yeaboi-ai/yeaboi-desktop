@@ -31,6 +31,7 @@ import {
 } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { NextUp } from '@/components/yeaboi/calendar';
 import { Surface } from '@/components/yeaboi/surface';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { ResultActions } from '@/components/yeaboi/result-actions';
@@ -761,6 +762,9 @@ export default function StandupPage() {
   return (
     <BackendGate>
       <Surface>
+        <div className="mb-4">
+          <NextUp modes={['standup']} />
+        </div>
         <StandupBody />
       </Surface>
     </BackendGate>

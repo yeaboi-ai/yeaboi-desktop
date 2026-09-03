@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { type PerformanceRoster, loadPerformanceRoster } from '@/lib/yeaboi/modes';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { NextUp } from '@/components/yeaboi/calendar';
 import { Surface } from '@/components/yeaboi/surface';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -80,6 +81,9 @@ export default function PerformancePage() {
   return (
     <BackendGate>
       <Surface>
+        <div className="mb-4">
+          <NextUp modes={['weekly-review']} />
+        </div>
         <PerformanceBody />
       </Surface>
     </BackendGate>

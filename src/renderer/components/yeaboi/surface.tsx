@@ -21,3 +21,36 @@ export function Panel({ title, children }: { title: string; children: React.Reac
     </section>
   );
 }
+
+/** One past run of a ceremony. The figures carry their own labels rather than
+ *  sitting in boxes: three bordered chips inside a bordered card is three
+ *  frames deep for two numbers and a date. */
+export function RunCard({
+  title,
+  meta,
+  figures,
+  children,
+}: {
+  title: string;
+  meta?: string;
+  figures: { label: string; value: string }[];
+  children?: React.ReactNode;
+}) {
+  return (
+    <article className="flex flex-col rounded-2xl bg-card p-4 ring-1 ring-border/60">
+      <p className="truncate font-body text-[13px] font-medium text-foreground">{title}</p>
+      {meta && <p className="mt-0.5 font-code text-[11px] text-muted-foreground/70">{meta}</p>}
+      <dl className="mt-4 flex gap-6">
+        {figures.map((figure) => (
+          <div key={figure.label}>
+            <dd className="font-body text-[20px] leading-none text-foreground">{figure.value}</dd>
+            <dt className="mt-1.5 font-body text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              {figure.label}
+            </dt>
+          </div>
+        ))}
+      </dl>
+      {children && <div className="mt-4">{children}</div>}
+    </article>
+  );
+}

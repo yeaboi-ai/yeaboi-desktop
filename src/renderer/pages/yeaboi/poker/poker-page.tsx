@@ -8,7 +8,7 @@ import { DuckMark } from '@/components/brand/duck';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { Surface } from '@/components/yeaboi/surface';
+import { RunCard, Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -29,15 +29,6 @@ function Notice({ title, items }: { title: string; items: string[] }) {
           {item}
         </p>
       ))}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-secondary/40 px-3 py-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-[12px] text-foreground break-all">{value}</p>
     </div>
   );
 }
@@ -88,19 +79,22 @@ function PokerBody() {
       {runs && runs.length > 0 && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
-            <Section key={run.id} title={run.scope_label || run.poker_date}>
-              <div className="grid grid-cols-3 gap-3">
-                <Stat label="Date" value={run.poker_date} />
-                <Stat label="Tickets" value={String(run.ticket_count ?? 0)} />
-                <Stat label="Estimated" value={String(run.estimated_count ?? 0)} />
-              </div>
+            <RunCard
+              key={run.id}
+              title={run.scope_label || run.poker_date}
+              meta={run.poker_date}
+              figures={[
+                { label: 'Tickets', value: String(run.ticket_count ?? 0) },
+                { label: 'Estimated', value: String(run.estimated_count ?? 0) },
+              ]}
+            >
               {/* Export only. A poker session has no share document in any
                   surface — the estimates go back to the tracker instead. */}
               <ResultActions
                 refer={{ kind: 'poker', session_id: run.session_id, run_id: run.id }}
                 mode="poker"
               />
-            </Section>
+            </RunCard>
           ))}
         </div>
       )}

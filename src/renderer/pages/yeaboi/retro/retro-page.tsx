@@ -18,7 +18,7 @@ import {
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { Surface } from '@/components/yeaboi/surface';
+import { RunCard, Surface } from '@/components/yeaboi/surface';
 import { Button, buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -39,15 +39,6 @@ function Notice({ title, items }: { title: string; items: string[] }) {
           {item}
         </p>
       ))}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-secondary/40 px-3 py-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-[12px] text-foreground break-all">{value}</p>
     </div>
   );
 }
@@ -119,17 +110,20 @@ function RetroBody() {
       {runs && runs.length > 0 && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
-            <Section key={run.id} title={run.sprint_name || run.retro_date}>
-              <div className="grid grid-cols-3 gap-3">
-                <Stat label="Date" value={run.retro_date} />
-                <Stat label="Cards" value={String(run.card_count ?? 0)} />
-                <Stat label="Actions" value={String(run.action_count ?? 0)} />
-              </div>
+            <RunCard
+              key={run.id}
+              title={run.sprint_name || run.retro_date}
+              meta={run.retro_date}
+              figures={[
+                { label: 'Cards', value: String(run.card_count ?? 0) },
+                { label: 'Actions', value: String(run.action_count ?? 0) },
+              ]}
+            >
               <ResultActions
                 refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
                 mode="retro"
               />
-            </Section>
+            </RunCard>
           ))}
         </div>
       )}

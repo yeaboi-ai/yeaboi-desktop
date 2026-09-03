@@ -11,8 +11,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
+import { CalendarClock, Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
+import { MonthCalendar, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
@@ -82,6 +83,7 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
   const [boards, setBoards] = useState<Board[]>([]);
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
+  const schedule = useSchedule();
 
   useEffect(() => {
     if (!ready) return;
@@ -178,10 +180,25 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
           )}
         </Tile>
 
+        <Tile title="Coming up" icon={CalendarClock}>
+          <Upcoming
+            ceremonies={schedule.ceremonies}
+            count={4}
+            empty={
+              schedule.error
+                ? 'The schedule could not be read.'
+                : 'Nothing scheduled — declare a ceremony and it appears here.'
+            }
+          />
+        </Tile>
+
         <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
         <AwaitingTile title="Last retro" wants="/api/retro/recent" />
-        <AwaitingTile title="Next standup" wants="/api/standup/schedule" />
         <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
+      </div>
+
+      <div className="mt-3">
+        <MonthCalendar ceremonies={schedule.ceremonies} />
       </div>
     </Surface>
   );
