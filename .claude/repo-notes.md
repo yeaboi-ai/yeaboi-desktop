@@ -83,14 +83,28 @@ half a rename lands.
 
 ## Releasing
 
-`.github/workflows/release.yml`, **dispatch only**. Things to know:
+Two workflows, the same shape as the Python repo's. Things to know:
 
-- **The app's version is `package.json`'s; the wheel is the input.** The two are independent: bump
-  the version by hand together with the head entry of `src/renderer/lib/yeaboi/shell-changelog.json`
-  (the workflow refuses a mismatch — every release ships its notes), and dispatch with the
-  `yeaboi_version` to bundle. It must only ever go up — electron-updater compares it, and the last
-  shared-version release was `3.32.0` (hence the independent line starting at `4.0.0`). A rebuild of
-  last month's app still bundles last month's yeaboi, because the wheel stays an explicit input.
+- **`auto-version.yml` bumps the PR, not main.** On a release-worthy PR (anything under `src/`,
+  `backend/` outside its tests, `build/`, `resources/`, `electron-builder.yml`, the two
+  `package*.json`, or a `scripts/fetch-*` staging script) Claude picks the semver level — a
+  `semver:major|minor|patch|none` or `release:skip` label wins — and pushes a
+  `chore: bump version to X.Y.Z [auto]` commit touching `package.json`, `package-lock.json` and the
+  head entry of `src/renderer/lib/yeaboi/shell-changelog.json`. The push is made by the Claude
+  GitHub App, so CI runs on that commit like any other. By hand: `node scripts/bump-version.mjs
+  <level>` plus an entry in the ledger (`test/shell-changelog.test.ts` is the copy contract).
+  The action skips itself on a PR that edits `auto-version.yml`, so a change there is only
+  exercised after it lands.
+- **`release.yml` runs on every push to `main`** and asks yeaboi-desktop-releases whether
+  `v<package.json version>` is already published. Yes → a twenty-second no-op (a docs-only
+  merge). No → test, build, sign, notarize and publish. A failed release is retried by the next
+  push, whatever that push changed. A dispatch does the same by hand and may name an older wheel.
+- **The app's version is `package.json`'s; the wheel is whatever is newest on PyPI.** The two are
+  independent. A push bundles the newest un-yanked final; a dispatch with `yeaboi_version` pins one,
+  so a rebuild of last month's app still bundles last month's yeaboi. The workflow refuses a
+  ledger-head/version mismatch — every release ships its notes. The version must only ever go up:
+  electron-updater compares it, and the last shared-version release was `3.32.0` (hence the
+  independent line starting at `4.0.0`).
 - **This repo carries no release tags.** The tag lives in `yeaboi-desktop-releases`, created when
   the draft is published. There is deliberately no `push: tags` trigger: this clone shares an
   object store with the Python repo and has carried 141 of its tags, any one of which would
@@ -100,8 +114,10 @@ half a rename lands.
   repo is public too — moving them strands every installed app's updater. That needs
   `RELEASES_REPO_TOKEN` — a PAT scoped to that repo with Contents: write. The default
   `GITHUB_TOKEN` cannot write to another repository, and a secret may not be named `GITHUB_*`.
+  The bump needs `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`) and the Claude GitHub App
+  installed on the repo (it is, org-wide) — the App's token is what pushes the bump commit.
 - **A release is free only while this repo is public.** A mac leg on a private repo bills at the
-  10x macOS multiplier, most of it idling on Apple's notary queue, and a handful of dispatches is
+  10x macOS multiplier, most of it idling on Apple's notary queue, and a handful of releases is
   enough to trip the spending limit — which then refuses to start *every* job in the repo, CI
   included, with "the job was not started".
 - **`electron-builder.yml`'s `publish` block is what `electron-updater` polls.** Pointed at the
@@ -112,20 +128,31 @@ half a rename lands.
   once to `--check`.
 - **`mac.artifactName` carries no `${version}`.** yeaboi.ai links the dmgs through
   `/releases/latest/download/<asset>`, which resolves only while the name is stable.
-- **The release is a draft until someone publishes it.** `--publish always` uploads before the
-  Gatekeeper assessment runs and before the second arch exists. Finish with
-  `gh release edit v<version> --repo yeaboi-ai/yeaboi-desktop-releases --draft=false`. Re-running
-  after publishing skips the uploads with only a warning — delete the release first.
-- **`latest-mac.yml` is merged after the fact.** The two mac legs each write one naming only their
-  own arch and the second upload replaces the first; the `update-metadata` job merges them back.
+- **The release is built as a draft and published by the last job, when signed.** `--publish
+  always` uploads before the Gatekeeper assessment runs and before the second arch exists, so the
+  legs fill a draft; `update-metadata` merges `latest-mac.yml`, asserts both dmgs are there, and
+  flips it live with `--latest` only when `CSC_LINK` existed. A credential-free rehearsal leaves
+  the draft and prints the `gh release edit … --draft=false` to run by hand.
+- **One release at a time, and the queue is short.** The concurrency group is fixed, so three
+  release-worthy merges in quick succession cancel the middle *pending* run: that version keeps
+  its ledger entry but never gets a GitHub release; the newest one does.
+
+## After the push
+
+**The PR branch is stale again about a minute later, by design.** `auto-version.yml` pushes a
+`chore: bump version … [auto]` commit onto the PR *branch*, touching `package.json`,
+`package-lock.json` and `src/renderer/lib/yeaboi/shell-changelog.json`. Any later push from the
+worktree must `git pull --rebase` first, and must **never** force-push over that commit.
 
 ## Rebase conflicts
 
-Nothing generated is committed here except the icon set and the vendored contracts.
+Nothing generated is committed here except the icon set, the vendored contracts and the version bump.
 
 | Path | What to do |
 |---|---|
-| `package-lock.json` | Take upstream, then re-run `npm install` for your own change and commit the result |
+| `package.json` version line, `package-lock.json` version lines | Keep `origin/main`'s and drop your bump entirely — auto-version re-bumps on the next push |
+| `src/renderer/lib/yeaboi/shell-changelog.json` head entry | Keep `origin/main`'s and drop yours — the ledger is prepend-only, so every pair of release-worthy PRs collides here; auto-version writes a fresh entry for the new number |
+| `package-lock.json` (anything else) | Take upstream, then re-run `npm install` for your own change and commit the result |
 | `contracts/**` | Take upstream, then `npm run gen-manifest` if you meant to move the manifest |
 | `build/`, `resources/duck-*` | Take either side, then `make icons` — they are rendered, so neither side is authoritative |
 

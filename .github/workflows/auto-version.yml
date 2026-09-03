@@ -1,0 +1,234 @@
+name: Auto Version Bump
+
+# Classify each PR and, for release-worthy changes, bump the app's version on
+# the PR branch — package.json, package-lock.json and the head entry of the
+# shell ledger, together. Cheap deterministic guards run first; the LLM is only
+# asked to choose the semver level when the change actually ships code.
+#
+# The bump lands on the PR *branch* on purpose: the human merge is what pushes
+# to main, and release.yml then builds and publishes whatever version main
+# holds that yeaboi-desktop-releases does not. Nothing here pushes to main.
+#
+# The push is made by the Claude GitHub App (the action swaps checkout's
+# credential for its own installation token), so the bump commit's CI runs as
+# any other push would and the required checks can still go green on it.
+#
+# It must keep writing a plain X.Y.Z: scripts/bump-version.mjs refuses anything
+# else, and release.yml refuses to ship anything else.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+
+concurrency:
+  group: auto-version-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+jobs:
+  bump:
+    name: Decide & apply version bump
+    # Same-repo PRs only (forks can't push to the head branch or read secrets).
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.state == 'open'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the bump to the PR branch
+      pull-requests: write # post the explanation comment
+      id-token: write # claude-code-action exchanges this for the App token that pushes
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Deterministic guards
+        id: guard
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE_REF"
+          # Against the MERGE-BASE, not the base tip: the question is "did this
+          # PR change the version?", and an un-rebased branch compared with the
+          # tip reads as already bumped the moment main releases.
+          MERGE_BASE=$(git merge-base FETCH_HEAD HEAD)
+          BASE_V=$(git show "$MERGE_BASE:package.json" | jq -r .version)
+          HEAD_V=$(jq -r .version package.json)
+          LEDGER=src/renderer/lib/yeaboi/shell-changelog.json
+          echo "base=$BASE_V head=$HEAD_V merge_base=$MERGE_BASE labels=[$LABELS]"
+
+          # 1) Already bumped in this PR (by hand, or a prior run)? Skip when the
+          #    ledger has the entry too, so re-runs on `synchronize` stay
+          #    idempotent; otherwise write just the entry.
+          if [ "$HEAD_V" != "$BASE_V" ]; then
+            if jq -e --arg v "$HEAD_V" 'any(.entries[]; .version == $v)' "$LEDGER" >/dev/null; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::version already changed in this PR ($BASE_V -> $HEAD_V) and the ledger entry exists; skipping."
+            else
+              echo "skip=false" >> "$GITHUB_OUTPUT"
+              echo "changelog_only=true" >> "$GITHUB_OUTPUT"
+              echo "::notice::version already bumped ($BASE_V -> $HEAD_V) but the ledger entry is missing; running changelog-only."
+            fi
+            exit 0
+          fi
+
+          # 2) A semver:* / release:skip label forces the LLM step to run.
+          case ",$LABELS," in
+            *,semver:major,*|*,semver:minor,*|*,semver:patch,*|*,semver:none,*|*,release:skip,*)
+              echo "skip=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
+
+          # 3) Nothing that ships changed -> skip. The ledger itself is excluded
+          #    so a wording fix cannot start a release; backend/tests/ ships in
+          #    no installer. A local merge-base diff: exact, unbounded, and a
+          #    git failure aborts the job rather than reading as "nothing".
+          CHANGED=$(git diff --name-only FETCH_HEAD...HEAD)
+          echo "changed files: $(printf '%s' "$CHANGED" | grep -c . || true)"
+          if printf '%s\n' "$CHANGED" \
+               | grep -E '^(src/|backend/|build/|resources/|electron-builder\.yml$|package\.json$|package-lock\.json$|scripts/fetch-)' \
+               | grep -vE '^(src/renderer/lib/yeaboi/shell-changelog\.json$|backend/tests/)' | grep -q .; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::nothing that ships changed; skipping version bump."
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.guard.outputs.skip == 'false'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - if: steps.guard.outputs.skip == 'false'
+        run: npm ci
+
+      # Rejects only shapes that cannot be a working credential (absent,
+      # whitespace- or quote-wrapped, a Console key in the OAuth slot). Never
+      # prints the secret or a substring of it.
+      - name: Preflight the Claude credential
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          APIKEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -uo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          if [ -z "$OAUTH" ] && [ -z "$APIKEY" ]; then
+            fail "No Claude credential in this repository's Actions secrets. Set one: 'claude setup-token' then 'gh secret set CLAUDE_CODE_OAUTH_TOKEN', or 'gh secret set ANTHROPIC_API_KEY' with a Console key."
+          fi
+
+          for VAR in OAUTH APIKEY; do
+            VAL="${!VAR}"
+            [ -n "$VAL" ] || continue
+            NAME="CLAUDE_CODE_OAUTH_TOKEN"
+            [ "$VAR" = "APIKEY" ] && NAME="ANTHROPIC_API_KEY"
+            STRIPPED=$(printf '%s' "$VAL" | tr -d '[:space:]')
+            if [ "${#STRIPPED}" -ne "${#VAL}" ]; then
+              fail "$NAME contains whitespace — a newline or space came along with the paste. Re-set it, taking care to send no trailing newline."
+            fi
+            case "$VAL" in
+              '"'*|"'"*)
+                fail "$NAME is wrapped in quotes. Store the raw value with no surrounding quotes." ;;
+            esac
+          done
+
+          case "$OAUTH" in
+            sk-ant-api*)
+              MSG="CLAUDE_CODE_OAUTH_TOKEN holds an Anthropic Console API key (sk-ant-api...), not a Claude Code OAuth token (sk-ant-oat...). Either run 'claude setup-token' and re-set CLAUDE_CODE_OAUTH_TOKEN, or move this value to the ANTHROPIC_API_KEY secret — this workflow reads both."
+              if [ -n "$APIKEY" ]; then echo "::warning::$MSG"; else fail "$MSG"; fi ;;
+          esac
+
+          echo "::notice::Claude credential present and well-formed (oauth=$([ -n "$OAUTH" ] && echo yes || echo no) len=${#OAUTH}, api_key=$([ -n "$APIKEY" ] && echo yes || echo no) len=${#APIKEY}). If the step after this one still fails with 401, the stored value is intact and the token was revoked or minted against the wrong account — re-mint it rather than re-pasting."
+
+      # NOTE: the action validates that this file is byte-identical to the copy
+      # on the default branch and SKIPS ITSELF (reporting success) when it is
+      # not. A change here is only exercised after it lands on main, and a green
+      # check on a PR that edits this file proves nothing.
+      - name: Classify & bump with Claude
+        id: claude
+        if: steps.guard.outputs.skip == 'false'
+        uses: anthropics/claude-code-action@e2a4b761cd77a1138a5b41410eda9b28581f9bcd # v1.0.196
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The SDK's own output; the prompt and diff are public repo content.
+          show_full_output: true
+          # Semver classification is mechanical (labels always win; the bump is
+          # a script; the ledger entry is short) — the fast tier. Promote to
+          # claude-sonnet-5 if wrong-level bumps appear.
+          claude_args: >-
+            --model ${{ vars.YEABOI_MODEL_FAST || 'claude-haiku-4-5-20251001' }} --max-turns 15 --allowedTools "Bash,Read,Edit,Write"
+          prompt: |
+            You are the release-versioning bot for this repository, the yeaboi.ai desktop app. Pull request #${{ github.event.pull_request.number }} is open; decide whether and how to bump the app version. The version lives in package.json (and is mirrored into package-lock.json by the bump script). Changelog-only mode: ${{ steps.guard.outputs.changelog_only || 'false' }}.
+
+            Follow these steps exactly:
+
+            1. If changelog-only mode is "true": the version was already bumped in this PR — do NOT bump again. Read the current version from package.json and skip straight to step 4 to write its ledger entry.
+
+            2. Otherwise choose a semver level, in this priority order:
+               a. Labels win. If the PR has label `semver:major`, `semver:minor`, or `semver:patch`, use that level. If it has `release:skip` or `semver:none`, treat the level as "none".
+               b. Otherwise classify this PR's diff:
+                  - "major": a backward-incompatible change (a settings file or profile an existing install can no longer read, a removed page or capability, a changed wire to the bundled backends).
+                  - "minor": a new user-facing capability or feature in the app.
+                  - "patch": a bug fix, performance, a dependency bump, or an internal refactor with no new user-facing surface.
+                  - "none": the diff only touches docs, comments, tests (including backend/tests), or CI/workflow files.
+
+            3. If the level is "none": do NOT modify any file. Post one short PR comment: "🏷️ auto-version: no release-worthy change — skipping bump." Then stop.
+               Otherwise run exactly this command (it rewrites package.json and package-lock.json and prints the NEW version):
+                 node scripts/bump-version.mjs <level>
+
+            4. Write the new version's ledger entry in src/renderer/lib/yeaboi/shell-changelog.json (this file ships inside the app and powers its What's New page and the GitHub release notes). Prepend a new object at the TOP of the "entries" array (entries are newest-first; leave "schema_version" alone):
+               - "version": the new version (no leading "v")
+               - "date": today's UTC date, YYYY-MM-DD — never earlier than the current head entry's date
+               - "headline": the entry's title — AT MOST 60 characters, sentence case, no trailing period, naming what a user can now do
+               - "summary": AT MOST 240 characters and AT MOST 2 sentences, saying what changes for someone using the app
+               - "highlights": 1-4 objects of {"text": "...", "areas": [...]} — each AT MOST 90 characters, no trailing period, tagged ONLY with areas from this fixed vocabulary: onboarding, updater, packaging, shell. There is no "surfaces" key in this ledger and no other area names.
+               If an entry for that version already exists, update it in place instead.
+
+               WRITE FOR A USER, NOT FOR A REVIEWER. Every string must name an outcome, never a component. No backticks, no --flags, no function() calls, no file names, no snake_case or SHOUTING_CASE identifiers, no environment variables, no config keys, no refactor or test-coverage narration. The only CamelCase words allowed are product names: GitHub, DevOps, PyPI, JetBrains, OpenAI, JavaScript, TypeScript — so write "the call server" rather than LiveKit, and "your Mac" rather than MacBook. Plain product names are welcome: yeaboi, yeaboi.ai, Niko, Claude, macOS, Jira, Slack, Planning, Standup, Retro, Poker, Performance, Reporting, Ship, Usage, Settings.
+
+               NEVER DROP A CAVEAT. If this release requires something of the reader — a macOS version, a reinstall, a setting to change, a step to take before updating — that is the most useful line in the entry and it must survive the limits. Cut a nice-to-have highlight to make room, and never headline a release "Under-the-hood improvements" when it asks the reader to do something.
+
+               GOOD:
+                 "headline": "Calls remember your camera and microphone"
+                 "summary": "The app now keeps the devices you picked last time, so a call starts on the right camera without a trip to settings."
+                 "highlights": [{"text": "Your last camera and microphone are preselected on every call", "areas": ["shell"]}]
+               BAD (rejected):
+                 "summary": "CallLayer persists device ids through settings.json and the preload bridge…"
+                 "highlights": [{"text": "New IPC: media:devices, plus a useDevices() hook", "areas": ["shell"]}]
+
+               If the release is genuinely internal, say so plainly rather than dressing it up: headline "Under-the-hood improvements", summary "Nothing changes in how the app works — this release is internal plumbing and fixes.", one highlight tagged "shell".
+
+               Then run, in this order, and fix the copy (never the tests) until both pass:
+                 npx prettier --write src/renderer/lib/yeaboi/shell-changelog.json
+                 npx vitest run test/shell-changelog.test.ts test/packaging.test.ts test/bump-version.test.ts
+               (The formatter step is required: the ledger is checked by CI's format gate, and a hand-formatted entry fails it.)
+
+            5. Commit package.json, package-lock.json and src/renderer/lib/yeaboi/shell-changelog.json together (changelog-only mode: just the ledger) to this PR branch and push. Use commit message:
+                 chore: bump version to <new-version> [auto]
+               with trailer:
+                 Co-Authored-By: Claude <noreply@anthropic.com>
+
+            6. Post one short PR comment naming the level, the new version, and a one-sentence reason.
+
+            Rules: only ever edit package.json, package-lock.json and src/renderer/lib/yeaboi/shell-changelog.json; never bump more than once; keep the comment to one or two lines.
+
+      # `failure()` is required: a step `if:` naming no status function is ANDed
+      # with success(). Not `always()`, so a routine cancel stays quiet.
+      - name: Explain an auth failure
+        if: failure() && steps.claude.conclusion == 'failure'
+        run: |
+          set -uo pipefail
+          LOG="${RUNNER_TEMP}/claude-execution-output.json"
+          if [ ! -f "$LOG" ]; then
+            echo "::warning::No SDK log at $LOG — could not classify this failure. The action may have moved the file; check the step output above and update this path."
+          elif grep -q '"api_error_status": *401' "$LOG"; then
+            echo "::error::Claude rejected this repository's credential with HTTP 401. The secret exists and is well-formed, so it has expired or been revoked. Fix: run 'claude setup-token' on a machine logged into the Claude subscription, then 'gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo ${{ github.repository }}'."
+          fi

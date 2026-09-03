@@ -50,7 +50,8 @@ reaches for a backend it did not bring.
 
 Installers are published to
 **[yeaboi-desktop-releases](https://github.com/yeaboi-ai/yeaboi-desktop-releases/releases/latest)**,
-a public repo — this one is private and can host nothing anybody can download.
+the repo every installed app already polls for updates. A merge to `main` here that moved the
+version builds, signs and publishes the next one on its own.
 
 | | |
 |---|---|
