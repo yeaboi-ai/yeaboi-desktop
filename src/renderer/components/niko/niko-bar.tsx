@@ -52,6 +52,15 @@ const CHROME = 24 + 8 + 44 + 2;
 /** The shortest the panel gets: one exchange still needs somewhere to sit. */
 const FIT_MIN = 140;
 
+/** The controls beside the composer, in the order they detach in. */
+const CONTROLS = [
+  { key: 'new', title: 'New conversation', Icon: MessageSquarePlus },
+  { key: 'close', title: 'Minimise', Icon: X },
+] as const;
+
+/** Their width, animated from nothing when they detach. */
+const CONTROL_SIZE = 44;
+
 /** A conversation control: its own object on the composer's line, the same
  *  height as it. Two of them side by side, not one panel holding two. */
 const CONTROL =
@@ -279,6 +288,11 @@ export function NikoBar() {
     setAside(true);
     clearSuggestedRoute();
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
+
+  const startFresh = useCallback(() => {
+    setPinned(false);
+    startNewConversation();
+  }, [startNewConversation]);
 
   const resetComposer = useCallback(() => {
     setValue('');
@@ -538,10 +552,10 @@ export function NikoBar() {
 
           {state === 'expanded' && slashList && <div className="px-1">{slashList}</div>}
 
-          {/* Expanded the composer and its controls hang from a common bottom
-              edge. In the pill there is nothing to hang from: the row is the
-              pill, and its contents sit on its centre line. */}
-          <div className="flex items-end gap-2">
+          {/* The composer and its controls hang from a common bottom edge. No
+              gap between them: the controls carry their own margin so the space
+              they take opens and closes with them. */}
+          <div className="flex items-end">
             <div
               className={`flex h-11 flex-1 items-center gap-2 rounded-full bg-popover px-4 shadow-xl ring-1 ring-border/60 ${
                 state === 'input' ? 'niko-ring' : ''
@@ -585,27 +599,35 @@ export function NikoBar() {
               </button>
             </div>
 
-            {/* This conversation's own controls: on the composer's line, in
-                their own object, because starting again and putting Niko away
-                are not things you do to the message you are writing. */}
-            {state === 'expanded' && (
-              <>
+            {/* The conversation's controls detach from the composer rather than
+                appearing beside it: each opens from nothing to its own width,
+                and the composer gives up the room as they do — flex reflows
+                every frame of the animation, so one transition moves both.
+                Kept mounted and inert when closed, or unmounting them mid-
+                animation leaves the half-drawn object behind. */}
+            {CONTROLS.map(({ key, title, Icon }) => (
+              <div
+                key={key}
+                className="shrink-0 overflow-hidden transition-all duration-300 ease-out"
+                style={{
+                  width: state === 'expanded' ? CONTROL_SIZE : 0,
+                  marginLeft: state === 'expanded' ? 8 : 0,
+                  opacity: state === 'expanded' ? 1 : 0,
+                  pointerEvents: state === 'expanded' ? 'auto' : 'none',
+                }}
+                aria-hidden={state !== 'expanded'}
+              >
                 <button
-                  onClick={() => {
-                    setPinned(false);
-                    startNewConversation();
-                  }}
+                  onClick={key === 'new' ? startFresh : close}
                   className={CONTROL}
-                  title="New conversation"
-                  aria-label="New conversation"
+                  title={title}
+                  aria-label={title}
+                  tabIndex={state === 'expanded' ? undefined : -1}
                 >
-                  <MessageSquarePlus className="size-3.5" />
+                  <Icon className="size-3.5" />
                 </button>
-                <button onClick={close} className={CONTROL} title="Minimise" aria-label="Minimise">
-                  <X className="size-3.5" />
-                </button>
-              </>
-            )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
