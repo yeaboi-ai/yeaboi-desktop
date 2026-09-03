@@ -106,7 +106,7 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
   }, []);
 
   return (
-    <div data-deck-scroll className="h-[calc(100vh-var(--titlebar-h))] overflow-y-auto px-8 py-8">
+    <div className="px-8 py-8">
       <h1 className="font-display text-2xl text-foreground">
         {audience === 'solo' ? 'Your desk' : "Your team's desk"}
       </h1>
