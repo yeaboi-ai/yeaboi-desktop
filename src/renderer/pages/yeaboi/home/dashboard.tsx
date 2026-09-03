@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CalendarClock, Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
-import { MonthCalendar, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
+import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
@@ -34,8 +34,9 @@ interface Board {
 }
 
 interface ChangelogEntry {
+  /** What the release did. The version on its own is a number, not news. */
+  headline?: string;
   version?: string;
-  title?: string;
   date?: string;
 }
 
@@ -103,7 +104,7 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
       () => setShares([]),
     );
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
-      (data) => setChangelog((data?.entries ?? []).slice(0, 5)),
+      (data) => setChangelog((data?.entries ?? []).slice(0, 3)),
       () => setChangelog([]),
     );
   }, []);
@@ -167,13 +168,17 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
           {changelog.length === 0 ? (
             <Empty>Up to date.</Empty>
           ) : (
-            <ul className="flex flex-col gap-1.5">
+            <ul className="flex flex-col gap-2">
               {changelog.map((entry, index) => (
-                <li
-                  key={entry.version ?? index}
-                  className="truncate px-2 font-body text-[12px] text-muted-foreground"
-                >
-                  {entry.title ?? entry.version}
+                <li key={entry.version ?? index}>
+                  <p className="font-body text-[12px] leading-snug text-muted-foreground">
+                    {entry.headline ?? entry.version}
+                  </p>
+                  {entry.headline && entry.date && (
+                    <p className="mt-0.5 font-code text-[10px] text-muted-foreground/50">
+                      {entry.date}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -198,7 +203,7 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
       </div>
 
       <div className="mt-3">
-        <MonthCalendar ceremonies={schedule.ceremonies} />
+        <Schedule ceremonies={schedule.ceremonies} />
       </div>
     </Surface>
   );
