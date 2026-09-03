@@ -445,10 +445,11 @@ export function NikoBar() {
         // Centred by default; docked right while a screen it opened is being
         // read. A transform either way, so the move is one animation rather
         // than a swap between two anchors.
-        // The extra width goes on the right: the composer stays where it was and
-        // the controls open out beyond it, rather than the panel staying put and
-        // the question giving up room to them.
-        transform: `translateX(calc(-50% + ${asideShift + extra / 2}px))`,
+        // The panel gains the controls' width and stays centred, so the three
+        // objects are centred together once they are all there. The composer
+        // keeps its own width throughout — it neither grows nor gives up room;
+        // it moves half the controls' width to the left as they arrive.
+        transform: `translateX(calc(-50% + ${asideShift}px))`,
         width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width + extra}px`,
         height: `${height}px`,
         transition: dragging
