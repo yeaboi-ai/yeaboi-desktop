@@ -150,7 +150,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     if (navigated) {
       setOpen(false);
       setLabelled(false);
-      sealed.current = true;
+      // Only when the cursor is on the rail: sealing it while the pointer is
+      // elsewhere blocks the next hover entirely, and the rail then refuses to
+      // open at all until something happens to leave it.
+      sealed.current = Boolean(navRef.current?.matches(':hover'));
       if (opening.current) clearTimeout(opening.current);
     }
     measure();

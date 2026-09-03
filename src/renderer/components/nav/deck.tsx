@@ -230,6 +230,25 @@ export function Deck({ children }: { children: React.ReactNode }) {
 
       const raise = () => {
         if (layer) return;
+        // A heading that first appears mid-transit has never been measured at
+        // rest, and a copy placed from an unmeasured anchor lands at the corner
+        // of the window in a column one word wide. Read it now instead, undoing
+        // the transform the surface is currently under.
+        if (anchors.some((a) => a.width === 0)) {
+          const m = matrix();
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
+          anchors = lines.map(({ el }) => {
+            const box = el.getBoundingClientRect();
+            return {
+              el,
+              left: (box.left - m.e - cx) / m.a + cx,
+              top: (box.top - m.f - cy) / m.d + cy,
+              width: box.width / m.a,
+            };
+          });
+        }
+        if (anchors.some((a) => a.width === 0)) return;
         layer = document.createElement('div');
         layer.dataset['deckHeading'] = '';
         layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:30';
