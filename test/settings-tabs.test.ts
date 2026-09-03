@@ -5,9 +5,12 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  ABOUT_TABS,
   ALL_SETTINGS_TABS,
   CHROME_TABS,
   SETTINGS_TABS,
+  SETTINGS_TAB_GROUPS,
+  settingsGroupFor,
 } from '../src/renderer/lib/yeaboi/settings-tabs';
 import registry from '../src/renderer/lib/yeaboi/routes.json';
 import { readFileSync } from 'node:fs';
@@ -54,5 +57,39 @@ describe('settings tabs', () => {
     for (const tab of CHROME_TABS) {
       expect(engineRoutes.has(tab.route)).toBe(false);
     }
+  });
+});
+
+describe('settings tab groups', () => {
+  it('flatten to the bar, configure first', () => {
+    expect(SETTINGS_TAB_GROUPS.map((g) => g.key)).toEqual(['configure', 'about']);
+    expect(SETTINGS_TAB_GROUPS.flatMap((g) => g.tabs)).toEqual(ALL_SETTINGS_TABS);
+  });
+
+  it('never put an About page under /settings, and never an engine tab in About', () => {
+    for (const tab of ABOUT_TABS) {
+      expect(tab.route.startsWith('/settings'), tab.route).toBe(false);
+      expect(PATHS.has(tab.route), `${tab.route} is not in routes.json`).toBe(true);
+    }
+    const engineRoutes = new Set(SETTINGS_TABS.map((t) => t.route));
+    for (const tab of ABOUT_TABS) expect(engineRoutes.has(tab.route)).toBe(false);
+  });
+
+  it('title every group in sentence case', () => {
+    for (const group of SETTINGS_TAB_GROUPS) {
+      expect(group.title).toBeTruthy();
+      expect(group.title).not.toMatch(/\b[A-Z]{2,}\b/);
+      for (const tab of group.tabs) expect(tab.title).not.toMatch(/\b[A-Z]{2,}\b/);
+    }
+  });
+
+  it('place a pathname in its group', () => {
+    expect(settingsGroupFor('/whats-new')).toBe('about');
+    expect(settingsGroupFor('/system-check')).toBe('about');
+    expect(settingsGroupFor('/privacy')).toBe('about');
+    expect(settingsGroupFor('/feedback')).toBe('about');
+    expect(settingsGroupFor('/settings/credentials')).toBe('configure');
+    expect(settingsGroupFor('/settings/themes/edit')).toBe('configure');
+    expect(settingsGroupFor('/settings')).toBe('configure');
   });
 });

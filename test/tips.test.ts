@@ -6,6 +6,8 @@ import {
   DOCK_MIN_WIDTH,
   FADE_FRACTION,
   MODE_ROUTES,
+  MODE_START_ROUTES,
+  startRouteFor,
   TIP_ROTATE_MS,
   buildTipsText,
   cleanTipText,
@@ -225,6 +227,28 @@ describe('tipRoute', () => {
       'weekly-review',
     ];
     for (const key of shipped) expect(MODE_ROUTES[key], key).toBeTruthy();
+  });
+});
+
+describe('startRouteFor', () => {
+  it('starts the wizard modes on their new page', () => {
+    expect(startRouteFor('reporting')).toBe('/team/reporting/new');
+    expect(startRouteFor('team-analysis')).toBe('/team/analysis/new');
+    expect(startRouteFor('poker')).toBe('/team/poker/new');
+  });
+
+  it('starts every other mode on its hub', () => {
+    expect(startRouteFor('daily-standup')).toBe(MODE_ROUTES['daily-standup']);
+    expect(startRouteFor('agent-usage')).toBe('/agents/usage');
+    expect(startRouteFor('weekly-review')).toBe('/solo/review');
+  });
+
+  it('is null for a key with no page', () => {
+    expect(startRouteFor('nope')).toBeNull();
+  });
+
+  it('only overrides modes that have a hub route too', () => {
+    for (const key of Object.keys(MODE_START_ROUTES)) expect(MODE_ROUTES[key], key).toBeTruthy();
   });
 });
 

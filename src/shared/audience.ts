@@ -89,7 +89,9 @@ function matches(pathname: string, prefix: string): boolean {
 }
 
 /** The worlds a pathname belongs to, canonical owner first; `[]` for shared
- *  chrome (`/home`, `/settings*`, `/whats-new`, `/feedback`, `/setup`). Note
+ *  chrome (`/home`, `/sessions`, `/settings*`, `/whats-new`, `/feedback`,
+ *  `/setup`). `/sessions` is every world's second door, so it belongs to none.
+ *  `/agents/projects*` is agents-only through the `/agents` prefix. Note
  *  `/usage` is the app's own LLM spend for scrum runs — workspace-side; the
  *  agentwatch usage report is `/agents/usage`. */
 export function audiencesForRoute(pathname: string): readonly Audience[] {
