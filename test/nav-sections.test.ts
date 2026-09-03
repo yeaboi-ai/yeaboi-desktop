@@ -13,13 +13,17 @@ const registry = JSON.parse(
 ) as { routes: { path: string }[] };
 const REGISTERED = new Set(registry.routes.map((route) => route.path));
 
+/** Routes the sidebar deliberately stopped listing. They are still registered
+ *  and still reachable — Niko navigates to them, and so does a deep link — the
+ *  nav simply no longer carries a door to them. */
+const UNLISTED = ['/projects', '/board'];
+
 /** Everything the one-nav sidebar listed before the audience split, plus the
- *  one route the split added: the Solo world's own Weekly Review. */
+ *  one route the split added: the Solo world's own Weekly Review, less
+ *  UNLISTED. */
 const FULL_INVENTORY = [
   '/solo/review',
   '/home',
-  '/projects',
-  '/board',
   '/projects/new/from-roadmap',
   '/team/analysis',
   '/team/standup',
@@ -80,6 +84,13 @@ describe('navSections', () => {
   it('orphans nothing: the worlds together cover the old inventory', () => {
     const union = new Set(AUDIENCES.flatMap((audience) => navItems(audience).map((i) => i.href)));
     expect([...union].sort()).toEqual([...new Set(FULL_INVENTORY)].sort());
+  });
+
+  it('lists the unlisted routes in no world at all', () => {
+    for (const audience of AUDIENCES) {
+      const hrefs = navItems(audience).map((item) => item.href);
+      for (const href of UNLISTED) expect(hrefs).not.toContain(href);
+    }
   });
 
   it('every world opens on Home', () => {

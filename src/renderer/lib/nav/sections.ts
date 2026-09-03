@@ -48,14 +48,6 @@ const HOME: NavSectionSpec = {
   items: [{ href: '/home', label: 'Home', icon: 'home' }],
 };
 
-const WORKSPACE: NavSectionSpec = {
-  label: 'Workspace',
-  items: [
-    { href: '/projects', label: 'Projects', icon: 'projects' },
-    { href: '/board', label: 'Board', icon: 'board' },
-  ],
-};
-
 const OPS: NavSectionSpec = {
   label: 'Ops',
   items: [
@@ -69,9 +61,11 @@ const OPS: NavSectionSpec = {
   ],
 };
 
+// Projects and Board are registered routes with no nav door: Niko navigates to
+// them and a deep link opens them, but the sidebar stops offering them. Guarded
+// by test/nav-sections.test.ts, so restoring one is a deliberate act.
 const TEAM_SECTIONS: NavSectionSpec[] = [
   HOME,
-  WORKSPACE,
   {
     label: 'Team',
     items: [
@@ -94,7 +88,6 @@ const TEAM_SECTIONS: NavSectionSpec[] = [
 // and adds the one mode that is its own: the Weekly Review.
 const SOLO_SECTIONS: NavSectionSpec[] = [
   HOME,
-  WORKSPACE,
   {
     label: 'Solo',
     items: [
