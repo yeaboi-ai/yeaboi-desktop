@@ -41,6 +41,9 @@ import { NikoMessage } from './niko-message';
 import { useNikoContext } from './niko-provider';
 import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from './niko-slash';
 
+/** The gap left between the panel and the window when it steps aside. */
+const ASIDE_MARGIN = 16;
+
 const MORPH = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 /** How long the chips wait before floating in, so they follow the morph. */
@@ -87,6 +90,10 @@ export function NikoBar() {
   const backend = useYeaboiBackend();
   const down = backend.kind !== 'ready';
   const width = useOpenWidth();
+  // Niko stepping aside. When it takes you to a screen it moves out of the
+  // middle so the screen it named is the thing in front of you; it comes back
+  // to the centre when you turn to it again with another question.
+  const [aside, setAside] = useState(false);
 
   const state = barState(isOpen, messages.length);
   const matches = useMemo(() => matchSlash(value), [value]);
@@ -165,6 +172,7 @@ export function NikoBar() {
   useEffect(() => {
     if (!suggestedRoute) return;
     navigate(suggestedRoute);
+    setAside(true);
     clearSuggestedRoute();
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
 
@@ -179,6 +187,7 @@ export function NikoBar() {
       const question = text.trim();
       if (!question || isStreaming || down) return;
       void sendMessage(question);
+      setAside(false);
       resetComposer();
       setShowChips(false);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -247,14 +256,24 @@ export function NikoBar() {
     document.addEventListener('mouseup', end);
   };
 
+  // How far right of centre the panel sits when it has stepped aside: hard
+  // against the window's edge, by the same margin as everything else there.
+  const asideShift =
+    aside && state !== 'collapsed'
+      ? Math.max(0, window.innerWidth / 2 - width / 2 - ASIDE_MARGIN)
+      : 0;
+
   return (
     <div
       className="fixed bottom-4 left-1/2 z-50 flex flex-col"
       style={{
-        transform: 'translateX(-50%)',
+        // Centred by default; docked right while a screen it opened is being
+        // read. A transform either way, so the move is one animation rather
+        // than a swap between two anchors.
+        transform: `translateX(calc(-50% + ${asideShift}px))`,
         width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width}px`,
         height: `${height}px`,
-        transition: `width 350ms ${MORPH}, height 350ms ${MORPH}`,
+        transition: `width 350ms ${MORPH}, height 350ms ${MORPH}, transform 420ms ${MORPH}`,
       }}
     >
       {showChips && state === 'input' && (
@@ -365,41 +384,18 @@ export function NikoBar() {
         )}
 
         <div
-          className="relative z-10 flex flex-1 flex-col overflow-hidden"
+          className={`relative z-10 flex flex-1 flex-col ${
+            state === 'expanded' ? 'gap-2 overflow-visible' : 'overflow-hidden'
+          }`}
           style={{
-            background: 'var(--popover)',
+            // Expanded there is nothing to hold: the bubbles, the composer and
+            // the conversation's own buttons each sit on the page.
+            background: state === 'expanded' ? 'transparent' : 'var(--popover)',
             borderRadius: state === 'input' ? '15px' : 'inherit',
           }}
         >
           {state === 'expanded' && (
-            <div className="flex items-center justify-between border-b border-border/30 px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <DuckMark size={20} state={isStreaming ? 'urgent' : down ? 'offline' : 'idle'} />
-                <span className="text-[11px] font-body font-medium uppercase tracking-wide text-muted-foreground/60">
-                  Niko
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={startNewConversation}
-                  className="rounded-md p-1.5 text-muted-foreground/30 transition-colors hover:bg-foreground/5 hover:text-muted-foreground"
-                  title="New conversation"
-                >
-                  <MessageSquarePlus className="size-3.5" />
-                </button>
-                <button
-                  onClick={close}
-                  className="rounded-md p-1.5 text-muted-foreground/30 transition-colors hover:bg-foreground/5 hover:text-muted-foreground"
-                  title="Minimise"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {state === 'expanded' && (
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+            <div className="flex-1 space-y-3 overflow-y-auto px-1 py-1">
               {messages.map((message, i) => (
                 <NikoMessage
                   key={message.id}
@@ -421,47 +417,73 @@ export function NikoBar() {
             </div>
           )}
 
-          <div
-            className={`flex items-center gap-2 px-3 ${
-              state === 'expanded' ? 'border-t border-border/30 py-2' : 'flex-1'
-            }`}
-          >
-            {/* The duck, embedded the moment the bar opens. The expanded header
-                carries it once there is a conversation; this is the first open. */}
-            {state === 'input' && <DuckMark size={18} className="shrink-0" />}
-            <textarea
-              ref={inputRef}
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value);
-                setSlashIndex(0);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, COMPOSER_MAX_PX)}px`;
-              }}
-              onKeyDown={onKeyDown}
-              placeholder={
-                down ? 'Waiting for the yeaboi backend…' : 'Ask Niko anything, or / for shortcuts'
-              }
-              className="flex-1 resize-none bg-transparent text-[13px] font-body text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
-              rows={1}
-              disabled={down}
-              style={{ maxHeight: COMPOSER_MAX_PX }}
-            />
-            <button
-              onClick={() => (isStreaming ? stopStreaming() : submit(value))}
-              disabled={!isStreaming && (!value.trim() || down)}
-              title={isStreaming ? 'Stop' : 'Ask'}
-              className="shrink-0 rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:text-primary disabled:opacity-30 disabled:hover:text-muted-foreground/50"
+          <div className={`flex items-end gap-2 ${state === 'expanded' ? '' : 'flex-1 px-3'}`}>
+            <div
+              className={`flex flex-1 items-center gap-2 ${
+                state === 'expanded'
+                  ? 'rounded-2xl bg-popover px-3 py-2 shadow-xl ring-1 ring-border/60'
+                  : ''
+              }`}
             >
-              {isStreaming ? (
-                <span className="relative flex size-4 items-center justify-center">
-                  <Loader2 className="absolute size-4 animate-spin text-primary/50" />
-                  <Square className="size-2 fill-current" />
-                </span>
-              ) : (
-                <Send className="size-4" />
-              )}
-            </button>
+              {/* The duck, embedded the moment the bar opens. The expanded header
+                carries it once there is a conversation; this is the first open. */}
+              {state === 'input' && <DuckMark size={18} className="shrink-0" />}
+              <textarea
+                ref={inputRef}
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  setSlashIndex(0);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, COMPOSER_MAX_PX)}px`;
+                }}
+                onKeyDown={onKeyDown}
+                placeholder={
+                  down ? 'Waiting for the yeaboi backend…' : 'Ask Niko anything, or / for shortcuts'
+                }
+                className="flex-1 resize-none bg-transparent text-[13px] font-body text-foreground outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
+                rows={1}
+                disabled={down}
+                style={{ maxHeight: COMPOSER_MAX_PX }}
+              />
+              <button
+                onClick={() => (isStreaming ? stopStreaming() : submit(value))}
+                disabled={!isStreaming && (!value.trim() || down)}
+                title={isStreaming ? 'Stop' : 'Ask'}
+                className="shrink-0 rounded-md p-1.5 text-muted-foreground/50 transition-colors hover:text-primary disabled:opacity-30 disabled:hover:text-muted-foreground/50"
+              >
+                {isStreaming ? (
+                  <span className="relative flex size-4 items-center justify-center">
+                    <Loader2 className="absolute size-4 animate-spin text-primary/50" />
+                    <Square className="size-2 fill-current" />
+                  </span>
+                ) : (
+                  <Send className="size-4" />
+                )}
+              </button>
+            </div>
+
+            {/* This conversation's own controls: on the composer's line, in
+                their own object, because starting again and putting Niko away
+                are not things you do to the message you are writing. */}
+            {state === 'expanded' && (
+              <div className="flex shrink-0 items-center gap-0.5 rounded-2xl bg-popover p-1 shadow-xl ring-1 ring-border/60">
+                <button
+                  onClick={startNewConversation}
+                  className="rounded-xl p-2 text-muted-foreground/50 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                  title="New conversation"
+                >
+                  <MessageSquarePlus className="size-3.5" />
+                </button>
+                <button
+                  onClick={close}
+                  className="rounded-xl p-2 text-muted-foreground/50 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                  title="Minimise"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
