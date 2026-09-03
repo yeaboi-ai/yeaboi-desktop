@@ -8,7 +8,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/yeaboi/api';
-import { TipCompanion } from '@/components/yeaboi/tip-companion';
 import { TodayStrip } from '@/components/yeaboi/today-strip';
 import { type ModeCard } from '@/components/yeaboi/mode-card-grid';
 import { HomeDashboard } from './dashboard';
@@ -67,12 +66,6 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
           this surface answers what happened and what is next rather than
           listing what can be launched. */}
       <HomeDashboard audience={audience} />
-
-      <TipCompanion
-        tips={tipsForAudience(tips, audience)}
-        cards={runModes}
-        onNavigate={(route) => router.push(route)}
-      />
     </>
   );
 }

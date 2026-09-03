@@ -17,6 +17,10 @@ import { useNikoContext } from '@/components/niko/niko-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { COLLAPSED_WIDTH } from '@/lib/yeaboi/niko';
 import { loadSettings, saveSetting } from '@/lib/yeaboi/settings';
+import { apiGet } from '@/lib/yeaboi/api';
+import { useAudience } from '@/components/providers/audience-provider';
+import { useRouter } from 'next/navigation';
+import type { Audience } from '@shared/audience';
 import {
   cleanTipText,
   dockMode,
@@ -25,6 +29,7 @@ import {
   tipBrightness,
   tipProgress,
   tipRoute,
+  tipsForAudience,
   type Tip,
 } from '@/lib/yeaboi/tips';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
@@ -44,11 +49,26 @@ interface ModeCard {
   color: string;
 }
 
-interface Props {
-  tips: Tip[];
-  /** The mode + agent cards from /api/meta/capabilities, for titles and accents. */
-  cards: ModeCard[];
-  onNavigate: (route: string) => void;
+/** What the dock needs, loaded here rather than passed in.
+ *
+ *  The duck is shell chrome now — he is on every surface, so no page owns him
+ *  and no page can hand him his tips. */
+function useTipData(audience: Audience) {
+  const [tips, setTips] = useState<Tip[]>([]);
+  const [cards, setCards] = useState<ModeCard[]>([]);
+  useEffect(() => {
+    apiGet<{ tips: Tip[] }>('/api/meta/tips').then(
+      ({ tips: loaded }) => setTips(loaded ?? []),
+      () => undefined,
+    );
+    apiGet<{ modes?: ModeCard[]; agents?: ModeCard[]; solo?: ModeCard[] }>(
+      '/api/meta/capabilities',
+    ).then(
+      (caps) => setCards([...(caps?.modes ?? []), ...(caps?.agents ?? []), ...(caps?.solo ?? [])]),
+      () => undefined,
+    );
+  }, []);
+  return { tips: tipsForAudience(tips, audience), cards };
 }
 
 /** The window's width, resampled on resize. Mirrors niko-bar's useOpenWidth. */
@@ -62,7 +82,11 @@ function useWindowWidth(): number {
   return width;
 }
 
-export function TipCompanion({ tips, cards, onNavigate }: Props) {
+export function TipCompanion() {
+  const { audience } = useAudience();
+  const { tips, cards } = useTipData(audience);
+  const router = useRouter();
+  const onNavigate = (route: string) => router.push(route);
   const reduced = useReducedMotion();
   const { isOpen: nikoOpen } = useNikoContext();
   const innerWidth = useWindowWidth();

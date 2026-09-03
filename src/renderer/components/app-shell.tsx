@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { AppNav } from './nav/app-nav';
 import { Deck } from './nav/deck';
+import { TipCompanion } from './yeaboi/tip-companion';
 import { ThemePreviewBar } from './theme-preview-bar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="min-h-screen pl-[72px] pt-[var(--titlebar-h)]">
         <Deck>{children}</Deck>
       </main>
+      {/* The duck belongs to the shell, not to a page. Outside the deck so a
+          page turn neither unmounts him nor shrinks him with the card — he is
+          the one thing on screen that stays put while the surfaces move. */}
+      <TipCompanion />
       <ThemePreviewBar />
     </>
   );
