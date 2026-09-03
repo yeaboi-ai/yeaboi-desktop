@@ -47,7 +47,7 @@ function useTyped(text: string, streaming: boolean): string {
     return () => cancelAnimationFrame(frame);
   }, [text, streaming]);
 
-  return revealed(text, shown);
+  return revealed(text, shown, !streaming);
 }
 
 export function NikoMessage({ message, isStreaming }: NikoMessageProps) {

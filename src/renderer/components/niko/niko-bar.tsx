@@ -73,6 +73,10 @@ const COMPOSER_GIVE = 64;
 const BUBBLE_IN_MS = 320;
 const BUBBLE_OUT_MS = 200;
 const BUBBLE_STAGGER = 45;
+/** How far from the bottom still counts as reading the newest line: past this
+ *  you have scrolled up on purpose and the conversation stops following. */
+const FOLLOW_SLACK = 60;
+
 /** How long the composer takes to fold its controls back in and draw down to
  *  the pill: the controls' own animation, and their stagger. */
 const SHRINK_MS = 340;
@@ -290,10 +294,17 @@ export function NikoBar() {
     endRef.current?.scrollIntoView({ behavior: settling ? 'auto' : 'smooth', block: 'end' });
   }, [messages, settling]);
 
+  /** Whether the conversation is still following its newest line. */
+  const following = useRef(true);
+
   /** Which ends the conversation carries on past. */
   const readFade = useCallback(() => {
     const box = scrollRef.current;
     if (!box) return;
+    // Scrolling up is how you stop it following; coming back to the bottom is
+    // how you start it again. Read here rather than compared against a stored
+    // position, so the panel's own scrolling counts as staying at the bottom.
+    following.current = box.scrollHeight - box.scrollTop - box.clientHeight < FOLLOW_SLACK;
     const above = box.scrollTop > 2;
     const below = box.scrollTop + box.clientHeight < box.scrollHeight - 2;
     setFade(above && below ? 'both' : above ? 'top' : below ? 'bottom' : 'none');
@@ -302,17 +313,28 @@ export function NikoBar() {
   // Which ends the conversation runs past changes as it grows and as a reply
   // streams, neither of which is a scroll — so it is watched rather than only
   // read on one.
+  // An answer types itself out a few characters at a time, and every one of
+  // them makes the conversation taller. Following it on the message rather
+  // than the growth left the newest line drifting below the fold between
+  // tokens, so the bottom is held here, frame by frame, unless you have
+  // scrolled up to read something.
+  const follow = useCallback(() => {
+    const box = scrollRef.current;
+    if (box && following.current) box.scrollTop = box.scrollHeight;
+    readFade();
+  }, [readFade]);
+
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const first = requestAnimationFrame(readFade);
-    const observer = new ResizeObserver(readFade);
+    const first = requestAnimationFrame(follow);
+    const observer = new ResizeObserver(follow);
     observer.observe(list);
     return () => {
       cancelAnimationFrame(first);
       observer.disconnect();
     };
-  }, [state, messages.length, readFade]);
+  }, [state, messages.length, follow]);
 
   useEffect(() => {
     if (state !== 'input') {
