@@ -18,6 +18,7 @@ import {
   messagesOf,
   openWidth,
   reduceTurn,
+  summonsNiko,
 } from '../src/renderer/lib/yeaboi/niko';
 import {
   SLASH_COMMANDS,
@@ -364,5 +365,53 @@ describe('the collapsed pill', () => {
   it('leaves room for the tip dock beside it at the minimum window', () => {
     // 960 is the main window's minWidth (src/main/index.ts).
     expect(COLLAPSED_WIDTH).toBeLessThan(960 / 2);
+  });
+});
+
+// Typing anywhere summons Niko — which means one predicate stands between
+// every keystroke in the app and a panel opening over it. The cases that
+// matter are the ones where it must stay shut: a key aimed at a real field,
+// a shortcut, and anything that is not a character.
+describe('summonsNiko', () => {
+  const base = { key: 'h', metaKey: false, ctrlKey: false, altKey: false };
+
+  it('summons on a printable key with nothing focused', () => {
+    expect(summonsNiko({ ...base, target: null })).toBe(true);
+  });
+
+  it('summons on digits and punctuation, not just letters', () => {
+    for (const key of ['7', '?', '/', ' ']) {
+      expect(summonsNiko({ ...base, key, target: null })).toBe(true);
+    }
+  });
+
+  it('stays shut for a key aimed at a field', () => {
+    for (const tagName of ['INPUT', 'TEXTAREA', 'SELECT']) {
+      expect(summonsNiko({ ...base, target: { tagName, isContentEditable: false } })).toBe(false);
+    }
+  });
+
+  it('stays shut inside a contenteditable', () => {
+    expect(summonsNiko({ ...base, target: { tagName: 'DIV', isContentEditable: true } })).toBe(
+      false,
+    );
+  });
+
+  it('stays shut for shortcuts', () => {
+    expect(summonsNiko({ ...base, metaKey: true, target: null })).toBe(false);
+    expect(summonsNiko({ ...base, ctrlKey: true, target: null })).toBe(false);
+    expect(summonsNiko({ ...base, altKey: true, target: null })).toBe(false);
+  });
+
+  it('stays shut for named keys', () => {
+    for (const key of ['Enter', 'Escape', 'Tab', 'ArrowDown', 'Backspace', 'Shift']) {
+      expect(summonsNiko({ ...base, key, target: null })).toBe(false);
+    }
+  });
+
+  it('summons from a plain element that merely holds focus', () => {
+    expect(summonsNiko({ ...base, target: { tagName: 'BUTTON', isContentEditable: false } })).toBe(
+      true,
+    );
   });
 });

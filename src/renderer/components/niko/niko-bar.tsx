@@ -33,6 +33,7 @@ import {
   barState,
   draggedHeight,
   openWidth as computeOpenWidth,
+  summonsNiko,
 } from '@/lib/yeaboi/niko';
 import { NikoCyclingText } from './niko-cycling-text';
 import { NikoMagicChips } from './niko-magic-chips';
@@ -100,9 +101,11 @@ export function NikoBar() {
     inputRef.current?.blur();
   }, [setIsOpen]);
 
-  // Cmd+. opens and closes from anywhere; Escape only closes. Deliberately not
-  // planning's type-to-open: yeaboi has kanban cards, a retro board and tiptap
-  // editors, and its INPUT/TEXTAREA/SELECT guard misses every contenteditable.
+  // Cmd+. opens and closes from anywhere; Escape only closes. Typing a
+  // character with nothing focused opens the bar and keeps the character —
+  // `summonsNiko` is the guard, and unlike planning's it reads
+  // `isContentEditable`, which is what the kanban cards, the retro board and
+  // the tiptap editors need it to read.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === '.') {
@@ -110,11 +113,31 @@ export function NikoBar() {
         togglePanel();
         return;
       }
-      if (e.key === 'Escape' && isOpen) close();
+      if (e.key === 'Escape' && isOpen) {
+        close();
+        return;
+      }
+      if (isOpen) return;
+      const target = e.target as HTMLElement | null;
+      const summon = summonsNiko({
+        key: e.key,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        target: target
+          ? { tagName: target.tagName, isContentEditable: target.isContentEditable }
+          : null,
+      });
+      if (!summon) return;
+      // The keypress opens the bar, so nothing is focused to receive it yet —
+      // seed the value here and let the focus effect put the caret after it.
+      e.preventDefault();
+      setValue(e.key);
+      setIsOpen(true);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [togglePanel, isOpen, close]);
+  }, [togglePanel, isOpen, close, setIsOpen]);
 
   // The caret lands after the transition has started, so the box is already
   // growing when it appears rather than jumping ahead of it.

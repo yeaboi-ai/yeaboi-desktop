@@ -7,6 +7,38 @@
 
 import { apiGet, apiPost, apiStream } from './api';
 
+/** The part of a keydown this predicate needs. Structural rather than a
+ *  `KeyboardEvent`, so the rule is testable in the node lane. */
+export interface SummonKey {
+  key: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  target: { tagName: string; isContentEditable: boolean } | null;
+}
+
+/** Fields a keystroke belongs to, and which Niko must never take it from. */
+const TEXT_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+
+/**
+ * Does this keystroke summon Niko?
+ *
+ * Typing anywhere opens the bar, which puts this predicate between every key in
+ * the app and a panel appearing over what you were doing. It is deliberately
+ * narrow: one character, no modifier, and nothing that can already take text.
+ *
+ * `key.length === 1` is the whole test for "printable" — every named key
+ * (`Enter`, `Tab`, `ArrowDown`, `Shift`) spells itself out, so a single-
+ * character `key` is a character the user meant to type. Shift is not in the
+ * modifier list: it is how capitals are typed.
+ */
+export function summonsNiko({ key, metaKey, ctrlKey, altKey, target }: SummonKey): boolean {
+  if (metaKey || ctrlKey || altKey) return false;
+  if (key.length !== 1) return false;
+  if (target && (TEXT_TAGS.has(target.tagName) || target.isContentEditable)) return false;
+  return true;
+}
+
 export type NikoLine =
   | { type: 'op'; op_id: string }
   | { type: 'token'; text: string }
