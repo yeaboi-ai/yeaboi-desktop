@@ -9,6 +9,7 @@ import { maskText } from '@/lib/yeaboi/boards';
 import { type ReportRun, reportingHistory } from '@/lib/yeaboi/modes';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -120,9 +121,19 @@ function ReportingBody() {
 export default function ReportingPage() {
   return (
     <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <Surface
+        aside={
+          <CeremonyAside
+            kind="reporting"
+            links={[
+              { href: '/team/ship', label: 'Ship', note: 'The release note for the same window' },
+              { href: '/usage', label: 'Usage', note: 'What the agents cost to run it' },
+            ]}
+          />
+        }
+      >
         <ReportingBody />
-      </div>
+      </Surface>
     </BackendGate>
   );
 }

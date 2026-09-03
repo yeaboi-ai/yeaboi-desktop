@@ -18,6 +18,7 @@ import {
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
 import { Button, buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -148,9 +149,19 @@ function RetroBody() {
 export default function RetroPage() {
   return (
     <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <Surface
+        aside={
+          <CeremonyAside
+            kind="retro"
+            links={[
+              { href: '/team/poker', label: 'Poker', note: 'Size what the retro turned up' },
+              { href: '/provenance', label: 'Provenance', note: 'Where a decision came from' },
+            ]}
+          />
+        }
+      >
         <RetroBody />
-      </div>
+      </Surface>
     </BackendGate>
   );
 }

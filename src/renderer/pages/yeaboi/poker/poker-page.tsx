@@ -8,6 +8,7 @@ import { DuckMark } from '@/components/brand/duck';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -119,9 +120,23 @@ function PokerBody() {
 export default function PokerPage() {
   return (
     <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <Surface
+        aside={
+          <CeremonyAside
+            kind="poker"
+            links={[
+              { href: '/team/retro', label: 'Retro', note: 'What the last sprint turned up' },
+              {
+                href: '/team/analysis',
+                label: 'Analysis',
+                note: 'Read a ticket before you size it',
+              },
+            ]}
+          />
+        }
+      >
         <PokerBody />
-      </div>
+      </Surface>
     </BackendGate>
   );
 }

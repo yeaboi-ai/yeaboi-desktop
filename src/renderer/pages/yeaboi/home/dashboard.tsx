@@ -11,8 +11,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
+import {
+  BarChart3,
+  Columns3,
+  LayoutGrid,
+  Presentation,
+  Rocket,
+  RotateCcw,
+  Share2,
+  Spade,
+  Sparkles,
+  Sunrise,
+} from 'lucide-react';
 
+import { GettingAround, Panel, Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
 
@@ -74,6 +86,23 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="font-body text-[11px] text-muted-foreground/70">{children}</p>;
 }
 
+/** The ceremonies, as things you can begin rather than a list to navigate. The
+ *  routes are the rail's own, so nothing here can point somewhere that is not
+ *  already reachable. */
+const STARTERS = [
+  { href: '/team/standup', label: 'Standup', note: 'What moved since yesterday', icon: Sunrise },
+  { href: '/team/retro', label: 'Retro', note: 'A board the team fills in', icon: RotateCcw },
+  { href: '/team/poker', label: 'Poker', note: 'Size the work together', icon: Spade },
+  { href: '/team/analysis', label: 'Analysis', note: 'Read a ticket for gaps', icon: BarChart3 },
+  { href: '/team/ship', label: 'Ship', note: 'Write the release note', icon: Rocket },
+  {
+    href: '/team/reporting',
+    label: 'Reporting',
+    note: 'A deck for the business',
+    icon: Presentation,
+  },
+] as const;
+
 export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
   const router = useRouter();
   const { authFetch, ready, teamVersion } = useAuthFetch();
@@ -100,13 +129,37 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
       () => setShares([]),
     );
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
-      (data) => setChangelog((data?.entries ?? []).slice(0, 3)),
+      (data) => setChangelog((data?.entries ?? []).slice(0, 8)),
       () => setChangelog([]),
     );
   }, []);
 
+  const aside = (
+    <>
+      <Panel title="What's new">
+        {changelog.length === 0 ? (
+          <Empty>Up to date.</Empty>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {changelog.map((entry, index) => (
+              <li key={entry.version ?? index}>
+                <p className="truncate font-body text-[12px] text-foreground">
+                  {entry.title ?? entry.version}
+                </p>
+                {entry.title && entry.version && (
+                  <p className="font-code text-[10px] text-muted-foreground/60">{entry.version}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+      <GettingAround />
+    </>
+  );
+
   return (
-    <div className="px-8 py-8">
+    <Surface aside={aside}>
       <h1 className="font-display text-2xl text-foreground">
         {audience === 'solo' ? 'Your desk' : "Your team's desk"}
       </h1>
@@ -160,28 +213,33 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
           )}
         </Tile>
 
-        <Tile title="What's new" icon={Sparkles}>
-          {changelog.length === 0 ? (
-            <Empty>Up to date.</Empty>
-          ) : (
-            <ul className="flex flex-col gap-1.5">
-              {changelog.map((entry, index) => (
-                <li
-                  key={entry.version ?? index}
-                  className="truncate px-2 font-body text-[12px] text-muted-foreground"
-                >
-                  {entry.title ?? entry.version}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Tile>
-
         <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
         <AwaitingTile title="Last retro" wants="/api/retro/recent" />
         <AwaitingTile title="Next standup" wants="/api/standup/schedule" />
         <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
       </div>
-    </div>
+
+      <h2 className="mt-8 font-body text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Start something
+      </h2>
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+        {STARTERS.map((starter) => (
+          <button
+            key={starter.href}
+            type="button"
+            onClick={() => router.push(starter.href)}
+            className="rounded-2xl bg-card p-4 text-left ring-1 ring-border/60 transition-colors hover:ring-border"
+          >
+            <starter.icon className="h-4 w-4 text-primary" />
+            <p className="mt-3 font-body text-[12px] font-medium text-foreground">
+              {starter.label}
+            </p>
+            <p className="mt-1 font-body text-[11px] leading-relaxed text-muted-foreground/70">
+              {starter.note}
+            </p>
+          </button>
+        ))}
+      </div>
+    </Surface>
   );
 }
