@@ -63,6 +63,12 @@ function canScroll(from: HTMLElement | null, delta: number): boolean {
   return Boolean(doc && doc.scrollHeight > doc.clientHeight + 1 && room(doc));
 }
 
+/** Somewhere Tab means "next field", not "next page". */
+function isEditable(el: HTMLElement): boolean {
+  if (el.isContentEditable) return true;
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
+}
+
 export function Deck({ children }: { children: React.ReactNode }) {
   const { audience } = useAudience();
   const router = useRouter();
@@ -144,6 +150,23 @@ export function Deck({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('wheel', onWheel);
   }, [deal]);
 
+  // Tab pages the deck, Shift+Tab pages back — the keyboard equivalent of a
+  // detent. It only takes the key where there is nothing to type into and no
+  // dialog to tab around inside, so ordinary focus travel still works wherever
+  // focus travel is what Tab means.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const focused = document.activeElement as HTMLElement | null;
+      if (focused && (isEditable(focused) || focused.closest('[role="dialog"], [role="menu"]')))
+        return;
+      if (!deal(e.shiftKey ? -1 : 1)) return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [deal]);
+
   useEffect(
     () => () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -166,9 +189,17 @@ export function Deck({ children }: { children: React.ReactNode }) {
         pointerEvents: preview ? 'none' : undefined,
         borderRadius: preview ? 18 : 0,
         overflow: preview ? 'hidden' : undefined,
+        // In transit it is an object with an edge and something behind it.
+        // Shrinking alone reads as the page having zoomed out.
+        boxShadow: preview ? '0 0 0 1px var(--border), 0 40px 90px -24px rgb(0 0 0 / 0.6)' : 'none',
+        transitionProperty: reduced ? undefined : 'transform, box-shadow, border-radius',
       }}
     >
-      <div className="pl-[72px] pt-[var(--titlebar-h)]">{children}</div>
+      {/* Keyed on the route so the surface remounts and its contents deal
+          themselves in again on every turn. */}
+      <div key={pathname} className="deck-page pl-[72px] pt-[var(--titlebar-h)]">
+        {children}
+      </div>
     </div>
   );
 }

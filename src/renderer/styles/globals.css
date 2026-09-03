@@ -1020,3 +1020,44 @@ html[data-audience='agents'] {
 [data-deck] .h-screen {
   height: calc(100vh - var(--titlebar-h));
 }
+
+/* A surface deals itself in: its contents rise into place a beat behind the
+   card, top down, so a page turn has a direction rather than simply being a
+   different screen. Depth two, because a page's root is a wrapper and its
+   items are the wrapper's children. */
+@keyframes deck-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .deck-page > * > * {
+    animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .deck-page > * > *:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .deck-page > * > *:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .deck-page > * > *:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .deck-page > * > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .deck-page > * > *:nth-child(6) {
+    animation-delay: 250ms;
+  }
+  /* Everything past the sixth arrives together — a stagger long enough to
+     count is a wait. */
+  .deck-page > * > *:nth-child(n + 7) {
+    animation-delay: 290ms;
+  }
+}
