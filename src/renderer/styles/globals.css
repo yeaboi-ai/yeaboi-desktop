@@ -1086,3 +1086,42 @@ html[data-audience='agents'] {
     animation: duck-emerge 220ms cubic-bezier(0.4, 0, 1, 1) reverse forwards;
   }
 }
+
+/* Stepping the calendar. The days come in from the side the step went, so a
+   week forward and a week back are not the same movement. */
+@keyframes days-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes days-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slide='forward'] {
+    animation: days-in-forward 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  [data-slide='back'] {
+    animation: days-in-back 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Coming back from the desktop, the overlay's own duck has just jumped into
+     this spot — walking in again would be him arriving twice. */
+  [data-duck-dock][data-returning='true'] {
+    animation: none;
+  }
+}

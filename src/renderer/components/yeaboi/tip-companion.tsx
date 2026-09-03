@@ -102,6 +102,9 @@ export function TipCompanion() {
   // He is drawn for a moment longer than he is here, so the walk out can play
   // before the overlay picks him up on the desktop.
   const [leaving, setLeaving] = useState(false);
+  // He walks in once, when the app starts. Coming home from the desktop the
+  // overlay has already carried him here, so the dock takes him as he lands.
+  const [returning, setReturning] = useState(false);
   // null until the backend answers — the dock stays out of the way rather than
   // flashing on and then hiding itself.
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -114,6 +117,7 @@ export function TipCompanion() {
       return;
     }
     setLeaving(true);
+    setReturning(true);
     const done = setTimeout(() => setLeaving(false), DUCK_LEAVE_MS);
     return () => clearTimeout(done);
   }, [offer.where]);
@@ -368,7 +372,12 @@ export function TipCompanion() {
         {/* Kept mounted through the leaving animation, so the hand-off to the
             desktop overlay is a walk out rather than a disappearance. */}
         {(offer.where !== 'away' || leaving) && (
-          <div ref={duckRef} data-duck-dock data-leaving={offer.where === 'away'}>
+          <div
+            ref={duckRef}
+            data-duck-dock
+            data-leaving={offer.where === 'away'}
+            data-returning={returning && offer.where !== 'away'}
+          >
             {mode === 'duck' ? (
               <button
                 type="button"

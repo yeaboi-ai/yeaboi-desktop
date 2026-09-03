@@ -7,7 +7,7 @@
 // pausing and removing a ceremony installs or removes an OS job, so those stay
 // where they were, and this reads the result.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
 import {
@@ -67,6 +67,11 @@ const MODE_TINT: Record<string, string> = {
 };
 
 /** The header's small controls, which are all the same button. */
+/** How far back and forward the week strip runs. A week behind so yesterday is
+ *  one nudge away; five weeks on so it does not end mid-scroll. */
+const BEHIND = 7;
+const AHEAD = 35;
+
 const STEP =
   'rounded-lg px-2 py-1 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground';
 
@@ -160,16 +165,47 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
 export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
   const [expanded, setExpanded] = useState(false);
   const [month, setMonth] = useState(() => new Date());
+  const [direction, setDirection] = useState(0);
   const today = isoDate(new Date());
+  const strip = useRef<HTMLDivElement>(null);
 
-  const week = useMemo(() => {
-    const start = new Date();
-    return Array.from({ length: 7 }, (_, index) => addDays(start, index));
+  // The week is a window onto a longer run of days: a week back so yesterday is
+  // one nudge away, five weeks on so the strip does not end while you are
+  // reading it. Scrolling it is the interaction; the buttons do the same move
+  // for the keyboard and the mouse.
+  const days = useMemo(() => {
+    const start = addDays(new Date(), -BEHIND);
+    return Array.from({ length: BEHIND + AHEAD }, (_, index) => addDays(start, index));
   }, []);
-  const days = useMemo(() => (expanded ? monthGrid(month) : week), [expanded, month, week]);
-  const slots = useMemo(() => byDate(ceremonies, days), [ceremonies, days]);
+  const monthDays = useMemo(() => monthGrid(month), [month]);
+  const slots = useMemo(
+    () => byDate(ceremonies, expanded ? monthDays : days),
+    [ceremonies, expanded, monthDays, days],
+  );
 
-  const step = (by: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
+  /** One week of the strip, whatever it is currently wide. */
+  const stride = () => strip.current?.clientWidth ?? 0;
+
+  // Today starts at the left edge, with the week behind it scrolled off.
+  useEffect(() => {
+    if (expanded || !strip.current) return;
+    strip.current.scrollLeft = (stride() / 7) * BEHIND;
+  }, [expanded]);
+
+  const step = (by: number) => {
+    if (expanded) {
+      setDirection(by);
+      setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
+      return;
+    }
+    strip.current?.scrollBy({ left: by * stride(), behavior: 'smooth' });
+  };
+
+  const now = () => {
+    setDirection(0);
+    setMonth(new Date());
+    strip.current?.scrollTo({ left: (stride() / 7) * BEHIND, behavior: 'smooth' });
+  };
 
   return (
     <section>
@@ -180,45 +216,46 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
             : 'Week ahead'}
         </h2>
         <div className="flex items-center gap-1">
-          {expanded && (
-            <>
-              <button
-                type="button"
-                aria-label="Previous month"
-                onClick={() => step(-1)}
-                className={STEP}
-              >
-                ‹
-              </button>
-              <button type="button" onClick={() => setMonth(new Date())} className={STEP}>
-                Today
-              </button>
-              <button
-                type="button"
-                aria-label="Next month"
-                onClick={() => step(1)}
-                className={STEP}
-              >
-                ›
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            aria-label={expanded ? 'Previous month' : 'Previous week'}
+            onClick={() => step(-1)}
+            className={STEP}
+          >
+            ‹
+          </button>
+          <button type="button" onClick={now} className={STEP}>
+            Today
+          </button>
+          <button
+            type="button"
+            aria-label={expanded ? 'Next month' : 'Next week'}
+            onClick={() => step(1)}
+            className={STEP}
+          >
+            ›
+          </button>
           <button
             type="button"
             onClick={() => {
+              setDirection(0);
               setMonth(new Date());
               setExpanded(!expanded);
             }}
-            className={STEP}
+            className={`${STEP} ml-1`}
           >
             {expanded ? 'Week' : 'Month'}
           </button>
         </div>
       </header>
 
-      <div className="mt-3 grid grid-cols-7 gap-1">
-        {expanded &&
-          DAY_LABELS.map((label) => (
+      {expanded ? (
+        <div
+          key={isoDate(month)}
+          data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
+          className="mt-4 grid grid-cols-7 gap-2"
+        >
+          {DAY_LABELS.map((label) => (
             <div
               key={label}
               className="pb-1 font-body text-[10px] uppercase tracking-wide text-muted-foreground/60"
@@ -226,19 +263,42 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
               {label}
             </div>
           ))}
-        {days.map((day) => (
-          <DayCell
-            key={isoDate(day)}
-            day={day}
-            slots={slots.get(isoDate(day)) ?? []}
-            today={today}
-            dim={expanded && day.getMonth() !== month.getMonth()}
-            showWeekday={!expanded}
-            height={expanded ? 68 : 84}
-            limit={expanded ? 3 : 4}
-          />
-        ))}
-      </div>
+          {monthDays.map((day) => (
+            <DayCell
+              key={isoDate(day)}
+              day={day}
+              slots={slots.get(isoDate(day)) ?? []}
+              today={today}
+              dim={day.getMonth() !== month.getMonth()}
+              height={68}
+              limit={3}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          ref={strip}
+          className="mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {days.map((day) => (
+            <div
+              key={isoDate(day)}
+              // A seventh of the strip, less its share of the six gaps between
+              // them, so exactly one week is in view at any width.
+              className="w-[calc((100%-48px)/7)] shrink-0 snap-start"
+            >
+              <DayCell
+                day={day}
+                slots={slots.get(isoDate(day)) ?? []}
+                today={today}
+                showWeekday
+                height={84}
+                limit={4}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
