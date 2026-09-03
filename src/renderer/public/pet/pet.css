@@ -298,3 +298,17 @@ body {
   border-right: 1px solid var(--border-strong);
   border-top: 1px solid var(--border-strong);
 }
+
+/* ── The leap ───────────────────────────────────────────────────────────────
+   While he is jumping, every part is driven frame by frame from pet.js rather
+   than by the loops below: a wing on a 1.4s CSS cycle cannot know it is at the
+   top of an arc. The class hands the transforms over — a CSS animation on
+   `transform` always beats an inline one, so they have to be switched off
+   rather than overridden. */
+.duck-rig.leaping .d-wing,
+.duck-rig.leaping .d-glasses,
+.duck-rig.leaping .d-glasses2,
+.duck-rig.leaping .d-foot,
+.duck-rig.leaping .duck-body {
+  animation: none !important;
+}

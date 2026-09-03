@@ -24,6 +24,9 @@ const rig = document.getElementById('duck-rig');
 const body = document.getElementById('duck-body');
 const bubble = document.getElementById('duck-bubble');
 const footFront = rig.querySelector('.d-foot-front');
+const wing = rig.querySelector('.d-wing');
+const glasses = rig.querySelector('.d-glasses');
+const glasses2 = rig.querySelector('.d-glasses2');
 const footBack = rig.querySelector('.d-foot-back');
 
 // --- geometry -------------------------------------------------------------
@@ -156,8 +159,30 @@ let homePoint = null;
  *  same movement in opposite directions, and the trip home is the one that
  *  reads right, so the exit is no longer left to gravity. */
 let homing = null;
-/** How long the jump out of the app window takes. */
-const FLY_OUT_MS = 900;
+/** Frames the jump out is solved for. At 60fps this is a shade under a second
+ *  — long enough to watch, short enough not to wait for. */
+const FLY_OUT_FRAMES = 58;
+/** The wind-up before he leaves the ground. */
+const CROUCH_MS = 170;
+/** How long the landing squash takes to resolve. */
+const IMPACT_MS = 260;
+
+/** Under a solved launch: air drag is off, because the arc was solved without
+ *  it and drag would land him short of where he was aimed. */
+let ballistic = false;
+/** Held until the crouch finishes; the launch is applied then. */
+let launchAt = 0;
+let crouchUntil = 0;
+let impactUntil = 0;
+/** How hard he hit, 0-1, so the squash matches the fall rather than being one
+ *  fixed pose for every landing. */
+let impactPower = 0;
+/** What to run once he is down. */
+let landingCallback = null;
+/** The solved launch, held until the crouch has played. */
+let pendingLaunch = null;
+/** Frames since he left the ground, for the flap and the leg timing. */
+let airFrames = 0;
 /** He is home, and the app is drawing him again. Physics stays off until the
  *  window hides him — otherwise gravity resumes the frame the arc ends and he
  *  drops straight back out of the corner he just climbed into. */
@@ -360,6 +385,89 @@ setInterval(() => {
   }
 }, 7000);
 
+// --- the leap, part by part -----------------------------------------------
+//
+// One pose function, driven by where the duck actually is rather than by a
+// timeline: `vy` says whether he is rising or falling and how fast, and every
+// part is a function of that. A timeline would have to be kept in step with
+// the physics; this cannot fall out of step with it, because it is reading it.
+//
+// The parts, and what each one is doing:
+//   body      squash on the crouch and the impact, stretch through the launch
+//             and the fall, so the silhouette carries the speed
+//   feet      tuck up on the way through the apex, reach down for the ground
+//             on the way in, splay on contact
+//   wing      beats hard off the launch, spreads at the apex, flares to brake
+//             on the descent, folds on landing
+//   glasses   lag behind the head — up as he drops away beneath them, down as
+//             he stops — which is the whole trick to them reading as worn
+
+/** Ease a 0-1 progress into something with weight at both ends. */
+function smooth(v) {
+  const k = Math.max(0, Math.min(1, v));
+  return k * k * (3 - 2 * k);
+}
+
+function poseLeap(t) {
+  if (!rig.classList.contains('leaping')) return false;
+
+  const crouch = crouchUntil > t ? smooth((crouchUntil - t) / CROUCH_MS) : 0;
+  const impact = impactUntil > t ? smooth((impactUntil - t) / IMPACT_MS) : 0;
+  const flying = !grounded;
+  // Vertical speed as a signed 0-1, so poses can ask "how hard, which way".
+  const rise = flying ? Math.max(0, -vy) / (14 * S) : 0;
+  const fall = flying ? Math.max(0, vy) / (18 * S) : 0;
+
+  // Body: squashed by the crouch and the impact, stretched by speed.
+  const squash = crouch * 0.22 + impact * 0.3 * (0.4 + impactPower * 0.6);
+  const stretch = Math.min(0.2, (rise + fall) * 0.2);
+  const sx = 1 + squash - stretch;
+  const sy = 1 - squash + stretch;
+  const drop = crouch * 7 * S + impact * 5 * S;
+  const tilt = flying ? -dir * (rise * 10 - fall * 7) : 0;
+  body.style.transform =
+    `translateY(${(bnc.p + drop).toFixed(2)}px) ` +
+    `rotate(${(lean.p + sway.p + tilt).toFixed(2)}deg) ` +
+    `scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
+
+  // Feet: tucked under him through the rise, reaching on the way down, splayed
+  // wide on contact.
+  const tuck = flying ? rise * 9 * S : 0;
+  const reach = flying ? fall * 7 * S : 0;
+  const splay = impact * 5 * S;
+  footFront.style.transform =
+    `translate(${(dir * (splay + reach * 0.5)).toFixed(2)}px, ${(-tuck + reach).toFixed(2)}px) ` +
+    `rotate(${(dir * (reach * 1.6 - tuck * 1.2)).toFixed(2)}deg)`;
+  footBack.style.transform =
+    `translate(${(-dir * (splay + reach * 0.3)).toFixed(2)}px, ${(-tuck * 1.3 + reach * 0.6).toFixed(2)}px) ` +
+    `rotate(${(-dir * (reach * 1.2 - tuck * 1.5)).toFixed(2)}deg)`;
+
+  // Wing: three hard beats off the launch, decaying into a spread at the apex,
+  // then flared forward to brake.
+  const beats = Math.sin(airFrames * 0.42) * Math.exp(-airFrames / 26);
+  const flare = fall * 26;
+  const wingAngle = flying ? beats * 30 - flare : -impact * 22 - crouch * 10;
+  const wingLift = flying ? -rise * 5 * S : impact * 3 * S;
+  wing.style.transform = `translateY(${wingLift.toFixed(2)}px) rotate(${(dir * wingAngle).toFixed(2)}deg)`;
+
+  // Glasses: they sit on him, so they lag. He drops away from under them on
+  // the launch and stops under them on the landing.
+  const lag = flying ? vy * 0.34 : impact * -4 * S;
+  const glassesShift = `translate(${(dir * (crouch * 1.5 - fall * 1.5)).toFixed(2)}px, ${(-lag).toFixed(2)}px)`;
+  glasses.style.transform = glassesShift;
+  if (glasses2) glasses2.style.transform = glassesShift;
+
+  // Done when he is down and the squash has resolved.
+  if (grounded && !impact && !crouch) {
+    rig.classList.remove('leaping');
+    for (const part of [body, footFront, footBack, wing, glasses, glasses2]) {
+      if (part) part.style.transform = '';
+    }
+    return false;
+  }
+  return true;
+}
+
 // --- main loop ------------------------------------------------------------
 function step() {
   requestAnimationFrame(step);
@@ -373,6 +481,18 @@ function step() {
   // last frame is the whole job — one tick of gravity here is a duck falling
   // back out of the window he has just climbed into.
   if (parked) return;
+
+  // The wind-up is over: let go.
+  if (pendingLaunch && t >= launchAt) {
+    vx = pendingLaunch.vx;
+    vy = pendingLaunch.vy;
+    pendingLaunch = null;
+    grounded = false;
+    ballistic = true;
+    tumbling = true;
+    walker.classList.add('airborne');
+  }
+  if (ballistic && !grounded) airFrames += 1;
 
   if (homing) {
     flyHome(t);
@@ -392,7 +512,10 @@ function step() {
     baseY = ny;
   } else {
     // ---- horizontal intent ----
-    if (tumbling) {
+    if (ballistic) {
+      // Solved without drag, so flown without it — anything else lands him
+      // short of the spot the arc was aimed at.
+    } else if (tumbling) {
       vx *= grounded ? 0.84 : 0.995; // air keeps momentum; ground drags it down
     } else {
       let desired = 0;
@@ -457,7 +580,20 @@ function step() {
       if (!grounded) {
         grounded = true;
         bnc.v += Math.min(9, 1.5 + (impact / S) * 0.5) * S; // small downward bounce, scaled by impact
-        if (tumbling && impact > 6 * S) {
+        if (ballistic) {
+          // A solved arc lands where it was aimed: it plants rather than
+          // bouncing on, and the squash is sized by how hard it came in.
+          ballistic = false;
+          tumbling = false;
+          airFrames = 0;
+          impactPower = Math.min(1, impact / (16 * S));
+          impactUntil = now() + IMPACT_MS;
+          walker.classList.remove('airborne');
+          mode = 'wander';
+          const done = landingCallback;
+          landingCallback = null;
+          if (done) done();
+        } else if (tumbling && impact > 6 * S) {
           vy = -impact * 0.42; // bounce back up
           grounded = false;
           sway.v += (vx >= 0 ? 1 : -1) * 6;
@@ -494,7 +630,11 @@ function step() {
   springTo(lean, leanTarget, 0.2, 0.75);
   springTo(sway, 0, 0.16, 0.78);
 
-  body.style.transform = `translateY(${bnc.p.toFixed(2)}px) rotate(${(lean.p + sway.p).toFixed(2)}deg)`;
+  // The leap drives every part itself; otherwise the body is the only one with
+  // anything to say and the rest are on their CSS loops.
+  if (!poseLeap(t)) {
+    body.style.transform = `translateY(${bnc.p.toFixed(2)}px) rotate(${(lean.p + sway.p).toFixed(2)}deg)`;
+  }
 
   walker.style.transform = `translate(${x.toFixed(1)}px, ${baseY.toFixed(1)}px) scaleX(${dir})`;
   positionBubble();
@@ -649,22 +789,37 @@ function applyArrival(arrival) {
   });
 }
 
-/** The jump out of the app window: the trip home, flown the other way.
- *  Gravity was doing this before, and it read as being dropped rather than
- *  jumping — so the exit is scripted like the return, which is the half that
- *  already looked right. */
+/**
+ * The jump out of the app window, as ballistics rather than a tween.
+ *
+ * The launch velocity is solved from where he is, where he should land and the
+ * gravity the rig already runs at, and then the ordinary loop integrates it —
+ * so the arc is the one gravity draws, the apex is where the maths puts it,
+ * and the landing is a real ground contact with the bounce that comes with it.
+ * A scripted parabola looked close and never quite settled, because nothing in
+ * it agreed with the physics running underneath.
+ *
+ *   dx = vx·T                     → vx  = dx / T
+ *   dy = vy₀·T + ½·g·T²           → vy₀ = (dy − ½·g·T²) / T
+ */
 function flyOut(onDone) {
   const away = x > window.innerWidth * 0.5 ? -1 : 1;
   const landingX = Math.max(20, Math.min(window.innerWidth - DUCK_W - 20, x + away * 340 * S));
   const landingY = groundBaseY(landingX + DUCK_W / 2);
-  homing = {
-    from: { x, y: baseY },
-    to: { x: landingX, y: landingY },
-    apex: Math.min(baseY, landingY) - 170 * S,
-    start: now(),
-    ms: FLY_OUT_MS,
-    onDone,
-  };
+  const frames = FLY_OUT_FRAMES;
+  const g = BASE.gravity * S;
+  const launchVx = (landingX - x) / frames;
+  const launchVy = (landingY - baseY - 0.5 * g * frames * frames) / frames;
+  vx = 0;
+  vy = 0;
+  landingCallback = onDone ?? null;
+  mode = 'throw';
+  airFrames = 0;
+  crouchUntil = now() + CROUCH_MS;
+  // The crouch is the wind-up, so the launch waits it out.
+  launchAt = crouchUntil;
+  pendingLaunch = { vx: launchVx, vy: launchVy };
+  rig.classList.add('leaping');
 }
 
 // The arrival can beat `boot()` — main sends it on did-finish-load, and boot
@@ -705,24 +860,37 @@ function headBackIn() {
 /** Advance the trip home. Owns the duck's position while it runs. */
 function flyHome(t) {
   const k = Math.min(1, (t - homing.start) / homing.ms);
-  const ease = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-  x = homing.from.x + (homing.to.x - homing.from.x) * ease;
-  // Quadratic through from → apex → to, so the height is a real arc rather
-  // than a straight line with a wobble on it.
+  // Horizontal is linear. A thrown body carries constant sideways speed, and
+  // easing it made him decelerate into the landing while gravity accelerated
+  // him into it — two halves of one movement disagreeing.
+  x = homing.from.x + (homing.to.x - homing.from.x) * k;
+  // Vertical is the quadratic through from → apex → to, which is the parabola
+  // gravity would have drawn.
   const a = homing.from.y;
   const b = homing.apex;
   const c = homing.to.y;
   baseY = (1 - k) * (1 - k) * a + 2 * (1 - k) * k * b + k * k * c;
   dir = homing.to.x < homing.from.x ? 1 : -1;
+  // Lean into the launch, level at the apex, out of the descent.
   lean.p = -14 * dir * (1 - Math.abs(0.5 - k) * 2);
-  grounded = false;
   vx = 0;
   vy = 0;
-  if (k >= 1) {
-    const done = homing.onDone;
-    homing = null;
-    if (done) done();
+  grounded = false;
+  if (k < 1) return;
+
+  const arc = homing;
+  homing = null;
+  if (arc.land) {
+    // Planted, not released. Handing him to gravity at rest one pixel above
+    // the floor made him fall through it and get snapped back — a visible
+    // stutter on every landing. The squash is the impact the arc cannot show.
+    baseY = groundBaseY(x + DUCK_W / 2);
+    grounded = true;
+    vy = 0;
+    bnc.v += 7 * S;
+    walker.classList.remove('airborne');
   }
+  if (arc.onDone) arc.onDone();
 }
 
 // Where the app's corner is now. Main republishes it whenever the window moves
