@@ -44,6 +44,12 @@ import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from
 /** The gap left between the panel and the window when it steps aside. */
 const ASIDE_MARGIN = 16;
 
+/** Everything in the expanded panel that is not the conversation: the resize
+ *  grip, the gap under it, the composer, and the list's own padding. */
+const CHROME = 24 + 8 + 44 + 8;
+/** The shortest the panel gets: one exchange still needs somewhere to sit. */
+const FIT_MIN = 140;
+
 /** A conversation control: its own object on the composer's line, the same
  *  height as it. Two of them side by side, not one panel holding two. */
 const CONTROL =
@@ -86,6 +92,12 @@ export function NikoBar() {
   const [slashIndex, setSlashIndex] = useState(0);
   const [showChips, setShowChips] = useState(false);
   const [expandedHeight, setExpandedHeight] = useState(DEFAULT_EXPANDED_HEIGHT);
+  // The conversation's own height, so the panel fits it rather than standing at
+  // full size around one message. Dragging the grip pins it: past that point
+  // the height is a decision somebody made, not a measurement.
+  const [pinned, setPinned] = useState(false);
+  const [fit, setFit] = useState(FIT_MIN);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -104,8 +116,15 @@ export function NikoBar() {
   const matches = useMemo(() => matchSlash(value), [value]);
   const slashOpen = isSlashQuery(value) && matches.length > 0;
 
+  const grown = Math.min(expandedHeight, Math.max(FIT_MIN, fit + CHROME));
   const height =
-    state === 'expanded' ? expandedHeight : state === 'collapsed' ? COLLAPSED_HEIGHT : INPUT_HEIGHT;
+    state === 'expanded'
+      ? pinned
+        ? expandedHeight
+        : grown
+      : state === 'collapsed'
+        ? COLLAPSED_HEIGHT
+        : INPUT_HEIGHT;
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -162,6 +181,18 @@ export function NikoBar() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Measured rather than counted: a message's height depends on what is in it,
+  // and a streaming one changes while you watch.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = () => setFit(list.scrollHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [state]);
 
   useEffect(() => {
     if (state !== 'input') {
@@ -246,6 +277,7 @@ export function NikoBar() {
 
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
+    setPinned(true);
     dragRef.current = { startY: e.clientY, startHeight: expandedHeight };
     const move = (ev: MouseEvent) => {
       if (!dragRef.current) return;
@@ -369,9 +401,9 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className={`relative flex min-h-0 flex-1 flex-col rounded-2xl transition-opacity duration-300 ${
+        className={`relative flex min-h-0 flex-1 flex-col transition-opacity duration-300 ${
           state === 'expanded' ? 'overflow-visible' : 'overflow-hidden shadow-2xl'
-        } ${state === 'input' ? 'niko-ring' : ''}`}
+        } ${state === 'input' ? 'niko-ring rounded-full' : 'rounded-2xl'}`}
         style={{
           // Expanded there is no shell at all — the bubbles and the composer are
           // the only things drawn. In `input` the edge is `.niko-ring`, which
@@ -394,17 +426,19 @@ export function NikoBar() {
           }}
         >
           {state === 'expanded' && (
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-1">
-              {messages.map((message, i) => (
-                <NikoMessage
-                  key={message.id}
-                  message={message}
-                  isStreaming={
-                    isStreaming && message.role === 'assistant' && i === messages.length - 1
-                  }
-                />
-              ))}
-              <div ref={endRef} />
+            <div className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
+              <div ref={listRef} className="space-y-3">
+                {messages.map((message, i) => (
+                  <NikoMessage
+                    key={message.id}
+                    message={message}
+                    isStreaming={
+                      isStreaming && message.role === 'assistant' && i === messages.length - 1
+                    }
+                  />
+                ))}
+                <div ref={endRef} />
+              </div>
             </div>
           )}
 
@@ -470,7 +504,10 @@ export function NikoBar() {
             {state === 'expanded' && (
               <>
                 <button
-                  onClick={startNewConversation}
+                  onClick={() => {
+                    setPinned(false);
+                    startNewConversation();
+                  }}
                   className={CONTROL}
                   title="New conversation"
                   aria-label="New conversation"

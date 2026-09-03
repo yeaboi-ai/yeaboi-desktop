@@ -255,7 +255,9 @@ const COLLAPSED_CHROME = 2 * 1 + 2 * 24 + 16 + 8;
 /** Sized from its content, so the box it renders always fits. */
 export const COLLAPSED_WIDTH = COLLAPSED_TEXT_WIDTH + COLLAPSED_CHROME;
 export const COLLAPSED_HEIGHT = 44;
-export const INPUT_HEIGHT = 52;
+/** The pill's own height, carried into `input`: opening it should not resize
+ *  the thing you just clicked. */
+export const INPUT_HEIGHT = COLLAPSED_HEIGHT;
 export const DEFAULT_EXPANDED_HEIGHT = 440;
 export const MIN_EXPANDED_HEIGHT = 200;
 
