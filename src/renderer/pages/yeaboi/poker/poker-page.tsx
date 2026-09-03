@@ -8,7 +8,7 @@ import { DuckMark } from '@/components/brand/duck';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -86,7 +86,7 @@ function PokerBody() {
       {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
       {runs && runs.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
             <Section key={run.id} title={run.scope_label || run.poker_date}>
               <div className="grid grid-cols-3 gap-3">
@@ -120,21 +120,7 @@ function PokerBody() {
 export default function PokerPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="poker"
-            links={[
-              { href: '/team/retro', label: 'Retro', note: 'What the last sprint turned up' },
-              {
-                href: '/team/analysis',
-                label: 'Analysis',
-                note: 'Read a ticket before you size it',
-              },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <PokerBody />
       </Surface>
     </BackendGate>

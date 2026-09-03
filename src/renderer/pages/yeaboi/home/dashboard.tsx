@@ -24,7 +24,7 @@ import {
   Sunrise,
 } from 'lucide-react';
 
-import { GettingAround, Panel, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
 
@@ -129,37 +129,13 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
       () => setShares([]),
     );
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
-      (data) => setChangelog((data?.entries ?? []).slice(0, 8)),
+      (data) => setChangelog((data?.entries ?? []).slice(0, 5)),
       () => setChangelog([]),
     );
   }, []);
 
-  const aside = (
-    <>
-      <Panel title="What's new">
-        {changelog.length === 0 ? (
-          <Empty>Up to date.</Empty>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {changelog.map((entry, index) => (
-              <li key={entry.version ?? index}>
-                <p className="truncate font-body text-[12px] text-foreground">
-                  {entry.title ?? entry.version}
-                </p>
-                {entry.title && entry.version && (
-                  <p className="font-code text-[10px] text-muted-foreground/60">{entry.version}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-      <GettingAround />
-    </>
-  );
-
   return (
-    <Surface aside={aside}>
+    <Surface>
       <h1 className="font-display text-2xl text-foreground">
         {audience === 'solo' ? 'Your desk' : "Your team's desk"}
       </h1>
@@ -210,6 +186,23 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
             <Empty>Nothing shared yet.</Empty>
           ) : (
             <p className="font-body text-[26px] leading-none text-foreground">{shares.length}</p>
+          )}
+        </Tile>
+
+        <Tile title="What's new" icon={Sparkles}>
+          {changelog.length === 0 ? (
+            <Empty>Up to date.</Empty>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {changelog.map((entry, index) => (
+                <li
+                  key={entry.version ?? index}
+                  className="truncate px-2 font-body text-[12px] text-muted-foreground"
+                >
+                  {entry.title ?? entry.version}
+                </li>
+              ))}
+            </ul>
           )}
         </Tile>
 

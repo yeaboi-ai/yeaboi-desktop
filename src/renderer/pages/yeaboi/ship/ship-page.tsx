@@ -27,7 +27,7 @@ import {
 } from '@/lib/yeaboi/modes';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
 
 interface BoardStory {
@@ -330,21 +330,7 @@ function ShipBody() {
 export default function ShipPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="ship"
-            links={[
-              {
-                href: '/team/reporting',
-                label: 'Reporting',
-                note: 'The same period, written for the business',
-              },
-              { href: '/whats-new', label: "What's New", note: 'What yeaboi itself shipped' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <ShipBody />
       </Surface>
     </BackendGate>

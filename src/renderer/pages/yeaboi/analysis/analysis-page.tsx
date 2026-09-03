@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { DuckMark } from '@/components/brand/duck';
 import { type ProfileSummary, loadProfiles } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
 
 function Notice({ title, items }: { title: string; items: string[] }) {
@@ -108,21 +108,7 @@ function AnalysisBody() {
 export default function AnalysisPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="analysis"
-            links={[
-              {
-                href: '/projects/new/from-roadmap',
-                label: 'Roadmap',
-                note: 'Bring a quarterly plan in',
-              },
-              { href: '/team/standup', label: 'Standup', note: 'What moved since you last looked' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <AnalysisBody />
       </Surface>
     </BackendGate>

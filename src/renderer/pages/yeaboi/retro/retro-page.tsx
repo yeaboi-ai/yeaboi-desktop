@@ -18,7 +18,7 @@ import {
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { Button, buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -117,7 +117,7 @@ function RetroBody() {
       {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
       {runs && runs.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
             <Section key={run.id} title={run.sprint_name || run.retro_date}>
               <div className="grid grid-cols-3 gap-3">
@@ -149,17 +149,7 @@ function RetroBody() {
 export default function RetroPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="retro"
-            links={[
-              { href: '/team/poker', label: 'Poker', note: 'Size what the retro turned up' },
-              { href: '/provenance', label: 'Provenance', note: 'Where a decision came from' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <RetroBody />
       </Surface>
     </BackendGate>

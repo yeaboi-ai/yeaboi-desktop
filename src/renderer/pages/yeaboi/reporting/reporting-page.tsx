@@ -9,7 +9,7 @@ import { maskText } from '@/lib/yeaboi/boards';
 import { type ReportRun, reportingHistory } from '@/lib/yeaboi/modes';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { buttonVariants } from '@/components/ui/button';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -84,7 +84,7 @@ function ReportingBody() {
       {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
       {runs && runs.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {runs.map((run) => (
             <Section key={run.id} title={maskText(run.period || run.period_end, mask)}>
               <div className="grid grid-cols-3 gap-3">
@@ -121,17 +121,7 @@ function ReportingBody() {
 export default function ReportingPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="reporting"
-            links={[
-              { href: '/team/ship', label: 'Ship', note: 'The release note for the same window' },
-              { href: '/usage', label: 'Usage', note: 'What the agents cost to run it' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <ReportingBody />
       </Surface>
     </BackendGate>

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { type PerformanceRoster, loadPerformanceRoster } from '@/lib/yeaboi/modes';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -79,17 +79,7 @@ function PerformanceBody() {
 export default function PerformancePage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="performance"
-            links={[
-              { href: '/team/retro', label: 'Retro', note: 'The trail a sprint leaves' },
-              { href: '/provenance', label: 'Provenance', note: 'Evidence with a date on it' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <PerformanceBody />
       </Surface>
     </BackendGate>

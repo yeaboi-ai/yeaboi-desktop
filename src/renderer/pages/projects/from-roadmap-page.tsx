@@ -1,5 +1,7 @@
 'use client';
 
+import { Surface } from '@/components/yeaboi/surface';
+
 // Roadmap intake — point yeaboi at the quarterly roadmap, pick a project,
 // and it becomes a workspace project: created on the platform backend with
 // its blueprint overview seeded from the roadmap item, landing on the
@@ -263,9 +265,9 @@ function RoadmapBody() {
 export default function FromRoadmapPage() {
   return (
     <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <Surface>
         <RoadmapBody />
-      </div>
+      </Surface>
     </BackendGate>
   );
 }

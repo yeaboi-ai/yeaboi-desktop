@@ -31,7 +31,7 @@ import {
 } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { CeremonyAside, Surface } from '@/components/yeaboi/surface';
+import { Surface } from '@/components/yeaboi/surface';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Badge } from '@/components/ui/badge';
@@ -760,21 +760,7 @@ function ArtifactEditor({ refer, onApplied }: { refer: ArtifactRef; onApplied?: 
 export default function StandupPage() {
   return (
     <BackendGate>
-      <Surface
-        aside={
-          <CeremonyAside
-            kind="standup"
-            links={[
-              {
-                href: '/team/standup/schedule',
-                label: 'Schedule',
-                note: 'When it runs without you',
-              },
-              { href: '/team/standup/review', label: 'Review', note: 'Read back an earlier one' },
-            ]}
-          />
-        }
-      >
+      <Surface>
         <StandupBody />
       </Surface>
     </BackendGate>
