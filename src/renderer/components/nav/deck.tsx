@@ -92,8 +92,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
         (route) => pathname === route || pathname?.startsWith(`${route}/`),
       );
       if (here === -1) return false;
-      const next = here + step;
-      if (next < 0 || next >= routes.length) return false;
+      // The deck is a loop: past the last surface is the first one again, and
+      // scrolling up off the top lands on the last. A dead end at either end
+      // reads as the scroll having broken rather than as an edge.
+      const next = (here + step + routes.length) % routes.length;
       router.push(routes[next]!);
       if (!reduced) {
         setPreview(true);
