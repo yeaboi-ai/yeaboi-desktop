@@ -97,7 +97,7 @@ function DayCell({
   return (
     <div
       className={`rounded-xl p-1.5 ring-1 transition-colors ${
-        date === today ? 'bg-secondary/50 ring-border' : 'ring-border/30'
+        date === today ? 'bg-secondary/60 ring-border' : 'bg-card ring-border/40'
       } ${dim ? 'opacity-40' : ''}`}
       style={{ minHeight: height }}
     >
@@ -172,8 +172,8 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
   const step = (by: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
 
   return (
-    <section className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-      <header className="flex items-center justify-between">
+    <section>
+      <header className="flex items-center justify-between px-1">
         <h2 className="font-body text-[13px] font-medium text-foreground">
           {expanded
             ? month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
