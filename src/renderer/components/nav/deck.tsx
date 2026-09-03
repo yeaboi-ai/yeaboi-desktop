@@ -23,7 +23,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAudience } from '@/components/providers/audience-provider';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { railSections } from '@/lib/nav/sections';
-import { durationFor, revealedAt, scramble } from '@shared/decrypt';
 
 /** A wheel event arriving this long after the last one starts a new gesture.
  *  This, not the size of the delta, is what tells a wheel from a trackpad: a
@@ -92,8 +91,6 @@ export function Deck({ children }: { children: React.ReactNode }) {
 
   const [preview, setPreview] = useState(false);
   const [held, setHeld] = useState('none');
-  /** The scale and offset the port is applying, so the heading can undo it. */
-  const [shrink, setShrink] = useState<[number, number, number, number]>([1, 1, 0, 0]);
   const travel = useRef(0);
   const lastWheel = useRef(0);
   const lockedUntil = useRef(0);
@@ -125,7 +122,6 @@ export function Deck({ children }: { children: React.ReactNode }) {
         const tx = (left - right) / 2;
         const ty = (top - bottom) / 2;
         setHeld(`translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`);
-        setShrink([sx, sy, tx, ty]);
         setPreview(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         settleTimer.current = setTimeout(settle, SETTLE_MS);
@@ -194,10 +190,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
   }, [deal]);
 
   // The title and its line of description are the two things you read to find
-  // out where you have landed, so they neither rise with the rest of the surface
-  // nor travel with its pull-back: they hold their ground and resolve in place.
-  // Driven from here because every page writes its own heading — the deck is
-  // what knows a surface has arrived, and by how much it is being held back.
+  // out where you have landed, so they neither rise with the rest of the
+  // surface nor travel with its pull-back — they simply stay where they are.
+  // Driven from here because every page writes its own heading, and the deck is
+  // what knows how much a surface is being held back.
   useEffect(() => {
     let frame = 0;
     let stop = () => {};
@@ -206,72 +202,76 @@ export function Deck({ children }: { children: React.ReactNode }) {
       const lines = [title, title.nextElementSibling, title.parentElement?.nextElementSibling]
         .filter((el): el is HTMLElement => el instanceof HTMLElement)
         .filter((el) => el === title || el.tagName === 'P')
-        // Only plain text: anything with markup of its own would lose it.
-        .filter((el) => el.children.length === 0 && el.textContent!.trim().length > 0)
-        .map((el) => ({ el, text: el.textContent! }));
+        .filter((el) => el.textContent!.trim().length > 0)
+        .map((el) => ({ el }));
       if (lines.length === 0) return () => {};
 
-      // Undoing the port's transform, per element, because the offset a scale
-      // gives you depends on how far from its centre you sit.
-      const [sx, sy, tx, ty] = shrink;
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      for (const { el } of lines) {
-        el.classList.add('deck-steady');
-        if (!preview || (sx === 1 && sy === 1)) {
-          el.style.transform = '';
-          continue;
+      // Undoing the port's transform, every frame, from the matrix the port is
+      // actually showing. Computing it once from the target and letting CSS
+      // animate towards it made the heading lag the surface and drift: the two
+      // transforms have to cancel at every instant, not only at the end.
+      const port = document.querySelector<HTMLElement>('[data-deck]');
+      let hold = 0;
+      const steady = () => {
+        if (!port) return;
+        const m = new DOMMatrix(getComputedStyle(port).transform);
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        for (const { el } of lines) {
+          if (m.a === 1 && m.d === 1 && m.e === 0 && m.f === 0) {
+            el.style.transform = '';
+            continue;
+          }
+          // The element's own layout position, which its transform does not
+          // change — read it back off the transform currently applied.
+          const box = el.getBoundingClientRect();
+          const applied = new DOMMatrix(getComputedStyle(el).transform);
+          const left = (box.left - m.e - cx * (1 - m.a)) / m.a - applied.e;
+          const top = (box.top - m.f - cy * (1 - m.d)) / m.d - applied.f;
+          el.style.transform =
+            `translate(${(left - cx) * (1 / m.a - 1) - m.e / m.a}px, ` +
+            `${(top - cy) * (1 / m.d - 1) - m.f / m.d}px) scale(${1 / m.a}, ${1 / m.d})`;
         }
-        const box = el.getBoundingClientRect();
-        el.style.transform =
-          `translate(${(box.left - cx) * (1 / sx - 1) - tx / sx}px, ` +
-          `${(box.top - cy) * (1 / sy - 1) - ty / sy}px) scale(${1 / sx}, ${1 / sy})`;
-      }
-
-      if (reduced) return () => {};
-      const started = performance.now();
-      const runs = lines.map(({ text }) => durationFor(text.length));
-      let tickFrame = requestAnimationFrame(function tick(now: number) {
-        const elapsed = now - started;
-        let running = false;
-        lines.forEach(({ el, text }, index) => {
-          const progress = elapsed / runs[index]!;
-          el.textContent = scramble(
-            text,
-            revealedAt(text.length, progress),
-            Math.floor(elapsed / 40),
-          );
-          if (progress < 1) running = true;
-        });
-        if (running) tickFrame = requestAnimationFrame(tick);
-      });
+        hold = requestAnimationFrame(steady);
+      };
+      for (const { el } of lines) el.classList.add('deck-steady');
+      steady();
 
       return () => {
-        cancelAnimationFrame(tickFrame);
-        // Whatever happens, the words end up as themselves.
-        for (const { el, text } of lines) el.textContent = text;
+        cancelAnimationFrame(hold);
+        for (const { el } of lines) el.style.transform = '';
       };
     };
 
     // The heading is not there the moment a route commits — a page renders its
-    // backend gate first — so wait for it rather than looking once and giving
-    // up, which is why none of this was happening at all.
-    const waiting = performance.now();
-    const look = () => {
+    // backend gate first — so watch for it rather than looking once and giving
+    // up. An observer rather than a polled frame: it fires before the browser
+    // paints, so the heading is never drawn for a frame uncompensated, which
+    // was worth 13px of jump on the surfaces that gate.
+    const found = () => {
       const title = document.querySelector('.deck-page h1');
-      if (!(title instanceof HTMLElement)) {
-        if (performance.now() - waiting < HEADING_WAIT_MS) frame = requestAnimationFrame(look);
-        return;
-      }
+      if (!(title instanceof HTMLElement)) return false;
       stop = begin(title);
+      return true;
     };
 
-    look();
+    let observer: MutationObserver | null = null;
+    if (!found()) {
+      observer = new MutationObserver(() => {
+        if (found()) observer?.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      // Nothing arrived: stop watching rather than observing the document for
+      // the life of the surface.
+      frame = window.setTimeout(() => observer?.disconnect(), HEADING_WAIT_MS);
+    }
+
     return () => {
-      cancelAnimationFrame(frame);
+      clearTimeout(frame);
+      observer?.disconnect();
       stop();
     };
-  }, [pathname, reduced, preview, shrink]);
+  }, [pathname, reduced]);
 
   useEffect(
     () => () => {

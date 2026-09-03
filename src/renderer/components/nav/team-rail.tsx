@@ -100,10 +100,6 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     const box = navRef.current?.getBoundingClientRect();
     if (box) setAnchor(box.top);
     setOpen(true);
-    if (activeHref === HOME_HREF) {
-      setWide(true);
-      return;
-    }
     dwell.current = setTimeout(() => setWide(true), LABEL_DWELL_MS);
   };
   const leave = () => {
@@ -122,7 +118,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // On a panel the rail is a notch: Home and the icon you are on. The
   // rows are still here, collapsed to no height, so the list grows back out of
   // the notch on hover rather than appearing beside it.
-  const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+  // Every surface is a notch until you reach for the rail, Home included:
+  // landing somewhere should not throw the whole list open, and arriving home
+  // was doing exactly that.
+  const notch = !open && Boolean(activeHref);
   // Rows, plus a divider between sections, plus the rail's own padding.
   const listHeight = items.length * ROW + (sections.length - 1) * 13 + 12;
 
@@ -223,10 +222,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   href={href}
                   title={label}
                   data-active={active}
-                  // Home never opens the rail. In the notch it is the way back
-                  // to the map, and reaching for it should not throw the list
-                  // open across the page.
-                  onMouseEnter={href === HOME_HREF ? undefined : enter}
+                  // Reaching for Home from somewhere else is a click, not a
+                  // request for the list — but on Home it is the only row
+                  // there, so it has to be the way the rail opens.
+                  onMouseEnter={href === HOME_HREF && activeHref !== HOME_HREF ? undefined : enter}
                   aria-hidden={notch && !kept}
                   tabIndex={notch && !kept ? -1 : undefined}
                   className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
