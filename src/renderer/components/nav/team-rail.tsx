@@ -66,8 +66,6 @@ const HOME_HREF = '/home';
  *  the notch means "show me where I can go", which the icons answer; the words
  *  are for staying. */
 const LABEL_DWELL_MS = 520;
-/** How close to the bottom of the window the open rail may come. */
-const EDGE_GAP = 12;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -76,7 +74,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // the whole nav across the page. Either way it is a row that opens the rail,
   // never the rail itself; leaving the rail closes it.
   const [open, setOpen] = useState(false);
-  const [wide, setWide] = useState(false);
+  const [labelled, setLabelled] = useState(false);
+  // Labels only while the list is open. Held separately they could outlive it —
+  // a dwell timer firing after something had already closed the rail left a
+  // two-row notch wearing full-width labels, and every row in it was then a
+  // click that landed on the page behind.
+  const wide = open && labelled;
   const sections = railSections(audience);
   const items = sections.flatMap((section) => section.items);
   const activeHref = useActiveHref(items.map((item) => item.href));
@@ -88,25 +91,17 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [markerTop, setMarkerTop] = useState<number | null>(null);
 
-  // Where the notch sat when the cursor arrived. The rail is centred, so growing
-  // it moved every icon — including Home, which is why clicking Home from a
-  // panel missed: by the time the click landed the icon had moved out from under
-  // it. Open, the rail keeps that top edge and grows downward instead.
   const navRef = useRef<HTMLElement>(null);
-  const [anchor, setAnchor] = useState<number | null>(null);
 
   const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enter = () => {
-    const box = navRef.current?.getBoundingClientRect();
-    if (box) setAnchor(box.top);
     setOpen(true);
-    dwell.current = setTimeout(() => setWide(true), LABEL_DWELL_MS);
+    dwell.current = setTimeout(() => setLabelled(true), LABEL_DWELL_MS);
   };
   const leave = () => {
     if (dwell.current) clearTimeout(dwell.current);
-    setAnchor(null);
     setOpen(false);
-    setWide(false);
+    setLabelled(false);
   };
   useEffect(
     () => () => {
@@ -118,12 +113,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // On a panel the rail is a notch: Home and the icon you are on. The
   // rows are still here, collapsed to no height, so the list grows back out of
   // the notch on hover rather than appearing beside it.
-  // Every surface is a notch until you reach for the rail, Home included:
-  // landing somewhere should not throw the whole list open, and arriving home
-  // was doing exactly that.
-  const notch = !open && Boolean(activeHref);
-  // Rows, plus a divider between sections, plus the rail's own padding.
-  const listHeight = items.length * ROW + (sections.length - 1) * 13 + 12;
+  // A panel is a notch until you reach for the rail. Home is the map — the one
+  // surface you go to in order to see where everything is — so it shows the
+  // whole list of icons. The labels still wait for a hover, everywhere.
+  const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
   // The marker travels on a page turn and only then. Hovering changes the rows'
   // heights, and a marker that animates to catch up reads as a second thing
@@ -145,8 +138,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     setTravelling(navigated);
     if (navigated) {
       setOpen(false);
-      setWide(false);
-      setAnchor(null);
+      setLabelled(false);
       if (dwell.current) clearTimeout(dwell.current);
     }
     measure();
@@ -168,20 +160,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       onMouseLeave={leave}
       onFocusCapture={() => {
         setOpen(true);
-        setWide(true);
+        setLabelled(true);
       }}
       onBlurCapture={leave}
-      className={`fixed left-0 z-40 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out ${
-        anchor === null ? 'top-1/2 -translate-y-1/2' : ''
-      }`}
-      style={{
-        width: wide ? WIDE : NARROW,
-        // Held to the notch's own top while open, clamped so a long list cannot
-        // run off the bottom of the window.
-        ...(anchor === null
-          ? {}
-          : { top: Math.min(anchor, window.innerHeight - EDGE_GAP - listHeight) }),
-      }}
+      // Centred, and it stays centred as it grows: opening it takes the rail
+      // out both ways from the notch rather than dropping a list beneath it.
+      className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
+      style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
         {markerTop !== null && (
