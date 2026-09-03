@@ -104,7 +104,7 @@ export interface RecentQuery {
 /** null means the sidecar predates the route. */
 export async function loadRecentSessions(query: RecentQuery = {}): Promise<RecentSession[] | null> {
   const params = new URLSearchParams();
-  if (query.limit) params.set('limit', String(query.limit));
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
   if (query.mode) params.set('mode', query.mode);
   if (query.projectId) params.set('project_id', query.projectId);
   const suffix = params.toString();
@@ -120,11 +120,29 @@ export async function loadEngineProjectSessions(
   query: { mode?: string; limit?: number } = {},
 ): Promise<RecentSession[] | null> {
   const params = new URLSearchParams();
-  if (query.limit) params.set('limit', String(query.limit));
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
   if (query.mode) params.set('mode', query.mode);
   const suffix = params.toString();
   const body = await apiGetOptional<{ sessions: RecentSession[] }>(
     `/api/projects/${encodeURIComponent(engineId)}/sessions${suffix ? `?${suffix}` : ''}`,
   );
   return body ? body.sessions : null;
+}
+
+/** Runs grouped by the project they ran inside, newest first each; unscoped
+ *  runs are left out. The key is the engine's `proj-<8hex>` id. */
+export function runsByProject(rows: RecentSession[]): Map<string, RecentSession[]> {
+  const groups = new Map<string, RecentSession[]>();
+  for (const row of [...rows].sort((a, b) => stamp(b).localeCompare(stamp(a)))) {
+    if (!row.project_id) continue;
+    const list = groups.get(row.project_id);
+    if (list) list.push(row);
+    else groups.set(row.project_id, [row]);
+  }
+  return groups;
+}
+
+/** The runs that belong to no project: what the Sessions half lists. */
+export function oneOffRuns(rows: RecentSession[]): RecentSession[] {
+  return rows.filter((row) => !row.project_id);
 }

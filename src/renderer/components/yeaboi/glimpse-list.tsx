@@ -41,8 +41,9 @@ export function GlimpseList({
             href={row.href}
             className="group flex items-baseline justify-between gap-6 py-2 text-[13px] font-body transition-colors"
           >
-            <span className="min-w-0 truncate text-foreground group-hover:text-primary">
-              {row.primary}
+            <span className="min-w-0 truncate">
+              <span className="text-foreground group-hover:text-primary">{row.primary}</span>
+              {row.detail && <span className="ml-2 text-muted-foreground">{row.detail}</span>}
             </span>
             <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
               {row.secondary}

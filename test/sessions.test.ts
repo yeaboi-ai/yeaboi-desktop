@@ -1,14 +1,22 @@
 // The recent-sessions list's pure half: mode aliases, day words, shaping.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { apiGetOptional } from '../src/renderer/lib/yeaboi/api';
 import {
   MODE_KEY_ALIASES,
   cardKeyForMode,
+  loadRecentSessions,
+  oneOffRuns,
   relativeDay,
+  runsByProject,
   shapeSessions,
   type RecentSession,
 } from '../src/renderer/lib/yeaboi/sessions';
 import { MODE_ROUTES } from '../src/renderer/lib/yeaboi/tips';
+
+vi.mock('../src/renderer/lib/yeaboi/api', () => ({
+  apiGetOptional: vi.fn(async () => ({ sessions: [] })),
+}));
 
 const NOW = new Date(2026, 8, 3, 15, 0, 0); // 3 Sep 2026, local time
 
@@ -125,5 +133,38 @@ describe('shapeSessions', () => {
       NOW,
     );
     expect(new Set(shaped.map((s) => s.key)).size).toBe(3);
+  });
+});
+
+describe('runsByProject and oneOffRuns', () => {
+  const rows = [
+    row({ session_id: 'a', project_id: 'proj-1', last_modified: '2026-09-01T10:00:00' }),
+    row({ session_id: 'b', project_id: '', last_modified: '2026-09-03T10:00:00' }),
+    row({ session_id: 'c', project_id: 'proj-1', last_modified: '2026-09-02T10:00:00' }),
+    row({ session_id: 'd', project_id: 'proj-2', last_modified: '2026-08-02T10:00:00' }),
+  ];
+
+  it('groups the scoped runs by project, newest first, and leaves the rest out', () => {
+    const groups = runsByProject(rows);
+    expect([...groups.keys()]).toEqual(['proj-1', 'proj-2']);
+    expect(groups.get('proj-1')!.map((r) => r.session_id)).toEqual(['c', 'a']);
+    expect(groups.get('proj-2')!.map((r) => r.session_id)).toEqual(['d']);
+  });
+
+  it('keeps only the unscoped runs as one-offs', () => {
+    expect(oneOffRuns(rows).map((r) => r.session_id)).toEqual(['b']);
+  });
+});
+
+describe('loadRecentSessions', () => {
+  it('asks for every row when the limit is zero', async () => {
+    await loadRecentSessions({ limit: 0 });
+    expect(apiGetOptional).toHaveBeenLastCalledWith('/api/sessions/recent?limit=0');
+    await loadRecentSessions({});
+    expect(apiGetOptional).toHaveBeenLastCalledWith('/api/sessions/recent');
+    await loadRecentSessions({ limit: 3, projectId: 'proj-1' });
+    expect(apiGetOptional).toHaveBeenLastCalledWith(
+      '/api/sessions/recent?limit=3&project_id=proj-1',
+    );
   });
 });
