@@ -56,6 +56,7 @@ help: ## Show this help
 # The backend is the planning-platform FastAPI stack, run from that repo:
 #   cd ../planning-platform && docker compose up -d && make db-migrate && make dev-backend
 dev: ## Run the app with HMR (needs the planning-platform backend on :8000)
+	bash scripts/dev-preflight.sh
 	$(NPM) run dev
 
 # Rendered from the website's master duck art, committed here, and asserted by
