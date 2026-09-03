@@ -60,6 +60,10 @@ export class Pet {
   private introducing = false;
   /** Told when the introduction ends, so the window can bring him back in. */
   private onIntroDone: () => void = () => undefined;
+  /** Where the app window draws its own duck, in screen coordinates. Reported
+   *  by the renderer, so a leap can start from the corner he appears to live
+   *  in rather than from wherever the overlay last left him. */
+  private anchor: { x: number; y: number } | null = null;
   /** The app is quitting; no state change may revive the window. */
   private quitting = false;
   /** Where a click on a duck holding a question should land. */
@@ -96,6 +100,24 @@ export class Pet {
       this.applyVisibility();
       this.onIntroDone();
     });
+  }
+
+  /** The screen point the app's own duck occupies. */
+  setAnchor(point: { x: number; y: number }): void {
+    this.anchor = point;
+  }
+
+  /**
+   * Come out of the app window with a jump, from the corner he sits in.
+   *
+   * For minimising and hiding: the duck is about to be the only one left, and
+   * appearing mid-screen makes him a different duck from the one that was in
+   * the corner a moment ago. No-op until the app has told us where that corner
+   * is, and until he is switched on.
+   */
+  leapOut(): void {
+    if (!this.enabled || !this.anchor) return;
+    this.send({ ...this.local(this.anchor), leap: true });
   }
 
   /** Wire the window's half of the introduction: what to do when he is home. */
@@ -215,20 +237,31 @@ export class Pet {
     // click inside the app, so the app is focused, so a duck that waited for
     // suppression to lift would arrive invisible.
     this.introducing = true;
+    this.anchor = screenPoint;
     this.setEnabled(true);
+    if (!this.send({ ...this.local(screenPoint), intro: true })) this.introducing = false;
+  }
+
+  /** A screen point in the overlay's own coordinates. The overlay covers a
+   *  whole display, so this is the point less that display's origin. */
+  private local(point: { x: number; y: number }): { x: number; y: number } {
     const window = this.window;
-    if (!window || window.isDestroyed()) {
-      this.introducing = false;
-      return;
-    }
+    if (!window || window.isDestroyed()) return point;
     const bounds = window.getBounds();
-    const local = { x: screenPoint.x - bounds.x, y: screenPoint.y - bounds.y };
-    const send = (): void => {
-      if (window.isDestroyed()) return;
-      window.webContents.send('pet:arrive', { ...local, intro: true });
+    return { x: point.x - bounds.x, y: point.y - bounds.y };
+  }
+
+  /** Send an arrival, waiting for the window to finish loading if it is new.
+   *  False when there is no window to send to. */
+  private send(arrival: Record<string, unknown>): boolean {
+    const window = this.window;
+    if (!window || window.isDestroyed()) return false;
+    const post = (): void => {
+      if (!window.isDestroyed()) window.webContents.send('pet:arrive', arrival);
     };
-    if (window.webContents.isLoading()) window.webContents.once('did-finish-load', send);
-    else send();
+    if (window.webContents.isLoading()) window.webContents.once('did-finish-load', post);
+    else post();
+    return true;
   }
 
   /** Tear the duck down for app quit. Latches: nothing revives him after. */

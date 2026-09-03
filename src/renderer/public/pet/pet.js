@@ -574,6 +574,24 @@ const INTRO_BEAT_MS = 2600;
 /** How long the trip back to the app window takes. */
 const HOMING_MS = 780;
 
+/** The jump out of the app window: a shove up and away from the nearer wall,
+ *  with gravity doing the rest — the rig's own physics rather than a second
+ *  animation that has to be kept in step with it.
+ *
+ *  `startleVy` is already negative (up is negative here) so it is used as it
+ *  stands; negating it is a duck fired at the floor. Thrown rather than
+ *  walked, because the horizontal intent that damps `vx` to nothing in three
+ *  frames is skipped while tumbling — without it he drops where he stood
+ *  instead of travelling. */
+function leapOff() {
+  vy = BASE.startleVy * S * 1.6;
+  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 9;
+  tumbling = true;
+  grounded = false;
+  mode = 'throw';
+  walker.classList.add('airborne');
+}
+
 function applyArrival(arrival) {
   parked = false;
   dragging = false;
@@ -589,26 +607,15 @@ function applyArrival(arrival) {
   vx = 0;
   vy = 0;
   grounded = false;
+  if (arrival.leap) leapOff();
   if (!arrival.intro) {
-    say('yeaboi!');
+    // A leap with nothing to say: the app went away and he is coming out to
+    // the desktop. He gets on with being a duck once he lands.
+    if (!arrival.leap) say('yeaboi!');
     pickTarget();
     return;
   }
   homePoint = { x, y: baseY };
-  // A shove up and away from the nearer wall; gravity does the rest, so the
-  // jump out of the window is the rig's own physics rather than a second
-  // animation that has to be kept in step with it.
-  //
-  // `startleVy` is already negative — up is negative here — so it is used as
-  // it stands. Negating it is a duck fired at the floor.
-  vy = BASE.startleVy * S * 1.6;
-  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 9;
-  // Thrown, not walking: the horizontal intent that damps `vx` to nothing in
-  // three frames is skipped while tumbling, so the leap keeps its momentum and
-  // he travels instead of dropping where he stood.
-  tumbling = true;
-  mode = 'throw';
-  walker.classList.add('airborne');
   introducing = true;
   clearTimeout(introTimer);
   // He stands where he lands: wandering off mid-sentence would drag the bubble

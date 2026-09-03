@@ -94,6 +94,24 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
     );
   }, []);
 
+  // Tell main where he is drawn, so a leap out — on minimise, or on accepting
+  // the offer — starts from this corner rather than from wherever the overlay
+  // last left him. Re-reported on resize, since the dock is anchored to the
+  // window's edges.
+  useEffect(() => {
+    const report = () => {
+      const rect = duckRef.current?.getBoundingClientRect();
+      if (!rect || rect.width === 0) return;
+      window.yeaboi.petAnchor({
+        x: window.screenX + rect.left + rect.width / 2,
+        y: window.screenY + rect.top + rect.height / 2,
+      });
+    };
+    report();
+    window.addEventListener('resize', report);
+    return () => window.removeEventListener('resize', report);
+  }, [innerWidth]);
+
   const mode = dockMode({
     enabled,
     tipCount: tips.length,

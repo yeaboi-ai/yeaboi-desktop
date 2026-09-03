@@ -109,6 +109,18 @@ function createMainWindow(): void {
   });
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
+
+  // Minimising is the app getting out of the way, which is exactly when the
+  // duck comes out — so he leaves the same way he does when invited, jumping
+  // from the corner he was sitting in rather than appearing mid-screen.
+  // Suppression is lifted here rather than waiting for the blur settle, or he
+  // would still be hidden when the leap plays.
+  const leaveWithTheWindow = (): void => {
+    pet.setSuppressed(false);
+    pet.leapOut();
+  };
+  mainWindow.on('minimize', leaveWithTheWindow);
+  mainWindow.on('hide', leaveWithTheWindow);
   mainWindow.on('closed', () => {
     mainWindow = null;
     // Closing the window doesn't always route through blur; if nothing in the
@@ -376,6 +388,12 @@ if (!gotLock) {
     // He has finished showing himself off; bring him back into the window.
     pet.onIntroduced(() => {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('pet:returned');
+    });
+    ipcMain.on('pet:anchor', (_event, point: unknown) => {
+      const p = (point ?? {}) as { x?: unknown; y?: unknown };
+      if (typeof p.x !== 'number' || typeof p.y !== 'number') return;
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+      pet.setAnchor({ x: p.x, y: p.y });
     });
     ipcMain.handle('pet:handoff', (_event, point: unknown) => {
       const p = (point ?? {}) as { x?: unknown; y?: unknown };
