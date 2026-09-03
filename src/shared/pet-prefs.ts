@@ -37,7 +37,10 @@ export interface PetPrefs {
   hue: number;
   /** Saturation multiplier; 0 is a greyscale duck. */
   vividness: number;
-  /** How far above the floor the feet sit — the tray's Sit higher/lower. */
+  /** How far above the surface under him the feet sit — the tray's Sit
+   *  higher/lower. Zero means standing on it, which is where a duck goes
+   *  unless somebody asks for otherwise: with the Dock hidden there is nothing
+   *  beneath him to clear, and any lift reads as floating. */
   raise: number;
   /** Wander along the floor, rather than standing where it was put. */
   walk: boolean;
@@ -70,7 +73,7 @@ export const PET_DEFAULTS: PetPrefs = {
   scale: 1,
   hue: 0,
   vividness: 1,
-  raise: 20,
+  raise: 0,
   walk: true,
   evade: false,
   notify: { os: true, bubble: true, toast: true, chime: false },

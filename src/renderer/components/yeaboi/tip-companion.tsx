@@ -311,7 +311,10 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
               reduced || offer.where === 'here'
                 ? undefined
                 : {
-                    animation: `duck-leap-${offer.where === 'leaving' ? 'out' : 'in'} ${LEAP_MS}ms cubic-bezier(0.4, 0, 0.6, 1) forwards`,
+                    // Linear between keyframes: the arc's own percentages
+                    // already carry the gravity — fast off the ground, slow at
+                    // the apex — and an ease on top of that fights them.
+                    animation: `duck-leap-${offer.where === 'leaving' ? 'out' : 'in'} ${LEAP_MS}ms linear forwards`,
                   }
             }
           >

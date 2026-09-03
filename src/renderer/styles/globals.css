@@ -486,44 +486,51 @@ span[data-duck-mark] [data-state] > span {
   }
 }
 
-/* The duck leaving for the desktop: a crouch, then an arc up and out through
-   the bottom-right corner, carrying him clear of the window. Nothing fades —
-   he leaves under his own power and the window edge is what takes him out of
-   sight, which is the whole point of the hand-off. The distances are far
-   enough past the 24px dock offset that the last frame is off-screen. */
+/* The duck leaving for the desktop.
+   The dock sits 24px from the window's edges, so there is almost no sideways
+   room: anything past that is clipped by the frame and the jump reads as the
+   duck vanishing. All the room is upward — the window is hundreds of pixels
+   tall — so that is where the leap goes. He crouches, springs high enough to
+   be watched, hangs, then dives out through the corner in the last fifth.
+   Nothing fades: the frame is what takes him out of sight. */
 @keyframes duck-leap-out {
   0% {
     transform: translate(0, 0) scale(1, 1) rotate(0deg);
   }
-  16% {
-    transform: translate(0, 10px) scale(1.16, 0.82) rotate(0deg);
+  14% {
+    transform: translate(0, 12px) scale(1.18, 0.8) rotate(0deg);
   }
-  34% {
-    transform: translate(-6px, -14px) scale(0.88, 1.18) rotate(-6deg);
+  42% {
+    transform: translate(-14px, -118px) scale(0.86, 1.2) rotate(-10deg);
   }
-  62% {
-    transform: translate(48px, -78px) scale(0.94, 1.08) rotate(14deg);
+  64% {
+    transform: translate(6px, -152px) scale(1, 1) rotate(6deg);
+  }
+  82% {
+    transform: translate(52px, -96px) scale(0.96, 1.06) rotate(22deg);
   }
   100% {
-    transform: translate(190px, 140px) scale(1, 1) rotate(34deg);
+    transform: translate(210px, 170px) scale(1, 1) rotate(44deg);
   }
 }
 
 /* And back in, when he has finished showing himself off: the same arc read the
-   other way — he vaults in over the corner and lands where he started. No fade
-   here either; he simply comes back into view. */
+   other way — he vaults in over the corner, hangs, and drops onto his perch. */
 @keyframes duck-leap-in {
   0% {
-    transform: translate(190px, 140px) scale(1, 1) rotate(34deg);
+    transform: translate(210px, 170px) scale(1, 1) rotate(44deg);
   }
-  38% {
-    transform: translate(48px, -78px) scale(0.94, 1.08) rotate(14deg);
+  22% {
+    transform: translate(52px, -96px) scale(0.96, 1.06) rotate(22deg);
   }
-  66% {
-    transform: translate(-6px, -14px) scale(0.88, 1.18) rotate(-6deg);
+  44% {
+    transform: translate(6px, -152px) scale(1, 1) rotate(6deg);
   }
-  84% {
-    transform: translate(0, 10px) scale(1.16, 0.82) rotate(0deg);
+  72% {
+    transform: translate(-14px, -118px) scale(0.86, 1.2) rotate(-10deg);
+  }
+  92% {
+    transform: translate(0, 12px) scale(1.18, 0.8) rotate(0deg);
   }
   100% {
     transform: translate(0, 0) scale(1, 1) rotate(0deg);

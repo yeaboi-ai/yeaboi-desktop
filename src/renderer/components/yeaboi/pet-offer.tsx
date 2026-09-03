@@ -16,9 +16,10 @@ import { X } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { normalizePetPrefs, shouldOfferPet, type PetOfferState } from '@shared/pet-prefs';
 
-/** How long a leap runs, out or back. Long enough to read as a jump, short
- *  enough that nobody waits for it. Matches the keyframes in globals.css. */
-export const LEAP_MS = 420;
+/** How long a leap runs, out or back. The arc climbs 150px and comes back
+ *  down, so it needs long enough to be watched — at 420ms it was a flicker.
+ *  Matches the keyframes in globals.css. */
+export const LEAP_MS = 900;
 
 /** Where the duck is, from the app's point of view. */
 export type DuckWhereabouts =
