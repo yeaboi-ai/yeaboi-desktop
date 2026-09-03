@@ -6,7 +6,10 @@
 // The duck sits on Niko's side only. A user avatar would be a second identity
 // in a 560px bar that already knows who is typing.
 
+import { useEffect, useRef, useState } from 'react';
+
 import { DuckMark } from '@/components/brand/duck';
+import { revealStep, revealed } from '@shared/typewriter';
 import { NikoMarkdown } from './niko-markdown';
 import { NikoToolCard } from './niko-tool-card';
 import type { NikoMessage as NikoMessageType } from '@/hooks/use-niko';
@@ -16,27 +19,69 @@ interface NikoMessageProps {
   isStreaming?: boolean;
 }
 
-export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
-  if (message.role === 'user') {
-    return (
-      <div className="flex justify-end">
-        <div
-          className="max-w-[85%] rounded-2xl rounded-br-md border border-primary/25 px-3.5 py-2 backdrop-blur-sm"
-          // Nearly solid, because there is no panel behind it any more: a tint
-          // meant for a card reads as a hole when the page shows through it.
-          style={{
-            background:
-              'color-mix(in srgb, color-mix(in srgb, var(--primary) 16%, var(--popover)) 92%, transparent)',
-          }}
-        >
-          <p className="text-[13px] font-body text-foreground/90">{message.content}</p>
-        </div>
-      </div>
-    );
-  }
+/** An answer spent at a steady rate rather than painted in the lumps the
+ *  provider happens to send it in. Only while it is streaming: a message read
+ *  back from a stored conversation is already written.
+ *
+ *  The loop outlives the stream — what has arrived but not been spent is still
+ *  typed out rather than stamped down when the last token lands. */
+function useTyped(text: string, streaming: boolean): string {
+  const spent = useRef(streaming ? 0 : text.length);
+  const [shown, setShown] = useState(spent.current);
+  const target = useRef(text);
+  target.current = text;
+  const live = useRef(streaming);
+  live.current = streaming;
 
+  useEffect(() => {
+    let frame = 0;
+    const tick = () => {
+      const step = revealStep(spent.current, target.current.length, !live.current);
+      if (step > 0) {
+        spent.current += step;
+        setShown(spent.current);
+      }
+      frame = step > 0 || live.current ? requestAnimationFrame(tick) : 0;
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [text, streaming]);
+
+  return revealed(text, shown);
+}
+
+export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
+  return message.role === 'user' ? (
+    <UserBubble message={message} />
+  ) : (
+    <AssistantBubble message={message} isStreaming={isStreaming} />
+  );
+}
+
+function UserBubble({ message }: { message: NikoMessageType }) {
+  return (
+    <div className="flex justify-end">
+      <div
+        className="max-w-[85%] rounded-2xl rounded-br-md border border-primary/25 px-3.5 py-2 backdrop-blur-sm"
+        // Nearly solid, because there is no panel behind it any more: a tint
+        // meant for a card reads as a hole when the page shows through it.
+        style={{
+          background:
+            'color-mix(in srgb, color-mix(in srgb, var(--primary) 16%, var(--popover)) 92%, transparent)',
+        }}
+      >
+        <p className="text-[13px] font-body text-foreground/90">{message.content}</p>
+      </div>
+    </div>
+  );
+}
+
+function AssistantBubble({ message, isStreaming }: NikoMessageProps) {
   const hasTools = !!message.toolCalls?.length;
-  const empty = !message.content && !hasTools;
+  const typed = useTyped(message.content, Boolean(isStreaming));
+  // Nothing said yet — including an answer whose first characters have not been
+  // spent, which is the same silence as far as the bubble is concerned.
+  const empty = !typed && !hasTools;
 
   return (
     <div className="group flex justify-start gap-2">
@@ -65,7 +110,7 @@ export function NikoMessage({ message, isStreaming }: NikoMessageProps) {
           </div>
         )}
 
-        {message.content && <NikoMarkdown content={message.content} />}
+        {typed && <NikoMarkdown content={typed} />}
 
         {/* Nothing to show yet — the turn has started but not spoken. */}
         {empty && isStreaming && (
