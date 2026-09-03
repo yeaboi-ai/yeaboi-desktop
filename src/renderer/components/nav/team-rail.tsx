@@ -11,7 +11,7 @@
 // Ops is not in here; see `railSections`.
 
 import Link from 'next/link';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BarChart3,
   Bot,
@@ -62,10 +62,18 @@ const ROW = 36;
 /** The one surface that keeps the whole map: it is the one you go to in order
  *  to see where everything is. */
 const HOME_HREF = '/home';
+/** How long a hover on a panel dwells before the labels arrive. Approaching
+ *  the notch means "show me where I can go", which the icons answer; the words
+ *  are for staying. */
+const LABEL_DWELL_MS = 520;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
+  // Two stages. `open` grows the rows back out of the notch, `wide` brings the
+  // labels — on a panel the second waits, so a passing cursor does not throw
+  // the whole nav across the page.
   const [open, setOpen] = useState(false);
+  const [wide, setWide] = useState(false);
   const sections = railSections(audience);
   const items = sections.flatMap((section) => section.items);
   const activeHref = useActiveHref(items.map((item) => item.href));
@@ -76,6 +84,27 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // far, which a lit row on its own never tells you.
   const listRef = useRef<HTMLDivElement>(null);
   const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
+
+  const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const enter = () => {
+    setOpen(true);
+    if (activeHref === HOME_HREF) {
+      setWide(true);
+      return;
+    }
+    dwell.current = setTimeout(() => setWide(true), LABEL_DWELL_MS);
+  };
+  const leave = () => {
+    if (dwell.current) clearTimeout(dwell.current);
+    setOpen(false);
+    setWide(false);
+  };
+  useEffect(
+    () => () => {
+      if (dwell.current) clearTimeout(dwell.current);
+    },
+    [],
+  );
 
   // On a panel the rail is a notch: Home and the icon you are on. The
   // rows are still here, collapsed to no height, so the list grows back out of
@@ -96,17 +125,20 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     // layout they are leaving, not the one they are going to.
     const settled = setTimeout(measure, 260);
     return () => clearTimeout(settled);
-  }, [activeHref, open, audience, notch]);
+  }, [activeHref, open, wide, audience, notch]);
 
   return (
     <nav
       aria-label="Modes"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocusCapture={() => setOpen(true)}
-      onBlurCapture={() => setOpen(false)}
+      onMouseEnter={enter}
+      onMouseLeave={leave}
+      onFocusCapture={() => {
+        setOpen(true);
+        setWide(true);
+      }}
+      onBlurCapture={leave}
       className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
-      style={{ width: open ? WIDE : NARROW }}
+      style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
         {marker && (
@@ -162,8 +194,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                     is what fades and the rail is what widens. */}
                   <span
                     className="whitespace-nowrap transition-opacity duration-150"
-                    style={{ opacity: open ? 1 : 0 }}
-                    aria-hidden={!open}
+                    style={{ opacity: wide ? 1 : 0 }}
+                    aria-hidden={!wide}
                   >
                     {label}
                   </span>
