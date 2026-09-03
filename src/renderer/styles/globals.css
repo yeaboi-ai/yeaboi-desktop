@@ -1041,60 +1041,117 @@ html[data-audience='agents'] {
     animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* A page that keeps everything in one wrapper would drag its heading into
-     the rise with the rest of it, so the wrapper holding the heading stays
-     still and its own children deal themselves in instead. */
-  .deck-page > * > :has(h1) {
-    animation: none;
-  }
-
-  .deck-page > * > :has(h1) > * {
+  /* The page's sections rise; its heading does not. Which element holds those
+     sections differs per page, so rather than guess a depth, descend through
+     every wrapper that still contains the h1 — the last one is the stage and
+     its children are what deal themselves in. `:where` keeps the descent at
+     zero specificity, so the rules below still take the heading, and any
+     wrapper still holding it, back out of the animation. */
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > * {
     animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .deck-page > * > :has(h1) > *:nth-child(2) {
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(2) {
     animation-delay: 50ms;
   }
 
-  .deck-page > * > :has(h1) > *:nth-child(3) {
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(3) {
     animation-delay: 100ms;
   }
 
-  .deck-page > * > :has(h1) > *:nth-child(n + 4) {
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(4) {
     animation-delay: 150ms;
   }
 
-  /* Nor does anything deeper that holds the heading — a page that puts its
-     title in a header beside its actions was rising the whole header, taking
-     the title 16px with it. */
-  .deck-page > * > :has(h1) > :has(h1) {
-    animation: none;
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(5) {
+    animation-delay: 200ms;
   }
 
-  /* The heading itself, wherever it sits. */
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(6) {
+    animation-delay: 250ms;
+  }
+
+  /* Everything past the sixth arrives together — a stagger long enough to
+     count is a wait. */
+  :where(
+      .deck-page > * > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+    )
+    > *:nth-child(n + 7) {
+    animation-delay: 290ms;
+  }
+
+  /* The heading itself, wherever it sits, and every wrapper still holding it —
+     a wrapper that rises carries the title 16px with it. */
+  .deck-page > * > :has(h1),
+  .deck-page > * > :has(h1) > :has(h1),
+  .deck-page > * > :has(h1) > :has(h1) > :has(h1),
+  .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1),
   .deck-page h1,
   .deck-page h1 + p,
   .deck-page :has(> h1),
   .deck-page :has(> h1) + p {
     animation: none;
   }
+
   .deck-page > * > *:nth-child(2) {
     animation-delay: 50ms;
   }
+
   .deck-page > * > *:nth-child(3) {
     animation-delay: 100ms;
   }
+
   .deck-page > * > *:nth-child(4) {
     animation-delay: 150ms;
   }
+
   .deck-page > * > *:nth-child(5) {
     animation-delay: 200ms;
   }
+
   .deck-page > * > *:nth-child(6) {
     animation-delay: 250ms;
   }
-  /* Everything past the sixth arrives together — a stagger long enough to
-     count is a wait. */
+
   .deck-page > * > *:nth-child(n + 7) {
     animation-delay: 290ms;
   }

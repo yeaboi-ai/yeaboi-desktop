@@ -10,7 +10,6 @@ import { Surface } from '@/components/yeaboi/surface';
 // a page that lives under /projects.
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DuckMark } from '@/components/brand/duck';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
@@ -144,17 +143,12 @@ function RoadmapBody() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-2xl text-foreground">Roadmap intake</h1>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            Point yeaboi at the quarterly roadmap and it proposes what to plan next — each pick
-            becomes a project with its blueprint started.
-          </p>
-        </div>
-        <Link href="/projects" className="text-[12px] text-muted-foreground hover:text-foreground">
-          Back
-        </Link>
+      <header>
+        <h1 className="font-display text-2xl text-foreground">Roadmap intake</h1>
+        <p className="text-[13px] text-muted-foreground mt-1">
+          Point yeaboi at the quarterly roadmap and it proposes what to plan next — each pick
+          becomes a project with its blueprint started.
+        </p>
       </header>
 
       {error && <Notice title="That did not work" items={[error]} />}

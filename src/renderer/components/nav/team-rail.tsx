@@ -99,13 +99,18 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const isOpen = useRef(false);
   isOpen.current = open;
 
+  // Cancelling has to forget the timer as well as stop it: a handle left behind
+  // reads as "already opening" forever, and the rail never opens again.
+  const cancelOpen = () => {
+    if (opening.current) clearTimeout(opening.current);
+    opening.current = null;
+  };
   const enter = () => {
     if (sealed.current || isOpen.current || opening.current) return;
     // A beat before it opens, and then it opens whole — rows and labels
     // together. The list grows from the rail's centre, so opening moves every
     // row: a cursor merely crossing one on its way to Home would otherwise
     // throw the list open and take Home out from under the click.
-    if (opening.current) clearTimeout(opening.current);
     opening.current = setTimeout(() => {
       opening.current = null;
       setOpen(true);
@@ -114,7 +119,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   };
   const leave = () => {
     sealed.current = false;
-    if (opening.current) clearTimeout(opening.current);
+    cancelOpen();
     setOpen(false);
     setLabelled(false);
   };
@@ -155,7 +160,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       setOpen(false);
       setLabelled(false);
       sealed.current = true;
-      if (opening.current) clearTimeout(opening.current);
+      cancelOpen();
     }
     measure();
 
