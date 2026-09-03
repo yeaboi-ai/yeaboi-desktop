@@ -137,7 +137,7 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
         aria-label="Show tips"
         className="fixed bottom-6 right-6 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
       >
-        <DuckMark size={QUIET_DUCK_SIZE} />
+        <DuckMark size={QUIET_DUCK_SIZE} facing="left" />
       </button>
     );
   }
@@ -287,7 +287,7 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
             aria-label="See all tips"
             className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
           >
-            <DuckMark state={duckState} size={DUCK_SIZE} />
+            <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
           </button>
         ) : (
           <button
@@ -297,7 +297,7 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
             onClick={() => pulse('startled')}
             className="block cursor-pointer border-0 bg-transparent p-0"
           >
-            <DuckMark state={duckState} size={DUCK_SIZE} />
+            <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
           </button>
         )}
       </div>

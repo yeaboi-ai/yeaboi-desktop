@@ -448,6 +448,16 @@ span[data-duck-mark] img {
   filter: none;
 }
 
+/* Facing. The package sets `scale: -1 1` on the duck's body layer, so the
+   sprite — drawn looking left — ends up looking right. `facing="left"` hands it
+   back its original direction. Written as `scale` and not a transform for the
+   same reason the package gives: the body layer's bob and mannerisms own
+   `transform`, and a second one here would overwrite them. The body is the only
+   element child of the state node. */
+span[data-duck-mark][data-duck-facing='left'] [data-state] > div {
+  scale: 1 1;
+}
+
 /* The sleep "z" (`.zzz`) is coloured with `--muted` — a surface token in this
    app, invisible against the panels it sits on. Hand it the text token. The
    `.zzz` span is the only span child of the duck root. */

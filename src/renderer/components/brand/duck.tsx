@@ -23,6 +23,16 @@ export interface DuckMarkProps {
   size?: number;
   state?: DuckState;
   jamming?: boolean;
+  /**
+   * Which way the duck looks. The design package flips the sprite to face
+   * right — its comment says the duck "reads better looking into the page",
+   * which holds for a duck anchored on the left. A duck in the bottom-right
+   * corner faces the window edge instead, so it needs the flip cancelled.
+   *
+   * Opt-in rather than automatic: the sidebar mark and the board ducks are
+   * where the package's own default is the right one.
+   */
+  facing?: 'left' | 'right';
   className?: string;
 }
 
@@ -42,10 +52,17 @@ export interface DuckMarkProps {
  * the design package because that package is vendored — its source of truth is
  * yeaboi-frontend, a third repo — and this is a consumer-side sizing choice.
  */
-export function DuckMark({ size = 24, state = 'idle', jamming, className }: DuckMarkProps) {
+export function DuckMark({
+  size = 24,
+  state = 'idle',
+  jamming,
+  facing,
+  className,
+}: DuckMarkProps) {
   return (
     <span
       data-duck-mark
+      data-duck-facing={facing}
       className={className}
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
