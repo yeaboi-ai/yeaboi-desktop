@@ -103,6 +103,10 @@ export class Pet {
   setPrefs(prefs: PetPrefs): void {
     this.prefs = prefs;
     this.enabled = prefs.enabled;
+    // Switching him off ends any introduction with him: the window is about to
+    // be destroyed, and a latch left set would make the next one ignore
+    // suppression and walk over a focused app.
+    if (!this.enabled) this.introducing = false;
     this.applyVisibility();
     if (this.enabled) this.sendPrefs();
   }

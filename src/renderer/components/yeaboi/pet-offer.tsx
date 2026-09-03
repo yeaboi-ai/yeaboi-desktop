@@ -38,6 +38,11 @@ export interface PetOffer {
   decline: (state: 'later' | 'never') => void;
 }
 
+/** Put the duck back in the corner with the question unasked, so the whole
+ *  jump can be watched again. Bound to Cmd/Ctrl+Shift+D in dev — the animation
+ *  is a one-shot, and the alternative is editing settings.json between takes. */
+export const RESET_CHORD = 'Cmd/Ctrl+Shift+D';
+
 /**
  * Whether to ask, and what the answer does.
  *
@@ -84,6 +89,28 @@ export function usePetOffer(): PetOffer {
     // can take him back with no transition at all: the pixels do not move.
     window.yeaboi.onPetReturned(() => setWhere('here'));
   }, []);
+
+  const reset = useCallback(() => {
+    void window.yeaboi
+      .setPetPrefs({ enabled: false, offer: { state: 'unasked', askedAt: 0 } })
+      .then(() => {
+        setWhere('here');
+        setOpen(true);
+      })
+      .catch(() => logger.warn('Failed to reset the duck offer'));
+  }, []);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        reset();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [reset]);
 
   const accept = useCallback((from: DOMRect | null) => {
     setOpen(false);
