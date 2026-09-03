@@ -40,7 +40,7 @@ include $(TOOLING)/mk/node.mk
 # charge of the same file, and contracts-check would go red every time a route
 # moved here before yeaboi.ai caught up.
 
-.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check
+.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check sprites-clean sprites-check
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -69,6 +69,12 @@ sprites: ## Re-render the onboarding lifecycle sprites from the yeaboi-site duck
 
 robo: ## Re-render the Agents world's robo mascot from the vendored pixel duck (needs uv)
 	uv run --with pillow --no-project python scripts/gen_robo_sprites.py
+
+sprites-clean: ## Re-crisp the duck sprites, design tarball included (needs uv)
+	uv run --with pillow --no-project python scripts/clean_duck_sprites.py
+
+sprites-check: ## Assert the committed duck sprites are what the cleaner produces (needs uv)
+	uv run --with pillow --no-project python scripts/clean_duck_sprites.py --check
 
 pack: ## Unsigned local package into dist/ (a smoke test, not a release)
 	$(MAKE) build

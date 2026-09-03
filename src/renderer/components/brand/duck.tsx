@@ -52,13 +52,7 @@ export interface DuckMarkProps {
  * the design package because that package is vendored — its source of truth is
  * yeaboi-frontend, a third repo — and this is a consumer-side sizing choice.
  */
-export function DuckMark({
-  size = 24,
-  state = 'idle',
-  jamming,
-  facing,
-  className,
-}: DuckMarkProps) {
+export function DuckMark({ size = 24, state = 'idle', jamming, facing, className }: DuckMarkProps) {
   return (
     <span
       data-duck-mark
