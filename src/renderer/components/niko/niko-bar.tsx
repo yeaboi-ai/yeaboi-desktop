@@ -523,7 +523,14 @@ export function NikoBar() {
 
           {state === 'expanded' && slashList && <div className="px-1">{slashList}</div>}
 
-          <div className={`flex items-end gap-2 ${state === 'expanded' ? '' : 'flex-1 px-3'}`}>
+          {/* Expanded the composer and its controls hang from a common bottom
+              edge. In the pill there is nothing to hang from: the row is the
+              pill, and its contents sit on its centre line. */}
+          <div
+            className={`flex gap-2 ${
+              state === 'expanded' ? 'items-end' : 'flex-1 items-stretch px-4'
+            }`}
+          >
             <div
               className={`flex flex-1 items-center gap-2 ${
                 state === 'expanded'
