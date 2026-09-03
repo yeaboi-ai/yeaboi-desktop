@@ -55,6 +55,11 @@ export class Pet {
   private enabled = false;
   /** An app window is focused; the duck hides rather than walk over it. */
   private suppressed = false;
+  /** He has just been let out and is showing where he lives; outranks
+   *  suppression until he heads back in. */
+  private introducing = false;
+  /** Told when the introduction ends, so the window can bring him back in. */
+  private onIntroDone: () => void = () => undefined;
   /** The app is quitting; no state change may revive the window. */
   private quitting = false;
   /** Where a click on a duck holding a question should land. */
@@ -76,6 +81,20 @@ export class Pet {
     ipcMain.on('pet:open', (_event, route: unknown) => {
       this.onOpen(typeof route === 'string' ? route : '');
     });
+    // He has said his piece and leapt back at the window. Suppression applies
+    // again from here, so he behaves like any other duck: seen when the app is
+    // not in front.
+    ipcMain.on('pet:intro-done', () => {
+      if (!this.introducing) return;
+      this.introducing = false;
+      this.applyVisibility();
+      this.onIntroDone();
+    });
+  }
+
+  /** Wire the window's half of the introduction: what to do when he is home. */
+  onIntroduced(callback: () => void): void {
+    this.onIntroDone = callback;
   }
 
   /** The single entry point for what the duck is: size, colour, gait, and
@@ -110,7 +129,7 @@ export class Pet {
     if (this.quitting) return;
     const window = this.window && !this.window.isDestroyed() ? this.window : null;
     const command = petWindowCommand(
-      { enabled: this.enabled, suppressed: this.suppressed },
+      { enabled: this.enabled, suppressed: this.suppressed, introducing: this.introducing },
       { exists: window !== null, visible: window?.isVisible() ?? false },
     );
     switch (command) {
@@ -135,7 +154,7 @@ export class Pet {
   private syncFeeds(): void {
     const active =
       petFeedsActive(
-        { enabled: this.enabled, suppressed: this.suppressed },
+        { enabled: this.enabled, suppressed: this.suppressed, introducing: this.introducing },
         this.window !== null && !this.window.isDestroyed(),
       ) && this.feeds !== null;
     if (!active) {
@@ -182,14 +201,21 @@ export class Pet {
    * created — hence the retry on `did-finish-load` rather than a bare send.
    */
   handoff(screenPoint: { x: number; y: number }): void {
+    // Before `setEnabled`, so the window is created visible: accepting is a
+    // click inside the app, so the app is focused, so a duck that waited for
+    // suppression to lift would arrive invisible.
+    this.introducing = true;
     this.setEnabled(true);
     const window = this.window;
-    if (!window || window.isDestroyed()) return;
+    if (!window || window.isDestroyed()) {
+      this.introducing = false;
+      return;
+    }
     const bounds = window.getBounds();
     const local = { x: screenPoint.x - bounds.x, y: screenPoint.y - bounds.y };
     const send = (): void => {
       if (window.isDestroyed()) return;
-      window.webContents.send('pet:arrive', local);
+      window.webContents.send('pet:arrive', { ...local, intro: true });
     };
     if (window.webContents.isLoading()) window.webContents.once('did-finish-load', send);
     else send();

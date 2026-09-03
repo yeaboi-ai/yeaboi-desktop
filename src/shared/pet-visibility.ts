@@ -11,6 +11,14 @@ export interface PetVisibility {
   enabled: boolean;
   /** Transient: an app window is focused. Never persisted. */
   suppressed: boolean;
+  /**
+   * Transient: the duck has just been let out and is showing where he lives.
+   *
+   * It outranks suppression, and only suppression. Accepting the offer is a
+   * click inside the app, so the app is focused, so without this the duck the
+   * user just asked to meet would be hidden the instant he arrived.
+   */
+  introducing?: boolean;
 }
 
 export type PetWindowCommand =
@@ -21,13 +29,14 @@ export function petWindowCommand(
   window: { exists: boolean; visible: boolean },
 ): PetWindowCommand {
   if (!state.enabled) return window.exists ? 'destroy' : 'none';
-  if (!window.exists) return state.suppressed ? 'create-hidden' : 'create-visible';
-  if (state.suppressed) return window.visible ? 'hide' : 'none';
+  const hidden = state.suppressed && !state.introducing;
+  if (!window.exists) return hidden ? 'create-hidden' : 'create-visible';
+  if (hidden) return window.visible ? 'hide' : 'none';
   return window.visible ? 'none' : 'show';
 }
 
 /** Whether the cursor feed and dock poll should run — both are wasted work
  *  against a hidden window. */
 export function petFeedsActive(state: PetVisibility, windowExists: boolean): boolean {
-  return state.enabled && !state.suppressed && windowExists;
+  return state.enabled && !(state.suppressed && !state.introducing) && windowExists;
 }

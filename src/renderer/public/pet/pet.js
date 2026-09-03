@@ -144,6 +144,10 @@ let bubbleHideT = null;
 // it — a question that fades out unanswered is worse than one never asked.
 let stickyLine = false;
 let noticeRoute = '';
+// The first time out: he lands, says where he lives, and waits to be sent back.
+// While this is set a click means "head back in" rather than "open a page".
+let introducing = false;
+let introTimer = 0;
 
 function say(line, sticky = false) {
   if (stickyLine && !sticky) return;
@@ -282,6 +286,11 @@ rig.addEventListener('click', () => {
   if (dragging) return;
   // While the duck is holding a question, a click answers it — it opens the
   // page that resolves it rather than making him hop.
+  // Mid-introduction a click means "off you go" — he has no page to open yet.
+  if (introducing) {
+    headBackIn();
+    return;
+  }
   if (stickyLine) {
     const route = noticeRoute;
     noticeRoute = '';
@@ -516,21 +525,55 @@ window.pet.onNotice((notice) => {
 // from, above the floor and falling — so the landing is the physics the rig
 // already has, squash and all, rather than a second animation that has to be
 // kept in step with it.
-window.pet.onArrive((point) => {
-  if (!point) return;
+/** The line he holds until he is sent back in. */
+const INTRO_STICKY = 'Settings \u25b8 Duck sets where I stand. Click me to head back in.';
+/** How long the arrival line holds before the sticky one replaces it. */
+const INTRO_BEAT_MS = 2600;
+
+window.pet.onArrive((arrival) => {
+  if (!arrival) return;
   dragging = false;
   tumbling = false;
   mode = 'wander';
   // The point is where the in-app duck's box was; the rig is drawn from its
   // top-left, so centre him on it.
-  x = Math.max(0, Math.min(window.innerWidth - DUCK_W, point.x - DUCK_W / 2));
-  baseY = Math.min(point.y - RIGH / 2, groundBaseY(x + DUCK_W / 2));
+  x = Math.max(0, Math.min(window.innerWidth - DUCK_W, arrival.x - DUCK_W / 2));
+  baseY = Math.min(arrival.y - RIGH / 2, groundBaseY(x + DUCK_W / 2));
   vx = 0;
   vy = 0;
   grounded = false;
-  say('yeaboi!');
   pickTarget();
+  if (!arrival.intro) {
+    say('yeaboi!');
+    return;
+  }
+  // Two beats: what this place is, then how to change it and how to send him
+  // back. The second is sticky, so it waits for an answer rather than timing
+  // out on somebody who looked away.
+  introducing = true;
+  clearTimeout(introTimer);
+  // He stands still while he explains himself. Wandering off mid-sentence
+  // would make the bubble chase him across the screen.
+  targetX = x;
+  idleUntil = Number.POSITIVE_INFINITY;
+  say("yeaboi! this is where I'll be when the app's out of the way.");
+  introTimer = setTimeout(() => {
+    if (introducing) say(INTRO_STICKY, true);
+  }, INTRO_BEAT_MS);
 });
+
+/** Send him home: a leap back at the window, then main is told he has landed.
+ *  The hop is the rig's own startle, so the return reads like the duck rather
+ *  than like a transition played over him. */
+function headBackIn() {
+  introducing = false;
+  clearTimeout(introTimer);
+  idleUntil = 0;
+  hideBubble();
+  jumpCd = 0;
+  startle(x < window.innerWidth / 2 ? 1 : -1);
+  setTimeout(() => window.pet.introDone(), 420);
+}
 
 window.pet.onRecenter(() => {
   dragging = false;

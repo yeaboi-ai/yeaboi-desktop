@@ -94,6 +94,8 @@ export interface YeaboiBridge {
   setPetPrefs: (patch: unknown) => Promise<unknown>;
   /** Turn the duck on and land him where he jumped from, in screen coords. */
   petHandoff: (point: { x: number; y: number }) => Promise<unknown>;
+  /** The duck has finished his introduction and is coming back inside. */
+  onPetReturned: (fn: () => void) => void;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** The active theme's background — the next window opens in it. */
@@ -155,6 +157,9 @@ const bridge: YeaboiBridge = {
   getPetPrefs: () => ipcRenderer.invoke('pet:get-prefs'),
   setPetPrefs: (patch) => ipcRenderer.invoke('pet:set-prefs', patch),
   petHandoff: (point) => ipcRenderer.invoke('pet:handoff', point),
+  onPetReturned: (fn) => {
+    ipcRenderer.on('pet:returned', () => fn());
+  },
   notify: (banner) => ipcRenderer.send('app:notify', banner),
   setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),
   onUpdateState: (callback) => {

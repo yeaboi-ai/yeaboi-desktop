@@ -373,6 +373,10 @@ if (!gotLock) {
     );
     // The duck accepted an invitation out. Coordinates come from the renderer,
     // so they are clamped to numbers before anything positions a window by them.
+    // He has finished showing himself off; bring him back into the window.
+    pet.onIntroduced(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('pet:returned');
+    });
     ipcMain.handle('pet:handoff', (_event, point: unknown) => {
       const p = (point ?? {}) as { x?: unknown; y?: unknown };
       const at = {

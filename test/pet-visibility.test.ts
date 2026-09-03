@@ -12,6 +12,34 @@ import {
 
 type Window = { exists: boolean; visible: boolean };
 
+describe('the introduction', () => {
+  // Accepting the offer happens inside the app, so the app is focused, so
+  // suppression would hide the very duck the user just asked to see. The
+  // introduction outranks it — and outranks nothing else.
+  it('shows a suppressed duck while he is introducing himself', () => {
+    const state = { enabled: true, suppressed: true, introducing: true };
+    expect(petWindowCommand(state, { exists: false, visible: false })).toBe('create-visible');
+    expect(petWindowCommand(state, { exists: true, visible: false })).toBe('show');
+    expect(petWindowCommand(state, { exists: true, visible: true })).toBe('none');
+  });
+
+  it('still destroys a disabled duck mid-introduction', () => {
+    expect(
+      petWindowCommand(
+        { enabled: false, suppressed: false, introducing: true },
+        { exists: true, visible: true },
+      ),
+    ).toBe('destroy');
+  });
+
+  it('keeps his feeds running while he introduces himself', () => {
+    expect(petFeedsActive({ enabled: true, suppressed: true, introducing: true }, true)).toBe(true);
+    expect(petFeedsActive({ enabled: true, suppressed: true, introducing: false }, true)).toBe(
+      false,
+    );
+  });
+});
+
 const grid: Array<[PetVisibility, Window, PetWindowCommand]> = [
   // Disabled: the window must not exist, whatever suppression says.
   [{ enabled: false, suppressed: false }, { exists: true, visible: true }, 'destroy'],

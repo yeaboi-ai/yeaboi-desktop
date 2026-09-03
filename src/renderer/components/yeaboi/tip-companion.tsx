@@ -28,7 +28,7 @@ import {
   type Tip,
 } from '@/lib/yeaboi/tips';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
-import { PetOfferBubble, usePetOffer } from '@/components/yeaboi/pet-offer';
+import { LEAP_MS, PetOfferBubble, usePetOffer } from '@/components/yeaboi/pet-offer';
 
 /** How often the clock is sampled. Fine enough for the cross-fade and the
  *  hairline, coarse enough that it is one style update rather than a loop. */
@@ -300,40 +300,44 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
             so he stays out of the tab order and off the a11y tree. Retracted he
             is the only thing left, so he becomes the way in — otherwise there is
             no route to the tips at all while Niko's bar is open. */}
-        {/* The leap. `--leap-*` is the arc; the desktop duck is asked to appear
-            when it ends, so the two halves read as one movement. */}
-        <div
-          ref={duckRef}
-          style={
-            offer.leaping && !reduced
-              ? { animation: 'duck-leap-out 420ms cubic-bezier(0.4, 0, 0.6, 1) forwards' }
-              : offer.leaping
-                ? { opacity: 0 }
-                : undefined
-          }
-        >
-          {mode === 'duck' ? (
-            <button
-              type="button"
-              onClick={() => setGalleryOpen(true)}
-              title="See all tips"
-              aria-label="See all tips"
-              className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
-            >
-              <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              aria-hidden
-              tabIndex={-1}
-              onClick={() => pulse('startled')}
-              className="block cursor-pointer border-0 bg-transparent p-0"
-            >
-              <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-            </button>
-          )}
-        </div>
+        {/* The leap out and the leap back. While he is 'away' the corner holds
+            nothing at all — he is on the desktop, and a duck in both places at
+            once would undo the whole point of the hand-off. Under reduced
+            motion the arcs are skipped and only the presence changes. */}
+        {offer.where !== 'away' && (
+          <div
+            ref={duckRef}
+            style={
+              reduced || offer.where === 'here'
+                ? undefined
+                : {
+                    animation: `duck-leap-${offer.where === 'leaving' ? 'out' : 'in'} ${LEAP_MS}ms cubic-bezier(0.4, 0, 0.6, 1) forwards`,
+                  }
+            }
+          >
+            {mode === 'duck' ? (
+              <button
+                type="button"
+                onClick={() => setGalleryOpen(true)}
+                title="See all tips"
+                aria-label="See all tips"
+                className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
+              >
+                <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-hidden
+                tabIndex={-1}
+                onClick={() => pulse('startled')}
+                className="block cursor-pointer border-0 bg-transparent p-0"
+              >
+                <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <AllTipsSheet
