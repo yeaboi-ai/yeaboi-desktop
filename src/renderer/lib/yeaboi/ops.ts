@@ -159,14 +159,15 @@ export interface AgentLatest {
 }
 
 /** Whether a sidecar honoured a project scope: `scoped` when it answered with
- *  `scoped_to`, `unscoped` when it ignored the param, `unsupported` when it has
- *  no such route at all (404). Unscoped wants are always `unscoped`. */
+ *  the repo it scoped to, `unscoped` when it ignored the param or the kind is
+ *  machine-wide (the key is always sent, empty when unscoped), `unsupported`
+ *  when it has no such route at all (404). Unscoped wants are always `unscoped`. */
 export type AgentScopeState = 'scoped' | 'unscoped' | 'unsupported';
 
 export function agentScopeState(latest: AgentLatest | null, wanted: string): AgentScopeState {
   if (!wanted) return latest ? 'unscoped' : 'unsupported';
   if (!latest) return 'unsupported';
-  return typeof latest.scoped_to === 'string' ? 'scoped' : 'unscoped';
+  return latest.scoped_to ? 'scoped' : 'unscoped';
 }
 
 /** The kinds that read the whole machine whatever project they are opened

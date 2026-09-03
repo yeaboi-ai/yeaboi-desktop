@@ -23,12 +23,14 @@ describe('agentScopeState', () => {
     expect(agentScopeState(latest({ report: null, as_of: '', scoped_to: '/r' }), 'proj-1')).toBe(
       'scoped',
     );
-    // An empty scoped_to is still the newer sidecar answering the question.
-    expect(agentScopeState(latest({ scoped_to: '' }), 'proj-1')).toBe('scoped');
   });
 
   it('is unscoped when an older sidecar ignored the param', () => {
     expect(agentScopeState(latest(), 'proj-1')).toBe('unscoped');
+  });
+
+  it('is unscoped when the newer sidecar sends the key empty (a machine-wide kind)', () => {
+    expect(agentScopeState(latest({ scoped_to: '' }), 'proj-1')).toBe('unscoped');
   });
 
   it('is unsupported when there is no such route', () => {
