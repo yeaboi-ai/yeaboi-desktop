@@ -1304,3 +1304,38 @@ html[data-audience='agents'] {
      anything easing towards a target would lag it and drift. */
   transition: none;
 }
+
+/* A bubble arriving, and leaving. The conversation deals itself in from the
+   composer upwards rather than being uncovered by a box growing around it. */
+@keyframes niko-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes niko-bubble-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The conversation scrolls, but never draws a bar for it: the panel has no
+   background of its own, so a track down its edge is a line hanging in the
+   window. */
+.niko-scroll {
+  scrollbar-width: none;
+}
+
+.niko-scroll::-webkit-scrollbar {
+  display: none;
+}

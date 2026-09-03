@@ -11,6 +11,7 @@
 // Ops is not in here; see `railSections`.
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BarChart3,
@@ -68,6 +69,7 @@ const OPEN_DWELL_MS = 180;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
+  const router = useRouter();
   // A row opens the rail, never the rail itself; leaving it closes it. Rows and
   // labels arrive together — a list that widens a beat after it opens is two
   // movements where the cursor only asked for one.
@@ -122,6 +124,24 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     cancelOpen();
     setOpen(false);
     setLabelled(false);
+  };
+
+  // The row you press is the row you meant.
+  //
+  // A rail row is a link, and a link navigates on the button coming *up*. The
+  // list is still settling under the cursor at that point — rows are growing
+  // out of the notch, or collapsing back into it — so the release often landed
+  // on a different row than the press, and a press and release on two elements
+  // is not a click on either: the browser reports one on the nav, nothing
+  // navigates, and the press reads as having only opened the menu. Taking the
+  // route from the press settles it before anything can move.
+  const pressed = useRef(false);
+  const press = (href: string) => (event: React.PointerEvent) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    cancelOpen();
+    pressed.current = true;
+    window.addEventListener('pointerup', () => (pressed.current = false), { once: true });
+    router.push(href);
   };
   useEffect(
     () => () => {
@@ -244,6 +264,14 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   // request for the list — but on Home it is the only row
                   // there, so it has to be the way the rail opens.
                   onMouseEnter={href === HOME_HREF && activeHref !== HOME_HREF ? undefined : enter}
+                  onPointerDown={press(href)}
+                  // The press has already navigated; the click that follows it
+                  // would only push the same route a second time. A keyboard
+                  // Enter never presses, so it still travels this way.
+                  onClick={(event) => {
+                    if (!pressed.current) return;
+                    event.preventDefault();
+                  }}
                   aria-hidden={notch && !kept}
                   tabIndex={notch && !kept ? -1 : undefined}
                   className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${

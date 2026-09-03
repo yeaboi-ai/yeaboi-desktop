@@ -67,10 +67,23 @@ const CONTROL_SIZE = 44;
 const CONTROL_GAP = 8;
 /** How far apart in time the two of them arrive. */
 const CONTROL_STAGGER = 70;
-/** What the panel gains when they detach: the pair, with their gaps. The
- *  composer keeps its own width, so they open into new space rather than out of
- *  the room the question is written in. */
+/** What the panel gains when they detach: the pair, with their gaps. */
 const CONTROLS_WIDTH = CONTROLS_COUNT * (CONTROL_SIZE + CONTROL_GAP);
+/** What the composer gives back as they arrive. Three objects on one line are
+ *  wider than one, and at full width the row ran to the window's edges on a
+ *  small screen — so the composer comes in a little rather than the row going
+ *  out. */
+const COMPOSER_GIVE = 64;
+
+/** A bubble's own arrival, and how far apart in time they arrive. The
+ *  conversation deals itself in from the composer upwards rather than being
+ *  revealed by a box that grows around it. */
+const BUBBLE_IN_MS = 320;
+const BUBBLE_OUT_MS = 200;
+const BUBBLE_STAGGER = 45;
+/** The most bubbles that stagger. Past this they leave together — waiting out a
+ *  long conversation to close the panel is a wait. */
+const BUBBLE_STAGGER_CAP = 6;
 
 /** A conversation control: its own object on the composer's line, the same
  *  height as it. Two of them side by side, not one panel holding two. */
@@ -134,6 +147,13 @@ export function NikoBar() {
   // is, this frame. Animating towards it makes the grip feel like it is on a
   // rubber band and every frame restarts the transition.
   const [dragging, setDragging] = useState(false);
+  // Closing is a phase, not an instant: the bubbles are still on screen,
+  // leaving, while it lasts.
+  const [leaving, setLeaving] = useState(false);
+  /** Each bubble's place in the opening stagger, fixed when it first appears —
+   *  recomputing it as the conversation grows would send finished animations
+   *  back to their start. */
+  const entrance = useRef(new Map<string, number>());
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -149,6 +169,19 @@ export function NikoBar() {
   const [aside, setAside] = useState(false);
 
   const state = barState(isOpen, messages.length);
+  // Each bubble carries its own entrance, so the panel does not have to grow
+  // around them: the ones already there when it opens rise in turn from the
+  // composer up, and one that arrives later simply rises on its own.
+  const wasOpen = useRef(false);
+  const opening = state === 'expanded' && !wasOpen.current;
+  if (opening)
+    entrance.current = new Map(
+      messages.map((message, index) => [
+        message.id,
+        Math.min(BUBBLE_STAGGER_CAP - 1, messages.length - 1 - index) * BUBBLE_STAGGER,
+      ]),
+    );
+  wasOpen.current = state === 'expanded';
   const matches = useMemo(() => matchSlash(value), [value]);
   const slashOpen = isSlashQuery(value) && matches.length > 0;
 
@@ -163,11 +196,32 @@ export function NikoBar() {
         ? COLLAPSED_HEIGHT
         : INPUT_HEIGHT;
 
-  const close = useCallback(() => {
+  // The conversation leaves the way it arrived: the bubbles go first, one after
+  // another from the top, and the panel follows them down once they have gone.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finish = useCallback(() => {
+    setLeaving(false);
     setIsOpen(false);
     setValue('');
     inputRef.current?.blur();
   }, [setIsOpen]);
+  const close = useCallback(() => {
+    if (state !== 'expanded' || leaving) {
+      finish();
+      return;
+    }
+    setLeaving(true);
+    closeTimer.current = setTimeout(
+      finish,
+      BUBBLE_OUT_MS + BUBBLE_STAGGER * Math.min(messages.length, BUBBLE_STAGGER_CAP),
+    );
+  }, [state, leaving, messages.length, finish]);
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
 
   // Cmd+. opens and closes from anywhere; Escape only closes. Typing a
   // character with nothing focused opens the bar and keeps the character —
@@ -178,7 +232,10 @@ export function NikoBar() {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === '.') {
         e.preventDefault();
-        togglePanel();
+        // Closing goes through `close`, so the conversation leaves the same way
+        // however it was dismissed.
+        if (isOpen) close();
+        else togglePanel();
         return;
       }
       if (e.key === 'Escape' && isOpen) {
@@ -431,7 +488,12 @@ export function NikoBar() {
     </div>
   ) : null;
 
-  const extra = state === 'expanded' ? CONTROLS_WIDTH : 0;
+  const shell =
+    state === 'collapsed'
+      ? COLLAPSED_WIDTH
+      : state === 'expanded'
+        ? Math.min(width + CONTROLS_WIDTH - COMPOSER_GIVE, window.innerWidth - 2 * ASIDE_MARGIN)
+        : width;
 
   // How far right of centre the panel sits when it has stepped aside: hard
   // against the window's edge, by the same margin as everything else there.
@@ -452,11 +514,17 @@ export function NikoBar() {
         // keeps its own width throughout — it neither grows nor gives up room;
         // it moves half the controls' width to the left as they arrive.
         transform: `translateX(calc(-50% + ${asideShift}px))`,
-        width: `${state === 'collapsed' ? COLLAPSED_WIDTH : width + extra}px`,
+        width: `${shell}px`,
         height: `${height}px`,
-        transition: dragging
-          ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`
-          : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`,
+        // The height snaps whenever the conversation itself is arriving or
+        // leaving: the bubbles carry that movement, and a box growing around
+        // them at the same time is the second animation nobody asked for. It
+        // still eases for the sizes that are the panel's own — settling to fit
+        // a reply, or a drag on the grip.
+        transition:
+          dragging || opening || state === 'collapsed'
+            ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`
+            : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`,
       }}
     >
       {showChips && state === 'input' && (
@@ -551,19 +619,27 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              className={`min-h-0 flex-1 px-1 py-1 ${
+              className={`niko-scroll min-h-0 flex-1 px-1 py-1 ${
                 settling ? 'overflow-hidden' : 'overflow-y-auto'
               }`}
             >
               <div ref={listRef} className="space-y-3">
                 {messages.map((message, i) => (
-                  <NikoMessage
+                  <div
                     key={message.id}
-                    message={message}
-                    isStreaming={
-                      isStreaming && message.role === 'assistant' && i === messages.length - 1
-                    }
-                  />
+                    style={{
+                      animation: leaving
+                        ? `niko-bubble-out ${BUBBLE_OUT_MS}ms ease-in ${Math.min(i, BUBBLE_STAGGER_CAP - 1) * BUBBLE_STAGGER}ms forwards`
+                        : `niko-bubble-in ${BUBBLE_IN_MS}ms cubic-bezier(0.22, 1, 0.36, 1) ${entrance.current.get(message.id) ?? 0}ms backwards`,
+                    }}
+                  >
+                    <NikoMessage
+                      message={message}
+                      isStreaming={
+                        isStreaming && message.role === 'assistant' && i === messages.length - 1
+                      }
+                    />
+                  </div>
                 ))}
                 <div ref={endRef} />
               </div>
