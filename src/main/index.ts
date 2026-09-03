@@ -78,6 +78,13 @@ app.setPath(
   profileOverride || join(app.getPath('appData'), app.isPackaged ? 'yeaboi' : 'yeaboi-desktop'),
 );
 
+// A dev run serves the renderer, the pet and every sprite from Vite at URLs
+// that never change, and Chromium caches them. Editing pet.js or re-rendering
+// a sprite then changes nothing on screen, and the stale copy is impossible to
+// tell from a fix that did not work. Packaged builds keep the cache: there the
+// URLs carry content hashes and it is doing its job.
+if (!app.isPackaged) app.commandLine.appendSwitch('disable-http-cache');
+
 registerAppScheme();
 
 function createMainWindow(): void {
