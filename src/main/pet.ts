@@ -60,6 +60,9 @@ export class Pet {
   private introducing = false;
   /** Told when the introduction ends, so the window can bring him back in. */
   private onIntroDone: () => void = () => undefined;
+  /** Told when the overlay has the duck on screen, so the app can stop drawing
+   *  its own. */
+  private onTookOver: () => void = () => undefined;
   /** Where the app window draws its own duck, relative to that window's own
    *  top-left. Relative rather than absolute so that moving the window between
    *  the jump out and the jump back cannot strand him on the corner's old
@@ -91,6 +94,7 @@ export class Pet {
     // He has said his piece and leapt back at the window. Suppression applies
     // again from here, so he behaves like any other duck: seen when the app is
     // not in front.
+    ipcMain.on('pet:took-over', () => this.onTookOver());
     ipcMain.on('pet:intro-done', () => {
       if (!this.introducing) return;
       this.introducing = false;
@@ -149,6 +153,11 @@ export class Pet {
   /** Wire the window's half of the introduction: what to do when he is home. */
   onIntroduced(callback: () => void): void {
     this.onIntroDone = callback;
+  }
+
+  /** Wire the other half: what to do once the overlay is drawing him. */
+  onTakenOver(callback: () => void): void {
+    this.onTookOver = callback;
   }
 
   /** The single entry point for what the duck is: size, colour, gait, and

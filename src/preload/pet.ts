@@ -17,6 +17,9 @@ export interface PetBridge {
   /** Where the app's corner is now, so a duck who is out flies back to the
    *  window where it currently is rather than where it was. */
   onHome: (fn: (point: { x: number; y: number }) => void) => void;
+  /** The duck is on screen at the point the app was drawing him, so the app
+   *  can stop. */
+  tookOver: () => void;
   /** He has finished introducing himself and leapt back at the window. */
   introDone: () => void;
   /** Something happened while nobody was looking — say it. */
@@ -45,6 +48,7 @@ const bridge: PetBridge = {
   onHome: (fn) => {
     ipcRenderer.on('pet:home', (_event, point) => fn(point));
   },
+  tookOver: () => ipcRenderer.send('pet:took-over'),
   introDone: () => ipcRenderer.send('pet:intro-done'),
   onNotice: (fn) => {
     ipcRenderer.on('pet:notice', (_event, notice) => fn(notice));

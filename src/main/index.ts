@@ -424,6 +424,11 @@ if (!gotLock) {
     );
     // The duck accepted an invitation out. Coordinates come from the renderer,
     // so they are clamped to numbers before anything positions a window by them.
+    // The overlay has him on screen; the app can stop drawing its own.
+    pet.onTakenOver(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('pet:took-over');
+    });
+
     // He has finished showing himself off; bring him back into the window.
     pet.onIntroduced(() => {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('pet:returned');

@@ -22,6 +22,11 @@ import { normalizePetPrefs, shouldOfferPet, type PetOfferState } from '@shared/p
 // job is to stop drawing his at that instant — one duck, no hand-off, and an
 // arc with the whole screen to travel through instead of 24px of dock margin.
 
+/** How long to wait for the overlay to confirm it has the duck before hiding
+ *  the app's own anyway. Long enough to cover creating and loading that window
+ *  on a cold first accept. */
+const TAKEOVER_MS = 2000;
+
 /** Where the duck is, from the app's point of view. */
 export type DuckWhereabouts =
   /** In the corner, as ever. */
@@ -88,6 +93,12 @@ export function usePetOffer(): PetOffer {
     // He has flown back to the exact spot the corner draws him, so the corner
     // can take him back with no transition at all: the pixels do not move.
     window.yeaboi.onPetReturned(() => setWhere('here'));
+    // And the other way: the corner keeps drawing him until the overlay says
+    // it has him. Creating that window and loading it takes long enough that
+    // hiding on the click leaves a visible gap with no duck in it — and since
+    // both draw him at the same point, an overlapping frame is invisible while
+    // a missing one is not.
+    window.yeaboi.onPetTookOver(() => setWhere('away'));
   }, []);
 
   const reset = useCallback(() => {
@@ -114,9 +125,6 @@ export function usePetOffer(): PetOffer {
 
   const accept = useCallback((from: DOMRect | null) => {
     setOpen(false);
-    // Hidden here before the desktop duck is asked for, so the two never
-    // overlap; the overlay draws him at the same place a frame later.
-    setWhere('away');
     // Where he is now, in screen coordinates — the desktop overlay spans a
     // display, so this is what lets him land where he jumped rather than
     // appearing somewhere else entirely. `screenX/screenY` and the rect are
@@ -132,6 +140,9 @@ export function usePetOffer(): PetOffer {
       // Nothing out there to come back, so put him where he was.
       setWhere('here');
     });
+    // If the overlay never reports in, hide him anyway rather than leave two
+    // ducks once the desktop one starts moving.
+    setTimeout(() => setWhere((current) => (current === 'here' ? 'away' : current)), TAKEOVER_MS);
   }, []);
 
   return { open, where, accept, decline };

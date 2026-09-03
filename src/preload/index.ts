@@ -100,6 +100,8 @@ export interface YeaboiBridge {
   minimiseWindow: () => void;
   /** The duck has finished his introduction and is coming back inside. */
   onPetReturned: (fn: () => void) => void;
+  /** The desktop duck is drawing him now, so the app can stop. */
+  onPetTookOver: (fn: () => void) => void;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** The active theme's background — the next window opens in it. */
@@ -165,6 +167,9 @@ const bridge: YeaboiBridge = {
   minimiseWindow: () => ipcRenderer.send('window:minimise'),
   onPetReturned: (fn) => {
     ipcRenderer.on('pet:returned', () => fn());
+  },
+  onPetTookOver: (fn) => {
+    ipcRenderer.on('pet:took-over', () => fn());
   },
   notify: (banner) => ipcRenderer.send('app:notify', banner),
   setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),

@@ -61,6 +61,7 @@ interface YeaboiBridge {
   minimiseWindow: () => void;
   /** The duck has finished his introduction and is coming back inside. */
   onPetReturned: (fn: () => void) => void;
+  onPetTookOver: (fn: () => void) => void;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;

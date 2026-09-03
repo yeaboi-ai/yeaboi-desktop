@@ -602,6 +602,11 @@ function applyArrival(arrival) {
   walker.classList.remove('unloaded', 'hatch');
   void walker.offsetWidth;
   walker.style.transition = '';
+  // The app is still drawing its own duck at this exact point and will not
+  // stop until it hears this. Sent after a frame, so it is true when it
+  // arrives: creating this window and loading it takes long enough that
+  // hiding on the click leaves a gap with no duck in it.
+  requestAnimationFrame(() => requestAnimationFrame(() => window.pet.tookOver()));
   parked = false;
   dragging = false;
   tumbling = false;
