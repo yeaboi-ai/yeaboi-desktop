@@ -57,9 +57,14 @@ function Field({ label, value }: { label: string; value: string }) {
 export function BoardHost({
   board,
   onClosed,
+  onStage,
 }: {
   board: BoardSnapshot;
   onClosed: (runId: number) => void;
+  /** Where the app can play the board itself. Given, it becomes the way in and
+   *  a window is the second choice; withheld (a surface with nowhere to put a
+   *  board), the window is the only way in. */
+  onStage?: () => void;
 }) {
   const [invite, setInvite] = useState('');
   const [message, setMessage] = useState('');
@@ -113,8 +118,17 @@ export function BoardHost({
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => void openBoardWindow(board.board_id)}>
-          Open the board
+        {onStage && (
+          <Button size="sm" onClick={onStage}>
+            Open the board
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant={onStage ? 'secondary' : 'default'}
+          onClick={() => void openBoardWindow(board.board_id)}
+        >
+          {onStage ? 'In a window' : 'Open the board'}
         </Button>
         <Button size="sm" variant="secondary" onClick={() => void copyInvite()}>
           Copy invite

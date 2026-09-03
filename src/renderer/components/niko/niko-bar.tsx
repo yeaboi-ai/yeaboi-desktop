@@ -495,6 +495,7 @@ export function NikoBar() {
 
   return (
     <div
+      data-niko
       className="fixed bottom-4 left-1/2 z-50 flex flex-col"
       style={{
         // Centred by default; docked right while a screen it opened is being

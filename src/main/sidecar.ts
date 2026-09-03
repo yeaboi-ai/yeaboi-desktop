@@ -21,7 +21,12 @@ export type BackendState =
   { kind: 'starting' } | { kind: 'ready'; handshake: Handshake } | { kind: 'down'; reason: string };
 
 const READY_PREFIX = 'YEABOI_APP_READY ';
-const HANDSHAKE_TIMEOUT_MS = 20_000;
+// Long enough for a cold start: in dev the first line is behind `uv run`
+// syncing the environment and the MCP dispatcher coming up, which is fifteen
+// seconds on a warm machine and more on a cold one. Packaged it is a fraction
+// of that, and the timeout only decides how long a genuinely dead backend
+// takes to admit it.
+const HANDSHAKE_TIMEOUT_MS = 60_000;
 // Restart backoff: quick first retry, then slower; give up after MAX_RESTARTS
 // inside RESTART_WINDOW_MS and stay "down" until the user intervenes.
 const RESTART_DELAYS_MS = [1_000, 5_000, 15_000];
@@ -155,13 +160,19 @@ export class Sidecar {
         reject(new Error('backend has no stdout'));
         return;
       }
+      // The handshake is *a* line, not necessarily the first one. A backend
+      // that resumes a live board announces the board's own server before it
+      // announces itself, and treating that as a failed start left the app
+      // with no backend for the length of a session somebody had left open.
+      // Anything before the handshake is startup noise; the timeout above is
+      // what decides the backend never said it.
       const lines = createInterface({ input: stdout });
-      lines.once('line', (line) => {
-        clearTimeout(timer);
+      lines.on('line', (line) => {
         if (!line.startsWith(READY_PREFIX)) {
-          reject(new Error(`unexpected first line from backend: ${line.slice(0, 120)}`));
+          console.log(`[yeaboi-app] ${line.slice(0, 200)}`);
           return;
         }
+        clearTimeout(timer);
         try {
           resolvePromise(JSON.parse(line.slice(READY_PREFIX.length)) as Handshake);
         } catch {

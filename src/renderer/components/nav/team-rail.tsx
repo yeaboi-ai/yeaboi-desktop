@@ -197,6 +197,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   return (
     <nav
       ref={navRef}
+      data-rail
       aria-label="Modes"
       // Any movement on the rail is asking for it — including from inside its
       // own notch, which is the only way to open it once you have arrived here

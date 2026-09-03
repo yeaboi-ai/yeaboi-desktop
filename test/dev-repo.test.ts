@@ -9,8 +9,11 @@ import { describe, expect, it } from 'vitest';
 import { devRepoCandidates } from '../src/shared/dev-repo';
 
 describe('devRepoCandidates', () => {
-  it('looks beside a plain checkout', () => {
-    expect(devRepoCandidates('/Users/x/code/yeaboi-desktop')).toEqual(['/Users/x/code/yeaboi.ai']);
+  it('looks beside a plain checkout, under either name the Python goes by', () => {
+    expect(devRepoCandidates('/Users/x/code/yeaboi-desktop')).toEqual([
+      '/Users/x/code/yeaboi-ai-main',
+      '/Users/x/code/yeaboi.ai',
+    ]);
   });
 
   it('prefers the yeaboi worktree cut under the same name', () => {
@@ -30,6 +33,7 @@ describe('devRepoCandidates', () => {
     expect(candidates.at(-1)).toBe(
       '/Users/x/code/yeaboi-desktop/.claude/worktrees/desktop/yeaboi.ai',
     );
+    expect(candidates).toContain('/Users/x/code/yeaboi-ai-main');
   });
 
   it('never offers the same path twice', () => {

@@ -109,7 +109,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
 
   return (
     <>
-      <div className="fixed bottom-4 left-3 z-40 flex flex-col items-start gap-2">
+      <div data-dock className="fixed bottom-4 left-3 z-40 flex flex-col items-start gap-2">
         {/* Loud enough to interrupt, so it sits above the row rather than in
             it. Renders nothing when there is nothing to say. */}
         <div className="w-[230px] empty:hidden">

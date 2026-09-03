@@ -18,6 +18,7 @@ import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { PokerSetup } from '@/components/yeaboi/poker-setup';
+import { PokerTable, canPlayBoards } from '@/components/yeaboi/poker-table';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Surface } from '@/components/yeaboi/surface';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
@@ -120,6 +121,9 @@ function PokerBody() {
   const [liveId, setLiveId] = useState('');
   const [board] = useBoard(liveId);
   const [all, setAll] = useState(false);
+  // Playing the board in the window: the table takes the surface and the app's
+  // chrome steps back off its edges until it is left.
+  const [staged, setStaged] = useState(false);
 
   const history = useCallback(() => {
     pokerHistory().then(
@@ -136,6 +140,7 @@ function PokerBody() {
     );
   }, [history]);
 
+  const playing = staged && Boolean(board);
   const mine = ceremonies.filter((ceremony) => MODES.includes(ceremony.mode));
   const listed = all ? (runs ?? []) : (runs ?? []).slice(0, RECENT);
 
@@ -148,84 +153,92 @@ function PokerBody() {
         </p>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
-        {board ? (
+      {playing && board && <PokerTable boardId={board.board_id} onLeave={() => setStaged(false)} />}
+
+      {!playing && (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+          {board ? (
+            <Panel
+              title="At the table"
+              aside={
+                <a
+                  href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
+                  className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Full view
+                </a>
+              }
+            >
+              <TableState board={board} />
+              <BoardHost
+                board={board}
+                onStage={canPlayBoards() ? () => setStaged(true) : undefined}
+                onClosed={() => {
+                  setLiveId('');
+                  setStaged(false);
+                  history();
+                }}
+              />
+            </Panel>
+          ) : (
+            <Panel title="New session">
+              {/* Dealing does not go anywhere: the panel this replaces is the
+                table, on the surface the host is already looking at. */}
+              <PokerSetup onOpened={setLiveId} />
+            </Panel>
+          )}
+
           <Panel
-            title="At the table"
+            title="Scheduled"
             aside={
               <a
-                href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
+                href="#/ceremonies"
                 className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
               >
-                Full view
+                All ceremonies
               </a>
             }
           >
-            <TableState board={board} />
-            <BoardHost
-              board={board}
-              onClosed={() => {
-                setLiveId('');
-                history();
-              }}
+            <Upcoming
+              ceremonies={mine}
+              count={4}
+              empty="No poker on the calendar — declare one in Ceremonies and it will show up here."
             />
           </Panel>
-        ) : (
-          <Panel title="New session">
-            {/* Dealing does not go anywhere: the panel this replaces is the
-                table, on the surface the host is already looking at. */}
-            <PokerSetup onOpened={setLiveId} />
-          </Panel>
-        )}
+        </div>
+      )}
 
+      {!playing && (
         <Panel
-          title="Scheduled"
+          title="Past sessions"
           aside={
-            <a
-              href="#/ceremonies"
-              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              All ceremonies
-            </a>
+            runs && runs.length > RECENT ? (
+              <button
+                type="button"
+                onClick={() => setAll(!all)}
+                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                {all ? 'Show recent' : `All ${runs.length}`}
+              </button>
+            ) : undefined
           }
         >
-          <Upcoming
-            ceremonies={mine}
-            count={4}
-            empty="No poker on the calendar — declare one in Ceremonies and it will show up here."
-          />
+          {!runs && <p className="font-body text-[12px] text-muted-foreground">Loading…</p>}
+          {runs && runs.length === 0 && (
+            <p className="font-body text-[12px] text-muted-foreground">
+              {error ||
+                'Nothing played yet. Pick a sprint above, send the invite, and everyone votes at once — no anchoring on whoever spoke first.'}
+            </p>
+          )}
+          {listed.length > 0 && (
+            <ul className="divide-y divide-border/40">
+              {listed.map((run) => (
+                <PastRun key={run.id} run={run} />
+              ))}
+            </ul>
+          )}
         </Panel>
-      </div>
-
-      <Panel
-        title="Past sessions"
-        aside={
-          runs && runs.length > RECENT ? (
-            <button
-              type="button"
-              onClick={() => setAll(!all)}
-              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              {all ? 'Show recent' : `All ${runs.length}`}
-            </button>
-          ) : undefined
-        }
-      >
-        {!runs && <p className="font-body text-[12px] text-muted-foreground">Loading…</p>}
-        {runs && runs.length === 0 && (
-          <p className="font-body text-[12px] text-muted-foreground">
-            {error ||
-              'Nothing played yet. Pick a sprint above, send the invite, and everyone votes at once — no anchoring on whoever spoke first.'}
-          </p>
-        )}
-        {listed.length > 0 && (
-          <ul className="divide-y divide-border/40">
-            {listed.map((run) => (
-              <PastRun key={run.id} run={run} />
-            ))}
-          </ul>
-        )}
-      </Panel>
+      )}
     </div>
   );
 }

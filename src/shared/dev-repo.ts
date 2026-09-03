@@ -20,8 +20,14 @@ export function devRepoCandidates(root: string): string[] {
     const checkout = worktree[1]!;
     const name = worktree[2]!;
     candidates.push(resolve(checkout, '../yeaboi.ai/.claude/worktrees', name));
+    candidates.push(resolve(checkout, '../yeaboi-ai-main'));
     candidates.push(resolve(checkout, '../yeaboi.ai'));
   }
+  // Both names the Python checkout goes by: `yeaboi.ai` is the repository,
+  // `yeaboi-ai-main` is what an archive of it unpacks as. Whichever is beside
+  // this one, with the archive name first — a machine that has both usually
+  // has the archive because the clone is old.
+  candidates.push(resolve(root, '../yeaboi-ai-main'));
   candidates.push(resolve(root, '../yeaboi.ai'));
   return candidates;
 }

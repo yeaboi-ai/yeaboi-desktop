@@ -65,6 +65,11 @@ export interface YeaboiBridge {
   onEvent: (callback: (event: unknown) => void) => void;
   /** Open one live retro/poker board in its own top-level window, by id. */
   openBoard: (boardId: string) => Promise<unknown>;
+  /** Playing a live board from inside the app: main relays to the board's own
+   *  server, because the host link carries the admin secret and never crosses
+   *  over. The renderer names a board and an action. */
+  boardState: (boardId: string) => Promise<unknown>;
+  boardAct: (boardId: string, action: string, payload?: object) => Promise<unknown>;
   /** Screenshare: main wants a source picked; the renderer lists sources,
    *  draws the picker, and answers with the chosen id ('' = dismissed). */
   onCaptureRequest: (callback: () => void) => void;
@@ -145,6 +150,9 @@ const bridge: YeaboiBridge = {
     ipcRenderer.on('app:event', (_event, payload: unknown) => callback(payload));
   },
   openBoard: (boardId) => ipcRenderer.invoke('boards:open', boardId),
+  boardState: (boardId) => ipcRenderer.invoke('board-play:state', boardId),
+  boardAct: (boardId, action, payload) =>
+    ipcRenderer.invoke('board-play:act', boardId, action, payload ?? {}),
   onCaptureRequest: (callback) => {
     ipcRenderer.on('capture:request', () => callback());
   },

@@ -26,6 +26,7 @@ import iconPath from '../../build/icon.png?asset';
 import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
+import { registerBoardPlay } from './board-play';
 import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
 import { LivekitSidecar } from './livekit';
@@ -333,6 +334,7 @@ if (!gotLock) {
     // renderer never sees the handshake — both halves strip it before the
     // state crosses the bridge.
     registerApiProxy(sidecar);
+    registerBoardPlay(sidecar);
     registerBoardWindows(sidecar, () => {
       // Same belt-and-braces as the main window's `closed` handler.
       if (BrowserWindow.getFocusedWindow() === null) pet.setSuppressed(false);
