@@ -525,6 +525,10 @@ window.pet.onNotice((notice) => {
 // from, above the floor and falling — so the landing is the physics the rig
 // already has, squash and all, rather than a second animation that has to be
 // kept in step with it.
+/** How far above the floor he appears, so the arrival ends in a real landing
+ *  rather than a duck that is simply there. Scaled with the rig. */
+const ARRIVAL_DROP = 120;
+
 /** The line he holds until he is sent back in. */
 const INTRO_STICKY = 'Settings \u25b8 Duck sets where I stand. Click me to head back in.';
 /** How long the arrival line holds before the sticky one replaces it. */
@@ -536,9 +540,11 @@ window.pet.onArrive((arrival) => {
   tumbling = false;
   mode = 'wander';
   // The point is where the in-app duck's box was; the rig is drawn from its
-  // top-left, so centre him on it.
+  // top-left, so centre him on it. Only the horizontal is taken from the jump:
+  // he belongs on the floor, and the app window's own height has nothing to say
+  // about where that is. The drop is what gives the landing its bounce.
   x = Math.max(0, Math.min(window.innerWidth - DUCK_W, arrival.x - DUCK_W / 2));
-  baseY = Math.min(arrival.y - RIGH / 2, groundBaseY(x + DUCK_W / 2));
+  baseY = groundBaseY(x + DUCK_W / 2) - ARRIVAL_DROP * S;
   vx = 0;
   vy = 0;
   grounded = false;

@@ -486,46 +486,47 @@ span[data-duck-mark] [data-state] > span {
   }
 }
 
-/* The duck leaving for the desktop: a crouch, then an arc out through the
-   bottom-right corner — the direction the desktop pet arrives from. The
-   hand-off fires when this ends, so the two halves read as one jump. */
+/* The duck leaving for the desktop: a crouch, then an arc up and out through
+   the bottom-right corner, carrying him clear of the window. Nothing fades —
+   he leaves under his own power and the window edge is what takes him out of
+   sight, which is the whole point of the hand-off. The distances are far
+   enough past the 24px dock offset that the last frame is off-screen. */
 @keyframes duck-leap-out {
   0% {
-    transform: translate(0, 0) scale(1, 1);
-    opacity: 1;
+    transform: translate(0, 0) scale(1, 1) rotate(0deg);
   }
-  18% {
-    transform: translate(0, 6px) scale(1.12, 0.86);
-    opacity: 1;
+  16% {
+    transform: translate(0, 10px) scale(1.16, 0.82) rotate(0deg);
   }
-  60% {
-    transform: translate(26px, -46px) scale(0.92, 1.12) rotate(8deg);
-    opacity: 1;
+  34% {
+    transform: translate(-6px, -14px) scale(0.88, 1.18) rotate(-6deg);
+  }
+  62% {
+    transform: translate(48px, -78px) scale(0.94, 1.08) rotate(14deg);
   }
   100% {
-    transform: translate(74px, 34px) scale(0.8, 1) rotate(16deg);
-    opacity: 0;
+    transform: translate(190px, 140px) scale(1, 1) rotate(34deg);
   }
 }
 
-/* And back in, when he has finished showing himself off: the same arc read
-   the other way, so the two halves of the round trip are one movement. */
+/* And back in, when he has finished showing himself off: the same arc read the
+   other way — he vaults in over the corner and lands where he started. No fade
+   here either; he simply comes back into view. */
 @keyframes duck-leap-in {
   0% {
-    transform: translate(74px, 34px) scale(0.8, 1) rotate(16deg);
-    opacity: 0;
+    transform: translate(190px, 140px) scale(1, 1) rotate(34deg);
   }
-  40% {
-    transform: translate(26px, -46px) scale(0.92, 1.12) rotate(8deg);
-    opacity: 1;
+  38% {
+    transform: translate(48px, -78px) scale(0.94, 1.08) rotate(14deg);
   }
-  82% {
-    transform: translate(0, 6px) scale(1.12, 0.86);
-    opacity: 1;
+  66% {
+    transform: translate(-6px, -14px) scale(0.88, 1.18) rotate(-6deg);
+  }
+  84% {
+    transform: translate(0, 10px) scale(1.16, 0.82) rotate(0deg);
   }
   100% {
-    transform: translate(0, 0) scale(1, 1);
-    opacity: 1;
+    transform: translate(0, 0) scale(1, 1) rotate(0deg);
   }
 }
 

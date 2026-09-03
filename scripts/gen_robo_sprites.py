@@ -32,7 +32,12 @@ SRC = ROOT / "node_modules" / "@yeaboi-ai" / "design" / "assets" / "duck"
 OUT = ROOT / "src" / "renderer" / "assets" / "brand"
 ROBO = "robo.png"
 
-#: The design package's sprite canvas.
+#: The canvas the robo is drawn on. The design duck it is built from is larger
+#: than this now — the marks are rendered at 480px so they stop reading as a
+#: staircase at UI sizes — so the layers are fitted to this before the antenna
+#: goes on. Every coordinate below is measured against these numbers, and
+#: nothing is gained by drawing an antenna at four times the size and throwing
+#: three quarters of it away.
 SOURCE_SIZE = (128, 136)
 #: Extra rows above the art for the antenna (stem + bulb + a margin).
 HEADROOM = 22
@@ -106,16 +111,21 @@ def _crown_top(img) -> int:
     raise SystemExit(f"no opaque pixel in column {ANTENNA_X}; the art moved")
 
 
+def _layer(name: str):
+    """One design layer, fitted to the robo's canvas."""
+    from PIL import Image
+
+    image = Image.open(SRC / name).convert("RGBA")
+    return image if image.size == SOURCE_SIZE else image.resize(SOURCE_SIZE, Image.LANCZOS)
+
+
 def robo():
     from PIL import Image, ImageDraw
 
     staged = Image.new("RGBA", sprite_size(), (0, 0, 0, 0))
-    body = Image.alpha_composite(
-        Image.open(SRC / "base.png").convert("RGBA"),
-        Image.open(SRC / "wing.png").convert("RGBA"),
-    )
+    body = Image.alpha_composite(_layer("base.png"), _layer("wing.png"))
     staged.alpha_composite(_recolour_body(body), (0, HEADROOM))
-    staged.alpha_composite(_recolour_shine(Image.open(SRC / "glasses.png").convert("RGBA")), (0, HEADROOM))
+    staged.alpha_composite(_recolour_shine(_layer("glasses.png")), (0, HEADROOM))
 
     top = _crown_top(staged)
     d = ImageDraw.Draw(staged)
