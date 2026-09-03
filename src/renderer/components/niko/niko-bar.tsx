@@ -322,7 +322,7 @@ export function NikoBar() {
       {/* ── The pill ─────────────────────────────────────────────────── */}
       <button
         onClick={() => setIsOpen(true)}
-        className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full border border-border bg-popover px-4 shadow-xl transition-all duration-150 hover:border-primary/30 hover:shadow-primary/5"
+        className="group absolute inset-0 flex items-center justify-center gap-2 rounded-full border border-border bg-popover px-6 shadow-xl transition-all duration-150 hover:border-primary/30 hover:shadow-primary/5"
         style={{
           opacity: state === 'collapsed' ? 1 : 0,
           pointerEvents: state === 'collapsed' ? 'auto' : 'none',
