@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { callTool } from '@/lib/yeaboi/api';
 import { loadStandup } from '@/lib/yeaboi/dashboards';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
+import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
 import {
   ContextSourcesPanel,
   serializeContextSpec,
@@ -92,6 +94,7 @@ const inputClass =
   'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 function StandupSetupBody() {
+  const scope = useProjectScope();
   const [sessionId, setSessionId] = useState('');
   const [config, setConfig] = useState<Config | null>(null);
   const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
@@ -183,6 +186,11 @@ function StandupSetupBody() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl text-foreground">Standup setup</h1>
+        {scope.scoped && (
+          <div className="mt-1">
+            <ProjectScopeLine name={scope.project?.name ?? 'this project'} onClear={scope.clear} />
+          </div>
+        )}
         <p className="text-[13px] text-muted-foreground mt-1">
           What the standup reads, and who it reads it for.
         </p>
@@ -396,7 +404,7 @@ function StandupSetupBody() {
           {busy === 'save' ? 'Saving…' : 'Save setup'}
         </Button>
         <Link
-          href="/team/standup"
+          href={scope.href('/team/standup')}
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back to the standup

@@ -26,7 +26,10 @@ import {
   resolveRepo,
 } from '@/lib/yeaboi/modes';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
+import { scopedRunBody } from '@/lib/yeaboi/project-scope';
 import { Button } from '@/components/ui/button';
 
 interface BoardStory {
@@ -92,6 +95,8 @@ function useBoardStories(): BoardStory[] {
 
 function ShipBody() {
   const router = useRouter();
+  const scope = useProjectScope();
+  const [scopeNote, setScopeNote] = useState('');
   const [plan, setPlan] = useState<ShipStories | null>(null);
   const [selected, setSelected] = useState<{ id: string; title: string; sessionId: string } | null>(
     null,
@@ -147,16 +152,29 @@ function ShipBody() {
     if (busy || !selected) return;
     setBusy(true);
     setError('');
+    // A project that cannot be scoped still ships its story, as a one-off.
+    let engineId = '';
+    setScopeNote('');
     try {
-      const snapshot = await launchShip({
-        story_id: selected.id,
-        story_title: selected.title,
-        repo,
-        session_id: selected.sessionId,
-        check_command: check,
-      });
+      engineId = await scope.engineId();
+    } catch (e) {
+      setScopeNote(`${(e as Error).message} This run is a one-off instead.`);
+    }
+    try {
+      const snapshot = await launchShip(
+        scopedRunBody(
+          {
+            story_id: selected.id,
+            story_title: selected.title,
+            repo,
+            session_id: selected.sessionId,
+            check_command: check,
+          },
+          engineId,
+        ),
+      );
       const suffix = cardId ? `&card=${encodeURIComponent(cardId)}` : '';
-      router.push(`/team/ship/run?key=${encodeURIComponent(snapshot.key)}${suffix}`);
+      router.push(scope.href(`/team/ship/run?key=${encodeURIComponent(snapshot.key)}${suffix}`));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
@@ -177,9 +195,15 @@ function ShipBody() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl text-foreground">Ship</h1>
+        {scope.scoped && (
+          <div className="mt-1">
+            <ProjectScopeLine name={scope.project?.name ?? 'this project'} onClear={scope.clear} />
+          </div>
+        )}
         <p className="text-[13px] text-muted-foreground mt-1">
           A story from your plan, implemented behind your approval.
         </p>
+        {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
       </div>
 
       {error && <Notice title="Could not launch" items={[error]} />}

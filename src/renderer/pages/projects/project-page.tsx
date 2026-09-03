@@ -11,6 +11,7 @@ import { stampLastViewedProject } from '@/lib/api/teams';
 import { X, Trash2, Pencil, ClipboardList, FileText } from 'lucide-react';
 import { EditProjectDialog } from '@/components/edit-project-dialog';
 import { DashboardGrid } from '@/components/project-layout-grid';
+import { RunInsidePanel } from '@/components/projects/run-inside-panel';
 import { HiddenPanelsMenu } from '@/components/layout-toolbar';
 import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-layout';
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
@@ -25,6 +26,9 @@ interface Project {
   created_at: string;
   is_own_team?: boolean;
   is_demo?: boolean;
+  /** The engine project (`proj-<8hex>`) runs inside this one share context through. */
+  yeaboi_project_id?: string | null;
+  repo_url?: string | null;
 }
 
 interface SessionRow {
@@ -1425,6 +1429,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
         )}
+
+        {/* The engine's two columns: run a mode inside this project, and the
+            runs already inside it. */}
+        <div className="mb-12 animate-slide-up stagger-3">
+          <RunInsidePanel project={project} />
+        </div>
 
         {/* Customisable Dashboard grid */}
         <div className="mb-10 animate-slide-up stagger-3">
