@@ -44,6 +44,11 @@ import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from
 /** The gap left between the panel and the window when it steps aside. */
 const ASIDE_MARGIN = 16;
 
+/** A conversation control: its own object on the composer's line, the same
+ *  height as it. Two of them side by side, not one panel holding two. */
+const CONTROL =
+  'flex size-11 shrink-0 items-center justify-center rounded-2xl bg-popover text-muted-foreground/50 shadow-xl ring-1 ring-border/60 transition-colors hover:bg-foreground/5 hover:text-foreground';
+
 const MORPH = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 /** How long the chips wait before floating in, so they follow the morph. */
@@ -256,6 +261,45 @@ export function NikoBar() {
     document.addEventListener('mouseup', end);
   };
 
+  // The shortcut list belongs directly above whatever you are typing into: over
+  // the pill when that is all there is, and over the composer once a
+  // conversation has opened underneath it.
+  const slashList = slashOpen ? (
+    <div className="flex flex-col items-stretch gap-1.5">
+      {slashWindow(matches, slashIndex).map(({ command, index, isPeek }) => {
+        const selected = index === slashIndex;
+        return (
+          <button
+            key={command.cmd}
+            onClick={() => !isPeek && runSlash(command)}
+            className={`flex items-center gap-2.5 px-4 rounded-full text-[11px] font-body whitespace-nowrap border ${
+              selected
+                ? 'bg-primary/[0.08] border-primary/25 text-primary/80'
+                : 'bg-foreground/[0.03] border-border/60 text-muted-foreground/70'
+            }`}
+            style={{
+              height: 32,
+              width: '100%',
+              overflow: 'hidden',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              // The peek row tucks UNDER the one below it, so the palette
+              // shows there is more above without spending a row saying so.
+              opacity: isPeek ? 0.3 : 1,
+              pointerEvents: isPeek ? 'none' : 'auto',
+              marginBottom: isPeek ? -20 : 0,
+              zIndex: isPeek ? 0 : 1,
+              transform: isPeek ? 'scale(0.95)' : 'none',
+            }}
+          >
+            <span className="font-mono opacity-70">{command.cmd}</span>
+            <span className="opacity-60">{command.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
   // How far right of centre the panel sits when it has stepped aside: hard
   // against the window's edge, by the same margin as everything else there.
   const asideShift =
@@ -280,46 +324,16 @@ export function NikoBar() {
         <NikoMagicChips prompts={magicPrompts} onSelect={submit} hidden={slashOpen} />
       )}
 
-      {slashOpen && (
+      {state === 'input' && slashList && (
         <div
-          className="absolute left-1/2 flex flex-col items-stretch gap-1.5"
+          className="absolute left-1/2"
           style={{
             bottom: 'calc(100% + 8px)',
             transform: 'translateX(-50%)',
             width: `${width - 80}px`,
           }}
         >
-          {slashWindow(matches, slashIndex).map(({ command, index, isPeek }) => {
-            const selected = index === slashIndex;
-            return (
-              <button
-                key={command.cmd}
-                onClick={() => !isPeek && runSlash(command)}
-                className={`flex items-center gap-2.5 px-4 rounded-full text-[11px] font-body whitespace-nowrap border ${
-                  selected
-                    ? 'bg-primary/[0.08] border-primary/25 text-primary/80'
-                    : 'bg-foreground/[0.03] border-border/60 text-muted-foreground/70'
-                }`}
-                style={{
-                  height: 32,
-                  width: '100%',
-                  overflow: 'hidden',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  // The peek row tucks UNDER the one below it, so the palette
-                  // shows there is more above without spending a row saying so.
-                  opacity: isPeek ? 0.3 : 1,
-                  pointerEvents: isPeek ? 'none' : 'auto',
-                  marginBottom: isPeek ? -20 : 0,
-                  zIndex: isPeek ? 0 : 1,
-                  transform: isPeek ? 'scale(0.95)' : 'none',
-                }}
-              >
-                <span className="font-mono opacity-70">{command.cmd}</span>
-                <span className="opacity-60">{command.label}</span>
-              </button>
-            );
-          })}
+          {slashList}
         </div>
       )}
 
@@ -357,41 +371,17 @@ export function NikoBar() {
       <div
         className={`relative flex min-h-0 flex-1 flex-col rounded-2xl transition-opacity duration-300 ${
           state === 'expanded' ? 'overflow-visible' : 'overflow-hidden shadow-2xl'
-        }`}
+        } ${state === 'input' ? 'niko-ring' : ''}`}
         style={{
-          // In `input` the 1px pad + border-coloured backing IS the track the
-          // spinning gradient below shows through; the inner card masks the rest.
           // Expanded there is no shell at all — the bubbles and the composer are
-          // the only things drawn.
-          padding: state === 'input' ? '1px' : 0,
-          background:
-            state === 'expanded'
-              ? 'transparent'
-              : state === 'input'
-                ? 'var(--border)'
-                : 'var(--popover)',
+          // the only things drawn. In `input` the edge is `.niko-ring`, which
+          // paints itself; anywhere else it is a plain border.
+          background: state === 'expanded' ? 'transparent' : 'var(--popover)',
           border: state === 'expanded' || state === 'input' ? 'none' : '1px solid var(--border)',
           opacity: state === 'collapsed' ? 0 : 1,
           pointerEvents: state === 'collapsed' ? 'none' : 'auto',
         }}
       >
-        {state === 'input' && (
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              top: '50%',
-              left: '50%',
-              width: '600px',
-              height: '600px',
-              marginTop: '-300px',
-              marginLeft: '-300px',
-              background:
-                'conic-gradient(from 0deg, transparent 30%, var(--primary) 50%, transparent 70%)',
-              animation: 'spin-slow 3s linear infinite',
-            }}
-          />
-        )}
-
         <div
           className={`relative z-10 flex min-h-0 flex-1 flex-col ${
             state === 'expanded' ? 'gap-2 overflow-visible' : 'overflow-hidden'
@@ -425,6 +415,8 @@ export function NikoBar() {
                 : `Niko is paused: ${backend.reason || 'the yeaboi backend is down.'}`}
             </div>
           )}
+
+          {state === 'expanded' && slashList && <div className="px-1">{slashList}</div>}
 
           <div className={`flex items-end gap-2 ${state === 'expanded' ? '' : 'flex-1 px-3'}`}>
             <div
@@ -476,22 +468,19 @@ export function NikoBar() {
                 their own object, because starting again and putting Niko away
                 are not things you do to the message you are writing. */}
             {state === 'expanded' && (
-              <div className="flex h-11 shrink-0 items-center gap-0.5 rounded-2xl bg-popover px-1.5 shadow-xl ring-1 ring-border/60">
+              <>
                 <button
                   onClick={startNewConversation}
-                  className="rounded-xl p-2 text-muted-foreground/50 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                  className={CONTROL}
                   title="New conversation"
+                  aria-label="New conversation"
                 >
                   <MessageSquarePlus className="size-3.5" />
                 </button>
-                <button
-                  onClick={close}
-                  className="rounded-xl p-2 text-muted-foreground/50 transition-colors hover:bg-foreground/5 hover:text-foreground"
-                  title="Minimise"
-                >
+                <button onClick={close} className={CONTROL} title="Minimise" aria-label="Minimise">
                   <X className="size-3.5" />
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>

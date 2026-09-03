@@ -1125,3 +1125,47 @@ html[data-audience='agents'] {
     animation: none;
   }
 }
+
+/* Niko's live border. A conic gradient masked down to the edge itself, rather
+   than a large gradient spun behind a one-pixel gap — at that width the sweep
+   was being sampled a sector at a time, which is what made the ring look
+   blotchy and thicker on one side than the other. */
+@property --niko-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes niko-ring-spin {
+  to {
+    --niko-angle: 360deg;
+  }
+}
+
+.niko-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--niko-angle),
+    var(--border) 0deg,
+    var(--border) 170deg,
+    var(--primary) 250deg,
+    var(--border) 330deg,
+    var(--border) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .niko-ring::after {
+    animation: niko-ring-spin 3s linear infinite;
+  }
+}
