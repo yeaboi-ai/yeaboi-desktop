@@ -213,9 +213,16 @@ export function NikoBar() {
     };
   }, [state]);
 
+  // Keeping the newest message in view. Nothing to do when it already fits, and
+  // nothing smooth about it while the panel is still growing: a smooth scroll
+  // chases a target that moves as the box expands, so the conversation slides up
+  // and drifts back down under it. Growing is the movement; the scroll only has
+  // to keep up.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    const box = scrollRef.current;
+    if (!box || box.scrollHeight <= box.clientHeight + 1) return;
+    endRef.current?.scrollIntoView({ behavior: settling ? 'auto' : 'smooth', block: 'end' });
+  }, [messages, settling]);
 
   /** Which ends the conversation carries on past. */
   const readFade = useCallback(() => {
@@ -470,21 +477,24 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className={`relative flex min-h-0 flex-1 flex-col transition-opacity duration-300 ${
-          state === 'expanded' ? 'overflow-visible' : 'overflow-hidden shadow-2xl'
-        } ${state === 'input' ? 'niko-ring rounded-full' : 'rounded-2xl'}`}
+        className="relative flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl transition-opacity duration-300"
         style={{
-          // Expanded there is no shell at all — the bubbles and the composer are
-          // the only things drawn. In `input` the edge is `.niko-ring`, which
-          // paints itself; anywhere else it is a plain border.
-          background: state === 'expanded' ? 'transparent' : 'var(--popover)',
-          border: state === 'expanded' || state === 'input' ? 'none' : '1px solid var(--border)',
+          // The shell paints nothing while the bar is open. Everything visible
+          // is its own object — the bubbles, the composer, the two controls —
+          // so returning to the pill has no larger box to shrink out of: the
+          // composer is already the pill, at the size it will keep.
+          background: 'transparent',
+          border: 'none',
           opacity: state === 'collapsed' ? 0 : 1,
           pointerEvents: state === 'collapsed' ? 'none' : 'auto',
         }}
       >
         <div
-          className={`relative z-10 flex min-h-0 flex-1 flex-col ${
+          // Bottom-up: the composer is on the floor of the panel whatever the
+          // panel's height is doing. Stacked from the top it had nothing holding
+          // it down once the conversation went, and slid down the window as the
+          // height animated back to the pill.
+          className={`relative z-10 flex min-h-0 flex-1 flex-col justify-end ${
             state === 'expanded' ? 'gap-2 overflow-visible' : 'overflow-hidden'
           }`}
           style={{
@@ -531,16 +541,10 @@ export function NikoBar() {
           {/* Expanded the composer and its controls hang from a common bottom
               edge. In the pill there is nothing to hang from: the row is the
               pill, and its contents sit on its centre line. */}
-          <div
-            className={`flex gap-2 ${
-              state === 'expanded' ? 'items-end' : 'flex-1 items-stretch px-4'
-            }`}
-          >
+          <div className="flex items-end gap-2">
             <div
-              className={`flex flex-1 items-center gap-2 ${
-                state === 'expanded'
-                  ? 'min-h-11 rounded-full bg-popover px-4 shadow-xl ring-1 ring-border/60'
-                  : ''
+              className={`flex h-11 flex-1 items-center gap-2 rounded-full bg-popover px-4 shadow-xl ring-1 ring-border/60 ${
+                state === 'input' ? 'niko-ring' : ''
               }`}
             >
               {/* The duck, embedded the moment the bar opens. The expanded header
