@@ -92,18 +92,22 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const navRef = useRef<HTMLElement>(null);
 
   const opening = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Arriving somewhere leaves the cursor sitting on the row that was clicked,
-  // which would open the rail again the moment you got there. It stays shut
-  // until the cursor has actually left and come back.
+  // Arriving leaves the cursor on the row that was clicked. The rail closes and
+  // stays closed until the cursor moves — landing somewhere should not reopen
+  // it, and a hover that never moved is not asking for anything.
   const sealed = useRef(false);
+  const isOpen = useRef(false);
+  isOpen.current = open;
+
   const enter = () => {
-    if (sealed.current) return;
+    if (sealed.current || isOpen.current || opening.current) return;
     // A beat before it opens, and then it opens whole — rows and labels
     // together. The list grows from the rail's centre, so opening moves every
     // row: a cursor merely crossing one on its way to Home would otherwise
     // throw the list open and take Home out from under the click.
     if (opening.current) clearTimeout(opening.current);
     opening.current = setTimeout(() => {
+      opening.current = null;
       setOpen(true);
       setLabelled(true);
     }, OPEN_DWELL_MS);
@@ -150,10 +154,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     if (navigated) {
       setOpen(false);
       setLabelled(false);
-      // Only when the cursor is on the rail: sealing it while the pointer is
-      // elsewhere blocks the next hover entirely, and the rail then refuses to
-      // open at all until something happens to leave it.
-      sealed.current = Boolean(navRef.current?.matches(':hover'));
+      sealed.current = true;
       if (opening.current) clearTimeout(opening.current);
     }
     measure();
@@ -172,6 +173,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     <nav
       ref={navRef}
       aria-label="Modes"
+      // Any movement on the rail is asking for it — including from inside its
+      // own notch, which is the only way to open it once you have arrived here
+      // through it.
+      onMouseMove={() => {
+        sealed.current = false;
+        enter();
+      }}
       onMouseLeave={leave}
       // Only the keyboard opens the rail by focus. A mouse focuses a row when
       // the button goes down, which opened the list under the cursor and moved
