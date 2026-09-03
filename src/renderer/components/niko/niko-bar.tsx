@@ -355,13 +355,22 @@ export function NikoBar() {
 
       {/* ── The card ─────────────────────────────────────────────────── */}
       <div
-        className="relative flex flex-1 flex-col overflow-hidden rounded-2xl shadow-2xl transition-opacity duration-300"
+        className={`relative flex flex-1 flex-col rounded-2xl transition-opacity duration-300 ${
+          state === 'expanded' ? 'overflow-visible' : 'overflow-hidden shadow-2xl'
+        }`}
         style={{
           // In `input` the 1px pad + border-coloured backing IS the track the
           // spinning gradient below shows through; the inner card masks the rest.
+          // Expanded there is no shell at all — the bubbles and the composer are
+          // the only things drawn.
           padding: state === 'input' ? '1px' : 0,
-          background: state === 'input' ? 'var(--border)' : 'var(--popover)',
-          border: state === 'input' ? 'none' : '1px solid var(--border)',
+          background:
+            state === 'expanded'
+              ? 'transparent'
+              : state === 'input'
+                ? 'var(--border)'
+                : 'var(--popover)',
+          border: state === 'expanded' || state === 'input' ? 'none' : '1px solid var(--border)',
           opacity: state === 'collapsed' ? 0 : 1,
           pointerEvents: state === 'collapsed' ? 'none' : 'auto',
         }}
@@ -421,7 +430,7 @@ export function NikoBar() {
             <div
               className={`flex flex-1 items-center gap-2 ${
                 state === 'expanded'
-                  ? 'rounded-2xl bg-popover px-3 py-2 shadow-xl ring-1 ring-border/60'
+                  ? 'min-h-11 rounded-2xl bg-popover px-3 py-2 shadow-xl ring-1 ring-border/60'
                   : ''
               }`}
             >
@@ -467,7 +476,7 @@ export function NikoBar() {
                 their own object, because starting again and putting Niko away
                 are not things you do to the message you are writing. */}
             {state === 'expanded' && (
-              <div className="flex shrink-0 items-center gap-0.5 rounded-2xl bg-popover p-1 shadow-xl ring-1 ring-border/60">
+              <div className="flex h-11 shrink-0 items-center gap-0.5 rounded-2xl bg-popover px-1.5 shadow-xl ring-1 ring-border/60">
                 <button
                   onClick={startNewConversation}
                   className="rounded-xl p-2 text-muted-foreground/50 transition-colors hover:bg-foreground/5 hover:text-foreground"
