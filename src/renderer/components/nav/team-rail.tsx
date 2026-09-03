@@ -83,7 +83,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // travel is what makes that legible — you can see which way you went and how
   // far, which a lit row on its own never tells you.
   const listRef = useRef<HTMLDivElement>(null);
-  const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
+  const [markerTop, setMarkerTop] = useState<number | null>(null);
 
   const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
   const enter = () => {
@@ -118,20 +118,18 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const lastHref = useRef(activeHref);
 
   useLayoutEffect(() => {
+    // Only where the row is, never how tall: the active row is always ROW high,
+    // and a measurement taken while the others are collapsing catches it
+    // mid-transition and leaves a sliver.
     const measure = () => {
       const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
-      if (!row || !listRef.current) {
-        setMarker(null);
-        return;
-      }
-      setMarker({ top: row.offsetTop, height: row.offsetHeight });
+      setMarkerTop(row ? row.offsetTop : null);
     };
 
     const navigated = lastHref.current !== activeHref;
     lastHref.current = activeHref;
     setTravelling(navigated);
     measure();
-    if (navigated) return;
 
     let frame = 0;
     const until = performance.now() + 320;
@@ -157,13 +155,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
-        {marker && (
+        {markerTop !== null && (
           <span
             aria-hidden
             className="pointer-events-none absolute left-0 right-0 rounded-xl bg-secondary"
             style={{
-              top: marker.top,
-              height: marker.height,
+              top: markerTop,
+              height: ROW,
               transition: travelling ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
             }}
           />
