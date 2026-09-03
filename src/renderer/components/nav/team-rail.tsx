@@ -77,7 +77,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [marker, setMarker] = useState<{ top: number; height: number } | null>(null);
 
-  // On a panel the rail is a notch: the icon you are on, and nothing else. The
+  // On a panel the rail is a notch: Home and the icon you are on. The
   // rows are still here, collapsed to no height, so the list grows back out of
   // the notch on hover rather than appearing beside it.
   const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
@@ -105,7 +105,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       onMouseLeave={() => setOpen(false)}
       onFocusCapture={() => setOpen(true)}
       onBlurCapture={() => setOpen(false)}
-      className="fixed left-3 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
+      className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
       style={{ width: open ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
@@ -134,23 +134,26 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
             {section.items.map(({ href, label, icon }) => {
               const Icon = ICONS[icon] ?? Bot;
               const active = activeHref === href;
+              // Home is always in the notch: the way back to the map should
+              // never be a hover away.
+              const kept = active || href === HOME_HREF;
               return (
                 <Link
                   key={href}
                   href={href}
                   title={label}
                   data-active={active}
-                  aria-hidden={notch && !active}
-                  tabIndex={notch && !active ? -1 : undefined}
+                  aria-hidden={notch && !kept}
+                  tabIndex={notch && !kept ? -1 : undefined}
                   className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
                     active
                       ? 'text-foreground'
                       : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                   }`}
                   style={{
-                    height: notch && !active ? 0 : ROW,
-                    opacity: notch && !active ? 0 : 1,
-                    pointerEvents: notch && !active ? 'none' : undefined,
+                    height: notch && !kept ? 0 : ROW,
+                    opacity: notch && !kept ? 0 : 1,
+                    pointerEvents: notch && !kept ? 'none' : undefined,
                     boxShadow: active && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
                   }}
                 >
