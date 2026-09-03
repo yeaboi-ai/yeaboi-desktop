@@ -6,6 +6,7 @@ import {
   PROJECT_PARAM,
   projectIdFromSearch,
   repoHost,
+  runInsideHref,
   scopedRunBody,
   withProject,
   withoutProject,
@@ -67,6 +68,16 @@ describe('withoutProject', () => {
 
   it('is the pathname when there was nothing to drop', () => {
     expect(withoutProject('/team/standup', '')).toBe('/team/standup');
+  });
+});
+
+describe('runInsideHref', () => {
+  it('scopes a mode that runs inside a project', () => {
+    expect(runInsideHref('daily-standup', '/team/standup', 'p1')).toBe('/team/standup?project=p1');
+  });
+
+  it('opens Ship unscoped, since its run carries no project', () => {
+    expect(runInsideHref('ship', '/team/ship', 'p1')).toBe('/team/ship');
   });
 });
 

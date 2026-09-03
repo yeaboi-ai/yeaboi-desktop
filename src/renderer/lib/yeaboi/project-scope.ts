@@ -39,6 +39,14 @@ export function repoHost(repoUrl: string | null | undefined): string {
   }
 }
 
+/** Modes whose run carries no project on the wire, so a project opens them unscoped. */
+export const UNSCOPED_MODES: ReadonlySet<string> = new Set(['ship']);
+
+/** The link that starts `key` from inside a project: scoped, unless the mode runs unscoped. */
+export function runInsideHref(key: string, route: string, projectId: string): string {
+  return UNSCOPED_MODES.has(key) ? route : withProject(route, projectId);
+}
+
 /** A run body scoped to an engine project; the body itself when unscoped. */
 export function scopedRunBody<T extends object>(body: T, engineId: string): T {
   return engineId ? { ...body, project_id: engineId } : body;

@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CreateProjectDialog } from '@/components/create-project-dialog';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { PROJECTS_HEADER_LINKS } from '@/lib/nav/sections';
 import { relativeDay } from '@/lib/yeaboi/sessions';
 import { logger } from '@/lib/logger';
 
@@ -18,11 +19,6 @@ interface Project {
   description: string | null;
   created_at: string;
 }
-
-const HEADER_LINKS = [
-  { href: '/projects/new/from-roadmap', label: 'From a roadmap' },
-  { href: '/board', label: 'All tickets' },
-];
 
 export default function ProjectsPage() {
   const { authFetch, ready, teamVersion } = useAuthFetch();
@@ -103,7 +99,7 @@ export default function ProjectsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {HEADER_LINKS.map((link) => (
+            {PROJECTS_HEADER_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

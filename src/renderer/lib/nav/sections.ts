@@ -36,11 +36,23 @@ export const SETTINGS_ITEM: NavItemSpec = {
   icon: 'settings',
 };
 
+export interface PageLink {
+  href: string;
+  label: string;
+}
+
 /** Reached from the Projects page header, and lit as Projects on the rail. */
-export const PROJECTS_HEADER_LINKS: readonly string[] = ['/projects/new/from-roadmap', '/board'];
+export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
+  { href: '/projects/new/from-roadmap', label: 'From a roadmap' },
+  { href: '/board', label: 'All tickets' },
+];
 
 /** Reached from the foot of Sessions, and lit as Sessions on the rail. */
-export const SESSIONS_FOOT_LINKS: readonly string[] = ['/ceremonies', '/provenance', '/usage'];
+export const SESSIONS_FOOT_LINKS: readonly PageLink[] = [
+  { href: '/ceremonies', label: 'Ceremonies' },
+  { href: '/provenance', label: 'Provenance' },
+  { href: '/usage', label: 'Spend' },
+];
 
 /** Routes the About group of Settings serves. */
 export const ABOUT_ROUTES: readonly string[] = [

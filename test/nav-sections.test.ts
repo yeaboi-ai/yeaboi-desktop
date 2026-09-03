@@ -64,7 +64,8 @@ describe('navItems', () => {
         expect(REGISTERED, `${item.href} is not in routes.json`).toContain(item.href);
       }
     }
-    for (const href of [...PROJECTS_HEADER_LINKS, ...SESSIONS_FOOT_LINKS, ...ABOUT_ROUTES]) {
+    const pageLinks = [...PROJECTS_HEADER_LINKS, ...SESSIONS_FOOT_LINKS].map((link) => link.href);
+    for (const href of [...pageLinks, ...ABOUT_ROUTES]) {
       expect(REGISTERED, `${href} is not in routes.json`).toContain(href);
     }
   });
@@ -92,8 +93,8 @@ describe('navItems', () => {
       '/home',
       SETTINGS_ITEM.href,
       ...AUDIENCES.flatMap((a) => navItems(a).map((i) => i.href)),
-      ...PROJECTS_HEADER_LINKS,
-      ...SESSIONS_FOOT_LINKS,
+      ...PROJECTS_HEADER_LINKS.map((link) => link.href),
+      ...SESSIONS_FOOT_LINKS.map((link) => link.href),
       ...ABOUT_ROUTES,
       ...Object.values(MODE_ROUTES),
       ...Object.values(MODE_START_ROUTES),

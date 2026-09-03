@@ -14,6 +14,7 @@ import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GlimpseList } from '@/components/yeaboi/glimpse-list';
 import { ModeList } from '@/components/yeaboi/mode-list';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
+import { SESSIONS_FOOT_LINKS } from '@/lib/nav/sections';
 import { apiGet } from '@/lib/yeaboi/api';
 import {
   allCards,
@@ -27,12 +28,6 @@ import { loadRecentSessions, shapeSessions, type RecentSession } from '@/lib/yea
 import { MODE_ROUTES, startRouteFor, tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
 
 const RECENT_LIMIT = 12;
-
-const FOOT_LINKS = [
-  { href: '/ceremonies', label: 'Ceremonies' },
-  { href: '/provenance', label: 'Provenance' },
-  { href: '/usage', label: 'Spend' },
-];
 
 function Scheduled({ rows }: { rows: CeremonyRow[] }) {
   if (rows.length === 0) return null;
@@ -146,7 +141,7 @@ function SessionsBody() {
 
       {workspace && (
         <footer className="mt-14 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-body">
-          {FOOT_LINKS.map((link) => (
+          {SESSIONS_FOOT_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}

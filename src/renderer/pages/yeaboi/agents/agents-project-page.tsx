@@ -4,6 +4,9 @@
 // then the four kinds as tabs over that repo's sessions. Security stays
 // machine-wide whatever project it is opened from.
 //
+// Opening the page only reads the engine pointer; a project with none is
+// minted when the repo path is first saved, never on open.
+//
 // Three things a sidecar can say to a scoped read, and the page says each
 // back honestly: it scoped the report (run fresh, since saved reports carry
 // no project), it ignored the scope (show the machine-wide report and say
@@ -49,11 +52,12 @@ interface Project {
 const KINDS = ['usage', 'advisor', 'standup', 'security'];
 
 function RepoPathField({
-  engineId,
+  ensureEngineId,
   path,
   onSaved,
 }: {
-  engineId: string;
+  /** The engine project to write to, minted on the first save. */
+  ensureEngineId: () => Promise<string>;
   path: string;
   onSaved: (path: string) => void;
 }) {
@@ -67,6 +71,7 @@ function RepoPathField({
     setBusy(true);
     setError('');
     try {
+      const engineId = await ensureEngineId();
       const row = await setEngineProjectDefaults(engineId, { repo_path: draft.trim() });
       onSaved(repoPathOf(row));
     } catch (e) {
@@ -176,13 +181,15 @@ function ScopedReport({
             {option?.label ?? kind}
           </h3>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {machineWide
-              ? 'Security reads the whole machine whichever project it is opened from.'
-              : state === 'scoped'
-                ? `Scoped to ${repoPath}.`
-                : state === 'unscoped'
-                  ? 'This sidecar cannot scope reports to a repo yet. This is the machine-wide report.'
-                  : 'This sidecar has no such report.'}
+            {state === null
+              ? 'The report could not be read.'
+              : machineWide
+                ? 'Security reads the whole machine whichever project it is opened from.'
+                : state === 'scoped'
+                  ? `Scoped to ${repoPath}.`
+                  : state === 'unscoped'
+                    ? 'This sidecar cannot scope reports to a repo yet. This is the machine-wide report.'
+                    : 'This sidecar has no such report.'}
           </p>
         </div>
         {state !== 'unsupported' && (
@@ -226,7 +233,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
   const [project, setProject] = useState<Project | null>(null);
   const [engineId, setEngineId] = useState('');
   const [repoPath, setRepoPath] = useState('');
-  const [defaultsSupported, setDefaultsSupported] = useState<boolean | null>(null);
+  const [defaults, setDefaults] = useState<'reading' | 'ready' | 'unreadable'>('reading');
   const [modes, setModes] = useState<AgentModeOption[]>([]);
   const [kind, setKind] = useState(KINDS[0]!);
   const [error, setError] = useState('');
@@ -249,12 +256,16 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
       .then(async (row) => {
         if (stale) return;
         setProject(row);
-        const id = await ensureEngineProject(authFetch, row);
-        if (stale) return;
+        const id = row.yeaboi_project_id ?? '';
         setEngineId(id);
+        // No engine project yet: nothing to read, and the field starts empty.
+        if (!id) {
+          setDefaults('ready');
+          return;
+        }
         const engine = await loadEngineProject(id);
         if (stale) return;
-        setDefaultsSupported(engine !== null);
+        setDefaults(engine === null ? 'unreadable' : 'ready');
         setRepoPath(repoPathOf(engine));
       })
       .catch((e: Error) => {
@@ -264,6 +275,14 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
       stale = true;
     };
   }, [projectId, ready, authFetch]);
+
+  const ensureEngineId = useCallback(async () => {
+    if (engineId) return engineId;
+    if (!project) throw new Error('The project has not loaded yet.');
+    const id = await ensureEngineProject(authFetch, project);
+    setEngineId(id);
+    return id;
+  }, [engineId, project, authFetch]);
 
   if (error) return <Notice title="Could not open this project" items={[error]} />;
   if (!project) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
@@ -291,15 +310,14 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
       </header>
 
       <section className="animate-slide-up stagger-2">
-        {!engineId ? (
-          <p className="text-[13px] text-muted-foreground">Linking this project to the engine…</p>
-        ) : defaultsSupported === null ? (
+        {defaults === 'reading' ? (
           <p className="text-[13px] text-muted-foreground">Reading the project&rsquo;s defaults…</p>
-        ) : defaultsSupported ? (
-          <RepoPathField engineId={engineId} path={repoPath} onSaved={setRepoPath} />
+        ) : defaults === 'ready' ? (
+          <RepoPathField ensureEngineId={ensureEngineId} path={repoPath} onSaved={setRepoPath} />
         ) : (
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            This sidecar cannot store a repo path yet. Set it from the terminal:{' '}
+            This project&rsquo;s defaults could not be read: either this sidecar predates them, or
+            the engine project it points at no longer exists. The terminal can still set the path:{' '}
             <code className="font-code text-[12px] text-foreground">
               {repoPathCommand(engineId)}
             </code>
@@ -307,7 +325,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
         )}
       </section>
 
-      {engineId && defaultsSupported !== null && (
+      {defaults !== 'reading' && (
         <section className="animate-slide-up stagger-3">
           {repoPath ? (
             <>

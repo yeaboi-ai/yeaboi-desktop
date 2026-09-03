@@ -17,7 +17,7 @@ import {
   type Capabilities,
 } from '@/lib/yeaboi/capabilities';
 import { sessionRows } from '@/lib/yeaboi/home';
-import { withProject } from '@/lib/yeaboi/project-scope';
+import { runInsideHref } from '@/lib/yeaboi/project-scope';
 import {
   loadEngineProjectSessions,
   shapeSessions,
@@ -37,7 +37,8 @@ function Body({ project }: { project: RunInsideProject }) {
   const { audience } = useAudience();
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
-  const [sessions, setSessions] = useState<RecentSession[] | null | 'error'>([]);
+  // undefined until the fetch settles, so the empty sentence never flashes first.
+  const [sessions, setSessions] = useState<RecentSession[] | null | 'error' | undefined>();
   const engineId = project.yeaboi_project_id ?? '';
 
   useEffect(() => {
@@ -63,6 +64,7 @@ function Body({ project }: { project: RunInsideProject }) {
   const rows = Array.isArray(sessions)
     ? sessionRows(shapeSessions(sessions, allCards(caps), new Date()))
     : [];
+  const settled = !engineId || sessions !== undefined;
   const empty = !engineId
     ? 'Nothing has run inside this project yet.'
     : sessions === null
@@ -81,7 +83,7 @@ function Body({ project }: { project: RunInsideProject }) {
           cards={runModesFor(caps, audience)}
           hrefFor={(key) => {
             const route = startRouteFor(key);
-            return route ? withProject(route, project.id) : null;
+            return route ? runInsideHref(key, route, project.id) : null;
           }}
         />
       </section>
@@ -89,7 +91,7 @@ function Body({ project }: { project: RunInsideProject }) {
         <h2 id="sessions-inside" className="mb-3 text-[16px] font-body font-medium text-foreground">
           Sessions in this project
         </h2>
-        <GlimpseList rows={rows} empty={empty} />
+        {settled && <GlimpseList rows={rows} empty={empty} />}
       </section>
     </div>
   );

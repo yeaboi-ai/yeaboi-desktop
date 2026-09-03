@@ -202,7 +202,7 @@ function StandupBody() {
           )}
           <p className="text-[13px] text-muted-foreground mt-1">
             {data.session_name || 'No project yet'}
-            {report ? ` · ${report.date}` : ' · nothing generated yet'}
+            {report ? `, ${report.date}` : ', nothing generated yet'}
           </p>
           {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
         </div>
@@ -282,7 +282,7 @@ function StandupBody() {
                   className="text-primary hover:underline"
                   onClick={() => setRunId(entry.id)}
                 >
-                  {entry.standup_date} · day {entry.sprint_day} · {entry.confidence_pct}%
+                  {entry.standup_date}, day {entry.sprint_day}, {entry.confidence_pct}%
                 </button>
                 <span className="text-[12px] text-muted-foreground flex items-center gap-2">
                   {entry.status}
@@ -406,7 +406,7 @@ function CardBody({
           {report?.confidence_label && (
             <p className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
               <Badge variant={TONE_VARIANT[CONFIDENCE_TONE[report.confidence_label] ?? 'todo']}>
-                {report.confidence_label} · {report.confidence_pct}%
+                {report.confidence_label} ({report.confidence_pct}%)
               </Badge>{' '}
               {report.confidence_rationale}
             </p>
