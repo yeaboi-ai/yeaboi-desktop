@@ -74,7 +74,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
   // Two stages. `open` grows the rows back out of the notch, `wide` brings the
   // labels — on a panel the second waits, so a passing cursor does not throw
-  // the whole nav across the page.
+  // the whole nav across the page. Either way it is a row that opens the rail,
+  // never the rail itself; leaving the rail closes it.
   const [open, setOpen] = useState(false);
   const [wide, setWide] = useState(false);
   const sections = railSections(audience);
@@ -181,7 +182,6 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     <nav
       ref={navRef}
       aria-label="Modes"
-      onMouseEnter={enter}
       onMouseLeave={leave}
       onFocusCapture={() => {
         setOpen(true);
@@ -233,6 +233,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   href={href}
                   title={label}
                   data-active={active}
+                  // Home never opens the rail. In the notch it is the way back
+                  // to the map, and reaching for it should not throw the list
+                  // open across the page.
+                  onMouseEnter={href === HOME_HREF ? undefined : enter}
                   aria-hidden={notch && !kept}
                   tabIndex={notch && !kept ? -1 : undefined}
                   className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
