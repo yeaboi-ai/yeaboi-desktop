@@ -318,11 +318,19 @@ describe('the token rule', () => {
     // The whole promise of these screensavers is that they are drawn from the
     // active theme. A hex literal is how that promise gets broken quietly, in
     // one theme, months later — so it is a test rather than a convention.
-    const dir = join(__dirname, '..', 'src', 'renderer', 'lib', 'screensaver', 'scenes');
-    const files = readdirSync(dir).filter((name) => name.endsWith('.ts') && name !== 'index.ts');
+    const dirs = [
+      join(__dirname, '..', 'src', 'renderer', 'lib', 'screensaver', 'scenes'),
+      join(__dirname, '..', 'src', 'renderer', 'lib', 'home'),
+    ];
+    const files = dirs.flatMap((dir) =>
+      readdirSync(dir)
+        .filter((name) => name.endsWith('.ts') && name !== 'index.ts')
+        .map((name) => join(dir, name)),
+    );
     expect(files.length).toBeGreaterThan(0);
-    for (const name of files) {
-      const source = readFileSync(join(dir, name), 'utf8');
+    for (const file of files) {
+      const name = file.slice(file.lastIndexOf('/') + 1);
+      const source = readFileSync(file, 'utf8');
       const code = source
         .split('\n')
         .filter((line) => !line.trimStart().startsWith('//'))

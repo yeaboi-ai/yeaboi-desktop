@@ -68,10 +68,16 @@ export interface DuckPose {
   squash?: number;
   /** Overall opacity. */
   alpha?: number;
+  /**
+   * Let the browser average pixels. Right when the duck is drawn smaller than
+   * its 2x-crisp size (64px): nearest-neighbour minification throws away the
+   * shades' hairlines. The brand marks make the same choice.
+   */
+  smooth?: boolean;
 }
 
 /** 0 → 1 → 0 across one period, the shape of an ease-in-out keyframe pair. */
-function swing(time: number, period: number): number {
+export function swing(time: number, period: number): number {
   return (1 - Math.cos((2 * Math.PI * time) / period)) / 2;
 }
 
@@ -92,7 +98,7 @@ export function drawDuck(ctx: CanvasRenderingContext2D, art: DuckArt, pose: Duck
   ctx.save();
   // The art is pixel art at 2x the drawn size; smoothing it turns a deliberate
   // edge into mush. The primitive says the same thing with image-rendering.
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = pose.smooth ?? false;
   if (pose.alpha !== undefined) ctx.globalAlpha *= pose.alpha;
   if (pose.rotate) ctx.rotate((pose.rotate * Math.PI) / 180);
   if (pose.squash !== undefined && pose.squash !== 1) ctx.scale(1 / pose.squash, pose.squash);

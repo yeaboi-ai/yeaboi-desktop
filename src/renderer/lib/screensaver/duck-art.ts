@@ -8,6 +8,7 @@
 import baseSrc from '@yeaboi-ai/design/assets/duck/base.png';
 import glassesSrc from '@yeaboi-ai/design/assets/duck/glasses.png';
 import wingSrc from '@yeaboi-ai/design/assets/duck/wing.png';
+import roboSrc from '@/assets/brand/robo.png';
 import type { DuckArt } from './duck-rig';
 
 let loaded: DuckArt | null = null;
@@ -37,4 +38,21 @@ export function loadDuckArt(): Promise<DuckArt> {
 /** The art if it is already here, for a first frame that must not wait. */
 export function duckArtNow(): DuckArt | null {
   return loaded;
+}
+
+let robo: HTMLImageElement | null = null;
+let roboLoading: Promise<HTMLImageElement> | null = null;
+
+/** The Agents world's mascot: one layer, fetched once. */
+export function loadRoboArt(): Promise<HTMLImageElement> {
+  if (robo) return Promise.resolve(robo);
+  roboLoading ??= image(roboSrc).then((img) => {
+    robo = img;
+    return img;
+  });
+  return roboLoading;
+}
+
+export function roboArtNow(): HTMLImageElement | null {
+  return robo;
 }

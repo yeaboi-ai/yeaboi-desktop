@@ -18,6 +18,7 @@
 import { drawDuck, peekAt, type DuckArt } from '../duck-rig';
 import { isLightGround } from '../luminance';
 import type { Palette } from '../palette';
+import { drawRings, spawnRing, stepRings, type Ring } from '../rings';
 import { between, type Scene, type SceneOptions } from '../scene';
 
 // Tuning. Speeds and distances are in duck-widths per second and duck-widths,
@@ -40,9 +41,6 @@ const DUCK_MIN = 4;
 const DUCK_MAX = 30;
 /** How often the anchored hero looks over the top of his shades. */
 const HERO_PEEK_EVERY = 6;
-/** An impact ring, in theme accent, drawn where two ducks meet. */
-const RING_SECONDS = 0.35;
-const RING_GROWTH = 1.3; // final radius, as a multiple of the duck's
 const STEP = 1 / 120; // fixed timestep, so the sim is frame-rate independent
 const MAX_CATCH_UP = 0.5; // seconds of simulation per frame, at most
 
@@ -62,14 +60,6 @@ interface Duck {
   /** Seconds left of the squash, and the world-space normal it happened along. */
   squishLeft: number;
   normal: number; // radians
-}
-
-/** A collision, briefly, as a ring of theme colour. */
-interface Ring {
-  x: number;
-  y: number;
-  radius: number;
-  left: number;
 }
 
 /** How many ducks a window of this size holds. */
@@ -208,8 +198,7 @@ export class DuckYard implements Scene {
   step(dt: number): void {
     if (this.still) return;
     this.clock += dt;
-    for (const ring of this.rings) ring.left -= dt;
-    this.rings = this.rings.filter((ring) => ring.left > 0);
+    this.rings = stepRings(this.rings, dt);
     this.carry = Math.min(this.carry + dt, MAX_CATCH_UP);
     while (this.carry >= STEP) {
       this.advance(STEP);
@@ -322,8 +311,7 @@ export class DuckYard implements Scene {
 
   /** Record a collision as a ring, at the point of contact. */
   private ring(x: number, y: number, radius: number): void {
-    if (this.rings.length > 12) return; // a busy yard must not become fireworks
-    this.rings.push({ x, y, radius, left: RING_SECONDS });
+    spawnRing(this.rings, x, y, radius);
   }
 
   /** How flat a duck is right now, 1 being round. */
@@ -340,7 +328,7 @@ export class DuckYard implements Scene {
 
     const hero = this.ducks.find((duck) => duck.anchored);
     if (hero) this.drawHalo(ctx, hero);
-    this.drawRings(ctx);
+    drawRings(ctx, this.rings, this.palette.primary);
 
     // The hero draws last, so the crowd passes behind him rather than over him.
     const order = [...this.ducks].sort((a, b) => Number(a.anchored) - Number(b.anchored));
@@ -382,20 +370,6 @@ export class DuckYard implements Scene {
     ctx.beginPath();
     ctx.arc(hero.x, hero.y, radius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
-  }
-
-  private drawRings(ctx: CanvasRenderingContext2D): void {
-    ctx.save();
-    ctx.strokeStyle = this.palette.primary;
-    for (const ring of this.rings) {
-      const through = 1 - ring.left / RING_SECONDS;
-      ctx.globalAlpha = 0.3 * (1 - through);
-      ctx.lineWidth = 2 * (1 - through) + 0.5;
-      ctx.beginPath();
-      ctx.arc(ring.x, ring.y, ring.radius * (0.6 + RING_GROWTH * through), 0, Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.restore();
   }
 
