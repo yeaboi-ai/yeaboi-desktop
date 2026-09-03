@@ -42,13 +42,14 @@ const LOCK_MS = 60;
  *  restarts it, so a fast run through the deck stays held back until it
  *  stops. */
 const SETTLE_MS = 900;
-/** How far the surface pulls in from the window while it is in transit. Enough
- *  to clear the chrome that does not travel with it — the rail is 48 wide and
- *  the dock row 48 tall — so in transit the card sits just inside both rather
- *  than passing behind them. An even margin on all four sides, which a uniform
- *  scale cannot give on a window that is not square: it would leave the sides
- *  further in than the top and bottom. */
-const PREVIEW_INSET = 56;
+/** Where the surface sits while it is in transit: not pulled evenly in from
+ *  the window, but tucked past the chrome that does not travel with it — the
+ *  rail on the left, the traffic lights above, the dock row below. The right
+ *  has nothing beside it, so it barely comes in at all. */
+const PREVIEW_EDGES = { left: 56, top: 42, right: 16, bottom: 56 };
+/** The transit easing: long and almost entirely decelerating, so the surface
+ *  arrives rather than stops. */
+const PREVIEW_EASE = '620ms cubic-bezier(0.16, 1, 0.3, 1)';
 
 /** Whether anything under the pointer can still scroll the way the wheel is
  *  pointing. Walks the real scroll ancestry rather than an opt-in attribute, so
@@ -85,7 +86,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
   );
 
   const [preview, setPreview] = useState(false);
-  const [shrink, setShrink] = useState<[number, number]>([1, 1]);
+  const [held, setHeld] = useState('none');
   const travel = useRef(0);
   const lastWheel = useRef(0);
   const lockedUntil = useRef(0);
@@ -109,10 +110,12 @@ export function Deck({ children }: { children: React.ReactNode }) {
       const next = (here + step + routes.length) % routes.length;
       router.push(routes[next]!);
       if (!reduced) {
-        setShrink([
-          1 - (2 * PREVIEW_INSET) / window.innerWidth,
-          1 - (2 * PREVIEW_INSET) / window.innerHeight,
-        ]);
+        // Per-axis, because the four insets differ; the translate re-centres
+        // what the scale alone would leave sitting in the middle.
+        const { left, top, right, bottom } = PREVIEW_EDGES;
+        const sx = 1 - (left + right) / window.innerWidth;
+        const sy = 1 - (top + bottom) / window.innerHeight;
+        setHeld(`translate(${(left - right) / 2}px, ${(top - bottom) / 2}px) scale(${sx}, ${sy})`);
         setPreview(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         settleTimer.current = setTimeout(settle, SETTLE_MS);
@@ -190,9 +193,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
       data-deck
       className="h-screen overflow-y-auto"
       style={{
-        transform: preview ? `scale(${shrink[0]}, ${shrink[1]})` : 'scale(1, 1)',
+        transform: preview ? held : 'translate(0px, 0px) scale(1, 1)',
         transformOrigin: 'center center',
-        transition: reduced ? undefined : 'all 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transition: reduced ? undefined : `all ${PREVIEW_EASE}`,
+        willChange: 'transform',
         // Inert while held back: a half-dealt card should not take a click
         // meant for the one underneath it.
         pointerEvents: preview ? 'none' : undefined,
@@ -200,12 +204,9 @@ export function Deck({ children }: { children: React.ReactNode }) {
         // the one around it rather than being a second, differently curved one.
         borderRadius: preview ? 'var(--window-radius)' : '0px',
         overflow: preview ? 'hidden' : undefined,
-        // In transit the surface recedes rather than being framed: it fades
-        // back behind a soft halo. A drawn edge reads as a dialog.
-        opacity: preview ? 0.55 : 1,
-        boxShadow: preview
-          ? '0 0 70px color-mix(in srgb, var(--foreground) 6%, transparent)'
-          : 'none',
+        // Nothing about the surface changes colour in transit: fading it let the
+        // background through and the card read as a lighter patch than the
+        // window around it. Only its size and its corners move.
       }}
     >
       {/* Keyed on the route so the surface remounts and its contents deal
