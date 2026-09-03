@@ -72,6 +72,11 @@ const MODE_TINT: Record<string, string> = {
 const BEHIND = 7;
 const AHEAD = 35;
 
+/** How long a week's worth of travel takes, and its shape: all deceleration.
+ *  The browser's own smooth scroll eases in as well as out, which on a strip
+ *  this short reads as a lurch and a stop rather than a glide. */
+const GLIDE_MS = 620;
+
 const STEP =
   'rounded-lg px-2 py-1 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground';
 
@@ -189,6 +194,36 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
   /** One week of the strip, whatever it is currently wide. */
   const stride = () => strip.current?.clientWidth ?? 0;
 
+  // The strip is scrolled by hand rather than by the browser: it leaves at
+  // full speed and coasts to a stop, and a hand on the strip takes it back
+  // mid-glide.
+  const gliding = useRef(0);
+  // Snapping is suspended for the length of a glide: with it on, every frame's
+  // write was pulled to the nearest day and a curve came out as a march of
+  // equal steps, one cell wide.
+  const stopGlide = () => {
+    cancelAnimationFrame(gliding.current);
+    gliding.current = 0;
+    if (strip.current) strip.current.style.scrollSnapType = '';
+  };
+  const glide = (to: number) => {
+    const box = strip.current;
+    if (!box) return;
+    stopGlide();
+    box.style.scrollSnapType = 'none';
+    const from = box.scrollLeft;
+    const target = Math.max(0, Math.min(box.scrollWidth - box.clientWidth, to));
+    const began = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - began) / GLIDE_MS);
+      box.scrollLeft = from + (target - from) * (1 - Math.pow(1 - t, 4));
+      if (t < 1) gliding.current = requestAnimationFrame(tick);
+      else stopGlide();
+    };
+    gliding.current = requestAnimationFrame(tick);
+  };
+  useEffect(() => () => cancelAnimationFrame(gliding.current), []);
+
   // Today starts at the left edge, with the week behind it scrolled off.
   useEffect(() => {
     if (expanded || !strip.current) return;
@@ -201,13 +236,13 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
       setMonth(new Date(month.getFullYear(), month.getMonth() + by, 1));
       return;
     }
-    strip.current?.scrollBy({ left: by * stride(), behavior: 'smooth' });
+    glide((strip.current?.scrollLeft ?? 0) + by * stride());
   };
 
   const now = () => {
     setDirection(0);
     setMonth(new Date());
-    strip.current?.scrollTo({ left: (stride() / 7) * BEHIND, behavior: 'smooth' });
+    glide((stride() / 7) * BEHIND);
   };
 
   return (
@@ -281,7 +316,9 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
       ) : (
         <div
           ref={strip}
-          className="mt-4 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          onPointerDown={stopGlide}
+          onWheel={stopGlide}
+          className="mt-4 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {days.map((day) => (
             <div
