@@ -70,11 +70,11 @@ sprites: ## Re-render the onboarding lifecycle sprites from the yeaboi-site duck
 robo: ## Re-render the Agents world's robo mascot from the vendored pixel duck (needs uv)
 	uv run --with pillow --no-project python scripts/gen_robo_sprites.py
 
-duck-marks: ## Re-render the in-app duck marks from the pet art, into the design tarball (needs uv)
-	uv run --with pillow --no-project python scripts/gen_duck_marks.py
+duck-marks: ## Re-draw the in-app duck marks as curves, into the design tarball (needs uv)
+	uv run --with pillow --with scikit-image --with numpy --no-project python scripts/gen_duck_marks.py
 
 duck-marks-check: ## Assert the committed duck marks are what the generator produces (needs uv)
-	uv run --with pillow --no-project python scripts/gen_duck_marks.py --check
+	uv run --with pillow --with scikit-image --with numpy --no-project python scripts/gen_duck_marks.py --check
 
 pack: ## Unsigned local package into dist/ (a smoke test, not a release)
 	$(MAKE) build

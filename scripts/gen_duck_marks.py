@@ -1,28 +1,32 @@
-"""Re-draw the duck's UI sprites as curves instead of stairs.
+"""Re-draw the duck's UI sprites as curves, at a resolution worth having.
 
-The mascot is a 128x136 pixel drawing and it is used as a mark at 18-72px. At
-those sizes its own outline staircase lands on roughly one to two screen
-pixels, so it reads as jagged — and nothing about filtering fixes that. Scaling
-a bigger copy of a staircase gives a softer staircase; anti-aliasing gives a
-blurry one. The steps have to stop being steps.
+The mascot was a 128x136 pixel drawing used as a mark at 18-72px. At those
+sizes its own stair steps land on about a screen pixel each, and nothing about
+filtering or scaling fixes that: the steps are the drawing. Raising the sprite
+to 480px changed nothing for the same reason, and it made things worse — a
+6.7:1 reduction sends Chromium's scaler down a cheap path that aliases hard
+edges badly.
 
-So each layer is re-drawn: every colour in it is treated as a region, that
-region's mask is blown up, blurred and re-thresholded — which rounds a stair
-into an edge — and the regions are laid back down largest first. Blurring the
-composite instead would bleed every colour into its neighbour; doing one mask
-at a time moves an edge without touching what is either side of it.
+So the drawing is re-drawn. Each region of the master is traced to a contour,
+the contour is smoothed by corner-cutting until the staircase converges on the
+curve it was approximating, and the result is filled at high resolution. What
+ships has no pixel grid in it, so there is nothing left to alias.
+
+Two things make the trace behave. Near-duplicate shades are merged first — the
+master carries a dozen greys within a few values of each other, and tracing
+each separately gives a cloud of slivers rather than a shape. And the outline
+is painted as the whole silhouette rather than traced as a one-pixel ring,
+which collapses the moment it is smoothed.
 
 `src/renderer/assets/duck-master/` holds the 128px drawing this renders from.
-It is the mascot as drawn, kept here because the render is lossy and there
-would otherwise be nothing to re-render from.
 
-The canvas is 480x510, so the aspect stays exactly 136/128 —
-`components/brand/team.tsx` hard-codes that ratio to size a three-duck cluster
-to the same box as a single mark.
+The canvas keeps the aspect at exactly 136/128 — `components/brand/team.tsx`
+hard-codes that ratio to size a three-duck cluster to the same box as a single
+mark.
 
 The design package is **vendored**, its source of truth the yeaboi-frontend
-repo, so this rewrites the committed tarball. Port the same render upstream or
-the next design bump puts the stairs back.
+repo, so this rewrites the committed tarball. Port the same render upstream, or
+the next design bump puts the pixel grid back.
 
 Run with `make duck-marks`. The output is committed; not part of the build.
 """
@@ -35,7 +39,9 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageFilter
+import numpy as np
+from PIL import Image, ImageDraw
+from skimage import measure
 
 ROOT = Path(__file__).resolve().parent.parent
 MASTER = ROOT / "src" / "renderer" / "assets" / "duck-master"
@@ -44,53 +50,109 @@ INSTALLED = ROOT / "node_modules" / "@yeaboi-ai" / "design"
 
 LAYERS = ("base", "wing", "glasses")
 
-#: The mark canvas. Height is width * 136/128 — the ratio team.tsx assumes.
-CANVAS = (480, 510)
+#: The mark canvas. Four times the 72px the dock duck is drawn at, so there is
+#: detail to spare at every size it is used; height is width * 136/128, the
+#: ratio team.tsx assumes.
+CANVAS = (288, 306)
 
-#: How far the masks are blown up before smoothing. Every source pixel becomes
-#: this many, which is the resolution the reconstructed curve is drawn at.
-FACTOR = 8
+#: Supersampling for the fill, resolved away by the final reduction.
+SS = 2
 
-#: Blur radius as a fraction of FACTOR. Below about a third the stairs survive;
-#: above about a half the beak's own corners start rounding off with them.
-SOFTEN = 0.42
+#: Corner-cutting passes. Each one halves the remaining stair; four is where
+#: the outline stops visibly stepping and the beak still has a point.
+ROUNDS = 4
+
+#: Contours smaller than this are dropped. Below it a contour is a stray pixel
+#: or two, and smoothing turns those into specks.
+MIN_AREA = 2.0
+
+#: How many shades survive the merge, per layer. Enough that the beak and feet
+#: keep their orange — 354 pixels between them — and few enough that the dozen
+#: near-identical greys become one region.
+KEEP = {"base": 11, "wing": 4, "glasses": 3}
 
 
-def smooth_layer(image: Image.Image) -> Image.Image:
-    """Re-draw one pixel-art layer with curved edges."""
-    image = image.convert("RGBA")
-    width, height = image.size
-    px = image.load()
+def _chaikin(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Corner-cutting. Each pass replaces a corner with two points along its
+    edges, so a staircase converges on the curve it was approximating."""
+    for _ in range(ROUNDS):
+        out: list[tuple[float, float]] = []
+        count = len(points)
+        for i in range(count):
+            ax, ay = points[i]
+            bx, by = points[(i + 1) % count]
+            out.append((ax * 0.75 + bx * 0.25, ay * 0.75 + by * 0.25))
+            out.append((ax * 0.25 + bx * 0.75, ay * 0.25 + by * 0.75))
+        points = out
+    return points
 
+
+def _area(points: list[tuple[float, float]]) -> float:
+    total = 0.0
+    for i in range(len(points)):
+        x1, y1 = points[i]
+        x2, y2 = points[(i + 1) % len(points)]
+        total += x1 * y2 - x2 * y1
+    return abs(total) / 2
+
+
+def _merge_shades(arr, opaque, keep: int):
+    """Every colour snapped to one of the `keep` most common ones."""
     counts: dict[tuple[int, int, int], int] = {}
+    height, width = opaque.shape
     for y in range(height):
         for x in range(width):
-            r, g, b, a = px[x, y]
-            if a < 128:
-                continue
-            counts[(r, g, b)] = counts.get((r, g, b), 0) + 1
+            if opaque[y, x]:
+                colour = tuple(int(v) for v in arr[y, x, :3])
+                counts[colour] = counts.get(colour, 0) + 1
+    anchors = [c for c, _ in sorted(counts.items(), key=lambda kv: -kv[1])[:keep]]
+    lut = {
+        c: min(anchors, key=lambda a: sum((a[i] - c[i]) ** 2 for i in range(3))) for c in counts
+    }
+    flat = np.zeros((height, width, 3), np.uint8)
+    for y in range(height):
+        for x in range(width):
+            if opaque[y, x]:
+                flat[y, x] = lut[tuple(int(v) for v in arr[y, x, :3])]
+    return flat, anchors
 
-    big = (width * FACTOR, height * FACTOR)
-    out = Image.new("RGBA", big, (0, 0, 0, 0))
-    radius = FACTOR * SOFTEN
-    # Largest first, so the small details — the beak's highlight, the glare on
-    # the lenses — are laid over the mass rather than swallowed by it.
-    for colour in sorted(counts, key=lambda c: -counts[c]):
-        mask = Image.new("L", (width, height), 0)
-        mp = mask.load()
-        for y in range(height):
-            for x in range(width):
-                r, g, b, a = px[x, y]
-                if a >= 128 and (r, g, b) == colour:
-                    mp[x, y] = 255
-        grown = mask.resize(big, Image.NEAREST).filter(ImageFilter.GaussianBlur(radius))
-        grown = grown.point(lambda v: 255 if v >= 128 else 0)
-        out.paste(Image.new("RGBA", big, colour + (255,)), (0, 0), grown)
-    return out
+
+def trace(path: Path, keep: int) -> Image.Image:
+    """One layer of the master, re-drawn as filled curves."""
+    image = Image.open(path).convert("RGBA")
+    arr = np.array(image)
+    height, width = arr.shape[:2]
+    opaque = arr[:, :, 3] >= 128
+    flat, anchors = _merge_shades(arr, opaque, keep)
+
+    scale = CANVAS[0] / width
+    canvas = Image.new("RGBA", (CANVAS[0] * SS, CANVAS[1] * SS), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+
+    def paint(mask, colour) -> None:
+        for contour in measure.find_contours(np.pad(mask.astype(float), 1), 0.5):
+            points = [(px - 1.0, py - 1.0) for py, px in contour]
+            if len(points) < 8 or _area(points) < MIN_AREA:
+                continue
+            draw.polygon(
+                [(x * scale * SS, y * scale * SS) for x, y in _chaikin(points)],
+                fill=tuple(int(v) for v in colour) + (255,),
+            )
+
+    # The silhouette in the darkest shade is the outline. Painted whole, because
+    # a one-pixel ring traced as its own region collapses when it is smoothed.
+    darkest = min(anchors, key=sum)
+    paint(opaque, darkest)
+    areas = {a: int((opaque & np.all(flat == a, axis=2)).sum()) for a in anchors}
+    for colour in sorted(anchors, key=lambda a: -areas[a]):
+        if colour == darkest:
+            continue
+        paint(opaque & np.all(flat == colour, axis=2), colour)
+    return canvas.resize(CANVAS, Image.LANCZOS)
 
 
 def render(name: str) -> Image.Image:
-    return smooth_layer(Image.open(MASTER / f"{name}.png")).resize(CANVAS, Image.LANCZOS)
+    return trace(MASTER / f"{name}.png", KEEP[name])
 
 
 def main() -> int:
