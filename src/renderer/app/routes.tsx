@@ -5,6 +5,8 @@
 import { useMemo } from 'react';
 import { Navigate, Outlet, createHashRouter, useParams } from 'react-router';
 import { Providers } from '@/components/providers';
+import { TitleBar } from '@/components/title-bar';
+import { WindowTitle } from '@/components/window-title';
 import { APP_ROUTES } from '@/lib/yeaboi/routes';
 import GlobalBoardPage from '@/pages/board-page';
 import RecordingPage from '@/pages/recordings/recording-page';
@@ -102,6 +104,8 @@ function LegacyHumansRedirect() {
 function Root() {
   return (
     <Providers>
+      <WindowTitle />
+      <TitleBar />
       <Outlet />
     </Providers>
   );

@@ -22,6 +22,7 @@ interface YeaboiBridge {
   completeOnboarding: () => Promise<void>;
   getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
   setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
   api: (
     path: string,
     init?: { method?: string; body?: unknown },

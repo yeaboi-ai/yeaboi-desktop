@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLocation } from 'react-router';
 import { CreateProjectDialog } from '@/components/create-project-dialog';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { PROJECTS_HEADER_LINKS } from '@/lib/nav/sections';
@@ -83,6 +84,7 @@ export default function ProjectsPage() {
   }
 
   const now = new Date();
+  const { search } = useLocation();
   const sorted = [...projects].sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   return (
@@ -108,7 +110,11 @@ export default function ProjectsPage() {
                 {link.label}
               </Link>
             ))}
-            <CreateProjectDialog onCreate={createProject} onCreated={refetchProjects} />
+            <CreateProjectDialog
+              onCreate={createProject}
+              onCreated={refetchProjects}
+              defaultOpen={new URLSearchParams(search).has('new')}
+            />
           </div>
         </header>
 

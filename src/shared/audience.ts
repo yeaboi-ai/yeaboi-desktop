@@ -9,6 +9,11 @@ export type Audience = 'solo' | 'team' | 'agents';
 
 export const AUDIENCES: readonly Audience[] = ['solo', 'team', 'agents'];
 
+/** The projects list for a world: Agents scopes the same projects by repo. */
+export function projectsHref(audience: Audience): string {
+  return audience === 'agents' ? '/agents/projects' : '/projects';
+}
+
 /** Clamp whatever settings.json holds. `humans` is the pre-split name for the
  *  Team world and migrates on read (the file rewrites itself on the next
  *  set). Anything else means the question was never asked (or the file

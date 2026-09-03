@@ -17,8 +17,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
-import { resolveAudience, type Audience } from '@shared/audience';
+import { usePathname, useRouter } from 'next/navigation';
+import { audiencesForRoute, resolveAudience, type Audience } from '@shared/audience';
+import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 
 interface AudienceContextValue {
   /** The active world. 'team' until the question is answered. */
@@ -66,6 +67,21 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
       // Stale preload without the method — the in-memory flip still holds.
     }
   }, []);
+
+  // The menu bar's World menu: main already persisted it. A page the new
+  // world does not own would be orphaned from the rail, so go home instead.
+  const router = useRouter();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+  useEffect(() => {
+    if (typeof window.yeaboi?.onAudience !== 'function') return;
+    window.yeaboi.onAudience((next) => {
+      setState(next);
+      const current = pathnameRef.current;
+      const worlds = current ? audiencesForRoute(current) : [];
+      if (worlds.length > 0 && !worlds.includes(next)) router.push(DEFAULT_ROUTE);
+    });
+  }, [router]);
 
   const chosen = state !== 'loading' && state !== null;
   const audience: Audience = chosen ? (state as Audience) : 'team';

@@ -1,13 +1,12 @@
 // The rail: two rows per world plus Settings, every href a registered route,
 // the active-row rule table-driven, and nothing the old nineteen-row rail
-// listed left unreachable.
+// listed left unreachable (the About pages live in the menu bar).
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
 import {
-  ABOUT_ROUTES,
   PROJECTS_HEADER_LINKS,
   SESSIONS_FOOT_LINKS,
   SETTINGS_ITEM,
@@ -16,6 +15,7 @@ import {
   projectsHref,
 } from '../src/renderer/lib/nav/sections';
 import { MODE_ROUTES, MODE_START_ROUTES } from '../src/renderer/lib/yeaboi/tips';
+import { menuPathnames } from '../src/shared/menu';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const registry = JSON.parse(
@@ -24,7 +24,7 @@ const registry = JSON.parse(
 const REGISTERED = new Set(registry.routes.map((route) => route.path));
 
 /** Everything the pre-diptych rail listed. Each must still be reachable from
- *  the rail, a page header or foot, the About group, or a mode's route. */
+ *  the rail, a page header or foot, the menu bar, or a mode's route. */
 const OLD_INVENTORY = [
   '/solo/review',
   '/home',
@@ -65,7 +65,7 @@ describe('navItems', () => {
       }
     }
     const pageLinks = [...PROJECTS_HEADER_LINKS, ...SESSIONS_FOOT_LINKS].map((link) => link.href);
-    for (const href of [...pageLinks, ...ABOUT_ROUTES]) {
+    for (const href of pageLinks) {
       expect(REGISTERED, `${href} is not in routes.json`).toContain(href);
     }
   });
@@ -95,7 +95,7 @@ describe('navItems', () => {
       ...AUDIENCES.flatMap((a) => navItems(a).map((i) => i.href)),
       ...PROJECTS_HEADER_LINKS.map((link) => link.href),
       ...SESSIONS_FOOT_LINKS.map((link) => link.href),
-      ...ABOUT_ROUTES,
+      ...AUDIENCES.flatMap((a) => menuPathnames(a)),
       ...Object.values(MODE_ROUTES),
       ...Object.values(MODE_START_ROUTES),
     ]);
@@ -135,10 +135,10 @@ describe('activeRailRow', () => {
     ['/settings/credentials', '', 'settings'],
     ['/settings/themes/edit', '', 'settings'],
     ['/setup', '', 'settings'],
-    ['/whats-new', '', 'settings'],
-    ['/system-check', '', 'settings'],
-    ['/privacy', '', 'settings'],
-    ['/feedback', '', 'settings'],
+    ['/whats-new', '', null],
+    ['/system-check', '', null],
+    ['/privacy', '', null],
+    ['/feedback', '', null],
   ];
 
   it.each(cases)('%s%s lights %s', (pathname, search, expected) => {

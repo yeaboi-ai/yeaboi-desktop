@@ -1,16 +1,15 @@
 'use client';
 
 // The rail: the world lockup, the roster (Team), and three rows — Projects,
-// Sessions, Settings. Everything else in the app hangs off one of those two
-// ways of working, so nothing else is listed here. Which row is lit is
-// lib/nav/sections.ts's activeRailRow, so a mode page opened inside a project
-// keeps Projects lit.
+// Sessions, Settings. Everything else hangs off one of the two ways of
+// working, so nothing else is listed here; the pages about the app live in
+// the menu bar. Which row is lit is lib/nav/sections.ts's activeRailRow, so a
+// mode page opened inside a project keeps Projects lit.
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLocation } from 'react-router';
 import Link from 'next/link';
-import { ThemeSwitcher } from './theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
 import { useAudience } from '@/components/providers/audience-provider';
 import {
@@ -32,8 +31,6 @@ import {
   setStoredTeamId,
   dispatchTeamChange,
 } from '@/hooks/use-auth-fetch';
-import { updateIndicatorVisible } from '@shared/update';
-import { useUpdateState } from '@/hooks/use-update-state';
 import { UpdateCard } from '@/components/system/update-card';
 import { logger } from '@/lib/logger';
 
@@ -63,11 +60,6 @@ export function Sidebar() {
     const worlds = pathname ? audiencesForRoute(pathname) : [];
     if (worlds.length > 0 && !worlds.includes(next)) router.push(DEFAULT_ROUTE);
   };
-  // The dot ignores dismissal — it is the quiet permanent reminder that
-  // What's new has something; the dismissible card is the loud half.
-  const updateState = useUpdateState();
-  const updateDot = updateIndicatorVisible(updateState, null);
-
   // The three rows in order, for Cmd+Up/Down.
   const rows: { key: RailRow; href: string }[] = [
     { key: 'projects', href: projectsHref(audience) },
@@ -95,25 +87,13 @@ export function Sidebar() {
     };
   }, []);
 
-  // Cmd+P / Cmd+S for the rows, Cmd+B for the board (kept, unlisted), and
-  // Cmd+Up/Down to cycle the three rows.
+  // Cmd+Up/Down cycles the three rows. Cmd+P / Cmd+S / Cmd+B are the menu
+  // bar's Go menu (src/main/menu.ts), so they are not repeated here.
   useEffect(() => {
-    const shortcuts: Record<string, string> = {
-      p: projectsHref(audience),
-      b: '/board',
-      s: SETTINGS_ITEM.href,
-    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!e.metaKey && !e.ctrlKey) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-      const href = shortcuts[e.key.toLowerCase()];
-      if (href) {
-        e.preventDefault();
-        router.push(href);
-        return;
-      }
 
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
@@ -220,9 +200,9 @@ export function Sidebar() {
       className={`fixed left-0 bottom-0 w-[56px] md:w-[180px] border-r border-border/60 bg-background flex flex-col z-40 overflow-visible transition-opacity duration-300 ${
         loaded ? 'opacity-100' : 'opacity-0'
       }`}
-      // The provider-health banner pads <html> to push page content down, but
-      // padding cannot move a fixed element — this reads the banner's height.
-      style={{ top: 'var(--banner-h, 0px)' }}
+      // The title bar and the provider-health banner pad the page down, but
+      // padding cannot move a fixed element — this reads both heights.
+      style={{ top: 'calc(var(--titlebar-h, 0px) + var(--banner-h, 0px))' }}
     >
       {/* The lockup names the world and goes home; its chevron flips the world. */}
       <div className="pt-4 pb-2">
@@ -316,32 +296,17 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="px-2 md:px-3 pb-4 flex flex-col gap-1">
         <UpdateCard />
-        {/* The theme switcher is a popover trigger, so it sits beside the
-            settings link rather than inside it — a button may not live inside
-            an anchor. */}
-        <div className="border-t border-border/40 pt-2 mt-1 flex flex-col md:flex-row items-center gap-1">
+        <div className="border-t border-border/40 pt-2 mt-1">
           <Link
             href={SETTINGS_ITEM.href}
-            className={`flex-1 min-w-0 ${rowClass(active === 'settings')}`}
+            className={rowClass(active === 'settings')}
             style={rowStyle(active === 'settings')}
             title={SETTINGS_ITEM.label}
             aria-current={active === 'settings' ? 'page' : undefined}
           >
-            <span className="relative shrink-0">
-              <Settings className="h-3.5 w-3.5" />
-              {updateDot && (
-                <span className="md:hidden absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
-              )}
-            </span>
+            <Settings className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden md:inline">{SETTINGS_ITEM.label}</span>
-            {updateDot && (
-              <span
-                className="hidden md:inline-block ml-auto h-1.5 w-1.5 rounded-full bg-amber-400"
-                title="An update is ready. See What's new."
-              />
-            )}
           </Link>
-          <ThemeSwitcher />
         </div>
       </div>
     </aside>

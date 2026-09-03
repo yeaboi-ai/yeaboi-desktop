@@ -19,6 +19,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { BrowserWindow, app, dialog, ipcMain, nativeImage, session, shell } from 'electron';
+import { AppMenu } from './menu';
 // The 1024px master of the committed icon set. macOS reads a packaged app's
 // icon from the bundle, so this is what dresses the dev run's Dock and what
 // Windows and Linux draw on the window itself.
@@ -57,6 +58,7 @@ const notifier = new Notifier((route) => openApp(route));
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
+let appMenu: AppMenu | null = null;
 
 // An externally provided backend URL means "mine, don't spawn one" — the dev
 // escape hatch for pointing the renderer at a hand-run planning server.
@@ -90,6 +92,12 @@ function createMainWindow(): void {
     icon: iconPath,
     // What the window is called until index.html's own <title> loads.
     title: app.getName(),
+    // The renderer draws the title bar (components/title-bar.tsx); the OS
+    // keeps only its window controls, centred in that 38px strip.
+    titleBarStyle: 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : { titleBarOverlay: { height: 38 } }),
     // The last theme's background, so no flash of the wrong scheme while the
     // renderer boots. The renderer keeps it current over theme:background.
     backgroundColor: settings.windowBackground,
@@ -146,6 +154,7 @@ function setPetPreference(patch: Partial<PetPrefs>): PetPrefs {
   const prefs = settings.setPet(patch);
   pet.setPrefs(prefs);
   tray?.setPetEnabled(prefs.enabled);
+  appMenu?.setPetEnabled(prefs.enabled);
   return prefs;
 }
 
@@ -339,7 +348,10 @@ if (!gotLock) {
     ipcMain.handle('audience:get', () => settings.audience ?? null);
     ipcMain.handle('audience:set', (_event, value: unknown) => {
       const audience = normalizeAudience(value);
-      if (audience) settings.setAudience(audience);
+      if (audience) {
+        settings.setAudience(audience);
+        appMenu?.setAudience(audience);
+      }
       return settings.audience ?? null;
     });
 
@@ -417,6 +429,7 @@ if (!gotLock) {
     ipcMain.handle('update:download', () => updater.download());
     ipcMain.handle('update:install', () => updater.install());
     updater.onState((state) => {
+      appMenu?.setUpdateState(state);
       tray?.setUpdateState(state);
       for (const window of BrowserWindow.getAllWindows())
         window.webContents.send('update:state', state);
@@ -433,16 +446,32 @@ if (!gotLock) {
 
     createMainWindow();
     pet.setPrefs(settings.pet);
+    // One menu item for the whole update sequence: it does whatever the
+    // state it is showing says it does.
+    const runUpdate = () => {
+      if (updater.current.kind === 'ready') updater.install();
+      else if (updater.current.kind === 'available') void updater.download();
+      else void updater.check();
+    };
+    appMenu = new AppMenu({
+      open: (route) => openApp(route),
+      about: () => showAbout(),
+      update: runUpdate,
+      // The world flips here, in the store, and in the window at once.
+      setAudience: (audience) => {
+        settings.setAudience(audience);
+        appMenu?.setAudience(audience);
+        mainWindow?.webContents.send('app:audience', audience);
+      },
+      togglePet: (enabled) => void setPetPreference({ enabled }),
+      recenterPet: () => pet.recenter(),
+      petSettings: () => openApp('/settings/duck'),
+    });
+    appMenu.install({ audience: settings.audience, petEnabled: settings.petEnabled });
     tray = new AppTray({
       open: () => openApp(),
       about: () => showAbout(),
-      // One menu item for the whole update sequence: it does whatever the
-      // state it is showing says it does.
-      update: () => {
-        if (updater.current.kind === 'ready') updater.install();
-        else if (updater.current.kind === 'available') void updater.download();
-        else void updater.check();
-      },
+      update: runUpdate,
       togglePet: (enabled) => void setPetPreference({ enabled }),
       nudgePet: (delta) => void setPetPreference({ raise: settings.pet.raise + delta }),
       recenterPet: () => pet.recenter(),

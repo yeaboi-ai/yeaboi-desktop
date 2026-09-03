@@ -35,7 +35,6 @@ import {
 } from '@/lib/yeaboi/shell-changelog';
 import { useUpdateFlow } from '@/hooks/use-update-state';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -452,12 +451,17 @@ function WhatsNewBody() {
 
 export default function WhatsNewPage() {
   return (
-    <SettingsPageShell active="/whats-new" maxWidth="max-w-4xl">
-      <h2 className="mb-4 text-[16px] font-body font-medium text-foreground">What&apos;s new</h2>
+    <div className="mx-auto max-w-4xl px-6 pt-10 pb-28">
+      <header className="mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">What&apos;s new</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          What changed in this app and in the engine.
+        </p>
+      </header>
       <ShellUpdateSection />
       <BackendGate>
         <WhatsNewBody />
       </BackendGate>
-    </SettingsPageShell>
+    </div>
   );
 }

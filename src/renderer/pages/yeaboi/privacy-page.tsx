@@ -42,7 +42,6 @@ import {
   type SettingsSnapshot,
 } from '@/lib/yeaboi/settings';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
 import { Badge } from '@/components/ui/badge';
@@ -533,30 +532,27 @@ function AboutFooter() {
 
 export default function PrivacyPage() {
   return (
-    <SettingsPageShell active="/privacy">
+    <div className="relative mx-auto max-w-3xl px-6 pt-10 pb-28">
+      {/* The onboarding hero's pool of light, scaled to a page header —
+          color-mix over --primary so it follows both themes. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-72"
+        style={{
+          background:
+            'radial-gradient(480px 320px at 18% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 70%)',
+        }}
+      />
+      <header className="relative mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">Privacy</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">What leaves this machine.</p>
+      </header>
       <BackendGate>
         <div className="relative">
-          {/* The onboarding hero's pool of light, scaled to a section —
-              color-mix over --primary so it follows both themes. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-72"
-            style={{
-              background:
-                'radial-gradient(480px 320px at 18% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 70%)',
-            }}
-          />
-          <header className="relative mb-6">
-            <h2 className="text-[16px] font-body font-medium text-foreground">
-              What leaves this machine
-            </h2>
-          </header>
-          <div className="relative">
-            <PrivacyBody />
-            <AboutFooter />
-          </div>
+          <PrivacyBody />
+          <AboutFooter />
         </div>
       </BackendGate>
-    </SettingsPageShell>
+    </div>
   );
 }

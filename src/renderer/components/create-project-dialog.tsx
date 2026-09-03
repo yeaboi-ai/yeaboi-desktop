@@ -14,6 +14,8 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 
 interface CreateProjectDialogProps {
+  /** Open on mount: the menu bar's New project… lands here with ?new. */
+  defaultOpen?: boolean;
   onCreate: (data: { description: string; name?: string }) => Promise<unknown>;
   onCreated?: () => void;
 }
@@ -26,8 +28,12 @@ function createErrorMessage(err: unknown): string {
   return "Couldn't create the project. Please try again.";
 }
 
-export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialogProps) {
-  const [open, setOpen] = useState(false);
+export function CreateProjectDialog({
+  onCreate,
+  onCreated,
+  defaultOpen = false,
+}: CreateProjectDialogProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [rewriting, setRewriting] = useState(false);

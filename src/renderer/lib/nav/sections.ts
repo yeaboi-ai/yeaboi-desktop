@@ -5,7 +5,9 @@
 // The hrefs are the manifest's paths verbatim (lib/yeaboi/routes.json) — the
 // rail is a view over that registry, not a second list of truths.
 
-import type { Audience } from '@shared/audience';
+import { projectsHref, type Audience } from '@shared/audience';
+
+export { projectsHref };
 
 export type IconKey = 'projects' | 'sessions' | 'settings';
 
@@ -16,11 +18,6 @@ export interface NavItemSpec {
 }
 
 export type RailRow = 'projects' | 'sessions' | 'settings';
-
-/** The projects list for a world: Agents scopes the same projects by repo. */
-export function projectsHref(audience: Audience): string {
-  return audience === 'agents' ? '/agents/projects' : '/projects';
-}
 
 /** The two rows the rail draws, in order. */
 export function navItems(audience: Audience): NavItemSpec[] {
@@ -54,15 +51,7 @@ export const SESSIONS_FOOT_LINKS: readonly PageLink[] = [
   { href: '/usage', label: 'Spend' },
 ];
 
-/** Routes the About group of Settings serves. */
-export const ABOUT_ROUTES: readonly string[] = [
-  '/whats-new',
-  '/system-check',
-  '/privacy',
-  '/feedback',
-];
-
-const SETTINGS_PREFIXES = ['/settings', '/setup', ...ABOUT_ROUTES];
+const SETTINGS_PREFIXES = ['/settings', '/setup'];
 const PROJECTS_PREFIXES = ['/projects', '/board', '/tickets', '/agents/projects'];
 const SESSIONS_PREFIXES = [
   '/sessions',
@@ -81,8 +70,9 @@ function matches(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-/** Which rail row a location lights, or null (the home). A mode page opened
- *  from inside a project carries `?project=`, and stays under Projects. */
+/** Which rail row a location lights, or null (the home, and the pages the
+ *  Help menu opens). A mode page opened from inside a project carries
+ *  `?project=`, and stays under Projects. */
 export function activeRailRow(pathname: string, search = ''): RailRow | null {
   if (SETTINGS_PREFIXES.some((prefix) => matches(pathname, prefix))) return 'settings';
   if (new URLSearchParams(search).get('project')) return 'projects';

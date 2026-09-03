@@ -1,5 +1,5 @@
-// The tab → section arrangement for the yeaboi Settings pages, mirroring the
-// TUI's _SETTINGS_TAB_SECTIONS, plus the About group this window adds.
+// The section list of the Settings page, mirroring the TUI's
+// _SETTINGS_TAB_SECTIONS plus the sections that configure this window.
 //
 // routes.json is the source, for the same reason it is the source of the
 // routes: it is what the manifest carries into Python, where
@@ -33,45 +33,26 @@ export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/duck', title: 'Duck' },
 ];
 
-/** The pages about the app itself. Their routes and capabilities are what they
- *  always were; only the way in moved, from the rail to Settings. */
-export const ABOUT_TABS: readonly TabLink[] = [
-  { route: '/whats-new', title: "What's new" },
-  { route: '/system-check', title: 'System check' },
-  { route: '/privacy', title: 'Privacy' },
-  { route: '/feedback', title: 'Feedback' },
-];
+export type SettingsGroupKey = 'engine' | 'window';
 
-export type SettingsGroupKey = 'configure' | 'about';
-
-export interface SettingsTabGroup {
+export interface SettingsGroup {
   key: SettingsGroupKey;
   title: string;
-  lead: string;
   tabs: readonly TabLink[];
 }
 
-export const SETTINGS_TAB_GROUPS: readonly SettingsTabGroup[] = [
+/** The two groups of the section list, in list order. */
+export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   {
-    key: 'configure',
-    title: 'Settings',
-    lead: 'One config behind every surface: this window, the terminal, and the agents.',
-    tabs: [...SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })), ...CHROME_TABS],
+    key: 'engine',
+    title: 'Engine',
+    tabs: SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })),
   },
-  {
-    key: 'about',
-    title: 'About this app',
-    lead: 'What changed, what this machine can reach, what leaves it, and where to say so.',
-    tabs: ABOUT_TABS,
-  },
+  { key: 'window', title: 'This window', tabs: CHROME_TABS },
 ];
 
-/** Every tab on the settings page, in bar order. */
-export const ALL_SETTINGS_TABS: readonly TabLink[] = SETTINGS_TAB_GROUPS.flatMap((g) => g.tabs);
+/** Every section on the settings page, in list order. */
+export const ALL_SETTINGS_TABS: readonly TabLink[] = SETTINGS_GROUPS.flatMap((g) => g.tabs);
 
-/** The group a pathname belongs to. Anything not in About configures. */
-export function settingsGroupFor(pathname: string): SettingsGroupKey {
-  return ABOUT_TABS.some((t) => pathname === t.route || pathname.startsWith(`${t.route}/`))
-    ? 'about'
-    : 'configure';
-}
+export const SETTINGS_LEAD =
+  'One config behind every surface: this window, the terminal, and the agents.';

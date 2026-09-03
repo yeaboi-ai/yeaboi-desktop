@@ -200,10 +200,16 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+:root {
+  /* The app-drawn title bar (components/title-bar.tsx). */
+  --titlebar-h: 38px;
+}
+
 body {
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   background-color: var(--background);
   color: var(--foreground);
+  padding-top: var(--titlebar-h);
 }
 
 /* Fix cursor on all interactive elements */

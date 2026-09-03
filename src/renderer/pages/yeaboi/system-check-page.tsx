@@ -34,7 +34,6 @@ import {
   type Report,
 } from '@/lib/yeaboi/system-check';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import {
   PostureStrip,
@@ -171,14 +170,9 @@ function SystemCheckBody() {
 
   const header = (
     <header className="mb-7 flex items-start justify-between gap-4">
-      <div>
-        <h2 className="text-[16px] font-body font-medium text-foreground">
-          What is ready on this machine
-        </h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {report?.summary ?? 'Every row is optional. The app itself needs none of them.'}
-        </p>
-      </div>
+      <p className="text-[13px] text-muted-foreground">
+        {report?.summary ?? 'Every row is optional. The app itself needs none of them.'}
+      </p>
       <button
         type="button"
         onClick={run}
@@ -279,10 +273,14 @@ function SystemCheckBody() {
 
 export default function SystemCheckPage() {
   return (
-    <SettingsPageShell active="/system-check">
+    <div className="mx-auto max-w-3xl px-6 pt-10 pb-28">
+      <header className="mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">System check</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">What is ready on this machine.</p>
+      </header>
       <BackendGate>
         <SystemCheckBody />
       </BackendGate>
-    </SettingsPageShell>
+    </div>
   );
 }

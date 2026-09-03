@@ -45,6 +45,8 @@ export interface YeaboiBridge {
    *  chooser gates the window once, like onboarding. */
   getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
   setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  /** The menu bar's World menu flipped the world. */
+  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
   /** One authed call to the yeaboi app backend, relayed through main. */
   api: (
     path: string,
@@ -115,6 +117,11 @@ const bridge: YeaboiBridge = {
   completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),
   getAudience: () => ipcRenderer.invoke('audience:get'),
   setAudience: (audience) => ipcRenderer.invoke('audience:set', audience),
+  onAudience: (callback) => {
+    ipcRenderer.on('app:audience', (_event, audience: 'solo' | 'team' | 'agents') =>
+      callback(audience),
+    );
+  },
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),
   apiStream: (path, body, onLine) => {
     // The channel is per call, so two concurrent turns never cross lines; the
