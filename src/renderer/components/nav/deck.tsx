@@ -42,9 +42,11 @@ const LOCK_MS = 60;
  *  restarts it, so a fast run through the deck stays held back until it
  *  stops. */
 const SETTLE_MS = 900;
-/** How far it shrinks. Enough to read as held back; not so far it becomes a
- *  thumbnail of itself. */
-const PREVIEW_SCALE = 0.93;
+/** How far the surface pulls in from the window while it is in transit. An
+ *  even margin on all four sides, which a uniform scale cannot give on a
+ *  window that is not square — it would leave the sides further in than the
+ *  top and bottom. */
+const PREVIEW_INSET = 26;
 
 /** Whether anything under the pointer can still scroll the way the wheel is
  *  pointing. Walks the real scroll ancestry rather than an opt-in attribute, so
@@ -81,6 +83,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
   );
 
   const [preview, setPreview] = useState(false);
+  const [shrink, setShrink] = useState<[number, number]>([1, 1]);
   const travel = useRef(0);
   const lastWheel = useRef(0);
   const lockedUntil = useRef(0);
@@ -104,6 +107,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
       const next = (here + step + routes.length) % routes.length;
       router.push(routes[next]!);
       if (!reduced) {
+        setShrink([
+          1 - (2 * PREVIEW_INSET) / window.innerWidth,
+          1 - (2 * PREVIEW_INSET) / window.innerHeight,
+        ]);
         setPreview(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         settleTimer.current = setTimeout(settle, SETTLE_MS);
@@ -181,18 +188,22 @@ export function Deck({ children }: { children: React.ReactNode }) {
       data-deck
       className="h-screen overflow-y-auto"
       style={{
-        transform: preview ? `scale(${PREVIEW_SCALE})` : 'scale(1)',
+        transform: preview ? `scale(${shrink[0]}, ${shrink[1]})` : 'scale(1, 1)',
         transformOrigin: 'center center',
-        transition: reduced ? undefined : 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)',
+        transition: reduced ? undefined : 'all 420ms cubic-bezier(0.22, 1, 0.36, 1)',
         // Inert while held back: a half-dealt card should not take a click
         // meant for the one underneath it.
         pointerEvents: preview ? 'none' : undefined,
-        borderRadius: preview ? 18 : 0,
+        // The window's own radius, so the corner in transit runs parallel to
+        // the one around it rather than being a second, differently curved one.
+        borderRadius: preview ? 'var(--window-radius)' : '0px',
         overflow: preview ? 'hidden' : undefined,
-        // In transit it is an object with an edge and something behind it.
-        // Shrinking alone reads as the page having zoomed out.
-        boxShadow: preview ? '0 0 0 1px var(--border), 0 40px 90px -24px rgb(0 0 0 / 0.6)' : 'none',
-        transitionProperty: reduced ? undefined : 'transform, box-shadow, border-radius',
+        // In transit the surface recedes rather than being framed: it fades
+        // back behind a soft halo. A drawn edge reads as a dialog.
+        opacity: preview ? 0.55 : 1,
+        boxShadow: preview
+          ? '0 0 70px color-mix(in srgb, var(--foreground) 6%, transparent)'
+          : 'none',
       }}
     >
       {/* Keyed on the route so the surface remounts and its contents deal
