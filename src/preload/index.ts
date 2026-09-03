@@ -96,6 +96,8 @@ export interface YeaboiBridge {
   petHandoff: (point: { x: number; y: number }) => Promise<unknown>;
   /** Where the app draws its own duck, so a leap can start from that corner. */
   petAnchor: (point: { x: number; y: number }) => void;
+  /** Minimise, but let the duck jump out first. */
+  minimiseWindow: () => void;
   /** The duck has finished his introduction and is coming back inside. */
   onPetReturned: (fn: () => void) => void;
   /** A native banner for a run that finished. Clamped in main. */
@@ -160,6 +162,7 @@ const bridge: YeaboiBridge = {
   setPetPrefs: (patch) => ipcRenderer.invoke('pet:set-prefs', patch),
   petHandoff: (point) => ipcRenderer.invoke('pet:handoff', point),
   petAnchor: (point) => ipcRenderer.send('pet:anchor', point),
+  minimiseWindow: () => ipcRenderer.send('window:minimise'),
   onPetReturned: (fn) => {
     ipcRenderer.on('pet:returned', () => fn());
   },

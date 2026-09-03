@@ -58,6 +58,7 @@ interface YeaboiBridge {
   /** Turn the duck on and land him where he jumped from, in screen coords. */
   petHandoff: (point: { x: number; y: number }) => Promise<unknown>;
   petAnchor: (point: { x: number; y: number }) => void;
+  minimiseWindow: () => void;
   /** The duck has finished his introduction and is coming back inside. */
   onPetReturned: (fn: () => void) => void;
   notify: (banner: { title: string; body?: string; route?: string }) => void;

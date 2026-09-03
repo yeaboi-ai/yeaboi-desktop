@@ -50,13 +50,16 @@ INSTALLED = ROOT / "node_modules" / "@yeaboi-ai" / "design"
 
 LAYERS = ("base", "wing", "glasses")
 
-#: The mark canvas. Four times the 72px the dock duck is drawn at, so there is
-#: detail to spare at every size it is used; height is width * 136/128, the
-#: ratio team.tsx assumes.
-CANVAS = (288, 306)
+#: The mark canvas. Twice the 72px the dock duck is drawn at, so the browser is
+#: left with a 2:1 reduction — a bigger sprite means a bigger reduction, and
+#: Chromium's scaler is what put the steps back last time. Height is
+#: width * 136/128, the ratio team.tsx assumes.
+CANVAS = (144, 153)
 
-#: Supersampling for the fill, resolved away by the final reduction.
-SS = 2
+#: Supersampling for the fill. The polygon filler has no anti-aliasing at all,
+#: so this is the only thing standing between a curve and a staircase: every
+#: edge pixel is averaged from 64 samples on the way down.
+SS = 8
 
 #: Corner-cutting passes. Each one halves the remaining stair; four is where
 #: the outline stops visibly stepping and the beak still has a point.

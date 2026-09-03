@@ -29,7 +29,7 @@ const footBack = rig.querySelector('.d-foot-back');
 // --- geometry -------------------------------------------------------------
 let DUCK_W = rig.offsetWidth || 72;
 let RIGH = 72; // rig height, refined once the base sprite loads
-const FEET_FRAC = 0.975; // sprite's feet-bottom as a fraction of rig height (measured: 496/509)
+const FEET_FRAC = 0.996; // sprite's feet-bottom as a fraction of rig height (measured: 507/509)
 let SURFACE_RAISE = 20; // extra lift so it stands ON the surface, not sunk into it (pref)
 const FLOOR_MARGIN = 10; // desktop floor: feet this far above the screen's bottom (raises the side-floor)
 const HIT_PAD = 3; // hitbox inset — small, so nearly the whole sprite counts
@@ -151,9 +151,13 @@ let introTimer = 0;
 /** Where in the app window he came from, so he can go back to exactly there.
  *  Window-local, because that is the space this overlay works in. */
 let homePoint = null;
-/** An arc flown under its own steam rather than under gravity: the trip home.
- *  `{ from, to, apex, start }`, all window-local. */
+/** A flown arc rather than a fallen one: `{ from, to, apex, start, ms, onDone }`,
+ *  all window-local. Both the jump out and the trip home use it — they are the
+ *  same movement in opposite directions, and the trip home is the one that
+ *  reads right, so the exit is no longer left to gravity. */
 let homing = null;
+/** How long the jump out of the app window takes. */
+const FLY_OUT_MS = 900;
 /** He is home, and the app is drawing him again. Physics stays off until the
  *  window hides him — otherwise gravity resumes the frame the arc ends and he
  *  drops straight back out of the corner he just climbed into. */
@@ -162,6 +166,13 @@ let parked = false;
 let booted = false;
 /** An arrival that landed before boot did, replayed once it has. */
 let pendingArrival = null;
+/** The hatch, held back in case this window was opened to take a duck over
+ *  from the app. Boot cannot know: the sprite is usually already decoded, so
+ *  boot runs to completion before any IPC callback can be delivered, and an
+ *  arrival always looks late. Waiting a beat is what tells the two apart. */
+let revealTimer = 0;
+/** How long boot waits for an arrival before hatching a duck of its own. */
+const REVEAL_GRACE_MS = 250;
 
 function say(line, sticky = false) {
   if (stickyLine && !sticky) return;
@@ -527,19 +538,22 @@ window.pet.onPrefs(applyPrefs);
 function boot() {
   measure();
   booted = true;
-  walker.classList.remove('unloaded');
+  x = window.innerWidth * 0.5 - DUCK_W / 2;
+  baseY = groundBaseY(x + DUCK_W / 2);
   if (pendingArrival) {
-    // He is taking over from the duck the app was drawing, at a known point.
-    // No hatch, no greeting, no centre-screen default: each of them is a
-    // visible seam in something meant to read as one continuous duck.
     const arrival = pendingArrival;
     pendingArrival = null;
     applyArrival(arrival);
   } else {
-    x = window.innerWidth * 0.5 - DUCK_W / 2;
-    baseY = groundBaseY(x + DUCK_W / 2);
-    walker.classList.add('hatch');
-    say('yeaboi! 🦆');
+    // Nothing yet — but an arrival is still in flight if this window was
+    // opened to take a duck over, so stay invisible for a beat rather than
+    // hatch a second duck in the middle of the screen and fade him in.
+    revealTimer = setTimeout(() => {
+      revealTimer = 0;
+      walker.classList.remove('unloaded');
+      walker.classList.add('hatch');
+      say('yeaboi! 🦆');
+    }, REVEAL_GRACE_MS);
   }
   requestAnimationFrame(step);
 }
@@ -574,25 +588,20 @@ const INTRO_BEAT_MS = 2600;
 /** How long the trip back to the app window takes. */
 const HOMING_MS = 780;
 
-/** The jump out of the app window: a shove up and away from the nearer wall,
- *  with gravity doing the rest — the rig's own physics rather than a second
- *  animation that has to be kept in step with it.
- *
- *  `startleVy` is already negative (up is negative here) so it is used as it
- *  stands; negating it is a duck fired at the floor. Thrown rather than
- *  walked, because the horizontal intent that damps `vx` to nothing in three
- *  frames is skipped while tumbling — without it he drops where he stood
- *  instead of travelling. */
-function leapOff() {
-  vy = BASE.startleVy * S * 1.6;
-  vx = (x > window.innerWidth * 0.5 ? -1 : 1) * BASE.walkSpeed * S * 9;
-  tumbling = true;
-  grounded = false;
-  mode = 'throw';
-  walker.classList.add('airborne');
-}
-
 function applyArrival(arrival) {
+  // Taking over from the app's duck: appear at full opacity, immediately. The
+  // hatch is a 0.9s fade, and a fade is a seam in something meant to read as
+  // one continuous duck.
+  clearTimeout(revealTimer);
+  revealTimer = 0;
+  // `.duck-walker` carries `transition: opacity .15s`, so simply dropping the
+  // class fades him in — and the fade runs over the first third of the jump,
+  // which is the seam this whole hand-off exists to avoid. Suppressed for the
+  // one frame it takes to become visible, then handed back.
+  walker.style.transition = 'none';
+  walker.classList.remove('unloaded', 'hatch');
+  void walker.offsetWidth;
+  walker.style.transition = '';
   parked = false;
   dragging = false;
   tumbling = false;
@@ -607,25 +616,50 @@ function applyArrival(arrival) {
   vx = 0;
   vy = 0;
   grounded = false;
-  if (arrival.leap) leapOff();
-  if (!arrival.intro) {
-    // A leap with nothing to say: the app went away and he is coming out to
-    // the desktop. He gets on with being a duck once he lands.
-    if (!arrival.leap) say('yeaboi!');
+  // A fallback only: main keeps this current over `pet:home`.
+  homePoint = { x, y: baseY };
+  if (!arrival.leap && !arrival.intro) {
+    say('yeaboi!');
     pickTarget();
     return;
   }
-  homePoint = { x, y: baseY };
-  introducing = true;
-  clearTimeout(introTimer);
-  // He stands where he lands: wandering off mid-sentence would drag the bubble
-  // across the screen behind him.
-  targetX = x;
-  idleUntil = Number.POSITIVE_INFINITY;
-  say("yeaboi! this is where I'll be when the app's out of the way.");
-  introTimer = setTimeout(() => {
-    if (introducing) say(INTRO_STICKY, true);
-  }, INTRO_BEAT_MS);
+  const speak = Boolean(arrival.intro);
+  if (speak) {
+    introducing = true;
+    clearTimeout(introTimer);
+  }
+  flyOut(() => {
+    if (!speak) {
+      pickTarget();
+      return;
+    }
+    // He stands where he lands: wandering off mid-sentence would drag the
+    // bubble across the screen behind him.
+    targetX = x;
+    idleUntil = Number.POSITIVE_INFINITY;
+    say("yeaboi! this is where I'll be when the app's out of the way.");
+    introTimer = setTimeout(() => {
+      if (introducing) say(INTRO_STICKY, true);
+    }, INTRO_BEAT_MS);
+  });
+}
+
+/** The jump out of the app window: the trip home, flown the other way.
+ *  Gravity was doing this before, and it read as being dropped rather than
+ *  jumping — so the exit is scripted like the return, which is the half that
+ *  already looked right. */
+function flyOut(onDone) {
+  const away = x > window.innerWidth * 0.5 ? -1 : 1;
+  const landingX = Math.max(20, Math.min(window.innerWidth - DUCK_W - 20, x + away * 340 * S));
+  const landingY = groundBaseY(landingX + DUCK_W / 2);
+  homing = {
+    from: { x, y: baseY },
+    to: { x: landingX, y: landingY },
+    apex: Math.min(baseY, landingY) - 170 * S,
+    start: now(),
+    ms: FLY_OUT_MS,
+    onDone,
+  };
 }
 
 // The arrival can beat `boot()` — main sends it on did-finish-load, and boot
@@ -655,12 +689,17 @@ function headBackIn() {
     to: { ...homePoint },
     apex: Math.min(baseY, homePoint.y) - 150 * S,
     start: now(),
+    ms: HOMING_MS,
+    onDone: () => {
+      parked = true;
+      window.pet.introDone();
+    },
   };
 }
 
 /** Advance the trip home. Owns the duck's position while it runs. */
 function flyHome(t) {
-  const k = Math.min(1, (t - homing.start) / HOMING_MS);
+  const k = Math.min(1, (t - homing.start) / homing.ms);
   const ease = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
   x = homing.from.x + (homing.to.x - homing.from.x) * ease;
   // Quadratic through from → apex → to, so the height is a real arc rather
@@ -675,11 +714,18 @@ function flyHome(t) {
   vx = 0;
   vy = 0;
   if (k >= 1) {
+    const done = homing.onDone;
     homing = null;
-    parked = true;
-    window.pet.introDone();
+    if (done) done();
   }
 }
+
+// Where the app's corner is now. Main republishes it whenever the window moves
+// or resizes, so a duck who is out flies back to where the corner is rather
+// than to where it was when he left.
+window.pet.onHome((point) => {
+  if (point) homePoint = { x: point.x - DUCK_W / 2, y: point.y - RIGH / 2 };
+});
 
 window.pet.onRecenter(() => {
   parked = false;

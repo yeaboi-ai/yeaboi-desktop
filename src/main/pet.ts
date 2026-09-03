@@ -60,10 +60,13 @@ export class Pet {
   private introducing = false;
   /** Told when the introduction ends, so the window can bring him back in. */
   private onIntroDone: () => void = () => undefined;
-  /** Where the app window draws its own duck, in screen coordinates. Reported
-   *  by the renderer, so a leap can start from the corner he appears to live
-   *  in rather than from wherever the overlay last left him. */
+  /** Where the app window draws its own duck, relative to that window's own
+   *  top-left. Relative rather than absolute so that moving the window between
+   *  the jump out and the jump back cannot strand him on the corner's old
+   *  position — the window's current bounds are added when it is needed. */
   private anchor: { x: number; y: number } | null = null;
+  /** The app window the anchor belongs to. */
+  private anchorWindow: BrowserWindow | null = null;
   /** The app is quitting; no state change may revive the window. */
   private quitting = false;
   /** Where a click on a duck holding a question should land. */
@@ -102,9 +105,31 @@ export class Pet {
     });
   }
 
-  /** The screen point the app's own duck occupies. */
-  setAnchor(point: { x: number; y: number }): void {
+  /** Where the app's duck sits inside the given window. Also republished to a
+   *  duck who is out, so his way home follows the window rather than a
+   *  snapshot of where it was when he left. */
+  setAnchor(point: { x: number; y: number }, window: BrowserWindow | null): void {
     this.anchor = point;
+    this.anchorWindow = window;
+    this.publishHome();
+  }
+
+  /** The anchor in screen coordinates, or null if the app has not reported one
+   *  or its window has gone. */
+  private anchorScreen(): { x: number; y: number } | null {
+    const window = this.anchorWindow;
+    if (!this.anchor || !window || window.isDestroyed()) return null;
+    const bounds = window.getBounds();
+    return { x: bounds.x + this.anchor.x, y: bounds.y + this.anchor.y };
+  }
+
+  /** Tell the duck where home is now. Cheap, and the only thing that keeps the
+   *  return honest when the window has moved since he left. */
+  publishHome(): void {
+    const screenPoint = this.anchorScreen();
+    const window = this.window;
+    if (!screenPoint || !window || window.isDestroyed()) return;
+    window.webContents.send('pet:home', this.local(screenPoint));
   }
 
   /**
@@ -116,8 +141,9 @@ export class Pet {
    * is, and until he is switched on.
    */
   leapOut(): void {
-    if (!this.enabled || !this.anchor) return;
-    this.send({ ...this.local(this.anchor), leap: true });
+    const screenPoint = this.anchorScreen();
+    if (!this.enabled || !screenPoint) return;
+    this.send({ ...this.local(screenPoint), leap: true });
   }
 
   /** Wire the window's half of the introduction: what to do when he is home. */
@@ -237,7 +263,6 @@ export class Pet {
     // click inside the app, so the app is focused, so a duck that waited for
     // suppression to lift would arrive invisible.
     this.introducing = true;
-    this.anchor = screenPoint;
     this.setEnabled(true);
     if (!this.send({ ...this.local(screenPoint), intro: true })) this.introducing = false;
   }

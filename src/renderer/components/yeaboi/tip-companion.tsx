@@ -94,23 +94,21 @@ export function TipCompanion({ tips, cards, onNavigate }: Props) {
     );
   }, []);
 
-  // Tell main where he is drawn, so a leap out — on minimise, or on accepting
-  // the offer — starts from this corner rather than from wherever the overlay
-  // last left him. Re-reported on resize, since the dock is anchored to the
-  // window's edges.
+  // Tell main where he is drawn, so a jump out starts from this corner and a
+  // jump back lands on it. Reported relative to the window rather than to the
+  // screen: main adds the window's own position at the moment it is needed, so
+  // moving the window between the two halves of the trip cannot strand him
+  // where the corner used to be.
   useEffect(() => {
     const report = () => {
       const rect = duckRef.current?.getBoundingClientRect();
       if (!rect || rect.width === 0) return;
-      window.yeaboi.petAnchor({
-        x: window.screenX + rect.left + rect.width / 2,
-        y: window.screenY + rect.top + rect.height / 2,
-      });
+      window.yeaboi.petAnchor({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     };
     report();
     window.addEventListener('resize', report);
     return () => window.removeEventListener('resize', report);
-  }, [innerWidth]);
+  }, [innerWidth, offer.where]);
 
   const mode = dockMode({
     enabled,

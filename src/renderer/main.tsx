@@ -12,6 +12,16 @@ if (window.yeaboi.platform === 'darwin') {
   document.documentElement.dataset['chrome'] = 'hidden';
 }
 
+// Cmd+M, taken off the OS so the duck can jump out before the window goes.
+// The traffic light cannot be intercepted — it is the system's own button —
+// so that path still leaps as the window shrinks.
+window.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'm') {
+    event.preventDefault();
+    window.yeaboi.minimiseWindow();
+  }
+});
+
 // The tray or a click on the desktop duck asking the window to show a route.
 window.yeaboi.onNavigate((route) => {
   const target = route.startsWith('/') ? route : `/${route}`;

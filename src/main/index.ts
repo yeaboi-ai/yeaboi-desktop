@@ -87,6 +87,10 @@ if (!app.isPackaged) app.commandLine.appendSwitch('disable-http-cache');
 
 registerAppScheme();
 
+/** How long the duck's jump out runs, matching `flyOut` in the pet renderer.
+ *  The window waits this long before minimising so the leap is not racing it. */
+const PET_LEAP_MS = 900;
+
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -121,13 +125,41 @@ function createMainWindow(): void {
   // duck comes out — so he leaves the same way he does when invited, jumping
   // from the corner he was sitting in rather than appearing mid-screen.
   // Suppression is lifted here rather than waiting for the blur settle, or he
-  // would still be hidden when the leap plays.
+  // would still be hidden while the leap plays.
   const leaveWithTheWindow = (): void => {
     pet.setSuppressed(false);
     pet.leapOut();
   };
-  mainWindow.on('minimize', leaveWithTheWindow);
+
+  // He jumps *before* the window goes, so the leap is not racing the minimise
+  // animation. Only the paths this process owns can be ordered — Cmd+M and the
+  // menu item route through here; the traffic light is the OS's own button and
+  // fires `minimize` with nothing to hook in front of it, so that path still
+  // leaps as the window shrinks.
+  let leaping = false;
+  const minimiseAfterLeap = (): void => {
+    if (leaping || !mainWindow || mainWindow.isDestroyed()) return;
+    leaping = true;
+    leaveWithTheWindow();
+    setTimeout(() => {
+      leaping = false;
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.minimize();
+    }, PET_LEAP_MS);
+  };
+  ipcMain.on('window:minimise', minimiseAfterLeap);
+
+  mainWindow.on('minimize', () => {
+    // Already handled, and handled in the right order.
+    if (leaping) return;
+    leaveWithTheWindow();
+  });
   mainWindow.on('hide', leaveWithTheWindow);
+
+  // A duck who is out has a way home pinned to this window's corner; dragging
+  // or resizing it moves that corner, and he should follow it rather than fly
+  // back to where it used to be.
+  mainWindow.on('move', () => pet.publishHome());
+  mainWindow.on('resize', () => pet.publishHome());
   mainWindow.on('closed', () => {
     mainWindow = null;
     // Closing the window doesn't always route through blur; if nothing in the
@@ -400,7 +432,7 @@ if (!gotLock) {
       const p = (point ?? {}) as { x?: unknown; y?: unknown };
       if (typeof p.x !== 'number' || typeof p.y !== 'number') return;
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
-      pet.setAnchor({ x: p.x, y: p.y });
+      pet.setAnchor({ x: p.x, y: p.y }, BrowserWindow.fromWebContents(_event.sender));
     });
     ipcMain.handle('pet:handoff', (_event, point: unknown) => {
       const p = (point ?? {}) as { x?: unknown; y?: unknown };

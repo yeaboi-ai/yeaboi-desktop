@@ -14,6 +14,9 @@ export interface PetBridge {
   /** The duck has just jumped out of the app window — land him here.
    *  `intro` means this is his first time out: show him off, then head back. */
   onArrive: (fn: (arrival: { x: number; y: number; intro?: boolean }) => void) => void;
+  /** Where the app's corner is now, so a duck who is out flies back to the
+   *  window where it currently is rather than where it was. */
+  onHome: (fn: (point: { x: number; y: number }) => void) => void;
   /** He has finished introducing himself and leapt back at the window. */
   introDone: () => void;
   /** Something happened while nobody was looking — say it. */
@@ -38,6 +41,9 @@ const bridge: PetBridge = {
   },
   onArrive: (fn) => {
     ipcRenderer.on('pet:arrive', (_event, arrival) => fn(arrival));
+  },
+  onHome: (fn) => {
+    ipcRenderer.on('pet:home', (_event, point) => fn(point));
   },
   introDone: () => ipcRenderer.send('pet:intro-done'),
   onNotice: (fn) => {
