@@ -9,7 +9,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronsUpDown, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Check, ChevronsUpDown, Settings } from 'lucide-react';
+
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
@@ -37,24 +40,54 @@ function ScopeSelect({
   onChange: (id: string) => void;
   label: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((option) => option.id === value) ?? options[0];
+
+  // A popover rather than a `<select>`. The native menu is drawn by the OS in
+  // the OS's own style — it lands on a dark floating panel looking like a
+  // system dialog that wandered in, and none of the app's tokens reach it.
   return (
-    <div className="relative">
-      {/* The select carries the floating treatment itself. Wrapped in a panel
-          it read as a dropdown inside a box — two borders for one control. */}
-      <select
-        aria-label={label}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        className={`${FLOAT} ${CONTROL} cursor-pointer appearance-none py-0 pl-3 pr-7 font-body text-[11px] text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring`}
-      >
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
-          </option>
-        ))}
-      </select>
-      <ChevronsUpDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            className={`${FLOAT} ${CONTROL} flex items-center gap-2 pl-3 pr-2 font-body text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring`}
+          >
+            <span className="max-w-[120px] truncate">{current?.name ?? label}</span>
+            <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
+          </button>
+        }
+      />
+      <PopoverContent side="top" align="start" className="w-52 p-1">
+        <div role="menu" aria-label={label} className="flex flex-col gap-0.5">
+          {options.map((option) => {
+            const active = option.id === current?.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={active}
+                onClick={() => {
+                  setOpen(false);
+                  onChange(option.id);
+                }}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-body text-[12px] transition-colors duration-150 ${
+                  active
+                    ? 'bg-secondary/60 text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+                }`}
+              >
+                <Check className={`h-3 w-3 shrink-0 ${active ? 'opacity-100' : 'opacity-0'}`} />
+                <span className="truncate">{option.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
