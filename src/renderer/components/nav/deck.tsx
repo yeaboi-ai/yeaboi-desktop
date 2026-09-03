@@ -208,7 +208,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
     >
       {/* Keyed on the route so the surface remounts and its contents deal
           themselves in again on every turn. */}
-      <div key={pathname} className="deck-page pl-[72px] pt-[var(--titlebar-h)]">
+      {/* The rail overlays the left edge, so the page is inset by the rail
+          plus the same gutter it gets on the right — otherwise the content
+          runs to within a fraction of the right edge of the window. */}
+      <div key={pathname} className="deck-page pl-[72px] pr-6 pt-[var(--titlebar-h)]">
         {children}
       </div>
     </div>
