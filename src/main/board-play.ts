@@ -32,6 +32,15 @@ export function forgetBoard(boardId: string): void {
   hosts.delete(boardId);
 }
 
+/**
+ * The address to reach a board on, cached for its life.
+ *
+ * The host link points at the tunnel once there is one, and the tunnel is for
+ * the people who are not on this machine. Asking for it early — while the board
+ * is still only on loopback — is what keeps the host's own table instant: read
+ * once and kept, so the app never waits on cloudflared to show the room it is
+ * hosting. `warmBoard` is called the moment a board is created for that reason.
+ */
 async function hostOf(sidecar: Sidecar, boardId: string): Promise<Host | null> {
   const known = hosts.get(boardId);
   if (known) return known;
@@ -73,6 +82,13 @@ async function readBody(response: Response): Promise<unknown> {
 }
 
 export function registerBoardPlay(sidecar: Sidecar): void {
+  /** Learn a new board's address before its tunnel replaces it. */
+  ipcMain.handle('board-play:warm', async (_event, boardId: unknown) => {
+    const id = board(boardId);
+    if (!id) return { ok: false };
+    return { ok: Boolean(await hostOf(sidecar, id)) };
+  });
+
   /** A read, including the board's long-poll: the ETag is the cursor, so it
    *  travels in and out of here unchanged. */
   ipcMain.handle(

@@ -68,6 +68,8 @@ export interface YeaboiBridge {
   /** Playing a live board from inside the app: the board's own front end runs
    *  here, and main relays its requests — the host link carries the admin
    *  secret and never crosses over, so the renderer names a board and a path. */
+  /** Learn a board's address now, while it is still the loopback one. */
+  warmBoard: (boardId: string) => Promise<unknown>;
   boardGet: (
     boardId: string,
     path: string,
@@ -162,6 +164,7 @@ const bridge: YeaboiBridge = {
     ipcRenderer.on('app:event', (_event, payload: unknown) => callback(payload));
   },
   openBoard: (boardId) => ipcRenderer.invoke('boards:open', boardId),
+  warmBoard: (boardId) => ipcRenderer.invoke('board-play:warm', boardId),
   boardGet: (boardId, path, extra, etag) =>
     ipcRenderer.invoke('board-play:get', boardId, path, extra ?? {}, etag ?? ''),
   boardPost: (boardId, path, body) =>

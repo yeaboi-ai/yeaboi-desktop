@@ -1,22 +1,21 @@
 'use client';
 
 // The host's controls for a live board, wherever they are drawn — the poker
-// dashboard, the retro board's page, the table's own page. One component
-// because two rules have to hold in all of them:
+// dashboard, the retro board's page, the table's own page.
 //
-// * the link's `notice` is rendered above everything else. It is non-empty only
-//   for an expiry, and once a quick tunnel expires the invite already sent to
-//   everyone is permanently dead — a sticky status line must not swallow that.
-// * Copy invite hands over the participant link with the code in its fragment,
-//   never the host link. The host link carries the admin secret, which would
-//   make every reader a host.
+// Inviting people is not here. The board hands out its own invite, in the room
+// where the host is already standing, and a Slack ceremony posts the link by
+// itself — a join code and a URL sitting on the dashboard were a third place to
+// read the same thing from, and the one nobody was looking at.
+//
+// The link's `notice` still is: it is non-empty only for an expiry, and once a
+// quick tunnel expires the invite already sent to everyone is permanently dead.
 
 import { useEffect, useState } from 'react';
 
 import { quip } from '@/lib/yeaboi/ambience';
 import {
   type BoardSnapshot,
-  boardInvite,
   closeBoard,
   loadBoard,
   openBoardWindow,
@@ -52,15 +51,6 @@ export function useBoard(boardId: string): [BoardSnapshot | null, string] {
   return [board, error];
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-xl bg-secondary/40 px-3 py-2">
-      <p className="font-body text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate font-code text-[12px] text-foreground">{value}</p>
-    </div>
-  );
-}
-
 export function BoardHost({
   board,
   onClosed,
@@ -73,32 +63,8 @@ export function BoardHost({
    *  board), the window is the only way in. */
   onStage?: () => void;
 }) {
-  const [invite, setInvite] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (board.link.state !== 'ready') {
-      setInvite('');
-      return;
-    }
-    boardInvite(board.board_id).then(
-      (body) => setInvite(body.invite),
-      () => undefined,
-    );
-  }, [board.board_id, board.link.state]);
-
-  async function copyInvite() {
-    if (!invite) {
-      // Never a half-invite: before the tunnel lands there is no address that
-      // works for a reader, and a code alone sends the host into a chat window
-      // with nothing to click.
-      setMessage('The secure link is still starting — try again in a moment.');
-      return;
-    }
-    await navigator.clipboard.writeText(invite);
-    setMessage('Copied the invite to your clipboard.');
-  }
 
   async function end() {
     setBusy(true);
@@ -117,13 +83,6 @@ export function BoardHost({
           {board.link.notice}
         </p>
       )}
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Field label="Join code" value={board.display_code} />
-        <Field
-          label="Participant link"
-          value={board.share_url || board.link.status || 'starting…'}
-        />
-      </div>
       <div className="flex flex-wrap items-center gap-2">
         {onStage && (
           <Button size="sm" onClick={onStage}>
@@ -136,9 +95,6 @@ export function BoardHost({
           onClick={() => void openBoardWindow(board.board_id)}
         >
           {onStage ? 'In a window' : 'Open the board'}
-        </Button>
-        <Button size="sm" variant="secondary" onClick={() => void copyInvite()}>
-          Copy invite
         </Button>
         {board.link.failed && (
           <Button

@@ -230,6 +230,11 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
     setBusy(true);
     try {
       const board = await startPokerBoard({ source, scope_label: scopeLabel, tickets });
+      // Before the tunnel is up, so the host's own table is read over loopback
+      // rather than out to Cloudflare and back — see main/board-play.ts.
+      await (
+        window as unknown as { yeaboi?: { warmBoard?: (id: string) => Promise<unknown> } }
+      ).yeaboi?.warmBoard?.(board.board_id);
       onOpened(board.board_id);
     } catch (e) {
       setError((e as Error).message);
