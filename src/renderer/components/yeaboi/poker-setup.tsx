@@ -370,13 +370,16 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
           Not behind a disclosure — they arrived because they were asked for,
           and a list you have to open to read is a list you did not ask for. */}
       {tickets && tickets.length > 0 && (
-        <div className="rounded-xl bg-secondary/30 px-3 py-2.5">
+        <div>
           <p className="font-body text-[12.5px] text-foreground">{summary}</p>
           <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain pr-1">
             {tickets.map((ticket, index) => (
               <li
                 key={ticket.key ?? ticket.id ?? index}
-                className="flex items-baseline gap-2 font-body text-[12px] text-muted-foreground"
+                // Top down, and capped: a sprint of forty should not take two
+                // seconds to finish arriving.
+                style={{ animationDelay: `${Math.min(index * 35, 280)}ms` }}
+                className="row-rise flex items-baseline gap-2 font-body text-[12px] text-muted-foreground"
               >
                 <span className="shrink-0 font-code text-[10px] text-foreground">
                   {ticket.key ?? ticket.id}
