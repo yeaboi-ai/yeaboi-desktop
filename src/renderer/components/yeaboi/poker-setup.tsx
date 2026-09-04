@@ -24,7 +24,10 @@ import {
   loadPokerOptions,
   startPokerBoard,
 } from '@/lib/yeaboi/boards';
+import { ChevronsUpDown } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Ticket {
   key?: string;
@@ -63,33 +66,84 @@ function Pill({
   );
 }
 
-/** One question, as a named choice. A select rather than a row of pills: the
- *  answer is readable at a glance once it is made, which a lit pill among five
- *  others is not. */
+/** One question, as a named choice.
+ *
+ *  A popover rather than a `<select>`, for the reason the dock's own scope
+ *  switcher gives: the native menu is drawn by the OS in the OS's own style,
+ *  and lands on the surface looking like a system dialog that wandered in. */
 function Choice({
   label,
   value,
+  options,
+  placeholder,
   onChange,
-  children,
 }: {
   label: string;
   value: string;
+  options: { value: string; label: string; sub?: string }[];
+  placeholder: string;
   onChange: (value: string) => void;
-  children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((option) => option.value === value);
+
   return (
-    <label className="flex min-w-[160px] flex-1 flex-col gap-1">
+    <div className="flex min-w-[180px] flex-1 flex-col gap-1">
       <span className="font-body text-[10px] uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-9 rounded-lg bg-secondary/40 px-2.5 font-body text-[12.5px] text-foreground ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
-      >
-        {children}
-      </select>
-    </label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              aria-label={label}
+              className="flex h-9 items-center justify-between gap-2 rounded-lg bg-secondary/40 px-2.5 font-body text-[12.5px] text-foreground ring-1 ring-border/50 transition-colors hover:bg-secondary/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            >
+              <span className={`truncate ${current ? '' : 'text-muted-foreground'}`}>
+                {current?.label ?? placeholder}
+              </span>
+              <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
+            </button>
+          }
+        />
+        <PopoverContent align="start" className="w-64 p-1">
+          <div
+            role="menu"
+            aria-label={label}
+            className="flex max-h-64 flex-col gap-0.5 overflow-y-auto overscroll-contain"
+          >
+            {options.map((option) => {
+              const active = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={active}
+                  onClick={() => {
+                    setOpen(false);
+                    onChange(option.value);
+                  }}
+                  className={`flex flex-col items-start gap-0.5 rounded-lg px-2.5 py-1.5 text-left transition-colors duration-150 ${
+                    active
+                      ? 'bg-secondary/60 text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+                  }`}
+                >
+                  <span className="font-body text-[12.5px]">{option.label}</span>
+                  {option.sub && (
+                    <span className="font-body text-[11px] text-muted-foreground/70">
+                      {option.sub}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -202,39 +256,44 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
           Everything a session needs is visible before it starts: where the
           tickets come from, which ones, and — once fetched — exactly which. */}
       <div className="flex flex-wrap items-end gap-3">
-        <Choice label="Tickets from" value={source} onChange={(key) => void pickSource(key)}>
-          <option value="">Pick a source…</option>
-          {options.sources.map((option) => (
-            <option key={option.key} value={option.key}>
-              {option.label}
-            </option>
-          ))}
-        </Choice>
+        <Choice
+          label="Tickets from"
+          value={source}
+          placeholder="Pick a source…"
+          options={options.sources.map((option) => ({
+            value: option.key,
+            label: option.label,
+            sub: option.sub,
+          }))}
+          onChange={(key) => void pickSource(key)}
+        />
 
         {asksScope && (
-          <Choice label="Which ones" value={scope} onChange={(key) => void pickScope(key)}>
-            <option value="">Pick a scope…</option>
-            {options.scopes.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </Choice>
+          <Choice
+            label="Which ones"
+            value={scope}
+            placeholder="Pick a scope…"
+            options={options.scopes.map((option) => ({
+              value: option.key,
+              label: option.label,
+              sub: option.sub,
+            }))}
+            onChange={(key) => void pickScope(key)}
+          />
         )}
 
         {asksSprint && sprintOptions.length > 0 && (
           <Choice
             label="Sprint"
             value={String(sprintIndex)}
+            placeholder="Pick a sprint…"
+            options={sprintOptions.map((option, index) => ({
+              value: String(index),
+              label: option.label,
+              sub: option.sub,
+            }))}
             onChange={(key) => setSprintIndex(Number(key))}
-          >
-            {sprintOptions.map((option, index) => (
-              <option key={option.key} value={String(index)}>
-                {option.label}
-                {option.sub ? ` · ${option.sub}` : ''}
-              </option>
-            ))}
-          </Choice>
+          />
         )}
       </div>
 
