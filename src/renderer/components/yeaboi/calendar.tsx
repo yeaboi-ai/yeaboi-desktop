@@ -183,8 +183,21 @@ const ARRIVE_MS = 420;
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
-/** The minimised month at the head of the strip. */
-const MINI_W = 76;
+/** The minimised month's, once the month itself has taken its place. */
+const GHOST_MS = 220;
+/** A day cell in the strip, which the minimised month stands the height of. */
+const STRIP_H = 84;
+/** The gap between one of its days and the next, both ways. */
+const MINI_GAP = 3;
+/** How much shorter than a day cell it stands. It is a picture of the month,
+ *  not another day, and reads better a size down from its neighbours. */
+const MINI_INSET = 14;
+
+/** Its days come out square, so the width follows the height — and the height
+ *  is fixed while the number of weeks in a month is not. */
+function miniDay(weeks: number): number {
+  return (STRIP_H - MINI_INSET - (weeks - 1) * MINI_GAP) / weeks;
+}
 
 /**
  * The month, small enough to sit in the strip.
@@ -193,7 +206,19 @@ const MINI_W = 76;
  * get is a worse offer than the thing itself at a glance — and it puts the two
  * shapes side by side, which is what the change between them is.
  */
-function MiniMonth({ month, today, onOpen }: { month: Date; today: string; onOpen: () => void }) {
+function MiniMonth({
+  month,
+  today,
+  onOpen,
+  hold,
+  className = '',
+}: {
+  month: Date;
+  today: string;
+  onOpen: () => void;
+  hold?: React.Ref<HTMLButtonElement>;
+  className?: string;
+}) {
   const days = useMemo(() => monthGrid(month), [month]);
   const weeks = useMemo(
     () => Array.from({ length: days.length / 7 }, (_, row) => days.slice(row * 7, row * 7 + 7)),
@@ -202,27 +227,34 @@ function MiniMonth({ month, today, onOpen }: { month: Date; today: string; onOpe
 
   return (
     <button
+      ref={hold}
       type="button"
       onClick={onOpen}
       aria-label="Open the month"
       title="Open the month"
-      className="flex shrink-0 flex-col justify-center gap-[3px] self-stretch rounded-xl bg-secondary/40 p-2 transition-colors hover:bg-secondary/70"
-      style={{ width: MINI_W }}
+      // No ground of its own: it is a month, not a card. The weeks share the
+      // height a day cell has, so the two shapes stand the same size.
+      className={`group flex shrink-0 flex-col justify-center self-stretch ${className}`}
+      style={{ width: miniDay(weeks.length) * 7 + MINI_GAP * 6, gap: MINI_GAP }}
     >
       {weeks.map((week) => (
-        <span key={isoDate(week[0]!)} className="flex gap-[3px]">
+        <span
+          key={isoDate(week[0]!)}
+          className="flex"
+          style={{ gap: MINI_GAP, height: miniDay(weeks.length) }}
+        >
           {week.map((day) => {
             const date = isoDate(day);
             return (
               <span
                 key={date}
                 aria-hidden
-                className={`h-[5px] flex-1 rounded-[1.5px] ${
+                className={`h-full flex-1 rounded-[2px] transition-colors ${
                   date === today
                     ? 'bg-primary'
                     : day.getMonth() === month.getMonth()
-                      ? 'bg-muted-foreground/25'
-                      : 'bg-muted-foreground/10'
+                      ? 'bg-muted-foreground/20 group-hover:bg-muted-foreground/40'
+                      : 'bg-muted-foreground/10 group-hover:bg-muted-foreground/20'
                 }`}
               />
             );
@@ -326,6 +358,11 @@ export function Schedule({
    *  new address. Set only by a swap, so a month *step* — which remounts the
    *  same grid — does not replay it. */
   const cameFrom = useRef<Map<string, DOMRect> | null>(null);
+  /** The minimised month, and where it stood when the month opened over it —
+   *  it is inside the shape that gets replaced, so it cannot fade on its own
+   *  the way the surface around the calendar does. */
+  const miniBox = useRef<HTMLButtonElement>(null);
+  const [ghost, setGhost] = useState<{ left: number; top: number } | null>(null);
   /** One shape change at a time: the two halves are sequenced, and a second
    *  click in the middle would interleave them. */
   const midSwap = useRef(false);
@@ -408,6 +445,8 @@ export function Schedule({
       if (date) seen.set(date, cell.getBoundingClientRect());
     }
     cameFrom.current = seen;
+    const mini = miniBox.current;
+    setGhost(next && mini ? { left: mini.offsetLeft, top: mini.offsetTop } : null);
     setDirection(0);
     setMonth(new Date());
     setExpanded(next);
@@ -431,6 +470,13 @@ export function Schedule({
       midSwap.current = false;
     }, MOVE_MS);
   }, [expanded, onExpand, change]);
+
+  // The ghost outlives the shape it was in by its own fade.
+  useEffect(() => {
+    if (!ghost) return;
+    const off = window.setTimeout(() => setGhost(null), GHOST_MS);
+    return () => window.clearTimeout(off);
+  }, [ghost]);
 
   // The back control comes on with the month and stays through its own exit.
   useEffect(() => {
@@ -548,6 +594,18 @@ export function Schedule({
         )}
       </header>
 
+      {/* Where it stood, fading, while the month it opened stands in its
+          place. */}
+      {expanded && ghost && (
+        <div
+          aria-hidden
+          className="peel-out pointer-events-none absolute"
+          style={{ left: ghost.left, top: ghost.top, height: STRIP_H }}
+        >
+          <MiniMonth month={month} today={today} onOpen={swap} />
+        </div>
+      )}
+
       {expanded ? (
         <div
           key={isoDate(month)}
@@ -575,8 +633,8 @@ export function Schedule({
           ))}
         </div>
       ) : (
-        <div className="mt-2 flex gap-2" style={{ minHeight: 84 }}>
-          <MiniMonth month={month} today={today} onOpen={swap} />
+        <div className="mt-2 flex gap-2" style={{ minHeight: STRIP_H }}>
+          <MiniMonth hold={miniBox} month={month} today={today} onOpen={swap} className="peel-in" />
           <div
             ref={strip}
             key={expanded ? 'month' : 'week'}
@@ -597,7 +655,7 @@ export function Schedule({
                   slots={slots.get(isoDate(day)) ?? []}
                   today={today}
                   showWeekday
-                  height={84}
+                  height={STRIP_H}
                   limit={4}
                 />
               </div>
