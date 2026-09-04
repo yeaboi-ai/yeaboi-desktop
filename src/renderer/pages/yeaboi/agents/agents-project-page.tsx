@@ -14,9 +14,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'react-router';
-import { RoboMark } from '@/components/brand/robo';
-import { KITS } from '@/lib/yeaboi/kits';
+import { useLocation, useParams } from 'react-router';
+import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -230,13 +229,18 @@ function ScopedReport({
 }
 
 function AgentsProjectBody({ projectId }: { projectId: string }) {
+  const Mascot = DOOR_MASCOT.agents.projects;
   const { authFetch, ready } = useAuthFetch();
   const [project, setProject] = useState<Project | null>(null);
   const [engineId, setEngineId] = useState('');
   const [repoPath, setRepoPath] = useState('');
   const [defaults, setDefaults] = useState<'reading' | 'ready' | 'unreadable'>('reading');
   const [modes, setModes] = useState<AgentModeOption[]>([]);
-  const [kind, setKind] = useState(KINDS[0]!);
+  const { search } = useLocation();
+  const [kind, setKind] = useState(() => {
+    const wanted = new URLSearchParams(search).get('kind') ?? '';
+    return KINDS.includes(wanted) ? wanted : KINDS[0]!;
+  });
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -298,7 +302,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
           Projects
         </Link>
         <div className="mt-3 flex items-center gap-4">
-          <RoboMark kit={KITS.agents.projects} size={40} />
+          <Mascot size={40} />
           <h1 className="font-display italic text-[40px] leading-none text-foreground">
             {project.name}
           </h1>

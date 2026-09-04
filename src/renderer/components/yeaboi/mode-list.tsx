@@ -14,12 +14,15 @@ export function ModeList({
   cards,
   hrefFor,
   trailing,
+  dense = false,
 }: {
   cards: ModeCard[];
   /** Where a mode starts; null leaves the row inert. */
   hrefFor: (key: string) => string | null;
   /** A right-hand slot per row, such as a last-run stamp. */
   trailing?: (card: ModeCard) => ReactNode;
+  /** The name and the slot alone, one line a row. */
+  dense?: boolean;
 }) {
   return (
     <ul className="divide-y divide-border/50">
@@ -29,7 +32,7 @@ export function ModeList({
           <>
             <span
               aria-hidden
-              className="mt-[7px] inline-block h-2 w-2 shrink-0 rounded-full"
+              className={`inline-block h-2 w-2 shrink-0 rounded-full ${dense ? 'mt-[6px]' : 'mt-[7px]'}`}
               style={{ background: card.available ? card.color : 'var(--border)' }}
             />
             <span className="min-w-0 flex-1">
@@ -42,11 +45,15 @@ export function ModeList({
               >
                 {card.title}
               </span>
-              <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
-                {card.description}
-              </span>
+              {!dense && (
+                <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
+                  {card.description}
+                </span>
+              )}
             </span>
-            <span className="shrink-0 pt-0.5 text-[12px] tabular-nums text-muted-foreground">
+            <span
+              className={`shrink-0 text-[12px] tabular-nums text-muted-foreground ${dense ? 'pt-[3px]' : 'pt-0.5'}`}
+            >
               {card.available ? trailing?.(card) : 'not configured'}
             </span>
           </>
@@ -54,11 +61,14 @@ export function ModeList({
         return (
           <li key={card.key}>
             {href ? (
-              <Link href={href} className="group flex items-start gap-3 py-2.5 transition-colors">
+              <Link
+                href={href}
+                className={`group flex items-start gap-3 transition-colors ${dense ? 'py-2' : 'py-2.5'}`}
+              >
                 {body}
               </Link>
             ) : (
-              <div className="flex items-start gap-3 py-2.5">{body}</div>
+              <div className={`flex items-start gap-3 ${dense ? 'py-2' : 'py-2.5'}`}>{body}</div>
             )}
           </li>
         );

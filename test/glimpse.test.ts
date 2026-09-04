@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 import {
   SESSIONS_UNSUPPORTED,
   agentGlimpse,
+  insideRows,
+  latestByMode,
+  oneOff,
+  scoped,
   sessionLabel,
   sessionRows,
   sessionsEmpty,
@@ -80,6 +84,100 @@ describe('sessionRows', () => {
       ['Reporting', 'Sprint 4'],
     ]);
     expect(rows.every((r) => r.secondary === 'yesterday')).toBe(true);
+  });
+});
+
+describe('latestByMode', () => {
+  it('keeps the newest run per card key, as a day', () => {
+    const stamps = latestByMode(
+      [
+        session({ session_id: 'a', mode: 'standup', last_modified: '2026-09-01T09:00:00' }),
+        session({ session_id: 'b', mode: 'standup', last_modified: '2026-09-02T09:00:00' }),
+        session({
+          session_id: 'c',
+          mode: 'reporting',
+          last_modified: '',
+          created_at: '2026-08-12',
+        }),
+      ],
+      NOW,
+    );
+    expect(stamps).toEqual({ 'daily-standup': 'yesterday', reporting: '12 Aug' });
+  });
+
+  it('is empty for no runs', () => {
+    expect(latestByMode([], NOW)).toEqual({});
+  });
+});
+
+describe('oneOff', () => {
+  it('keeps only the runs that belong to no project', () => {
+    const rows = [
+      session({ session_id: 'a', project_id: '' }),
+      session({ session_id: 'b', project_id: 'proj-1' }),
+    ];
+    expect(oneOff(rows).map((r) => r.session_id)).toEqual(['a']);
+  });
+});
+
+describe('scoped', () => {
+  it('is the complement of oneOff', () => {
+    const rows = [
+      session({ session_id: 'a', project_id: '' }),
+      session({ session_id: 'b', project_id: 'proj-1' }),
+      session({ session_id: 'c', project_id: 'proj-2' }),
+    ];
+    expect(scoped(rows).map((r) => r.session_id)).toEqual(['b', 'c']);
+    expect([...scoped(rows), ...oneOff(rows)]).toHaveLength(rows.length);
+  });
+});
+
+describe('insideRows', () => {
+  const projects = [
+    { id: 'p-web', name: 'yeaboi.ai', yeaboi_project_id: 'proj-1' },
+    { id: 'p-none', name: 'unlinked', yeaboi_project_id: null },
+  ];
+
+  it('names a run by its project, the mode as the detail, opened inside that project', () => {
+    const rows = insideRows(
+      [session({ session_id: 'a', mode: 'standup', project_id: 'proj-1' })],
+      CARDS,
+      projects,
+      NOW,
+    );
+    expect(rows).toEqual([
+      {
+        key: 'standup:a:1',
+        primary: 'yeaboi.ai',
+        detail: 'Daily Standup',
+        secondary: 'yesterday',
+        href: '/team/standup?project=p-web',
+      },
+    ]);
+  });
+
+  it('names a run whose project is no longer listed by its mode alone', () => {
+    const rows = insideRows(
+      [session({ session_id: 'a', mode: 'reporting', project_id: 'proj-gone' })],
+      CARDS,
+      projects,
+      NOW,
+    );
+    expect(rows[0]).toMatchObject({ primary: 'Reporting', href: '/team/reporting' });
+    expect(rows[0]!.detail).toBeUndefined();
+  });
+
+  it('lists newest first', () => {
+    const rows = insideRows(
+      [
+        session({ session_id: 'old', project_id: 'proj-1', last_modified: '2026-08-01T09:00:00' }),
+        session({ session_id: 'new', project_id: 'proj-1', last_modified: '2026-09-03T09:00:00' }),
+      ],
+      CARDS,
+      projects,
+      NOW,
+    );
+    expect(rows.map((r) => r.key)).toEqual(['standup:new:1', 'standup:old:1']);
   });
 });
 

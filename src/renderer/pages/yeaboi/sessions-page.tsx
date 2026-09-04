@@ -13,6 +13,7 @@ import { useAgentStamps } from '@/hooks/yeaboi/use-agent-stamps';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GlimpseList } from '@/components/yeaboi/glimpse-list';
 import { ModeList } from '@/components/yeaboi/mode-list';
+import { Scheduled } from '@/components/yeaboi/scheduled';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { SESSIONS_FOOT_LINKS } from '@/lib/nav/sections';
@@ -34,30 +35,6 @@ import { loadRecentSessions, shapeSessions, type RecentSession } from '@/lib/yea
 import { MODE_ROUTES, startRouteFor, tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
 
 const RECENT_LIMIT = 12;
-
-function Scheduled({ rows }: { rows: CeremonyRow[] }) {
-  if (rows.length === 0) return null;
-  return (
-    <div className="mb-6">
-      <h3 className="text-[13px] font-body font-medium text-foreground">Scheduled</h3>
-      <ul className="mt-1 divide-y divide-border/50">
-        {rows.map((row) => (
-          <li key={row.name}>
-            <Link
-              href="/ceremonies"
-              className="group flex items-baseline justify-between gap-6 py-2 text-[13px] font-body"
-            >
-              <span className="min-w-0 truncate text-foreground group-hover:text-primary">
-                {row.name}
-              </span>
-              <span className="shrink-0 text-[12px] text-muted-foreground">{row.next_fire}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 function SessionsBody() {
   const router = useRouter();
@@ -121,7 +98,7 @@ function SessionsBody() {
           <h1 className="font-display italic text-[40px] leading-none text-foreground">Sessions</h1>
         </div>
         <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-          A one-off run of one mode. Nothing is scoped to a project and nothing carries over.
+          One mode, one run. Nothing is read in from a project and nothing is carried over.
         </p>
       </header>
 
@@ -143,7 +120,7 @@ function SessionsBody() {
           >
             Recent
           </h2>
-          <Scheduled rows={ceremonies} />
+          <Scheduled rows={ceremonies} className="mb-6" />
           <GlimpseList rows={recent} empty={recentEmpty} />
         </section>
       </div>

@@ -229,6 +229,9 @@ export function reduceAgentRun(state: AgentRunState, line: unknown): AgentRunSta
 
 export const loadAgentModes = (): Promise<AgentModes> => apiGet('/api/agents/modes');
 
+/** `agent-usage` the card, `usage` the API kind. */
+export const kindOf = (key: string): string => key.replace(/^agent-/, '');
+
 export interface AgentScopeOpts {
   /** An engine project id (`proj-<8hex>`); its repo path scopes the read. */
   projectId?: string;

@@ -103,8 +103,8 @@ export default function ProjectsPage() {
               </h1>
             </div>
             <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-              A durable home for one piece of work. Every run inside it shares context with the
-              rest.
+              A durable home for one piece of work. Every run inside it reads what the earlier runs
+              left behind: the standup reads the plan, the retro reads the standups.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

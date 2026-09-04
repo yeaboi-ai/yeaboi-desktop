@@ -1,9 +1,16 @@
-// A short list of runs as rows: the Sessions screen's recent runs, a project's
-// runs inside it, and the Agents world's report kinds. Pure
-// (test/glimpse.test.ts); GlimpseList draws a row.
+// A short list of runs as rows: the home's two halves, the Sessions screen's
+// recent runs, a project's runs inside it, and the Agents world's report
+// kinds. Pure (test/glimpse.test.ts); GlimpseList draws a row.
 
 import type { Audience } from '@shared/audience';
-import { relativeDay, type ShapedSession } from './sessions';
+import { runInsideHref } from './project-scope';
+import {
+  cardKeyForMode,
+  relativeDay,
+  shapeSessions,
+  type RecentSession,
+  type ShapedSession,
+} from './sessions';
 
 export interface GlimpseRow {
   key: string;
@@ -43,6 +50,62 @@ export function sessionRows(sessions: ShapedSession[]): GlimpseRow[] {
     secondary: row.when,
     href: row.route,
   }));
+}
+
+/** When each mode last ran, as a day, keyed by card key: the stamp beside a
+ *  mode's name on the home. */
+export function latestByMode(sessions: RecentSession[], now: Date): Record<string, string> {
+  const newest = new Map<string, string>();
+  for (const row of sessions) {
+    const key = cardKeyForMode(row.mode);
+    const at = row.last_modified || row.created_at;
+    const seen = newest.get(key);
+    if (!seen || at.localeCompare(seen) > 0) newest.set(key, at);
+  }
+  return Object.fromEntries([...newest].map(([key, at]) => [key, relativeDay(at, now)]));
+}
+
+/** The runs that belong to no project: the ones that ran once, on their own. */
+export function oneOff(sessions: RecentSession[]): RecentSession[] {
+  return sessions.filter((row) => !row.project_id);
+}
+
+/** The runs that ran inside a project. */
+export function scoped(sessions: RecentSession[]): RecentSession[] {
+  return sessions.filter((row) => Boolean(row.project_id));
+}
+
+export interface NamedProject {
+  id: string;
+  name: string;
+  yeaboi_project_id?: string | null;
+}
+
+/** Runs inside projects as rows: the project's name, the mode as the detail,
+ *  and the mode opened inside that project. A run whose project is no longer
+ *  listed is named by its mode alone. Newest first. */
+export function insideRows(
+  sessions: RecentSession[],
+  cards: { key: string; title: string }[],
+  projects: NamedProject[],
+  now: Date,
+): GlimpseRow[] {
+  const byEngineId = new Map(
+    projects.filter((p) => p.yeaboi_project_id).map((p) => [p.yeaboi_project_id!, p]),
+  );
+  return shapeSessions(sessions, cards, now).map((row) => {
+    const project = byEngineId.get(row.session.project_id);
+    if (!project) {
+      return { key: row.key, primary: row.modeTitle, secondary: row.when, href: row.route };
+    }
+    return {
+      key: row.key,
+      primary: project.name,
+      detail: row.modeTitle,
+      secondary: row.when,
+      href: runInsideHref(cardKeyForMode(row.session.mode), row.route, project.id),
+    };
+  });
 }
 
 /** The Agents world's kinds: each one and when its report was saved. */
