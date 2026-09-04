@@ -59,6 +59,9 @@ const INHERIT = `
   --app-display: var(--font-display);
   --app-code: var(--font-code);
   --app-radius: var(--radius);
+  /* The way out of the table is a fixed size so the chips beside it can be
+     placed against a number rather than against a guess at its label. */
+  --leave-w: 156px;
 }
 .board-frame .${HOST} {
   --bg: var(--app-bg);
@@ -163,58 +166,57 @@ const INHERIT = `
  * else. So the band goes and its contents become capsules on the board's own
  * ground, the way the dock at the bottom of every other screen is. */
 .board-frame .${HOST} [class*='chromeApp'] {
-  /* One row of capsules, no taller than they are — the board pads this strip
-     out to a bar's height of its own accord. */
-  height: 26px;
-  align-items: center;
-  gap: 8px;
-  /* Clear of the window buttons, and that is the only inset the board pays:
-     it keeps the whole window otherwise, titlebar strip included. */
-  margin: calc(var(--titlebar-h) + 8px) 16px 0;
+  /* Nothing left to draw. The board's name was a capsule saying what the
+     window already says, and a strip's worth of height to say it in; the
+     board starts at the top of the screen instead. The element stays, at no
+     height, because the identity chips are fixed out of it. */
+  height: 0;
+  margin: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
 }
 
-.board-frame .${HOST} [class*='mastheadApp'] {
-  flex: none;
-  height: 26px;
-  padding: 0 12px;
-  border-radius: calc(var(--app-radius) * 2);
-  background: color-mix(in srgb, var(--app-card) 85%, transparent);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--app-line) 60%, transparent),
-    0 8px 20px -6px rgb(0 0 0 / 26%);
-  backdrop-filter: blur(12px);
+.board-frame .${HOST} [class*='mastheadApp'],
+.board-frame .${HOST} [class*='chromeApp'] [class*='brandMark'] {
+  display: none;
 }
 
 .board-frame .${HOST} [class*='appbar'] {
-  height: 26px;
+  height: 0;
   min-height: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 0 0 0 6px;
+  padding: 0;
   border: 0;
   background: transparent;
 }
 
-/* The duck stands a head taller than the strip, and hangs off the bottom of
-   it. Lifted onto the title's baseline so the two stand on the same line —
-   translate rather than a margin, because he has transforms of his own. */
-.board-frame .${HOST} [class*='chromeApp'] [class*='brandMark'] {
-  translate: 0 -6px;
+/* And the board takes the space back, stopping only where the window buttons
+   are — they sit above y=30, so this clears them. Full screen has no window
+   buttons to clear, so it starts at the top. */
+.board-frame .${HOST} [class*='_layout_'] {
+  padding-top: var(--titlebar-h);
 }
 
-/* Who you are and who else is here sits with the rest of the furniture, at
-   the bottom right above the dock — not opposite the board's name, where two
-   chips at the far end of an empty strip were all that kept it a bar. Their
-   list opens upward from there, since there is no room below it. */
+:root[data-full-screen] .board-frame .${HOST} [class*='_layout_'] {
+  padding-top: 12px;
+}
+
+/* Who you are and who else is here sits with the rest of the furniture, on
+   the bottom row beside the way out — not opposite the board's name, where
+   two chips at the far end of an empty strip were all that kept the top a
+   bar. Their list opens upward from there, since there is nothing below it to
+   open into. */
 .board-frame .${HOST} [class*='chromeApp'] [class*='identity'] {
   position: fixed;
-  right: 16px;
-  bottom: 58px;
+  left: calc(16px + var(--leave-w) + 8px);
+  bottom: 16px;
   z-index: 45;
+  /* The row's height, so the chips centre on the same line as the pill beside
+     them rather than sitting on its floor. */
+  height: 34px;
   gap: 8px;
+  align-items: center;
 }
 
 .board-frame .${HOST} [class*='identity'] [class*='roomList'] {
@@ -585,7 +587,7 @@ export function PokerBoard({
       <button
         type="button"
         onClick={onLeave}
-        className="fixed bottom-4 left-4 z-[60] flex h-[34px] items-center gap-2 rounded-2xl bg-card/85 px-4 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-colors hover:text-foreground"
+        className="fixed bottom-4 left-4 z-[60] flex h-[34px] w-[var(--leave-w)] items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-card/85 px-4 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-colors hover:text-foreground"
       >
         <LogOut className="h-[13px] w-[13px]" />
         Leave the table
