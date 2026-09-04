@@ -7,7 +7,7 @@
 // pausing and removing a ceremony installs or removes an OS job, so those stay
 // where they were, and this reads the result.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
@@ -95,10 +95,6 @@ function DayCell({
   showWeekday,
   height,
   limit,
-  /** The month is opening around another row, and this one is arriving from
-   *  above it or below it. */
-  unfold,
-  delay = 0,
 }: {
   day: Date;
   slots: Occurrence[];
@@ -107,19 +103,18 @@ function DayCell({
   showWeekday?: boolean;
   height: number;
   limit: number;
-  unfold?: 'up' | 'down';
-  delay?: number;
 }) {
   const date = isoDate(day);
   return (
     <div
+      data-day={date}
       // A tint rather than an outlined card. On a light theme a white cell with
       // a grey ring on a near-white page reads as a row of boxes; the day is
       // the shape, and it only needs to be a shade off the page.
       className={`rounded-xl p-1.5 transition-colors ${
         date === today ? 'bg-secondary ring-1 ring-border/60' : 'bg-secondary/40'
-      } ${dim ? 'opacity-40' : ''} ${unfold ? `unfold-${unfold}` : ''}`}
-      style={{ minHeight: height, animationDelay: `${delay}ms` }}
+      } ${dim ? 'opacity-40' : ''}`}
+      style={{ minHeight: height }}
     >
       <p className="flex items-baseline gap-1.5">
         {showWeekday && (
@@ -177,10 +172,16 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
 /** The schedule as far ahead as it is worth looking: the next seven days, and
  *  the month behind a button. A month of mostly empty cells is a lot of window
  *  to spend on a week's worth of answer. */
-/** How long the month takes to finish opening, and the gap between one week
- *  of it and the next. */
-const UNFOLD_MS = 320;
-const UNFOLD_STEP_MS = 45;
+/** The days already on screen sliding to where the month puts them, and the
+ *  days either side of them arriving. The ones before lead, because they are
+ *  what pushes the week across. */
+const MOVE_MS = 620;
+const ARRIVE_MS = 420;
+const AFTER_DELAY_MS = 200;
+/** Long tail: most of the distance is covered early and the last of it is
+ *  given away slowly, which is what makes the week look like it was pushed
+ *  rather than moved. */
+const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
 
@@ -195,11 +196,13 @@ export function Schedule({
   onExpand?: (expanded: boolean) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  /** Set for the length of the month opening, so a month *step* — which
-   *  remounts the same grid — does not replay the unfolding. */
-  const [unfolding, setUnfolding] = useState(false);
   /** The back control outlives the month view by its own exit. */
   const [backOnRow, setBackOnRow] = useState(false);
+  /** Where every day sat before the calendar changed shape, so the ones that
+   *  survive the change can be moved from there rather than redrawn at their
+   *  new address. Set only by a swap, so a month *step* — which remounts the
+   *  same grid — does not replay it. */
+  const cameFrom = useRef<Map<string, DOMRect> | null>(null);
   const [month, setMonth] = useState(() => new Date());
   const [direction, setDirection] = useState(0);
   const today = isoDate(new Date());
@@ -253,7 +256,10 @@ export function Schedule({
   useEffect(() => () => cancelAnimationFrame(gliding.current), []);
 
   // Today starts at the left edge, with the week behind it scrolled off.
-  useEffect(() => {
+  // Before paint, and before the hand-off below measures anything: the strip
+  // arrives scrolled to nought, and a day measured there is a day the move
+  // would carry to the wrong place.
+  useLayoutEffect(() => {
     if (expanded || !strip.current) return;
     strip.current.scrollLeft = (stride() / 7) * BEHIND;
   }, [expanded]);
@@ -267,10 +273,20 @@ export function Schedule({
     glide((strip.current?.scrollLeft ?? 0) + by * stride());
   };
 
-  /** Between the two shapes. Nothing leaves first: the week in view stays
-   *  where it is and the month opens around it, while whatever the calendar
-   *  displaces goes at the same time. */
+  /** Between the two shapes.
+   *
+   *  The days on screen do not go anywhere: their addresses are taken down
+   *  first, and after the other shape has rendered each one is put back where
+   *  it was and moved from there. In the month the week sits further along its
+   *  row, so what the eye sees is the days before it arriving and pushing it
+   *  across, and the rest of the month following it in. */
   const swap = () => {
+    const seen = new Map<string, DOMRect>();
+    for (const cell of document.querySelectorAll<HTMLElement>('[data-day]')) {
+      const date = cell.dataset['day'];
+      if (date) seen.set(date, cell.getBoundingClientRect());
+    }
+    cameFrom.current = seen;
     const next = !expanded;
     setDirection(0);
     setMonth(new Date());
@@ -278,11 +294,38 @@ export function Schedule({
     onExpand?.(next);
   };
 
-  useEffect(() => {
-    if (!expanded) return;
-    setUnfolding(true);
-    const done = window.setTimeout(() => setUnfolding(false), UNFOLD_MS + UNFOLD_STEP_MS * 4);
-    return () => window.clearTimeout(done);
+  useLayoutEffect(() => {
+    const before = cameFrom.current;
+    cameFrom.current = null;
+    if (!before || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const cells = [...document.querySelectorAll<HTMLElement>('[data-day]')];
+    // Everything the two shapes have in common, in the order the new one lays
+    // it out — so "before the week" and "after it" are simply either side.
+    const shared = cells.filter((cell) => before.has(cell.dataset['day'] ?? ''));
+    const first = shared[0] ? cells.indexOf(shared[0]) : 0;
+    const last = shared.at(-1) ? cells.indexOf(shared.at(-1)!) : cells.length;
+
+    for (const [index, cell] of cells.entries()) {
+      const was = before.get(cell.dataset['day'] ?? '');
+      const now = cell.getBoundingClientRect();
+      if (was) {
+        const dx = was.left - now.left;
+        const dy = was.top - now.top;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+        cell.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+          duration: MOVE_MS,
+          easing: EASE,
+        });
+        continue;
+      }
+      cell.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: ARRIVE_MS,
+        delay: index < first ? 0 : index > last ? AFTER_DELAY_MS : 0,
+        easing: EASE,
+        fill: 'both',
+      });
+    }
   }, [expanded]);
 
   useEffect(() => {
@@ -293,12 +336,6 @@ export function Schedule({
     const gone = window.setTimeout(() => setBackOnRow(false), CONTROL_OUT_MS);
     return () => window.clearTimeout(gone);
   }, [expanded]);
-
-  /** Which row of the grid holds today — the one the month opens around. */
-  const anchorRow = useMemo(() => {
-    const index = monthDays.findIndex((day) => isoDate(day) === today);
-    return index < 0 ? 0 : Math.floor(index / 7);
-  }, [monthDays, today]);
 
   const now = () => {
     setDirection(0);
@@ -369,22 +406,17 @@ export function Schedule({
               {label}
             </div>
           ))}
-          {monthDays.map((day, index) => {
-            const away = Math.floor(index / 7) - anchorRow;
-            return (
-              <DayCell
-                key={isoDate(day)}
-                day={day}
-                slots={slots.get(isoDate(day)) ?? []}
-                today={today}
-                dim={day.getMonth() !== month.getMonth()}
-                height={68}
-                limit={3}
-                unfold={unfolding && away !== 0 ? (away < 0 ? 'up' : 'down') : undefined}
-                delay={Math.abs(away) * UNFOLD_STEP_MS}
-              />
-            );
-          })}
+          {monthDays.map((day) => (
+            <DayCell
+              key={isoDate(day)}
+              day={day}
+              slots={slots.get(isoDate(day)) ?? []}
+              today={today}
+              dim={day.getMonth() !== month.getMonth()}
+              height={84}
+              limit={3}
+            />
+          ))}
         </div>
       ) : (
         <div

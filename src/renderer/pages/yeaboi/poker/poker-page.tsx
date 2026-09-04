@@ -27,7 +27,7 @@ import { type BoardSnapshot, loadBoards } from '@/lib/yeaboi/boards';
 const MODES = ['poker'];
 
 /** The panel's own exit, before it comes off the page. */
-const PEEL_MS = 240;
+const PEEL_MS = 380;
 
 interface PokerState {
   phase?: string;

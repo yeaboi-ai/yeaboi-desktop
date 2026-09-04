@@ -19,7 +19,7 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
 
 /** The tiles' own exit, before they come off the page. */
-const PEEL_MS = 240;
+const PEEL_MS = 380;
 
 interface Project {
   id: string;
