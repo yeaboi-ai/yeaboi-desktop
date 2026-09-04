@@ -269,6 +269,10 @@ const INHERIT = `
   padding-top: 0;
   padding-bottom: 8px;
   align-items: flex-end;
+  /* The board hides the cards behind the edge they deal from, and that edge
+     was the top. It is the bottom here, so the top card kept losing its head
+     to an inset meant for a list that opens the other way. */
+  clip-path: inset(-40px -40px 0);
 }
 
 .board-frame .${HOST} [class*='identity'] [class*='roomCard'] {
