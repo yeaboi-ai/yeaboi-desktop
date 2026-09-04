@@ -195,6 +195,13 @@ const INHERIT = `
   background: transparent;
 }
 
+/* The duck stands a head taller than the strip, and hangs off the bottom of
+   it. Lifted onto the title's baseline so the two stand on the same line —
+   translate rather than a margin, because he has transforms of his own. */
+.board-frame .${HOST} [class*='chromeApp'] [class*='brandMark'] {
+  translate: 0 -6px;
+}
+
 /* Who you are and who else is here: two more of the same capsule. */
 .board-frame .${HOST} [class*='meChip'],
 .board-frame .${HOST} [class*='presenceChip'] {
