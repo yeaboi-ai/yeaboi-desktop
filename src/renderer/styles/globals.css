@@ -1029,25 +1029,122 @@ html[data-audience='agents'] {
    card, top down, so a page turn has a direction rather than simply being a
    different screen. Depth two, because a page's root is a wrapper and its
    items are the wrapper's children. */
-/* Days leaving the calendar when it changes shape. Staggered by the caller,
-   so the week empties left to right before the month arrives. */
-@keyframes cell-out {
+@keyframes deck-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The month opening around the week already on screen.
+ *
+ * The week in view does not move: the rest of the month unfolds away from it,
+ * the weeks above rising into place and the weeks below settling down, a beat
+ * apart per row. Whatever the calendar displaces goes at the same time, so the
+ * two read as one movement rather than a swap. */
+@keyframes unfold-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes unfold-down {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.unfold-up {
+  animation: unfold-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.unfold-down {
+  animation: unfold-down 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* What the calendar displaces, leaving and coming back. */
+@keyframes peel-out {
   from {
     opacity: 1;
     transform: none;
   }
   to {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(18px);
   }
 }
 
-.cell-out {
-  animation: cell-out 160ms ease-in both;
+@keyframes peel-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.peel-out {
+  animation: peel-out 240ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.peel-in {
+  animation: peel-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* A control arriving beside the ones already there. */
+@keyframes control-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes control-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+.control-in {
+  animation: control-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.control-out {
+  animation: control-out 150ms ease-in both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cell-out {
+  .unfold-up,
+  .unfold-down,
+  .peel-out,
+  .peel-in,
+  .control-in,
+  .control-out {
     animation-duration: 1ms;
     animation-delay: 0ms !important;
   }
@@ -1065,35 +1162,21 @@ html[data-audience='agents'] {
     transform: none;
   }
 }
-
 .row-rise {
   animation: row-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-
 @media (prefers-reduced-motion: reduce) {
   .row-rise {
     animation-duration: 1ms;
     animation-delay: 0ms !important;
   }
 }
-
 @keyframes board-in {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes deck-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 

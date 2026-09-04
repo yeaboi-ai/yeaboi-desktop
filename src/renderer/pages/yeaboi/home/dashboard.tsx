@@ -18,6 +18,9 @@ import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
 
+/** The tiles' own exit, before they come off the page. */
+const PEEL_MS = 240;
+
 interface Project {
   id: string;
   name: string;
@@ -85,6 +88,20 @@ export function HomeDashboard() {
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const schedule = useSchedule();
+  // A month grid takes the surface. The tiles leave as it opens and come back
+  // with the week — mounted through their own exit, or there is nothing to
+  // animate.
+  const [monthView, setMonthView] = useState(false);
+  const [tilesGone, setTilesGone] = useState(false);
+
+  useEffect(() => {
+    if (!monthView) {
+      setTilesGone(false);
+      return;
+    }
+    const gone = window.setTimeout(() => setTilesGone(true), PEEL_MS);
+    return () => window.clearTimeout(gone);
+  }, [monthView]);
 
   useEffect(() => {
     if (!ready) return;
@@ -116,10 +133,14 @@ export function HomeDashboard() {
       {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
       <div className="mt-6">
-        <Schedule ceremonies={schedule.ceremonies} />
+        <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div
+        className={`mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
+          monthView ? 'peel-out' : 'peel-in'
+        } ${tilesGone ? 'hidden' : ''}`}
+      >
         <Tile title="Projects" icon={LayoutGrid}>
           {projects.length === 0 ? (
             <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>

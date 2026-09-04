@@ -8,6 +8,7 @@
 // where they were, and this reads the result.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
 import {
@@ -94,8 +95,9 @@ function DayCell({
   showWeekday,
   height,
   limit,
-  /** The calendar is changing shape and this cell is on its way out. */
-  leaving = false,
+  /** The month is opening around another row, and this one is arriving from
+   *  above it or below it. */
+  unfold,
   delay = 0,
 }: {
   day: Date;
@@ -105,7 +107,7 @@ function DayCell({
   showWeekday?: boolean;
   height: number;
   limit: number;
-  leaving?: boolean;
+  unfold?: 'up' | 'down';
   delay?: number;
 }) {
   const date = isoDate(day);
@@ -116,7 +118,7 @@ function DayCell({
       // the shape, and it only needs to be a shade off the page.
       className={`rounded-xl p-1.5 transition-colors ${
         date === today ? 'bg-secondary ring-1 ring-border/60' : 'bg-secondary/40'
-      } ${dim ? 'opacity-40' : ''} ${leaving ? 'cell-out' : ''}`}
+      } ${dim ? 'opacity-40' : ''} ${unfold ? `unfold-${unfold}` : ''}`}
       style={{ minHeight: height, animationDelay: `${delay}ms` }}
     >
       <p className="flex items-baseline gap-1.5">
@@ -175,17 +177,29 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
 /** The schedule as far ahead as it is worth looking: the next seven days, and
  *  the month behind a button. A month of mostly empty cells is a lot of window
  *  to spend on a week's worth of answer. */
-/** How long the days take to leave before the other shape arrives: the last
- *  cell's delay plus its own run. */
-const LEAVE_MS = 160;
-const LEAVE_STEP_MS = 12;
-const LEAVE_CAP_MS = 140;
+/** How long the month takes to finish opening, and the gap between one week
+ *  of it and the next. */
+const UNFOLD_MS = 320;
+const UNFOLD_STEP_MS = 45;
+/** The back control's own exit, before it is taken off the row. */
+const CONTROL_OUT_MS = 150;
 
-export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
+export function Schedule({
+  ceremonies,
+  /** Told when the calendar takes the whole surface, so the page can put its
+   *  other panels away — a month grid and a row of tiles do not both fit, and
+   *  the answer to that is not a scrollbar. */
+  onExpand,
+}: {
+  ceremonies: Scheduled[];
+  onExpand?: (expanded: boolean) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
-  /** True while the days on screen are leaving and the other shape is waiting
-   *  behind them. */
-  const [leaving, setLeaving] = useState(false);
+  /** Set for the length of the month opening, so a month *step* — which
+   *  remounts the same grid — does not replay the unfolding. */
+  const [unfolding, setUnfolding] = useState(false);
+  /** The back control outlives the month view by its own exit. */
+  const [backOnRow, setBackOnRow] = useState(false);
   const [month, setMonth] = useState(() => new Date());
   const [direction, setDirection] = useState(0);
   const today = isoDate(new Date());
@@ -253,6 +267,39 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
     glide((strip.current?.scrollLeft ?? 0) + by * stride());
   };
 
+  /** Between the two shapes. Nothing leaves first: the week in view stays
+   *  where it is and the month opens around it, while whatever the calendar
+   *  displaces goes at the same time. */
+  const swap = () => {
+    const next = !expanded;
+    setDirection(0);
+    setMonth(new Date());
+    setExpanded(next);
+    onExpand?.(next);
+  };
+
+  useEffect(() => {
+    if (!expanded) return;
+    setUnfolding(true);
+    const done = window.setTimeout(() => setUnfolding(false), UNFOLD_MS + UNFOLD_STEP_MS * 4);
+    return () => window.clearTimeout(done);
+  }, [expanded]);
+
+  useEffect(() => {
+    if (expanded) {
+      setBackOnRow(true);
+      return;
+    }
+    const gone = window.setTimeout(() => setBackOnRow(false), CONTROL_OUT_MS);
+    return () => window.clearTimeout(gone);
+  }, [expanded]);
+
+  /** Which row of the grid holds today — the one the month opens around. */
+  const anchorRow = useMemo(() => {
+    const index = monthDays.findIndex((day) => isoDate(day) === today);
+    return index < 0 ? 0 : Math.floor(index / 7);
+  }, [monthDays, today]);
+
   const now = () => {
     setDirection(0);
     setMonth(new Date());
@@ -266,6 +313,18 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
           changed it. */}
       <header className="flex items-center gap-2 px-1">
         <div className="flex items-center gap-1">
+          {/* Out of the month and back to the week, beside the controls that
+              move within it. */}
+          {backOnRow && (
+            <button
+              type="button"
+              aria-label="Back to the week"
+              onClick={swap}
+              className={`${STEP} ${expanded ? 'control-in' : 'control-out'}`}
+            >
+              <ArrowLeft className="h-3 w-3" />
+            </button>
+          )}
           <button
             type="button"
             aria-label={expanded ? 'Previous month' : 'Previous week'}
@@ -285,22 +344,7 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
           >
             ›
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (leaving) return;
-              // The days go before the other shape comes: a month grid
-              // appearing over a week strip is two calendars in one frame.
-              setLeaving(true);
-              window.setTimeout(() => {
-                setDirection(expanded ? -1 : 1);
-                setMonth(new Date());
-                setExpanded(!expanded);
-                setLeaving(false);
-              }, LEAVE_MS + LEAVE_CAP_MS);
-            }}
-            className={`${STEP} ml-1`}
-          >
+          <button type="button" onClick={swap} className={`${STEP} ml-1`}>
             {expanded ? 'Week' : 'Month'}
           </button>
         </div>
@@ -325,19 +369,22 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
               {label}
             </div>
           ))}
-          {monthDays.map((day, index) => (
-            <DayCell
-              key={isoDate(day)}
-              day={day}
-              slots={slots.get(isoDate(day)) ?? []}
-              today={today}
-              dim={day.getMonth() !== month.getMonth()}
-              height={68}
-              limit={3}
-              leaving={leaving}
-              delay={Math.min(index * LEAVE_STEP_MS, LEAVE_CAP_MS)}
-            />
-          ))}
+          {monthDays.map((day, index) => {
+            const away = Math.floor(index / 7) - anchorRow;
+            return (
+              <DayCell
+                key={isoDate(day)}
+                day={day}
+                slots={slots.get(isoDate(day)) ?? []}
+                today={today}
+                dim={day.getMonth() !== month.getMonth()}
+                height={68}
+                limit={3}
+                unfold={unfolding && away !== 0 ? (away < 0 ? 'up' : 'down') : undefined}
+                delay={Math.abs(away) * UNFOLD_STEP_MS}
+              />
+            );
+          })}
         </div>
       ) : (
         <div
@@ -348,7 +395,7 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
           onWheel={stopGlide}
           className="mt-4 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {days.map((day, index) => (
+          {days.map((day) => (
             <div
               key={isoDate(day)}
               // A seventh of the strip, less its share of the six gaps between
@@ -362,8 +409,6 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
                 showWeekday
                 height={84}
                 limit={4}
-                leaving={leaving}
-                delay={Math.min(index * LEAVE_STEP_MS, LEAVE_CAP_MS)}
               />
             </div>
           ))}

@@ -26,6 +26,9 @@ import { type BoardSnapshot, loadBoards } from '@/lib/yeaboi/boards';
 /** Which ceremonies belong on this surface. */
 const MODES = ['poker'];
 
+/** The panel's own exit, before it comes off the page. */
+const PEEL_MS = 240;
+
 interface PokerState {
   phase?: string;
   ticket_index?: number;
@@ -72,6 +75,18 @@ function PokerBody() {
   // Playing the board in the window: the table takes the surface and the app's
   // chrome steps back off its edges until it is left.
   const [staged, setStaged] = useState(false);
+  // A month grid takes the surface; the panel comes back with the week.
+  const [monthView, setMonthView] = useState(false);
+  const [panelGone, setPanelGone] = useState(false);
+
+  useEffect(() => {
+    if (!monthView) {
+      setPanelGone(false);
+      return;
+    }
+    const gone = window.setTimeout(() => setPanelGone(true), PEEL_MS);
+    return () => window.clearTimeout(gone);
+  }, [monthView]);
 
   useEffect(() => {
     loadBoards().then(
@@ -105,37 +120,41 @@ function PokerBody() {
 
         {/* When the poker is, before what it is: the calendar leads the
             surface, and only poker is on it. */}
-        <Schedule ceremonies={mine} />
+        <Schedule ceremonies={mine} onExpand={setMonthView} />
 
-        {board ? (
-          <Panel
-            title="At the table"
-            aside={
-              <a
-                href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
-                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              >
-                Full view
-              </a>
-            }
-          >
-            <TableState board={board} />
-            <BoardHost
-              board={board}
-              onStage={canPlayBoards() ? () => setStaged(true) : undefined}
-              onClosed={() => {
-                setLiveId('');
-                setStaged(false);
-              }}
-            />
-          </Panel>
-        ) : (
-          /* Dealing does not go anywhere: the panel this replaces is the
-             table, on the surface the host is already looking at. The setup
-             draws its own panel, because what it asks belongs inside one and
-             what it does next does not. */
-          <PokerSetup onOpened={setLiveId} />
-        )}
+        {/* The panel leaves as the month opens, and is off the page by the
+            time it has. */}
+        <div className={`${monthView ? 'peel-out' : 'peel-in'} ${panelGone ? 'hidden' : ''}`}>
+          {board ? (
+            <Panel
+              title="At the table"
+              aside={
+                <a
+                  href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
+                  className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Full view
+                </a>
+              }
+            >
+              <TableState board={board} />
+              <BoardHost
+                board={board}
+                onStage={canPlayBoards() ? () => setStaged(true) : undefined}
+                onClosed={() => {
+                  setLiveId('');
+                  setStaged(false);
+                }}
+              />
+            </Panel>
+          ) : (
+            /* Dealing does not go anywhere: the panel this replaces is the
+               table, on the surface the host is already looking at. The setup
+               draws its own panel, because what it asks belongs inside one and
+               what it does next does not. */
+            <PokerSetup onOpened={setLiveId} />
+          )}
+        </div>
       </div>
     </Surface>
   );
