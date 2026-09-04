@@ -205,6 +205,25 @@ const INHERIT = `
   translate: 0 -6px;
 }
 
+/* Who you are and who else is here sits with the rest of the furniture, at
+   the bottom right above the dock — not opposite the board's name, where two
+   chips at the far end of an empty strip were all that kept it a bar. Their
+   list opens upward from there, since there is no room below it. */
+.board-frame .${HOST} [class*='chromeApp'] [class*='identity'] {
+  position: fixed;
+  right: 16px;
+  bottom: 58px;
+  z-index: 45;
+  gap: 8px;
+}
+
+.board-frame .${HOST} [class*='identity'] [class*='roomList'] {
+  top: auto;
+  bottom: calc(100% + 6px);
+  padding-top: 0;
+  padding-bottom: 20px;
+}
+
 /* Who you are and who else is here: two more of the same capsule. */
 .board-frame .${HOST} [class*='chromeApp'] [class*='meChip'],
 .board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip'] {
@@ -349,6 +368,22 @@ const INHERIT = `
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
 }
 
+/* Full screen: the table comes up to meet the ticket.
+ *
+ * The ticket is the one thing in the middle column that grows, and the board
+ * pushes the table down with an auto margin — an arrangement that reads well
+ * in a window and, on a screen this tall, leaves half of it empty with the
+ * people and their hand pressed against the bottom edge. On a full screen the
+ * ticket takes the height it needs (it has its own scroll and its own floor)
+ * and the group sits under it. */
+:root[data-full-screen] .board-frame .${HOST} [class*='_main_'] > [class*='_ticket_'] {
+  flex: 0 1 auto;
+}
+
+:root[data-full-screen] .board-frame .${HOST} [class*='_main_'] > [class*='_table_'] {
+  margin-top: 48px;
+}
+
 /* The board's dock, in the app's floating chrome.
  *
  * Everything this app floats over a page — the rail, the row of controls at
@@ -390,7 +425,7 @@ const INHERIT = `
   min-height: 26px;
   padding: 0 7px;
   border: 0;
-  border-radius: calc(var(--app-radius) + 4px);
+  border-radius: 999px;
   background: transparent;
   color: var(--app-muted);
   transition:
@@ -420,9 +455,10 @@ const INHERIT = `
 .board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
   height: 26px;
   min-height: 26px;
-  padding: 0 9px;
+  padding: 0 11px;
   border: 0;
-  border-radius: var(--app-radius);
+  /* Round, like the steps it sits beside on the same row. */
+  border-radius: 999px;
   font-weight: 500;
 }
 
