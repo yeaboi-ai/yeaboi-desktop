@@ -185,6 +185,81 @@ const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
 
+/** The shape of the grid a day is moving through: where its rows start and
+ *  end, and how far apart they are. */
+interface Rows {
+  left: number;
+  right: number;
+  pitch: number;
+  width: number;
+}
+
+/** Read that shape off a set of laid-out cells, or nothing if they are all on
+ *  one line — a strip has no rows to speak of. */
+function rowsOf(boxes: DOMRect[]): Rows | null {
+  if (boxes.length === 0) return null;
+  const tops = [...new Set(boxes.map((box) => Math.round(box.top)))].sort((a, b) => a - b);
+  if (tops.length < 2) return null;
+  return {
+    left: Math.min(...boxes.map((box) => box.left)),
+    right: Math.max(...boxes.map((box) => box.right)),
+    pitch: tops[1]! - tops[0]!,
+    width: boxes[0]!.width,
+  };
+}
+
+/**
+ * The path from one address to the other, as the grid reads.
+ *
+ * A day that ends a row below the one it started on does not cut across the
+ * calendar to get there: it runs to the end of its row, comes back in at the
+ * start of the next, and carries on — the way the days themselves run. The
+ * turn costs no time, so the day keeps its speed through it, and with the
+ * whole path timed by distance it travels at one pace from end to end.
+ *
+ * Frames are relative to where the day now sits, because that is where a
+ * transform starts from.
+ */
+function wrapped(was: DOMRect, is: DOMRect, geo: Rows | null): Keyframe[] {
+  const stops: { x: number; y: number }[] = [{ x: was.left, y: was.top }];
+  const seams = new Set<number>();
+  const rows = geo ? Math.round((is.top - was.top) / geo.pitch) : 0;
+
+  if (geo && rows !== 0) {
+    const down = rows > 0;
+    // Off the end it leaves by, and back on at the end it returns by.
+    const out = down ? geo.right : geo.left - geo.width;
+    const back = down ? geo.left - geo.width : geo.right;
+    let y = was.top;
+    for (let turn = 0; turn < Math.abs(rows); turn += 1) {
+      stops.push({ x: out, y });
+      seams.add(stops.length - 1);
+      y += down ? geo.pitch : -geo.pitch;
+      stops.push({ x: back, y });
+    }
+  }
+  stops.push({ x: is.left, y: is.top });
+
+  // Time by distance travelled, with the turns costing none.
+  const legs = stops.slice(1).map((stop, index) => {
+    if (seams.has(index)) return 0;
+    const from = stops[index]!;
+    return Math.hypot(stop.x - from.x, stop.y - from.y);
+  });
+  const total = legs.reduce((sum, leg) => sum + leg, 0) || 1;
+
+  let run = 0;
+  return stops.map((stop, index) => {
+    if (index > 0) run += legs[index - 1]!;
+    return {
+      // A turn is instant, so the two frames either side of it share a moment
+      // — nudged apart only enough to keep their order.
+      offset: Math.min(1, run / total + (seams.has(index - 1) ? 0.0001 : 0)),
+      transform: `translate(${stop.x - is.left}px, ${stop.y - is.top}px)`,
+    };
+  });
+}
+
 export function Schedule({
   ceremonies,
   /** Told when the calendar takes the whole surface, so the page can put its
@@ -314,6 +389,13 @@ export function Schedule({
     if (!before || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const cells = [...document.querySelectorAll<HTMLElement>('[data-day]')];
+    const now = new Map(
+      cells.map((cell) => [cell.dataset['day'] ?? '', cell.getBoundingClientRect()]),
+    );
+    // The grid is whichever of the two shapes has rows. The strip has one, so
+    // it can say nothing about where a row ends or how far the next one is.
+    const geo = rowsOf([...now.values()]) ?? rowsOf([...before.values()]);
+
     // Everything the two shapes have in common, in the order the new one lays
     // it out — so "before the week" and "after it" are simply either side.
     const shared = cells.filter((cell) => before.has(cell.dataset['day'] ?? ''));
@@ -322,15 +404,14 @@ export function Schedule({
 
     for (const [index, cell] of cells.entries()) {
       const was = before.get(cell.dataset['day'] ?? '');
-      const now = cell.getBoundingClientRect();
-      if (was) {
-        const dx = was.left - now.left;
-        const dy = was.top - now.top;
-        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-        cell.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-          duration: MOVE_MS,
-          easing: EASE,
-        });
+      const is = now.get(cell.dataset['day'] ?? '');
+      // A day is carried across only if it was somewhere to be seen. The strip
+      // runs five weeks off the side of the window, and a day fetched from out
+      // there spends the whole move off-screen and then appears — which is an
+      // arrival wearing a journey. Those simply arrive.
+      if (was && is && was.right > 0 && was.left < window.innerWidth) {
+        if (Math.abs(was.left - is.left) < 1 && Math.abs(was.top - is.top) < 1) continue;
+        cell.animate(wrapped(was, is, geo), { duration: MOVE_MS, easing: EASE });
         continue;
       }
       cell.animate([{ opacity: 0 }, { opacity: 1 }], {
@@ -340,15 +421,6 @@ export function Schedule({
         fill: 'both',
       });
     }
-  }, [expanded]);
-
-  useEffect(() => {
-    if (expanded) {
-      setBackOnRow(true);
-      return;
-    }
-    const gone = window.setTimeout(() => setBackOnRow(false), CONTROL_OUT_MS);
-    return () => window.clearTimeout(gone);
   }, [expanded]);
 
   const now = () => {
