@@ -206,8 +206,12 @@ export function PokerBoard({
   // The board paints its own surface, in its own palette, and expects to own
   // the page it is on — so it is given a block of the window to own.
   return (
-    <div className="board-frame">
-      <div data-mode="poker" className={HOST}>
+    // A definite height, all the way down. The board's own layout is a column
+    // of 100%-height boxes, and on a surface that no longer scrolls that chain
+    // resolved against `auto` — everything in normal flow came out zero-high
+    // and the only things left on screen were the ones painted `fixed`.
+    <div className="board-frame flex min-h-0 flex-1 flex-col">
+      <div data-mode="poker" className={`${HOST} min-h-0 flex-1`}>
         <PokerApp boot={boot(scope) as never} />
       </div>
       {/* The way out, where the app's own dock would be. The board owns the

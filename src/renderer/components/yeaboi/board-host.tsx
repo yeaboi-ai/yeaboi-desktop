@@ -84,17 +84,11 @@ export function BoardHost({
         </p>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {onStage && (
-          <Button size="sm" onClick={onStage}>
-            Open the board
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant={onStage ? 'secondary' : 'default'}
-          onClick={() => void openBoardWindow(board.board_id)}
-        >
-          {onStage ? 'In a window' : 'Open the board'}
+        {/* One way in. The board plays here now, so a second copy of it in a
+            window of its own is two rooms with the same people in them — the
+            window is only the way in where the app cannot stage a board. */}
+        <Button size="sm" onClick={onStage ? onStage : () => void openBoardWindow(board.board_id)}>
+          Open the board
         </Button>
         {board.link.failed && (
           <Button
