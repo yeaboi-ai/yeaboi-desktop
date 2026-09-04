@@ -158,20 +158,26 @@ function PokerBody() {
   const mine = ceremonies.filter((ceremony) => MODES.includes(ceremony.mode));
   const listed = all ? (runs ?? []) : (runs ?? []).slice(0, RECENT);
 
+  // The table is the window, not a panel on it. Rendered outside the surface —
+  // no page padding, no centred column, no title above it — because a board
+  // inside the box the rest of the page is drawn in is a screen within a
+  // screen, and this app is the one running the room.
+  if (playing && board) {
+    return (
+      <PokerBoard boardId={board.board_id} scope={board.title} onLeave={() => setStaged(false)} />
+    );
+  }
+
   return (
-    <div className="flex h-full flex-col gap-4">
-      <header>
-        <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
-        <p className="mt-1 font-body text-[13px] text-muted-foreground">
-          The team estimates from their own browsers; the points go back to the board.
-        </p>
-      </header>
+    <Surface>
+      <div className="flex h-full flex-col gap-4">
+        <header>
+          <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
+          <p className="mt-1 font-body text-[13px] text-muted-foreground">
+            The team estimates from their own browsers; the points go back to the board.
+          </p>
+        </header>
 
-      {playing && board && (
-        <PokerBoard boardId={board.board_id} scope={board.title} onLeave={() => setStaged(false)} />
-      )}
-
-      {!playing && (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
           {board ? (
             <Panel
@@ -222,9 +228,7 @@ function PokerBody() {
             />
           </Panel>
         </div>
-      )}
 
-      {!playing && (
         <Panel
           grow
           title="Past sessions"
@@ -255,17 +259,17 @@ function PokerBody() {
             </ul>
           )}
         </Panel>
-      )}
-    </div>
+      </div>
+    </Surface>
   );
 }
 
 export default function PokerPage() {
+  // The surface is the body's to draw, not this page's: with a table up there
+  // is no surface, only the board.
   return (
     <BackendGate>
-      <Surface>
-        <PokerBody />
-      </Surface>
+      <PokerBody />
     </BackendGate>
   );
 }

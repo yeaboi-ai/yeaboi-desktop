@@ -17,3 +17,8 @@ declare module '@board/design/tokens.css?inline' {
   const css: string;
   export default css;
 }
+
+declare module '@board/runtime/storage' {
+  /** The board's participant id, minted once and kept in local storage. */
+  export function participantId(key?: string): string;
+}

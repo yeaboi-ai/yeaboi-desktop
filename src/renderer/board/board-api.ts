@@ -37,6 +37,27 @@ let playing = '';
 
 export function playBoard(boardId: string): void {
   playing = boardId;
+  primed = null;
+}
+
+/**
+ * The first snapshot, fetched before the board is mounted.
+ *
+ * The board renders its shell from an empty store and fills it when the first
+ * long-poll lands, which over a round trip is two arrivals: the room appears,
+ * then everything in it animates in a second time. Read here first and handed
+ * back to the board's own opening poll, the shell and its contents land
+ * together.
+ */
+let primed: { path: string; data: unknown; etag: string } | null = null;
+
+export async function primeBoard(boardId: string, pid: string): Promise<boolean> {
+  const shell = bridge();
+  if (!shell) return false;
+  const answer = await shell.boardGet(boardId, '/api/state', { pid }, '');
+  if (answer.status < 200 || answer.status >= 300) return false;
+  primed = { path: '/api/state', data: answer.body, etag: answer.etag ?? '' };
+  return true;
 }
 
 /** Whether a board can be played here at all — the shell has to be present to
@@ -109,6 +130,14 @@ export async function pollState<T>(
     path = '/api/state',
   }: { etag?: string; waitSeconds?: number; signal?: AbortSignal; path?: string } = {},
 ): Promise<PollResult<T>> {
+  // The opening poll — no ETag yet — is answered from what was read before the
+  // board mounted, if that is what it is asking for. Once spent it is gone: a
+  // reconnect asks the server.
+  if (primed && primed.path === path && !etag) {
+    const first = primed;
+    primed = null;
+    return { changed: true, data: first.data as T, etag: first.etag };
+  }
   const shell = bridge();
   if (!shell || !playing) return { changed: false, etag, error: true };
   const extra: Record<string, string> = { pid: session.pid };

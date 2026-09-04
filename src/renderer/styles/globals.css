@@ -1383,6 +1383,66 @@ html[data-audience='agents'] {
   pointer-events: none;
 }
 
+/* And the page gives up its margins with them. The deck holds a page clear of
+   the rail and the dock; with both off the edge there is nothing to be clear
+   of, and a board drawn inside that inset is a screen within a screen. The
+   titlebar's inset stays — the traffic lights are still up there. */
+:root[data-board-staged] .deck-page {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  transition: padding 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The rotating placeholder, a letter at a time.
+   Rest state is the animation's own end frame, so `both` on the fill: before
+   its delay a letter is where it starts, after the run it stays where it
+   landed. */
+@keyframes niko-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes niko-letter-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-9px);
+  }
+}
+
+.niko-letter {
+  display: inline-block;
+  white-space: pre;
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.niko-letter-in {
+  animation-name: niko-letter-in;
+}
+
+.niko-letter-out {
+  animation-name: niko-letter-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .niko-letter {
+    animation-duration: 1ms;
+    animation-delay: 0ms !important;
+  }
+}
+
 /* Full screen: the OS squares the window's corners and there is nothing behind
    it to fall through to, so the page paints both — its own rounded screen, and
    the surround the curve is cut out of. */

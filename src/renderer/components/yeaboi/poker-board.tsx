@@ -11,7 +11,7 @@
 // While it is up the app steps back: the rail, the dock and Niko retreat off
 // their edges. The duck stays.
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LogOut } from 'lucide-react';
 
 import { App as PokerApp } from '@board/poker/App';
@@ -21,7 +21,8 @@ import { App as PokerApp } from '@board/poker/App';
 // onto the board's own container, they reach the board and nothing else.
 import tokens from '@board/design/tokens.css?inline';
 
-import { playBoard } from '@/board/board-api';
+import { playBoard, primeBoard } from '@/board/board-api';
+import { participantId } from '@board/runtime/storage';
 
 /** The board's container, and what its tokens are re-rooted onto. */
 const HOST = 'board-host';
@@ -130,13 +131,19 @@ const INHERIT = `
   border-radius: calc(var(--app-radius) * 2);
 }
 
-/* The masthead's wordmark is set in the board's own pixel face. This app has a
-   display face of its own and uses it for exactly this — the name of the thing
-   you are looking at. */
-.board-frame .${HOST} [class*="wordmark"] {
+/* The masthead. The board's wordmark is pixel-art vector, not text — no font
+   rule reaches it — and it sits next to a title that already says the same
+   word. Inside this app the title is the mark, set in the app's display face;
+   the board keeps its own logo for the browsers it is served to. */
+.board-frame .${HOST} svg[class*='wordmark'] {
+  display: none;
+}
+
+.board-frame .${HOST} h1[class*='title'] {
   font-family: var(--app-display), Georgia, serif;
+  font-size: 17px;
+  font-weight: 400;
   letter-spacing: 0.01em;
-  text-transform: none;
 }
 `;
 
@@ -168,6 +175,10 @@ function boot(scope: string) {
   };
 }
 
+/** The board's own key for who you are, so the snapshot read here is read as
+ *  the same participant the board is about to be. */
+const PID_KEY = 'poker_pid';
+
 export function PokerBoard({
   boardId,
   scope,
@@ -177,8 +188,26 @@ export function PokerBoard({
   scope: string;
   onLeave: () => void;
 }) {
+  // The table arrives once. The board is held back until its first snapshot is
+  // in hand — otherwise the shell paints from an empty store and everything in
+  // the room animates in a second time when the poll lands.
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
+    let live = true;
     playBoard(boardId);
+    // A board that will not answer is still a board: it gets to mount and show
+    // its own reconnecting state rather than leaving the window empty.
+    primeBoard(boardId, participantId(PID_KEY)).then(
+      () => live && setReady(true),
+      () => live && setReady(true),
+    );
+    return () => {
+      live = false;
+    };
+  }, [boardId]);
+
+  useEffect(() => {
     document.documentElement.dataset[STAGED] = boardId;
     const style = document.createElement('style');
     style.dataset['boardTokens'] = '';
@@ -211,8 +240,13 @@ export function PokerBoard({
     // resolved against `auto` — everything in normal flow came out zero-high
     // and the only things left on screen were the ones painted `fixed`.
     <div className="board-frame flex min-h-0 flex-1 flex-col">
-      <div data-mode="poker" className={`${HOST} min-h-0 flex-1`}>
-        <PokerApp boot={boot(scope) as never} />
+      <div
+        data-mode="poker"
+        className={`${HOST} min-h-0 flex-1 transition-opacity duration-300 ${
+          ready ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {ready && <PokerApp boot={boot(scope) as never} />}
       </div>
       {/* The way out, where the app's own dock would be. The board owns the
           window while it is up, so this is the one piece of the app left on
