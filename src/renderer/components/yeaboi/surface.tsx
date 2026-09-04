@@ -27,13 +27,22 @@ export function Surface({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+export function Panel({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-      <h2 className="font-body text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-      <div className="mt-3">{children}</div>
+    <section className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
+      <header className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="font-body text-[13px] font-medium text-foreground">{title}</h2>
+        {aside}
+      </header>
+      {children}
     </section>
   );
 }

@@ -65,7 +65,7 @@ export function WorkspaceHome({ audience }: { audience: 'solo' | 'team' }) {
       {/* Where the work stands. The modes are one scroll away in the deck, so
           this surface answers what happened and what is next rather than
           listing what can be launched. */}
-      <HomeDashboard audience={audience} />
+      <HomeDashboard />
     </>
   );
 }

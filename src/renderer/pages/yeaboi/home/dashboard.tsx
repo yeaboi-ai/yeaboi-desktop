@@ -77,7 +77,7 @@ function Empty({ children }: { children: React.ReactNode }) {
   return <p className="font-body text-[11px] text-muted-foreground/70">{children}</p>;
 }
 
-export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
+export function HomeDashboard() {
   const router = useRouter();
   const { authFetch, ready, teamVersion } = useAuthFetch();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -111,14 +111,15 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
 
   return (
     <Surface>
-      <h1 className="font-display text-2xl text-foreground">
-        {audience === 'solo' ? 'Your desk' : "Your team's desk"}
-      </h1>
-      <p className="mt-1 font-body text-[12px] text-muted-foreground">
-        Scroll to move through the modes.
-      </p>
+      <h1 className="font-display text-2xl text-foreground">Dashboard</h1>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {/* What is coming, before what has happened: the calendar leads the
+          surface rather than closing it. */}
+      <div className="mt-6">
+        <Schedule ceremonies={schedule.ceremonies} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Tile title="Projects" icon={LayoutGrid}>
           {projects.length === 0 ? (
             <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>
@@ -200,10 +201,6 @@ export function HomeDashboard({ audience }: { audience: 'solo' | 'team' }) {
         <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
         <AwaitingTile title="Last retro" wants="/api/retro/recent" />
         <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
-      </div>
-
-      <div className="mt-3">
-        <Schedule ceremonies={schedule.ceremonies} />
       </div>
     </Surface>
   );

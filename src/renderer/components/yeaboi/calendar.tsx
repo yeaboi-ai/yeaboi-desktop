@@ -94,6 +94,9 @@ function DayCell({
   showWeekday,
   height,
   limit,
+  /** The calendar is changing shape and this cell is on its way out. */
+  leaving = false,
+  delay = 0,
 }: {
   day: Date;
   slots: Occurrence[];
@@ -102,6 +105,8 @@ function DayCell({
   showWeekday?: boolean;
   height: number;
   limit: number;
+  leaving?: boolean;
+  delay?: number;
 }) {
   const date = isoDate(day);
   return (
@@ -111,8 +116,8 @@ function DayCell({
       // the shape, and it only needs to be a shade off the page.
       className={`rounded-xl p-1.5 transition-colors ${
         date === today ? 'bg-secondary ring-1 ring-border/60' : 'bg-secondary/40'
-      } ${dim ? 'opacity-40' : ''}`}
-      style={{ minHeight: height }}
+      } ${dim ? 'opacity-40' : ''} ${leaving ? 'cell-out' : ''}`}
+      style={{ minHeight: height, animationDelay: `${delay}ms` }}
     >
       <p className="flex items-baseline gap-1.5">
         {showWeekday && (
@@ -170,8 +175,17 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
 /** The schedule as far ahead as it is worth looking: the next seven days, and
  *  the month behind a button. A month of mostly empty cells is a lot of window
  *  to spend on a week's worth of answer. */
+/** How long the days take to leave before the other shape arrives: the last
+ *  cell's delay plus its own run. */
+const LEAVE_MS = 160;
+const LEAVE_STEP_MS = 12;
+const LEAVE_CAP_MS = 140;
+
 export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
   const [expanded, setExpanded] = useState(false);
+  /** True while the days on screen are leaving and the other shape is waiting
+   *  behind them. */
+  const [leaving, setLeaving] = useState(false);
   const [month, setMonth] = useState(() => new Date());
   const [direction, setDirection] = useState(0);
   const today = isoDate(new Date());
@@ -247,12 +261,10 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
 
   return (
     <section>
-      <header className="flex items-center justify-between px-1">
-        <h2 className="font-body text-[13px] font-medium text-foreground">
-          {expanded
-            ? month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-            : 'Week ahead'}
-        </h2>
+      {/* The controls lead the row. A week needs no title — the days say which
+          week it is — and a month puts its name after the controls that
+          changed it. */}
+      <header className="flex items-center gap-2 px-1">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -276,15 +288,27 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
           <button
             type="button"
             onClick={() => {
-              setDirection(0);
-              setMonth(new Date());
-              setExpanded(!expanded);
+              if (leaving) return;
+              // The days go before the other shape comes: a month grid
+              // appearing over a week strip is two calendars in one frame.
+              setLeaving(true);
+              window.setTimeout(() => {
+                setDirection(expanded ? -1 : 1);
+                setMonth(new Date());
+                setExpanded(!expanded);
+                setLeaving(false);
+              }, LEAVE_MS + LEAVE_CAP_MS);
             }}
             className={`${STEP} ml-1`}
           >
             {expanded ? 'Week' : 'Month'}
           </button>
         </div>
+        {expanded && (
+          <h2 className="font-body text-[13px] font-medium text-foreground">
+            {month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+          </h2>
+        )}
       </header>
 
       {expanded ? (
@@ -301,7 +325,7 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
               {label}
             </div>
           ))}
-          {monthDays.map((day) => (
+          {monthDays.map((day, index) => (
             <DayCell
               key={isoDate(day)}
               day={day}
@@ -310,17 +334,21 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
               dim={day.getMonth() !== month.getMonth()}
               height={68}
               limit={3}
+              leaving={leaving}
+              delay={Math.min(index * LEAVE_STEP_MS, LEAVE_CAP_MS)}
             />
           ))}
         </div>
       ) : (
         <div
           ref={strip}
+          key={expanded ? 'month' : 'week'}
+          data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
           onPointerDown={stopGlide}
           onWheel={stopGlide}
           className="mt-4 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {days.map((day) => (
+          {days.map((day, index) => (
             <div
               key={isoDate(day)}
               // A seventh of the strip, less its share of the six gaps between
@@ -334,6 +362,8 @@ export function Schedule({ ceremonies }: { ceremonies: Scheduled[] }) {
                 showWeekday
                 height={84}
                 limit={4}
+                leaving={leaving}
+                delay={Math.min(index * LEAVE_STEP_MS, LEAVE_CAP_MS)}
               />
             </div>
           ))}
