@@ -12,6 +12,7 @@
 // their edges. The duck stays.
 
 import { useEffect } from 'react';
+import { LogOut } from 'lucide-react';
 
 import { App as PokerApp } from '@board/poker/App';
 // As text, not as a stylesheet: the board's tokens are declared on `:root`, and
@@ -24,6 +25,44 @@ import { playBoard } from '@/board/board-api';
 
 /** The board's container, and what its tokens are re-rooted onto. */
 const HOST = 'board-host';
+
+/**
+ * The board wearing this app's colours.
+ *
+ * The board's palette is its own — five themes, switched on `[data-theme]`,
+ * with `--bg`/`--panel`/`--text` at the bottom of everything it draws. Left
+ * alone it arrives in midnight while the window around it is in whatever the
+ * app is set to, which reads as a second application rather than a screen of
+ * this one. The app's values are captured on the frame and handed to the board
+ * under its own names — one hop, because a token cannot be defined in terms of
+ * itself.
+ */
+const INHERIT = `
+.board-frame {
+  --app-bg: var(--background);
+  --app-panel: var(--card);
+  --app-card: var(--card);
+  --app-line: var(--border);
+  --app-text: var(--foreground);
+  --app-muted: var(--muted-foreground);
+  --app-accent: var(--primary);
+  --app-secondary: var(--secondary);
+}
+.${HOST} {
+  --bg: var(--app-bg);
+  --panel: var(--app-panel);
+  --card: var(--app-card);
+  --line: var(--app-line);
+  --text: var(--app-text);
+  --muted: var(--app-muted);
+  --dim: color-mix(in srgb, var(--app-muted) 70%, transparent);
+  --accent: var(--app-accent);
+  --accent2: var(--app-accent);
+  --ink: var(--app-bg);
+  color: var(--text);
+  background: var(--bg);
+}
+`;
 
 /** The flag the rail, the dock and Niko read to get out of the way. */
 const STAGED = 'boardStaged';
@@ -53,13 +92,21 @@ function boot(scope: string) {
   };
 }
 
-export function PokerBoard({ boardId, scope }: { boardId: string; scope: string }) {
+export function PokerBoard({
+  boardId,
+  scope,
+  onLeave,
+}: {
+  boardId: string;
+  scope: string;
+  onLeave: () => void;
+}) {
   useEffect(() => {
     playBoard(boardId);
     document.documentElement.dataset[STAGED] = boardId;
     const style = document.createElement('style');
     style.dataset['boardTokens'] = '';
-    style.textContent = tokens.replaceAll(':root', `.${HOST}`);
+    style.textContent = `${tokens.replaceAll(':root', `.${HOST}`)}\n${INHERIT}`;
     document.head.append(style);
     return () => {
       playBoard('');
@@ -71,8 +118,21 @@ export function PokerBoard({ boardId, scope }: { boardId: string; scope: string 
   // The board paints its own surface, in its own palette, and expects to own
   // the page it is on — so it is given a block of the window to own.
   return (
-    <div data-mode="poker" className={HOST}>
-      <PokerApp boot={boot(scope) as never} />
+    <div className="board-frame">
+      <div data-mode="poker" className={HOST}>
+        <PokerApp boot={boot(scope) as never} />
+      </div>
+      {/* The way out, where the app's own dock would be. The board owns the
+          window while it is up, so this is the one piece of the app left on
+          screen besides the duck. */}
+      <button
+        type="button"
+        onClick={onLeave}
+        className="fixed bottom-4 left-3 z-[60] flex items-center gap-2 rounded-full bg-popover px-4 py-2 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 transition-colors hover:text-foreground"
+      >
+        <LogOut className="h-[13px] w-[13px]" />
+        Leave the table
+      </button>
     </div>
   );
 }

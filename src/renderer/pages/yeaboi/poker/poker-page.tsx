@@ -155,18 +155,7 @@ function PokerBody() {
       </header>
 
       {playing && board && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-end">
-            <button
-              type="button"
-              onClick={() => setStaged(false)}
-              className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Leave the table
-            </button>
-          </div>
-          <PokerBoard boardId={board.board_id} scope={board.title} />
-        </div>
+        <PokerBoard boardId={board.board_id} scope={board.title} onLeave={() => setStaged(false)} />
       )}
 
       {!playing && (
