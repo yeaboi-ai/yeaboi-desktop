@@ -29,6 +29,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = registry.settings_tabs;
  *  themes or desktop-duck section to match. */
 export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/appearance', title: 'Appearance' },
+  { route: '/settings/news', title: 'Front page' },
   { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
 ];

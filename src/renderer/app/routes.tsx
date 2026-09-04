@@ -152,6 +152,7 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/ceremonies/slack': <CeremoniesSlackPage />,
   '/provenance': <ProvenancePage />,
   '/settings/credentials': <YeaboiSettingsPage />,
+  '/settings/news': <YeaboiSettingsPage />,
   '/settings/connections': <YeaboiSettingsPage />,
   '/settings/sharing': <YeaboiSettingsPage />,
   '/settings/system': <YeaboiSettingsPage />,

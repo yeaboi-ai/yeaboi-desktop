@@ -10,6 +10,7 @@ import {
   Bird,
   Blocks,
   KeyRound,
+  Newspaper,
   Palette,
   Share2,
   SlidersHorizontal,
@@ -24,6 +25,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/settings/sharing': Share2,
   '/settings/system': SlidersHorizontal,
   '/settings/appearance': Palette,
+  '/settings/news': Newspaper,
   '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
 };
