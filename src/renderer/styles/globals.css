@@ -96,6 +96,10 @@
      squares it off when it fills the screen; the app keeps its corners either
      way, so it paints them itself. */
   --window-radius: 12px;
+  /* What the dock, Niko and the duck occupy along the bottom edge: their own
+     height plus the margin they float on, plus a line of air. Every surface
+     ends above it. */
+  --dock-clear: 76px;
 
   --background: #fafaf9;
   --foreground: #171717;

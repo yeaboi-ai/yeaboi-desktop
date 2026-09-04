@@ -154,8 +154,13 @@ export function Deck({ children }: { children: React.ReactNode }) {
           themselves in again on every turn. */}
       {/* The rail overlays the left edge, so the page is inset by the rail
           plus the same gutter it gets on the right — otherwise the content
-          runs to within a fraction of the right edge of the window. */}
-      <div key={pathname} className="deck-page pl-[72px] pr-6 pt-[var(--titlebar-h)]">
+          runs to within a fraction of the right edge of the window. The floor
+          is the dock's: it floats over the page too, and a list that ends
+          under it looks like a list that was cut off. */}
+      <div
+        key={pathname}
+        className="deck-page pl-[72px] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)]"
+      >
         {children}
       </div>
     </div>
