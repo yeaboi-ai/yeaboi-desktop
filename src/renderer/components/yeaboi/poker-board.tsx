@@ -201,6 +201,15 @@ const INHERIT = `
   min-height: 0;
 }
 
+/* And the shell has nothing to scroll. Locking the vote slides the hand off
+   the bottom edge on purpose — the board pulls it down by a negative margin,
+   which leaves the cards hanging past the window and the shell offering a bar
+   to chase them with. The rail and the round scroll on their own; this is the
+   window, and the window does not move. */
+.board-frame .${HOST} [class*='_scroll_'] {
+  overflow: hidden;
+}
+
 .board-frame .${HOST} [class*='_layout_'] {
   min-height: 0;
   padding-top: var(--titlebar-h);
@@ -374,6 +383,108 @@ const INHERIT = `
   border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-line));
   box-shadow: none;
   outline: none;
+}
+
+/* A dialog, the way this app draws one.
+ *
+ * The board's is a wide dark slab on a black scrim: a bold heading, a grid of
+ * emoji at 36px, and a solid gold bar across the foot for a button. The app's
+ * dialogs are small, sit on the page's own ground behind a hairline ring, and
+ * put their actions at the end of a row rather than across it. */
+.board-frame .${HOST} [class*='_modal_'] {
+  border: 0;
+  border-radius: calc(var(--app-radius) + 4px);
+  background: var(--app-bg);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--app-text) 10%, transparent),
+    var(--shadow-2);
+}
+
+.board-frame .${HOST} [class*='_modal_']::backdrop {
+  background: rgb(0 0 0 / 20%);
+  backdrop-filter: blur(2px);
+}
+
+.board-frame .${HOST} [class*='modalBody'] {
+  padding: 16px;
+  gap: 12px;
+}
+
+.board-frame .${HOST} [class*='modalTitle'] {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* The faces, as a tray of tiles rather than a wall of emoji: the app's control
+   height, the app's corner, and the one that is chosen wearing the accent as a
+   ring instead of a fill. */
+.board-frame .${HOST} [class*='avatarGrid'] {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.board-frame .${HOST} [class*='avatarChoice'] {
+  width: auto;
+  height: 34px;
+  min-height: 34px;
+  border-radius: var(--app-radius);
+  background: transparent;
+  font-size: 19px;
+  line-height: 1;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.board-frame .${HOST} [class*='avatarChoice']:hover {
+  background: var(--app-secondary);
+  transform: none;
+}
+
+.board-frame .${HOST} [class*='avatarChoiceOn'] {
+  background: var(--app-secondary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 55%, transparent);
+}
+
+/* The action goes at the end of its row, at the size of every other button
+   here — not a bar the width of the dialog. */
+.board-frame .${HOST} [class*='modalActions'] {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.board-frame .${HOST} [class*='modalActions'] > * {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 84px;
+  padding: 0 12px;
+}
+
+/* Who you are opens off the chip that says it, the way the room does — the
+   name and the face belong to that corner, not to the middle of the table. */
+.board-frame .${HOST} [class*='_modal_']:has([class*='avatarGrid']) {
+  position: fixed;
+  inset: auto 16px 58px auto;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+}
+
+/* The die beside the name field is an icon button, not a filled one. */
+.board-frame .${HOST} [class*='inputAction'] {
+  width: 32px;
+  padding: 0;
+  border: 1px solid var(--app-input);
+  background: transparent;
+  color: var(--app-muted);
+}
+
+.board-frame .${HOST} [class*='inputAction']:hover {
+  background: var(--app-secondary);
+  color: var(--app-text);
 }
 
 /* The rows in a menu, from the rail: a soft box under the cursor, and the
