@@ -449,7 +449,11 @@ export function Schedule({
   };
 
   return (
-    <section>
+    // Above whatever it is displacing. What leaves is pinned where it stood,
+    // which is exactly where the month is about to draw, and a positioned box
+    // paints over the flow — so the month spent its arrival behind the thing
+    // it was replacing.
+    <section className="relative z-10">
       {/* The controls lead the row. A week needs no title — the days say which
           week it is — and a month puts its name after the controls that
           changed it. */}

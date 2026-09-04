@@ -1061,10 +1061,10 @@ html[data-audience='agents'] {
 }
 
 .peel-out {
-  /* Front-loaded, not eased in. The calendar's move costs a frame or two of
-     setting up, and a fade that also starts slowly does nothing at all for the
-     first third of the gesture. */
-  animation: peel-out 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* Front-loaded and short. The calendar draws over this while it goes, and
+     the days it draws are a tint rather than a fill — so anything still under
+     them shows through, and the only answer is to be brief about it. */
+  animation: peel-out 170ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .peel-in {
