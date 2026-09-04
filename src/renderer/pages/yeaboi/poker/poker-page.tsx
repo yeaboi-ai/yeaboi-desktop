@@ -63,7 +63,11 @@ function Panel({
         <h2 className="font-body text-[13px] font-medium text-foreground">{title}</h2>
         {aside}
       </header>
-      {grow ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : children}
+      {grow ? (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+      ) : (
+        children
+      )}
     </section>
   );
 }
