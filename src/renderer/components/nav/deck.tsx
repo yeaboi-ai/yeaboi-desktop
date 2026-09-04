@@ -149,7 +149,11 @@ export function Deck({ children }: { children: React.ReactNode }) {
   }, [deal]);
 
   return (
-    <div data-deck className="h-screen overflow-y-auto">
+    // The window itself never scrolls. A surface is exactly the port's height,
+    // and anything with more to show than fits scrolls inside its own box —
+    // a page that slides under the dock reads as one that was cut off, and a
+    // scroll that moves the title is a page pretending to be a document.
+    <div data-deck className="h-screen overflow-hidden">
       {/* Keyed on the route so the surface remounts and its contents deal
           themselves in again on every turn. */}
       {/* The rail overlays the left edge, so the page is inset by the rail
@@ -159,7 +163,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
           under it looks like a list that was cut off. */}
       <div
         key={pathname}
-        className="deck-page pl-[72px] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)]"
+        className="deck-page flex h-screen flex-col pl-[72px] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)]"
       >
         {children}
       </div>

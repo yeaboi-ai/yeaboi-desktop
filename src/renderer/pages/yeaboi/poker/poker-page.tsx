@@ -43,18 +43,27 @@ function Panel({
   title,
   aside,
   children,
+  /** Takes what height is left, and lets its contents scroll inside it. The
+   *  surface never grows past the window, so a long list has to end
+   *  somewhere — and it should be the list that moves, not the page. */
+  grow = false,
 }: {
   title: string;
   aside?: React.ReactNode;
   children: React.ReactNode;
+  grow?: boolean;
 }) {
   return (
-    <section className="rounded-2xl bg-card p-5 ring-1 ring-border/60">
+    <section
+      className={`rounded-2xl bg-card p-5 ring-1 ring-border/60 ${
+        grow ? 'flex min-h-0 flex-1 flex-col' : ''
+      }`}
+    >
       <header className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="font-body text-[13px] font-medium text-foreground">{title}</h2>
         {aside}
       </header>
-      {children}
+      {grow ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : children}
     </section>
   );
 }
@@ -146,7 +155,7 @@ function PokerBody() {
   const listed = all ? (runs ?? []) : (runs ?? []).slice(0, RECENT);
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-col gap-4">
       <header>
         <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
         <p className="mt-1 font-body text-[13px] text-muted-foreground">
@@ -213,6 +222,7 @@ function PokerBody() {
 
       {!playing && (
         <Panel
+          grow
           title="Past sessions"
           aside={
             runs && runs.length > RECENT ? (

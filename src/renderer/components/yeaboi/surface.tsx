@@ -6,14 +6,23 @@
 // It carries no content of its own. What fills the width has to come from the
 // page — a panel of the same four hints on every surface is the same page
 // wearing seven titles.
+//
+// The surface is exactly as tall as the port and never grows past it. A page
+// with more than fits scrolls *inside* here, which is what keeps the window
+// still: the title stays where it is and nothing slides under the dock.
 
 export function Surface({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-[calc(100vh-var(--titlebar-h))] px-8 py-8">
+    <div className="flex min-h-0 flex-1 flex-col px-8 pt-8">
       {/* Capped on a wide screen. Past about this width a row of tiles stops
           being a row and becomes a stripe, and the eye has to travel the whole
           window to read three words. Centred in the space the rail leaves. */}
-      <div className="mx-auto w-full max-w-[1360px]">{children}</div>
+      {/* The padding is the ring's: a focus or selection ring paints outside
+          its element, and a scroll box clips at its edge — without this the
+          highlight on the top row comes out with a flat side. */}
+      <div className="mx-auto min-h-0 w-full max-w-[1360px] flex-1 overflow-y-auto px-1 pb-8 pt-1">
+        <div className="h-full">{children}</div>
+      </div>
     </div>
   );
 }
