@@ -131,6 +131,70 @@ const INHERIT = `
   border-radius: calc(var(--app-radius) * 2);
 }
 
+/* The board's dock, in the app's floating chrome.
+ *
+ * Everything this app floats over a page — the rail, the row of controls at
+ * the bottom — is the same object: a translucent card at twice the control
+ * radius, a hairline ring rather than a border, a soft drop shadow, and the
+ * page blurred behind it. The board's own dock is a flat panel with a solid
+ * fill and a 1px line, which next to the rest reads as a different surface.
+ * These are the same values, written in the board's names. */
+.board-frame .${HOST} [class*='dockApp'] {
+  border: 0;
+  border-radius: calc(var(--app-radius) * 2);
+  background: color-mix(in srgb, var(--app-card) 85%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--app-line) 60%, transparent),
+    0 20px 25px -5px rgb(0 0 0 / 28%),
+    0 8px 10px -6px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(12px);
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
+  padding: 6px;
+  gap: 4px;
+}
+
+/* The items on it: the rail's rows, at the rail's size and radius. Quiet
+   until the cursor is on them. */
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: calc(var(--app-radius) + 4px);
+  background: transparent;
+  color: var(--app-muted);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']):hover {
+  background: color-mix(in srgb, var(--app-secondary) 60%, transparent);
+  color: var(--app-text);
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The grip is a handle, not a control — it stays at the weight of a label. */
+.board-frame .${HOST} [class*='dockGrip'] {
+  color: color-mix(in srgb, var(--app-muted) 60%, transparent);
+}
+
+/* The one filled thing on the row. Same height as everything beside it, so
+   the row has one baseline the way the app's own does. */
+.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
+  height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--app-radius);
+  font-weight: 500;
+}
+
 /* The masthead. The board's wordmark is pixel-art vector, not text — no font
    rule reaches it — and it sits next to a title that already says the same
    word. Inside this app the title is the mark, set in the app's display face;
