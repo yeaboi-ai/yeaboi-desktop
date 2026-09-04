@@ -178,6 +178,8 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
 const MOVE_MS = 620;
 const ARRIVE_MS = 420;
 const AFTER_DELAY_MS = 200;
+/** The most the last day in from the right waits behind the first. */
+const ROUND_THE_CORNER_MS = 260;
 /** Long tail: most of the distance is covered early and the last of it is
  *  given away slowly, which is what makes the week look like it was pushed
  *  rather than moved. */
@@ -369,6 +371,16 @@ export function Schedule({
     onExpand?.(next);
   };
 
+  // The back control comes on with the month and stays through its own exit.
+  useEffect(() => {
+    if (expanded) {
+      setBackOnRow(true);
+      return;
+    }
+    const gone = window.setTimeout(() => setBackOnRow(false), CONTROL_OUT_MS);
+    return () => window.clearTimeout(gone);
+  }, [expanded]);
+
   // Escape closes the month, the way it closes anything that has taken the
   // surface. Only while it is open, and never over a dialog that has its own
   // claim on the key.
@@ -405,14 +417,32 @@ export function Schedule({
     for (const [index, cell] of cells.entries()) {
       const was = before.get(cell.dataset['day'] ?? '');
       const is = now.get(cell.dataset['day'] ?? '');
-      // A day is carried across only if it was somewhere to be seen. The strip
-      // runs five weeks off the side of the window, and a day fetched from out
-      // there spends the whole move off-screen and then appears — which is an
-      // arrival wearing a journey. Those simply arrive.
-      if (was && is && was.right > 0 && was.left < window.innerWidth) {
-        if (Math.abs(was.left - is.left) < 1 && Math.abs(was.top - is.top) < 1) continue;
-        cell.animate(wrapped(was, is, geo), { duration: MOVE_MS, easing: EASE });
-        continue;
+      if (was && is) {
+        // A day that was on screen is carried from where it was, along the
+        // rows. The strip runs five weeks off the side of the window, though,
+        // and a day fetched from out there would spend the whole move
+        // off-screen and then appear — so it comes round the corner instead,
+        // in at the end of the row it belongs to, a beat behind the row above.
+        if (was.right > 0 && was.left < window.innerWidth) {
+          if (Math.abs(was.left - is.left) < 1 && Math.abs(was.top - is.top) < 1) continue;
+          cell.animate(wrapped(was, is, geo), { duration: MOVE_MS, easing: EASE });
+          continue;
+        }
+        if (geo) {
+          cell.animate(
+            [
+              { transform: `translateX(${geo.right - is.left}px)`, opacity: 0 },
+              { transform: 'none', opacity: 1, offset: 1 },
+            ],
+            {
+              duration: MOVE_MS,
+              delay: Math.min(Math.max(index - last, 0) * 9, ROUND_THE_CORNER_MS),
+              easing: EASE,
+              fill: 'both',
+            },
+          );
+          continue;
+        }
       }
       cell.animate([{ opacity: 0 }, { opacity: 1 }], {
         duration: ARRIVE_MS,
