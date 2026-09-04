@@ -2,6 +2,30 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.1.0",
+      "date": "2026-09-04",
+      "headline": "A front page, a rail you arrange, and eight ducks",
+      "summary": "The home opens as a newspaper: one story at a time from yeaboi, AI and engineering, drawn in ink with a duck in the picture, from outlets you choose. The sidebar is a rail of squares you arrange, and the duck comes in eight personas.",
+      "highlights": [
+        {
+          "text": "The home is a front page: one story at a time, drawn in ink with a duck",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Choose the front page's outlets in Settings, add your own feed, and set how fast it turns",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The sidebar is a rail of squares: add any page, pick its icon or upload your own",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Eight persona ducks: one stands in every front-page picture, in colour on the ink",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.0.0",
       "date": "2026-08-30",
       "headline": "The desktop app grows up: setup, updates, notes",
