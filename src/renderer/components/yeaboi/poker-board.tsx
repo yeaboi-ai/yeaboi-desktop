@@ -53,6 +53,8 @@ const INHERIT = `
   --app-muted: var(--muted-foreground);
   --app-accent: var(--primary);
   --app-secondary: var(--secondary);
+  --app-popover: var(--popover);
+  --app-input: var(--input);
   --app-body: var(--font-body);
   --app-display: var(--font-display);
   --app-code: var(--font-code);
@@ -69,6 +71,12 @@ const INHERIT = `
   --accent: var(--app-accent);
   --accent2: var(--app-accent);
   --ink: var(--app-bg);
+  --panel-2: var(--app-secondary);
+  --hairline: color-mix(in srgb, var(--app-line) 70%, transparent);
+  --hairline-strong: var(--app-line);
+  /* The board tracks its small caps at 0.14em; the app tracks the same labels
+     at about half that, and the difference is the loudest thing on a panel. */
+  --track-label: 0.06em;
 
   /* The rest of the house style, not just its colours: the app's faces, its
      radii and its shadows. The board's own are a different design — a pixel
@@ -131,6 +139,176 @@ const INHERIT = `
   border-radius: calc(var(--app-radius) * 2);
 }
 
+/* The window's own top edge belongs to the window.
+ *
+ * The board's shell is fixed to the whole viewport — right in a browser tab,
+ * and here it puts the masthead under the traffic lights. It starts below
+ * the titlebar instead, and gives up the rounded
+ * bottom and the shadow it paints its own screen edge with: this app already
+ * draws the window it is in. */
+.board-frame .${HOST} [class*='shellApp'] {
+  top: var(--titlebar-h);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The top bar, as the app's chrome rather than a bar.
+ *
+ * It was a full-width panel with a hairline around it, holding a title at one
+ * end and two chips at the other and a thousand pixels of nothing between —
+ * furniture drawn as if it were content. This app never draws that: what
+ * floats over a page here is a capsule around the thing itself and nothing
+ * else. So the band goes and its contents become capsules on the board's own
+ * ground, the way the dock at the bottom of every other screen is. */
+.board-frame .${HOST} [class*='chromeApp'] {
+  /* One row of capsules, no taller than they are — the board pads this strip
+     out to a bar's height of its own accord. */
+  height: 26px;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 16px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.board-frame .${HOST} [class*='mastheadApp'] {
+  flex: none;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: calc(var(--app-radius) * 2);
+  background: color-mix(in srgb, var(--app-card) 85%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--app-line) 60%, transparent),
+    0 8px 20px -6px rgb(0 0 0 / 26%);
+  backdrop-filter: blur(12px);
+}
+
+.board-frame .${HOST} [class*='appbar'] {
+  height: 26px;
+  min-height: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 0 6px;
+  border: 0;
+  background: transparent;
+}
+
+/* Who you are and who else is here: two more of the same capsule. */
+.board-frame .${HOST} [class*='meChip'],
+.board-frame .${HOST} [class*='presenceChip'] {
+  height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: calc(var(--app-radius) + 4px);
+  background: color-mix(in srgb, var(--app-card) 85%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-line) 60%, transparent);
+  backdrop-filter: blur(12px);
+  color: var(--app-muted);
+}
+
+.board-frame .${HOST} [class*='meChip']:hover,
+.board-frame .${HOST} [class*='presenceChip']:hover {
+  color: var(--app-text);
+}
+
+/* Everything that opens out of the chrome.
+ *
+ * The board's panels are opaque with a hairline border and a small radius; the
+ * app's are a translucent card at the larger radius, ringed rather than
+ * bordered, over a blurred page. Same grammar for the popovers, the dropdown
+ * menus and the modals, because in the app they are one object. */
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']),
+.board-frame .${HOST} [class*='ddMenu'],
+.board-frame .${HOST} [class*='modalCard'],
+.board-frame .${HOST} [class*='sheet'] {
+  padding: 12px;
+  border: 0;
+  border-radius: calc(var(--app-radius) + 4px);
+  background: color-mix(in srgb, var(--app-popover) 92%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--app-line) 70%, transparent),
+    0 24px 48px -12px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(14px);
+}
+
+/* A field's box, at the app's input size. The board underlines its dropdown
+   trigger instead of boxing it, which on a dark panel reads as a text field
+   halfway through being drawn. */
+.board-frame .${HOST} [class*='ddTrigger'],
+.board-frame .${HOST} [class*='textInput'],
+.board-frame .${HOST} [class*='numberInput'],
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) input:not([type='range']),
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) select {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--app-input);
+  border-radius: var(--app-radius);
+  background: color-mix(in srgb, var(--app-input) 30%, transparent);
+  box-shadow: none;
+  color: var(--app-text);
+  font-size: 12.5px;
+}
+
+.board-frame .${HOST} [class*='ddTrigger']:hover,
+.board-frame .${HOST} [class*='ddTrigger'][aria-expanded='true'],
+.board-frame .${HOST} [class*='textInput']:focus,
+.board-frame .${HOST} [class*='numberInput']:focus {
+  border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-line));
+  box-shadow: none;
+  outline: none;
+}
+
+/* The rows in a menu, from the rail: a soft box under the cursor, and the
+   accent kept for the one that is chosen. */
+.board-frame .${HOST} [class*='ddOpt'] {
+  border-radius: var(--app-radius);
+  padding: 6px 9px;
+  font-size: 12.5px;
+  color: var(--app-muted);
+}
+
+.board-frame .${HOST} [class*='ddOpt']:hover,
+.board-frame .${HOST} [class*='ddOptActive'] {
+  background: var(--app-secondary);
+  color: var(--app-text);
+}
+
+.board-frame .${HOST} [class*='ddOpt'][aria-selected='true'] {
+  color: var(--app-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 70%, transparent);
+}
+
+/* The slider, at the app's weight: a hairline track with the accent filling
+   it, and a small pale thumb rather than a large accent one. */
+.board-frame .${HOST} [class*='range']::-webkit-slider-runnable-track {
+  height: 4px;
+}
+
+.board-frame .${HOST} [class*='range']::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 70%, transparent);
+  background: #fff;
+}
+
+/* A panel's own button is the app's secondary: filled, unbordered, quiet. */
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']),
+.board-frame .${HOST} [class*='panelAction'] {
+  height: 32px;
+  border: 0;
+  border-radius: var(--app-radius);
+  background: var(--app-secondary);
+  color: var(--app-text);
+}
+
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
+.board-frame .${HOST} [class*='panelAction']:hover {
+  background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
+}
+
 /* The board's dock, in the app's floating chrome.
  *
  * Everything this app floats over a page — the rail, the row of controls at
@@ -140,6 +318,13 @@ const INHERIT = `
  * fill and a 1px line, which next to the rest reads as a different surface.
  * These are the same values, written in the board's names. */
 .board-frame .${HOST} [class*='dockApp'] {
+  /* Both floating things on this row sit 16px off their own edge, so the row
+     reads as one. The board parks its dock on a 28px gutter measured in its
+     own JS, and the translate property composes with the transform that
+     placement rides on — so the rest position moves without taking the drag
+     with it. */
+  bottom: 16px;
+  translate: 12px 0;
   border: 0;
   border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
@@ -151,16 +336,19 @@ const INHERIT = `
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
-  padding: 6px;
-  gap: 4px;
+  padding: 4px;
+  gap: 2px;
 }
 
 /* The items on it: the rail's rows, at the rail's size and radius. Quiet
    until the cursor is on them. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
-  min-width: 32px;
-  height: 32px;
-  padding: 0 9px;
+  min-width: 26px;
+  height: 26px;
+  /* The board floors every control at its tap target, which is what kept the
+     row 32 tall however short the buttons were told to be. */
+  min-height: 26px;
+  padding: 0 7px;
   border: 0;
   border-radius: calc(var(--app-radius) + 4px);
   background: transparent;
@@ -180,16 +368,19 @@ const INHERIT = `
   height: 14px;
 }
 
-/* The grip is a handle, not a control — it stays at the weight of a label. */
+/* The grip is a handle, not a control — it stays at the weight of a label,
+   and at the row's height so it does not set it. */
 .board-frame .${HOST} [class*='dockGrip'] {
+  height: 26px;
   color: color-mix(in srgb, var(--app-muted) 60%, transparent);
 }
 
 /* The one filled thing on the row. Same height as everything beside it, so
    the row has one baseline the way the app's own does. */
 .board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
-  height: 32px;
-  padding: 0 11px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 9px;
   border: 0;
   border-radius: var(--app-radius);
   font-weight: 500;
@@ -205,7 +396,7 @@ const INHERIT = `
 
 .board-frame .${HOST} h1[class*='title'] {
   font-family: var(--app-display), Georgia, serif;
-  font-size: 17px;
+  font-size: 14.5px;
   font-weight: 400;
   letter-spacing: 0.01em;
 }
@@ -318,7 +509,7 @@ export function PokerBoard({
       <button
         type="button"
         onClick={onLeave}
-        className="fixed bottom-4 left-3 z-[60] flex items-center gap-2 rounded-full bg-popover px-4 py-2 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 transition-colors hover:text-foreground"
+        className="fixed bottom-4 left-4 z-[60] flex h-[34px] items-center gap-2 rounded-2xl bg-card/85 px-4 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-colors hover:text-foreground"
       >
         <LogOut className="h-[13px] w-[13px]" />
         Leave the table
