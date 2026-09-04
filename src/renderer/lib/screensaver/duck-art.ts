@@ -1,27 +1,40 @@
-// Loading the duck's three layers, once for the whole app.
+// Loading the duck's three layers, once for the whole app — and the wardrobe:
+// every persona's layers, and the robo already wearing each.
 //
 // Split from duck-rig.ts because these imports are what make a module
 // un-importable in a Node test: vitest has no .png loader. The rig takes the
 // art as a parameter, so the scenes stay testable and only this file and the
-// canvas component ever touch an image.
+// canvas components ever touch an image.
 
 import baseSrc from '@yeaboi-ai/design/assets/duck/base.png';
 import glassesSrc from '@yeaboi-ai/design/assets/duck/glasses.png';
 import wingSrc from '@yeaboi-ai/design/assets/duck/wing.png';
-import bowtieSrc from '@/assets/brand/outfit-bowtie.png';
-import capSrc from '@/assets/brand/outfit-cap.png';
-import hardhatSrc from '@/assets/brand/outfit-hardhat.png';
-import headsetSrc from '@/assets/brand/outfit-headset.png';
-import propellerSrc from '@/assets/brand/outfit-propeller.png';
-import ringSrc from '@/assets/brand/outfit-ring.png';
-import roboBowtieSrc from '@/assets/brand/robo-bowtie.png';
-import roboPropellerSrc from '@/assets/brand/robo-propeller.png';
+import astronautSrc from '@/assets/brand/persona-astronaut.png';
+import chefSrc from '@/assets/brand/persona-chef.png';
+import detectiveSrc from '@/assets/brand/persona-detective.png';
+import djSrc from '@/assets/brand/persona-dj.png';
+import engineerSrc from '@/assets/brand/persona-engineer.png';
+import martialBodySrc from '@/assets/brand/persona-martial-body.png';
+import martialSrc from '@/assets/brand/persona-martial.png';
+import teacherSrc from '@/assets/brand/persona-teacher.png';
+import wizardSrc from '@/assets/brand/persona-wizard.png';
+import roboAstronautSrc from '@/assets/brand/robo-astronaut.png';
+import roboChefSrc from '@/assets/brand/robo-chef.png';
+import roboDetectiveSrc from '@/assets/brand/robo-detective.png';
+import roboDjSrc from '@/assets/brand/robo-dj.png';
+import roboEngineerSrc from '@/assets/brand/robo-engineer.png';
+import roboMartialSrc from '@/assets/brand/robo-martial.png';
+import roboTeacherSrc from '@/assets/brand/robo-teacher.png';
+import roboWizardSrc from '@/assets/brand/robo-wizard.png';
 import roboSrc from '@/assets/brand/robo.png';
-import { KIT_SLOT, type Kit } from '@/lib/yeaboi/kits';
+import { PERSONA_IDS, type OutfitSlot, type PersonaId } from '@/lib/yeaboi/personas';
 import type { DuckArt, OutfitLayer } from './duck-rig';
 
-/** Rows above the sprite on every kit's canvas; the generator's OUTFIT_HEADROOM. */
+/** Rows above the sprite on every persona's canvas; the generator's OUTFIT_HEADROOM. */
 export const OUTFIT_HEADROOM = 40;
+
+/** The three layers as URLs, for a DOM rig (the front page's lead duck). */
+export const DUCK_SRC = { base: baseSrc, wing: wingSrc, glasses: glassesSrc } as const;
 
 let loaded: DuckArt | null = null;
 let loading: Promise<DuckArt> | null = null;
@@ -69,59 +82,83 @@ export function roboArtNow(): HTMLImageElement | null {
   return robo;
 }
 
-/** Every kit's layer, once; and the robo already wearing the Agents world's two. */
-export type Outfits = Record<Kit, OutfitLayer>;
-export type RoboKit = Partial<Record<Kit, HTMLImageElement>>;
-
-export const OUTFIT_SRC: Record<Kit, string> = {
-  hardhat: hardhatSrc,
-  ring: ringSrc,
-  cap: capSrc,
-  headset: headsetSrc,
-  propeller: propellerSrc,
-  bowtie: bowtieSrc,
+/** Each persona's layer files, in the order the rig stacks them. */
+export const PERSONA_SRC: Record<PersonaId, readonly { src: string; slot: OutfitSlot }[]> = {
+  engineer: [{ src: engineerSrc, slot: 'top' }],
+  teacher: [{ src: teacherSrc, slot: 'top' }],
+  martial: [
+    { src: martialBodySrc, slot: 'body' },
+    { src: martialSrc, slot: 'top' },
+  ],
+  chef: [{ src: chefSrc, slot: 'top' }],
+  astronaut: [{ src: astronautSrc, slot: 'top' }],
+  dj: [{ src: djSrc, slot: 'top' }],
+  detective: [{ src: detectiveSrc, slot: 'top' }],
+  wizard: [{ src: wizardSrc, slot: 'top' }],
 };
 
-const ROBO_SRC: Partial<Record<Kit, string>> = {
-  propeller: roboPropellerSrc,
-  bowtie: roboBowtieSrc,
+/** The robo already wearing each persona, flattened by the generator. */
+export const ROBO_SRC: Record<PersonaId, string> = {
+  engineer: roboEngineerSrc,
+  teacher: roboTeacherSrc,
+  martial: roboMartialSrc,
+  chef: roboChefSrc,
+  astronaut: roboAstronautSrc,
+  dj: roboDjSrc,
+  detective: roboDetectiveSrc,
+  wizard: roboWizardSrc,
 };
 
-let outfits: Outfits | null = null;
-let outfitsLoading: Promise<Outfits> | null = null;
+/** Every persona's layers, once. */
+export type Wardrobe = Record<PersonaId, readonly OutfitLayer[]>;
+export type RoboWardrobe = Record<PersonaId, HTMLImageElement>;
 
-export function loadOutfits(): Promise<Outfits> {
-  if (outfits) return Promise.resolve(outfits);
-  const kits = Object.keys(OUTFIT_SRC) as Kit[];
-  outfitsLoading ??= Promise.all(kits.map((kit) => image(OUTFIT_SRC[kit]))).then((images) => {
-    outfits = Object.fromEntries(
-      kits.map((kit, i) => [
-        kit,
-        { image: images[i]!, headroom: OUTFIT_HEADROOM, slot: KIT_SLOT[kit] },
-      ]),
-    ) as Outfits;
-    return outfits;
+let wardrobe: Wardrobe | null = null;
+let wardrobeLoading: Promise<Wardrobe> | null = null;
+
+export function loadWardrobe(): Promise<Wardrobe> {
+  if (wardrobe) return Promise.resolve(wardrobe);
+  wardrobeLoading ??= Promise.all(
+    PERSONA_IDS.map((id) =>
+      Promise.all(
+        PERSONA_SRC[id].map((layer) =>
+          image(layer.src).then((img): OutfitLayer => ({
+            image: img,
+            headroom: OUTFIT_HEADROOM,
+            slot: layer.slot,
+          })),
+        ),
+      ),
+    ),
+  ).then((layers) => {
+    wardrobe = Object.fromEntries(
+      PERSONA_IDS.map((id, i) => [id, layers[i]!]),
+    ) as unknown as Wardrobe;
+    return wardrobe;
   });
-  return outfitsLoading;
+  return wardrobeLoading;
 }
 
-export function outfitsNow(): Outfits | null {
-  return outfits;
+export function wardrobeNow(): Wardrobe | null {
+  return wardrobe;
 }
 
-let roboKit: RoboKit | null = null;
-let roboKitLoading: Promise<RoboKit> | null = null;
+let roboWardrobe: RoboWardrobe | null = null;
+let roboWardrobeLoading: Promise<RoboWardrobe> | null = null;
 
-export function loadRoboKit(): Promise<RoboKit> {
-  if (roboKit) return Promise.resolve(roboKit);
-  const kits = Object.keys(ROBO_SRC) as Kit[];
-  roboKitLoading ??= Promise.all(kits.map((kit) => image(ROBO_SRC[kit]!))).then((images) => {
-    roboKit = Object.fromEntries(kits.map((kit, i) => [kit, images[i]!]));
-    return roboKit;
-  });
-  return roboKitLoading;
+export function loadRoboWardrobe(): Promise<RoboWardrobe> {
+  if (roboWardrobe) return Promise.resolve(roboWardrobe);
+  roboWardrobeLoading ??= Promise.all(PERSONA_IDS.map((id) => image(ROBO_SRC[id]))).then(
+    (images) => {
+      roboWardrobe = Object.fromEntries(
+        PERSONA_IDS.map((id, i) => [id, images[i]!]),
+      ) as RoboWardrobe;
+      return roboWardrobe;
+    },
+  );
+  return roboWardrobeLoading;
 }
 
-export function roboKitNow(): RoboKit | null {
-  return roboKit;
+export function roboWardrobeNow(): RoboWardrobe | null {
+  return roboWardrobe;
 }

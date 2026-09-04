@@ -16,9 +16,9 @@ export const DUCK_ART_H = 136;
 export const DUCK_ASPECT = DUCK_ART_H / DUCK_ART_W;
 
 /**
- * A kit the duck wears, drawn on a canvas taller than the sprite by
- * `headroom` rows (a hat rises above the crown). `body` sits between the body
- * and the wing, the way a ring around a body does; `top` goes over everything.
+ * One layer of what the duck wears, drawn on a canvas taller than the sprite
+ * by `headroom` rows (a hat rises above the crown). `body` sits between the
+ * body and the wing, the way a belt does; `top` goes over everything.
  */
 export interface OutfitLayer {
   image: HTMLImageElement;
@@ -31,7 +31,7 @@ export interface DuckArt {
   base: HTMLImageElement;
   wing: HTMLImageElement;
   glasses: HTMLImageElement;
-  outfit?: OutfitLayer;
+  outfits?: readonly OutfitLayer[];
 }
 
 // Verbatim from duck.module.css. The amplitudes there carry a note explaining
@@ -130,13 +130,14 @@ export function drawDuck(ctx: CanvasRenderingContext2D, art: DuckArt, pose: Duck
   ctx.drawImage(art.base, left, top, w, h);
   ctx.restore();
 
-  // The outfit rides the body: same bob, same facing, drawn on its own taller
-  // canvas so the hat's crown lands above the head.
-  const outfit = art.outfit;
+  // The outfit rides the body: same bob, same facing, each layer drawn on its
+  // own taller canvas so a hat's crown lands above the head.
   const wearing = (slot: OutfitLayer['slot']): void => {
-    if (!outfit || outfit.slot !== slot) return;
-    const rise = (outfit.headroom / DUCK_ART_W) * w;
-    ctx.drawImage(outfit.image, left, top - rise, w, h + rise);
+    for (const layer of art.outfits ?? []) {
+      if (layer.slot !== slot) continue;
+      const rise = (layer.headroom / DUCK_ART_W) * w;
+      ctx.drawImage(layer.image, left, top - rise, w, h + rise);
+    }
   };
   wearing('body');
 

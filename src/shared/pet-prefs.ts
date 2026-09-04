@@ -4,6 +4,8 @@
 // Pure — no Electron import — so the clamping is testable and so the settings
 // tab can import the same defaults the main process writes.
 
+import { DEFAULT_PERSONA, isPersonaChoice, type PersonaChoice } from './personas';
+
 export interface PetNotifyPrefs {
   /** A native OS notification, for when the window is not in front. */
   os: boolean;
@@ -29,6 +31,9 @@ export interface PetPrefs {
   /** Flee an approaching cursor. Off by default: a duck that dodges every
    *  pointer is a duck nobody can click. */
   evade: boolean;
+  /** Who the duck is — on the desktop and in the screensaver — or `rotate`
+   *  to let it change on its own. */
+  persona: PersonaChoice;
   notify: PetNotifyPrefs;
 }
 
@@ -47,6 +52,7 @@ export const PET_DEFAULTS: PetPrefs = {
   raise: 20,
   walk: true,
   evade: false,
+  persona: DEFAULT_PERSONA,
   notify: { os: true, bubble: true, toast: true, chime: false },
 };
 
@@ -69,6 +75,10 @@ function clamp(value: unknown, fallback: number, min: number, max: number): numb
 
 function bool(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
+}
+
+function persona(value: unknown): PersonaChoice {
+  return isPersonaChoice(value) ? value : PET_DEFAULTS.persona;
 }
 
 /**
@@ -97,6 +107,7 @@ export function normalizePetPrefs(raw: unknown, legacyEnabled?: unknown): PetPre
     raise: clamp(source['raise'], PET_DEFAULTS.raise, raise.min, raise.max),
     walk: bool(source['walk'], PET_DEFAULTS.walk),
     evade: bool(source['evade'], PET_DEFAULTS.evade),
+    persona: persona(source['persona']),
     notify: {
       os: bool(notify['os'], PET_DEFAULTS.notify.os),
       bubble: bool(notify['bubble'], PET_DEFAULTS.notify.bubble),

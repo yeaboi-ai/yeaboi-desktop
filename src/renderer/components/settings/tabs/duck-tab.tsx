@@ -5,6 +5,8 @@
 
 import { RotateCcw } from 'lucide-react';
 import { PET_COLOURS, PET_LIMITS } from '@shared/pet-prefs';
+import { resolvePersona } from '@shared/personas';
+import { PersonaPicker } from '@/components/settings/persona-picker';
 import {
   SettingsCard,
   SettingsListRow,
@@ -66,16 +68,31 @@ export function DuckTab() {
       </SettingsCard>
 
       <SettingsCard index={1}>
+        <SettingsSectionHeader
+          title="Persona"
+          subtitle="Who the duck is, here and in the screensaver. The home's two ducks change on their own."
+        />
+        <div className="px-5 pt-1 pb-5">
+          <PersonaPicker />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard index={2}>
         <SettingsSectionHeader title="Look" subtitle="Size and colour, previewed live" />
         <div className="flex items-end gap-6 px-5 py-5">
-          {/* The preview is the duck itself, at the chosen size and tint, so
-              the choice is made here rather than by hunting it on the desktop. */}
+          {/* The preview is the duck itself, at the chosen size, tint and
+              persona, so the choice is made here rather than by hunting it on
+              the desktop. A hat rises above the body, hence the room on top. */}
           <div
-            className="flex h-44 w-44 shrink-0 items-end justify-center overflow-hidden rounded-lg border border-border bg-muted/30"
+            className="flex h-56 w-44 shrink-0 items-end justify-center overflow-hidden rounded-lg border border-border bg-muted/30"
             aria-hidden="true"
           >
             <div className="mb-3">
-              <DuckSprite width={BASE_WIDTH * prefs.scale} filter={tint.filter} />
+              <DuckSprite
+                width={BASE_WIDTH * prefs.scale}
+                filter={tint.filter}
+                persona={resolvePersona(prefs.persona, Date.now())}
+              />
             </div>
           </div>
           <div className="min-w-0 flex-1 space-y-5">
@@ -163,7 +180,7 @@ export function DuckTab() {
         </div>
       </SettingsCard>
 
-      <SettingsCard index={2}>
+      <SettingsCard index={3}>
         <SettingsSectionHeader title="Behaviour" subtitle="What the duck does while you work" />
         <div className="py-2">
           <Row title="Walk around" hint="Wanders the bottom of the screen and climbs the dock">
@@ -200,7 +217,7 @@ export function DuckTab() {
         </div>
       </SettingsCard>
 
-      <SettingsCard index={3}>
+      <SettingsCard index={4}>
         <SettingsSectionHeader
           title="Notifications"
           subtitle="How you hear that a run, a ceremony or a session has finished"

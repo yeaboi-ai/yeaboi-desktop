@@ -1,21 +1,17 @@
-// The Agents world's mascot. Never drawn from scratch: scripts/gen_robo_
+// The Agents world's mascot. Never drawn from scratch: scripts/gen_mascot_
 // sprites.py recolours the brand duck to steel with a cyan LED visor and an
 // antenna — the same derivation law as the TUI's robo (_mascot.py in
 // yeaboi.ai). One silhouette, two materials.
 
-import roboBowtie from '@/assets/brand/robo-bowtie.png';
-import roboPropeller from '@/assets/brand/robo-propeller.png';
 import roboSprite from '@/assets/brand/robo.png';
-import type { Kit } from '@/lib/yeaboi/kits';
-
-/** The robo in the Agents world's kits, flattened by the same generator. */
-const DRESSED: Partial<Record<Kit, string>> = { propeller: roboPropeller, bowtie: roboBowtie };
+import { ROBO_SRC } from '@/lib/screensaver/duck-art';
+import type { PersonaId } from '@/lib/yeaboi/personas';
 
 export interface RoboMarkProps {
   /** Rendered width in px. */
   size?: number;
-  /** Wearing a kit the generator rendered the robo in. */
-  kit?: Kit;
+  /** As a persona the generator rendered the robo in. */
+  persona?: PersonaId;
   className?: string;
 }
 
@@ -24,7 +20,7 @@ export interface RoboMarkProps {
  * every mark is a minification, where the browser's own filter beats
  * nearest-neighbour.
  */
-export function RoboMark({ size = 24, kit, className }: RoboMarkProps) {
+export function RoboMark({ size = 24, persona, className }: RoboMarkProps) {
   return (
     <span
       data-duck-mark
@@ -32,7 +28,7 @@ export function RoboMark({ size = 24, kit, className }: RoboMarkProps) {
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
       <img
-        src={(kit && DRESSED[kit]) || roboSprite}
+        src={persona ? ROBO_SRC[persona] : roboSprite}
         alt=""
         style={{ width: '100%', height: 'auto', display: 'block' }}
       />

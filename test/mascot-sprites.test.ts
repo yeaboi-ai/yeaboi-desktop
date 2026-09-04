@@ -11,7 +11,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { KITS as WORN, KIT_NAMES } from '../src/renderer/lib/yeaboi/kits';
+import { PERSONA_IDS } from '../src/shared/personas';
+import { PERSONA_LAYERS } from '../src/renderer/lib/yeaboi/personas';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const GENERATOR = readFileSync(resolve(ROOT, 'scripts/gen_mascot_sprites.py'), 'utf8');
@@ -22,21 +23,30 @@ function constant(name: string): string {
   return match[1]!;
 }
 
-/** The kit names in a `("a", "b", ...)` constant. */
+/** The names in a `("a", "b", ...)` constant. */
 function names(name: string): string[] {
   return [...constant(name).matchAll(/"([a-z]+)"/g)].map((m) => m[1]!);
 }
 
+function pair(name: string): [number, number] {
+  return [...constant(name).matchAll(/\d+/g)].map((m) => Number(m[0])) as [number, number];
+}
+
 const HEADROOM = Number.parseInt(constant('HEADROOM'), 10);
 const OUTFIT_HEADROOM = Number.parseInt(constant('OUTFIT_HEADROOM'), 10);
-const [SOURCE_W, SOURCE_H] = [...constant('SOURCE_SIZE').matchAll(/\d+/g)].map((m) =>
-  Number(m[0]),
-) as [number, number];
+const PET_HEADROOM = Number.parseInt(constant('PET_HEADROOM'), 10);
+const [SOURCE_W, SOURCE_H] = pair('SOURCE_SIZE');
+const [PET_W, PET_H] = pair('PET_SIZE');
 const ROBO = constant('ROBO').replaceAll('"', '');
-const KITS = names('KITS');
-const ROBO_KITS = names('ROBO_KITS');
-const OUTFITS = KITS.map((kit) => `outfit-${kit}.png`);
-const DRESSED = ROBO_KITS.map((kit) => `robo-${kit}.png`);
+const PERSONAS = names('PERSONAS');
+const BODY_PERSONAS = names('BODY_PERSONAS');
+
+const layerFiles = (persona: string): string[] =>
+  BODY_PERSONAS.includes(persona)
+    ? [`persona-${persona}.png`, `persona-${persona}-body.png`]
+    : [`persona-${persona}.png`];
+const OUTFITS = PERSONAS.flatMap(layerFiles);
+const DRESSED = PERSONAS.map((persona) => `robo-${persona}.png`);
 
 function pngSize(path: string): { width: number; height: number } {
   const bytes = readFileSync(path);
@@ -48,21 +58,30 @@ function pngSize(path: string): { width: number; height: number } {
 }
 
 const brand = (file: string): string => resolve(ROOT, 'src/renderer/assets/brand', file);
+const pet = (file: string): string => resolve(ROOT, 'src/renderer/public/pet/assets', file);
 
 describe('mascot sprites', () => {
   it('committed the robo at source scale plus the antenna headroom', () => {
     expect(pngSize(brand(ROBO))).toEqual({ width: SOURCE_W, height: SOURCE_H + HEADROOM });
   });
 
-  it('committed every kit layer and the dressed robos on the outfit canvas', () => {
-    expect(KITS.length).toBeGreaterThanOrEqual(6);
-    expect(DRESSED).toHaveLength(2);
-    for (const kit of ROBO_KITS) expect(KITS).toContain(kit);
+  it('committed every persona layer and every dressed robo on the outfit canvas', () => {
+    expect(PERSONAS).toHaveLength(8);
+    for (const persona of BODY_PERSONAS) expect(PERSONAS).toContain(persona);
     for (const file of [...OUTFITS, ...DRESSED]) {
       expect(pngSize(brand(file)), file).toEqual({
         width: SOURCE_W,
         height: SOURCE_H + OUTFIT_HEADROOM,
       });
+    }
+  });
+
+  it('committed every persona layer at the pet’s scale, with the pet’s headroom', () => {
+    // The pet draws the same art 3.75x larger; a cell is 7.5px there.
+    expect(PET_W / SOURCE_W).toBe(3.75);
+    expect(PET_HEADROOM).toBe(OUTFIT_HEADROOM * 3.75);
+    for (const file of OUTFITS) {
+      expect(pngSize(pet(file)), file).toEqual({ width: PET_W, height: PET_H });
     }
   });
 
@@ -76,17 +95,16 @@ describe('mascot sprites', () => {
     });
   });
 
-  it('is what the marks and the canvas rig actually import, kit for kit', () => {
-    const mark = readFileSync(resolve(ROOT, 'src/renderer/components/brand/robo.tsx'), 'utf8');
+  it('is what the marks, the canvas rig and the pet actually import, persona for persona', () => {
     const art = readFileSync(resolve(ROOT, 'src/renderer/lib/screensaver/duck-art.ts'), 'utf8');
-    expect(mark).toContain(`@/assets/brand/${ROBO}`);
+    const outfit = readFileSync(resolve(ROOT, 'src/shared/pet-outfit.ts'), 'utf8');
     for (const file of [...OUTFITS, ...DRESSED]) expect(art).toContain(`@/assets/brand/${file}`);
-    for (const file of DRESSED) expect(mark).toContain(`@/assets/brand/${file}`);
-    // The TypeScript kit list is the generator's, in the same order.
-    expect([...KIT_NAMES]).toEqual(KITS);
-    // The robo is rendered in exactly the kits the Agents world wears.
-    expect([WORN.agents.projects, WORN.agents.sessions].sort()).toEqual([...ROBO_KITS].sort());
-    // The rig offsets an outfit layer by the same headroom the generator drew it with.
+    // The TypeScript roster is the generator's, in the same order, and agrees
+    // on who has a layer under the wing.
+    expect([...PERSONA_IDS]).toEqual(PERSONAS);
+    expect(PERSONA_IDS.filter((id) => PERSONA_LAYERS[id].includes('body'))).toEqual(BODY_PERSONAS);
+    expect(outfit).toContain(`${PET_HEADROOM} / ${PET_H - PET_HEADROOM}`);
+    // The rig offsets a layer by the same headroom the generator drew it with.
     expect(art).toMatch(new RegExp(`OUTFIT_HEADROOM = ${OUTFIT_HEADROOM}\\b`));
   });
 });

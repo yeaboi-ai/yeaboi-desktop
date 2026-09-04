@@ -23,6 +23,8 @@ const walker = document.getElementById('duck-walker');
 const rig = document.getElementById('duck-rig');
 const body = document.getElementById('duck-body');
 const bubble = document.getElementById('duck-bubble');
+const outfitBody = document.getElementById('duck-outfit-body');
+const outfitTop = document.getElementById('duck-outfit-top');
 const footFront = rig.querySelector('.d-foot-front');
 const footBack = rig.querySelector('.d-foot-back');
 
@@ -31,6 +33,7 @@ let DUCK_W = rig.offsetWidth || 72;
 let RIGH = 72; // rig height, refined once the base sprite loads
 const FEET_FRAC = 0.975; // sprite's feet-bottom as a fraction of rig height (measured: 496/509)
 let SURFACE_RAISE = 20; // extra lift so it stands ON the surface, not sunk into it (pref)
+let OUTFIT_RISE = 0; // how far the persona's hat rises above the rig, as a fraction of RIGH
 const FLOOR_MARGIN = 10; // desktop floor: feet this far above the screen's bottom (raises the side-floor)
 const HIT_PAD = 3; // hitbox inset — small, so nearly the whole sprite counts
 // The window is click-through until the renderer says the cursor is over the
@@ -164,7 +167,7 @@ function hideBubble() {
 function positionBubble() {
   if (!bubbleShown) return;
   const cx = x;
-  const headY = baseY + 6;
+  const headY = baseY + 6 - RIGH * OUTFIT_RISE;
   const vw = window.innerWidth;
   const toLeft = cx + DUCK_W + 230 > vw;
   bubble.classList.toggle('flip', toLeft);
@@ -470,6 +473,7 @@ function applyPrefs(p) {
   if (typeof p.raise === 'number') SURFACE_RAISE = p.raise;
   if (typeof p.walk === 'boolean') walkAbout = p.walk;
   if (typeof p.evade === 'boolean') evadeCursor = p.evade;
+  if (p.outfit && typeof p.outfit === 'object') applyOutfit(p.outfit);
 
   // The new width has to reach layout before the rig can be measured, and the
   // duck has to be re-seated on the ground or a resize leaves it floating.
@@ -477,6 +481,25 @@ function applyPrefs(p) {
   x = Math.max(0, Math.min(window.innerWidth - DUCK_W, x));
   if (grounded) baseY = groundBaseY(x + DUCK_W / 2);
   if (walkAbout) pickTarget();
+}
+
+// The persona: main resolves which one and sends the layer files; the duck
+// only puts them on. A layer is hidden until it has a file, so an unknown
+// persona is a bare duck rather than a broken image.
+function applyOutfit(o) {
+  const wear = (img, src) => {
+    if (typeof src === 'string' && src) {
+      img.src = src;
+      img.hidden = false;
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+    }
+  };
+  wear(outfitTop, o.top);
+  wear(outfitBody, o.body);
+  OUTFIT_RISE = typeof o.rise === 'number' && o.rise > 0 ? o.rise : 0;
+  document.documentElement.style.setProperty('--outfit-rise', OUTFIT_RISE.toFixed(4));
 }
 
 function measure() {

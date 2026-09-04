@@ -1,5 +1,5 @@
 // Impact rings: a brief ring of theme colour where something happened. Shared
-// by the duck yard (a collision) and the home's pond (a paddle stroke, a dive).
+// by the duck yard (a collision) and the home's thread (a paddle stroke, a dive).
 
 export const RING_SECONDS = 0.35;
 /** Final radius, as a multiple of the radius the ring was spawned with. */

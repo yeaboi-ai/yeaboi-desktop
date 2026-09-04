@@ -15,7 +15,7 @@
 // is not a mascot, so the duck keeps its own colours and the room changes
 // around it.
 
-import { drawDuck, peekAt, type DuckArt } from '../duck-rig';
+import { drawDuck, peekAt, type DuckArt, type OutfitLayer } from '../duck-rig';
 import { isLightGround } from '../luminance';
 import type { Palette } from '../palette';
 import { drawRings, spawnRing, stepRings, type Ring } from '../rings';
@@ -60,6 +60,8 @@ interface Duck {
   /** Seconds left of the squash, and the world-space normal it happened along. */
   squishLeft: number;
   normal: number; // radians
+  /** Which of the wardrobe's personas this duck wears, as a fraction of the list. */
+  wear: number;
 }
 
 /** How many ducks a window of this size holds. */
@@ -95,6 +97,7 @@ export class DuckYard implements Scene {
   private clock = 0;
   private rings: Ring[] = [];
   private art: DuckArt | null = null;
+  private wardrobe: readonly (readonly OutfitLayer[])[] | null = null;
   private light = false;
 
   constructor(options: SceneOptions) {
@@ -109,6 +112,17 @@ export class DuckYard implements Scene {
 
   setArt(art: DuckArt): void {
     this.art = art;
+  }
+
+  /** Every persona's layers: the crowd wears a mix of them. The hero wears
+   *  whatever the art itself wears. Null undresses the crowd. */
+  setWardrobe(wardrobe: readonly (readonly OutfitLayer[])[] | null): void {
+    this.wardrobe = wardrobe && wardrobe.length > 0 ? wardrobe : null;
+  }
+
+  /** The wardrobe index a crowd duck draws from, for a wardrobe of `count`. */
+  wornBy(duck: Duck, count: number): number {
+    return Math.min(count - 1, Math.floor(duck.wear * count));
   }
 
   private populate(): void {
@@ -128,6 +142,7 @@ export class DuckYard implements Scene {
       facing: 'right',
       squishLeft: 0,
       normal: 0,
+      wear: 0,
     };
     const ducks = [hero];
 
@@ -177,6 +192,7 @@ export class DuckYard implements Scene {
         facing: Math.cos(heading) < 0 ? 'left' : 'right',
         squishLeft: 0,
         normal: 0,
+        wear: this.random(),
       });
     }
     this.ducks = ducks;
@@ -386,7 +402,11 @@ export class DuckYard implements Scene {
       ctx.fill();
       return;
     }
-    drawDuck(ctx, art, {
+    const outfits =
+      !duck.anchored && this.wardrobe
+        ? this.wardrobe[this.wornBy(duck, this.wardrobe.length)]
+        : art.outfits;
+    drawDuck(ctx, outfits ? { ...art, outfits } : art, {
       time: this.clock + duck.phase,
       width: size,
       rotate: Math.sin((duck.angle * Math.PI) / 180) * SWAY_DEGREES,
