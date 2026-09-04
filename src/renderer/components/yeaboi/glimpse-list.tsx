@@ -2,8 +2,8 @@
 
 // A short inventory: plain rows, the name on the left, a quiet stamp on the
 // right, one hairline between rows. An empty list is one inviting sentence
-// and the action that fills it. Used by the home's two halves, the Sessions
-// page and the project's run panel.
+// and the action that fills it. Used by the Sessions page and the project's
+// run panel.
 
 import Link from 'next/link';
 import type { GlimpseRow } from '@/lib/yeaboi/glimpse';

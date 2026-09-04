@@ -27,11 +27,19 @@ export function dateline(now: Date): string {
 }
 
 export type Edition =
-  { kind: 'fresh'; generatedAt: string } | { kind: 'stale' } | { kind: 'offline' };
+  | { kind: 'fresh'; generatedAt: string }
+  | { kind: 'stale' }
+  | { kind: 'offline' }
+  | { kind: 'notes' }
+  | { kind: 'off' };
 
-/** What the paper in hand is: fresh, being refreshed, or the last one kept. */
-export function editionOf(paper: Paper | null, failed: boolean): Edition {
-  if (!paper || failed || !paper.enabled) return { kind: 'offline' };
+/** What the paper in hand is: fresh, being refreshed, the last one kept
+ *  (the sidecar is away), the release notes (a sidecar without a front
+ *  page), or yeaboi alone (news switched off). */
+export function editionOf(paper: Paper | null, failed: boolean, notes = false): Edition {
+  if (!paper || failed) return { kind: 'offline' };
+  if (notes) return { kind: 'notes' };
+  if (!paper.enabled) return { kind: 'off' };
   if (paper.stale) return { kind: 'stale' };
   return { kind: 'fresh', generatedAt: paper.generated_at };
 }
@@ -46,6 +54,10 @@ export function editionLine(edition: Edition, now: Date): string {
       return 'Refreshing.';
     case 'offline':
       return 'Offline, showing the last paper.';
+    case 'notes':
+      return 'No front page on this yeaboi yet, showing the release notes.';
+    case 'off':
+      return 'News is off, showing yeaboi alone.';
   }
 }
 

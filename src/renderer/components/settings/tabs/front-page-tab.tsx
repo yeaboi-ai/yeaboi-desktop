@@ -89,9 +89,10 @@ function OutletsSection() {
   const [error, setError] = useState('');
   const now = new Date();
 
-  const reload = async () => {
+  const reload = async (alive: () => boolean = () => true) => {
     try {
       const loaded = await loadSources();
+      if (!alive()) return;
       if (loaded === null) {
         setState('older');
         return;
@@ -99,6 +100,7 @@ function OutletsSection() {
       setRows(loaded);
       setState('ready');
     } catch (err: unknown) {
+      if (!alive()) return;
       logger.error('could not load the outlet list', err);
       setState('offline');
     }
@@ -107,25 +109,11 @@ function OutletsSection() {
   useEffect(() => {
     if (backend.kind !== 'ready') return;
     let cancelled = false;
-    loadSources().then(
-      (loaded) => {
-        if (cancelled) return;
-        if (loaded === null) {
-          setState('older');
-          return;
-        }
-        setRows(loaded);
-        setState('ready');
-      },
-      (err: unknown) => {
-        if (cancelled) return;
-        logger.error('could not load the outlet list', err);
-        setState('offline');
-      },
-    );
+    void reload(() => !cancelled);
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backend.kind]);
 
   const toggle = (row: NewsSourceRow, enabled: boolean) => {
@@ -233,7 +221,7 @@ function OutletsSection() {
               }
             >
               <div className="text-sm font-medium">
-                {row.home_url ? (
+                {/^https:\/\//.test(row.home_url) ? (
                   <a
                     href={row.home_url}
                     target="_blank"

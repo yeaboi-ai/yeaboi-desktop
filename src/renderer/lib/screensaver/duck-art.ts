@@ -26,7 +26,6 @@ import roboEngineerSrc from '@/assets/brand/robo-engineer.png';
 import roboMartialSrc from '@/assets/brand/robo-martial.png';
 import roboTeacherSrc from '@/assets/brand/robo-teacher.png';
 import roboWizardSrc from '@/assets/brand/robo-wizard.png';
-import roboSrc from '@/assets/brand/robo.png';
 import { PERSONA_IDS, type OutfitSlot, type PersonaId } from '@/lib/yeaboi/personas';
 import type { DuckArt, OutfitLayer } from './duck-rig';
 
@@ -65,23 +64,6 @@ export function duckArtNow(): DuckArt | null {
   return loaded;
 }
 
-let robo: HTMLImageElement | null = null;
-let roboLoading: Promise<HTMLImageElement> | null = null;
-
-/** The Agents world's mascot: one layer, fetched once. */
-export function loadRoboArt(): Promise<HTMLImageElement> {
-  if (robo) return Promise.resolve(robo);
-  roboLoading ??= image(roboSrc).then((img) => {
-    robo = img;
-    return img;
-  });
-  return roboLoading;
-}
-
-export function roboArtNow(): HTMLImageElement | null {
-  return robo;
-}
-
 /** Each persona's layer files, in the order the rig stacks them. */
 export const PERSONA_SRC: Record<PersonaId, readonly { src: string; slot: OutfitSlot }[]> = {
   engineer: [{ src: engineerSrc, slot: 'top' }],
@@ -111,7 +93,6 @@ export const ROBO_SRC: Record<PersonaId, string> = {
 
 /** Every persona's layers, once. */
 export type Wardrobe = Record<PersonaId, readonly OutfitLayer[]>;
-export type RoboWardrobe = Record<PersonaId, HTMLImageElement>;
 
 let wardrobe: Wardrobe | null = null;
 let wardrobeLoading: Promise<Wardrobe> | null = null;
@@ -141,24 +122,4 @@ export function loadWardrobe(): Promise<Wardrobe> {
 
 export function wardrobeNow(): Wardrobe | null {
   return wardrobe;
-}
-
-let roboWardrobe: RoboWardrobe | null = null;
-let roboWardrobeLoading: Promise<RoboWardrobe> | null = null;
-
-export function loadRoboWardrobe(): Promise<RoboWardrobe> {
-  if (roboWardrobe) return Promise.resolve(roboWardrobe);
-  roboWardrobeLoading ??= Promise.all(PERSONA_IDS.map((id) => image(ROBO_SRC[id]))).then(
-    (images) => {
-      roboWardrobe = Object.fromEntries(
-        PERSONA_IDS.map((id, i) => [id, images[i]!]),
-      ) as RoboWardrobe;
-      return roboWardrobe;
-    },
-  );
-  return roboWardrobeLoading;
-}
-
-export function roboWardrobeNow(): RoboWardrobe | null {
-  return roboWardrobe;
 }

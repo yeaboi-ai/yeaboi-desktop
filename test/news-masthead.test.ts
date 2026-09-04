@@ -46,7 +46,9 @@ describe('editionOf', () => {
     const paper = fixturePaper();
     expect(editionOf(null, false)).toEqual({ kind: 'offline' });
     expect(editionOf(paper, true)).toEqual({ kind: 'offline' });
-    expect(editionOf({ ...paper, enabled: false }, false)).toEqual({ kind: 'offline' });
+    expect(editionOf({ ...paper, enabled: false }, false)).toEqual({ kind: 'off' });
+    expect(editionOf(paper, false, true)).toEqual({ kind: 'notes' });
+    expect(editionOf(paper, true, true)).toEqual({ kind: 'offline' });
     expect(editionOf({ ...paper, stale: true }, false)).toEqual({ kind: 'stale' });
     expect(editionOf(paper, false)).toEqual({ kind: 'fresh', generatedAt: paper.generated_at });
   });
@@ -58,11 +60,16 @@ describe('editionOf', () => {
       editionLine({ kind: 'fresh', generatedAt: '' }, NOW),
       editionLine({ kind: 'stale' }, NOW),
       editionLine({ kind: 'offline' }, NOW),
+      editionLine({ kind: 'notes' }, NOW),
+      editionLine({ kind: 'off' }, NOW),
     ];
     expect(lines[0]).toBe('Refreshed 8 minutes ago.');
     expect(lines[1]).toBe('Refreshed.');
     expect(lines[2]).toBe('Refreshing.');
     expect(lines[3]).toBe('Offline, showing the last paper.');
+    expect(lines[4]).toMatch(/release notes/);
+    expect(lines[5]).toMatch(/off/);
+    expect(new Set(lines).size).toBe(lines.length);
     lines.forEach(prose);
   });
 });
@@ -72,6 +79,8 @@ describe('refreshLabel', () => {
     expect(refreshLabel({ kind: 'fresh', generatedAt: 't' })).toBe('Refresh now.');
     expect(refreshLabel({ kind: 'stale' })).toBe('');
     expect(refreshLabel({ kind: 'offline' })).toBe('');
+    expect(refreshLabel({ kind: 'notes' })).toBe('');
+    expect(refreshLabel({ kind: 'off' })).toBe('');
     prose(refreshLabel({ kind: 'fresh', generatedAt: 't' }));
   });
 });

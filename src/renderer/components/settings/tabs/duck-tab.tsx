@@ -70,7 +70,7 @@ export function DuckTab() {
       <SettingsCard index={1}>
         <SettingsSectionHeader
           title="Persona"
-          subtitle="Who the duck is, here and in the screensaver. The home's two ducks change on their own."
+          subtitle="Who the duck is, here and in the screensaver. The doors' ducks change on each visit to the home."
         />
         <div className="px-5 pt-1 pb-5">
           <PersonaPicker />

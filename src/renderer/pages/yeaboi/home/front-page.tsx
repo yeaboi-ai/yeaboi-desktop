@@ -16,6 +16,7 @@ import { useAudience } from '@/components/providers/audience-provider';
 import { Edition } from '@/components/news/edition';
 import { Masthead } from '@/components/news/masthead';
 import { fallbackPaper } from '@/lib/news/fallback';
+import { nextVisit } from '@/lib/home/wardrobe';
 import {
   STALE_RETRY_MS,
   loadFallbackNotes,
@@ -35,10 +36,16 @@ export function FrontPage() {
   const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [failed, setFailed] = useState(false);
+  const [notes, setNotes] = useState(false);
   const [speed] = useState(() => getPref('news.turnSpeed'));
   const lastAt = useRef(0);
   const asking = useRef(false);
   const now = useMemo(() => new Date(), [paper]);
+
+  // The doors' ducks change on each visit to the home, never mid-visit.
+  useEffect(() => {
+    nextVisit();
+  }, []);
 
   useEffect(() => {
     let gone = false;
@@ -50,12 +57,14 @@ export function FrontPage() {
         if (loaded) {
           rememberPaper(loaded);
           setPaper(loaded);
+          setNotes(false);
           setFailed(false);
           return;
         }
-        const notes = await loadFallbackNotes();
+        const ledger = await loadFallbackNotes();
         if (gone) return;
-        setPaper(fallbackPaper(SHELL_ENTRIES, notes, new Date()));
+        setPaper(fallbackPaper(SHELL_ENTRIES, ledger, new Date()));
+        setNotes(true);
         setFailed(false);
       } catch {
         if (gone) return;
@@ -117,7 +126,7 @@ export function FrontPage() {
 
   const stories = useMemo(() => (paper ? storiesOf(paper) : []), [paper]);
   const mark = markKind(audience);
-  const edition = editionOf(paper, failed);
+  const edition = editionOf(paper, failed, notes);
   const colophon = paper ? sourcesLine(paper.sources) : '';
 
   return (

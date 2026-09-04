@@ -1,5 +1,5 @@
-// The cross-mode recent-sessions list — the Sessions half of the home, the
-// Recent column of the Sessions page, and the sessions inside a project.
+// The cross-mode recent-sessions list — the Recent column of the Sessions
+// page, and the sessions inside a project.
 //
 // Both reads go through apiGetOptional: a sidecar older than the route answers
 // 404, and null is how a page knows to say so in one sentence rather than

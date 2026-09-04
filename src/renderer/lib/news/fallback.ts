@@ -10,8 +10,8 @@ import {
 } from '@/lib/yeaboi/shell-changelog';
 import type { NewsItem, Paper } from './types';
 
-/** Where a release row opens. The Mac app's own repo is private, so its
- *  releases point at the site's page for the app. */
+/** Where a release row opens: the wheel on PyPI, the app on the site's
+ *  page for it. */
 export const BACKEND_RELEASE_URL = 'https://pypi.org/project/yeaboi/{version}/';
 export const APP_RELEASE_URL = 'https://yeaboi.ai/desktop.html';
 

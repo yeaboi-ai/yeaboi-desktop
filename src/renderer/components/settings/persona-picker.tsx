@@ -2,7 +2,7 @@
 
 // Who the duck is: one choice for the desktop duck and the screensaver, so
 // the Duck tab and the Screensaver section both show this and both write the
-// same preference. The home's two ducks change on their own, per visit.
+// same preference. The doors' ducks change on each visit to the home.
 
 import { DuckSprite } from '@/components/settings/tabs/duck-sprite';
 import { usePetPrefs } from '@/hooks/use-pet-prefs';

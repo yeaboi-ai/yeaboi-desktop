@@ -1,7 +1,7 @@
-// Which persona each home duck wears. The pair changes quietly on every
+// Which persona each door's duck wears. The pair changes quietly on every
 // visit to the home, never mid-visit: `nextVisit` is called once when the home
-// mounts, and the door screens' marks read `currentPair` so the duck a reader
-// clicked is the one that follows them in. Pure (test/personas.test.ts).
+// mounts, and the door screens' marks read `currentPair`. Pure
+// (test/personas.test.ts).
 
 import { PERSONA_IDS, type PersonaId } from '@shared/personas';
 import type { Door } from '@/lib/yeaboi/home';

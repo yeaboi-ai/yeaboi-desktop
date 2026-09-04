@@ -1,6 +1,5 @@
-// When each Agents kind last saved a report — the stamps the home's two
-// columns and the Sessions page show beside the four kinds, machine-wide or
-// scoped to an engine project. A kind with no report, or a sidecar without
+// When each Agents kind last saved a report — the stamps the Sessions page
+// shows beside the four kinds, machine-wide or scoped to an engine project. A kind with no report, or a sidecar without
 // the route, simply has no stamp.
 
 import { useEffect, useState } from 'react';

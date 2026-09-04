@@ -144,7 +144,7 @@ export function ScreensaverSection() {
         Persona
       </p>
       <p className="text-[11px] text-muted-foreground font-body leading-relaxed">
-        Who the duck is here and on the desktop. The home's two ducks change on their own.
+        Who the duck is here and on the desktop. The doors' ducks change on each visit to the home.
       </p>
       <PersonaPicker className="pt-1" />
     </div>
