@@ -35,7 +35,14 @@ export function useBoard(boardId: string): [BoardSnapshot | null, string] {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!boardId) return;
+    if (!boardId) {
+      // No board is not the same as "the last one I saw": ending a session
+      // clears the id, and a hook that only ever adds left the table on screen
+      // with its join code after it had been closed.
+      setBoard(null);
+      setError('');
+      return;
+    }
     const refresh = () => loadBoard(boardId).then(setBoard, (e: Error) => setError(e.message));
     refresh();
     const timer = setInterval(refresh, BOARD_POLL_MS);
