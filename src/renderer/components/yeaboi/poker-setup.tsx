@@ -366,13 +366,12 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
       )}
 
       {/* What is about to be estimated, before anybody is invited to estimate
-          it: the count, the scope it came from, and the tickets themselves
-          behind one disclosure. */}
+          it: the count, the scope it came from, and the tickets themselves.
+          Not behind a disclosure — they arrived because they were asked for,
+          and a list you have to open to read is a list you did not ask for. */}
       {tickets && tickets.length > 0 && (
-        <details className="rounded-xl bg-secondary/30 px-3 py-2">
-          <summary className="cursor-pointer select-none font-body text-[12.5px] text-foreground">
-            {summary}
-          </summary>
+        <div className="rounded-xl bg-secondary/30 px-3 py-2.5">
+          <p className="font-body text-[12.5px] text-foreground">{summary}</p>
           <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain pr-1">
             {tickets.map((ticket, index) => (
               <li
@@ -386,7 +385,7 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
               </li>
             ))}
           </ul>
-        </details>
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
