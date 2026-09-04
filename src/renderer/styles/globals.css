@@ -1378,3 +1378,16 @@ html[data-audience='agents'] {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Full screen: the OS squares the window's corners and there is nothing behind
+   it to fall through to, so the page paints both — its own rounded screen, and
+   the surround the curve is cut out of. */
+:root[data-full-screen] {
+  background: #000;
+}
+
+:root[data-full-screen] body {
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  background: var(--background);
+}

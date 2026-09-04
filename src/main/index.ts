@@ -167,6 +167,13 @@ function createMainWindow(): void {
   // A duck who is out has a way home pinned to this window's corner; dragging
   // or resizing it moves that corner, and he should follow it rather than fly
   // back to where it used to be.
+  // Full screen is the one state macOS squares the window's corners in — and
+  // this app paints its own, so it has to know. See the chromeless block in
+  // globals.css.
+  const tellFullScreen = () =>
+    mainWindow?.webContents.send('window:full-screen', mainWindow.isFullScreen());
+  mainWindow.on('enter-full-screen', tellFullScreen);
+  mainWindow.on('leave-full-screen', tellFullScreen);
   mainWindow.on('move', () => pet.publishHome());
   mainWindow.on('resize', () => pet.publishHome());
   mainWindow.on('closed', () => {

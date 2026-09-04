@@ -90,6 +90,46 @@ const INHERIT = `
   font-family: var(--font-sans);
 }
 
+/* The controls, in this app's hand.
+ *
+ * The board draws its own buttons — square-ish, flat, its own type scale — and
+ * next to the rest of the app they read as another product's. The shapes are
+ * matched here rather than in the board's source: it has its own repo, its own
+ * browsers to serve and its own reasons, and none of them are this window. */
+.board-frame .${HOST} button:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']),
+.board-frame .${HOST} [role='button']:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']) {
+  border-radius: var(--app-radius);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.board-frame .${HOST} button:active {
+  transform: translateY(1px);
+}
+
+.board-frame .${HOST} input,
+.board-frame .${HOST} select,
+.board-frame .${HOST} textarea {
+  border-radius: var(--app-radius);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+}
+
+/* Cards, panels and the sections either side: the app rounds its containers
+   twice as far as its controls. */
+.board-frame .${HOST} [class*='card'],
+.board-frame .${HOST} [class*='panel'],
+.board-frame .${HOST} [class*='modal'],
+.board-frame .${HOST} [class*='sheet'] {
+  border-radius: calc(var(--app-radius) * 2);
+}
+
 /* The masthead's wordmark is set in the board's own pixel face. This app has a
    display face of its own and uses it for exactly this — the name of the thing
    you are looking at. */

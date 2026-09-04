@@ -40,6 +40,9 @@ interface YeaboiBridge {
     { id: string; name: string; thumbnail: string; kind: 'screen' | 'window' }[]
   >;
   pickCaptureSource: (sourceId: string) => Promise<unknown>;
+  /** The window filling the screen, or leaving it — the page paints its own
+   *  corners, and macOS squares a window's own the moment it fills the display. */
+  onFullScreen: (callback: (full: boolean) => void) => void;
   onNavigate: (callback: (route: string) => void) => void;
   onAbout: (callback: () => void) => void;
   appMeta: () => Promise<{

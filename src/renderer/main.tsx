@@ -12,6 +12,13 @@ if (window.yeaboi.platform === 'darwin') {
   document.documentElement.dataset['chrome'] = 'hidden';
 }
 
+// Full screen is the one place the window's own corners go square, and the page
+// keeps painting its rounded ones over a surround of its own.
+window.yeaboi.onFullScreen?.((full) => {
+  if (full) document.documentElement.dataset['fullScreen'] = 'yes';
+  else delete document.documentElement.dataset['fullScreen'];
+});
+
 // Cmd+M, taken off the OS so the duck can jump out before the window goes.
 // The traffic light cannot be intercepted — it is the system's own button —
 // so that path still leaps as the window shrinks.

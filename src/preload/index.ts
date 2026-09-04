@@ -86,6 +86,9 @@ export interface YeaboiBridge {
     { id: string; name: string; thumbnail: string; kind: 'screen' | 'window' }[]
   >;
   pickCaptureSource: (sourceId: string) => Promise<unknown>;
+  /** The window filling the screen, or leaving it. The page paints its own
+   *  corners, and macOS squares a window's own the moment it fills the display. */
+  onFullScreen: (callback: (full: boolean) => void) => void;
   /** Main asking the app to show a route — the tray, or a click on the duck. */
   onNavigate: (callback: (route: string) => void) => void;
   /** The tray asking for the About panel, which is a modal and not a route. */
@@ -168,6 +171,9 @@ const bridge: YeaboiBridge = {
   },
   listCaptureSources: () => ipcRenderer.invoke('capture:list-sources'),
   pickCaptureSource: (sourceId) => ipcRenderer.invoke('capture:pick', sourceId),
+  onFullScreen: (callback) => {
+    ipcRenderer.on('window:full-screen', (_event, full: boolean) => callback(full));
+  },
   onNavigate: (callback) => {
     ipcRenderer.on('app:navigate', (_event, route: string) => callback(route));
   },
