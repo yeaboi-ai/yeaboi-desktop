@@ -59,9 +59,6 @@ const INHERIT = `
   --app-display: var(--font-display);
   --app-code: var(--font-code);
   --app-radius: var(--radius);
-  /* The way out of the table is a fixed size so the chips beside it can be
-     placed against a number rather than against a guess at its label. */
-  --leave-w: 156px;
 }
 .board-frame .${HOST} {
   --bg: var(--app-bg);
@@ -202,14 +199,40 @@ const INHERIT = `
   padding-top: 12px;
 }
 
-/* Who you are and who else is here sits with the rest of the furniture, on
-   the bottom row beside the way out — not opposite the board's name, where
-   two chips at the far end of an empty strip were all that kept the top a
-   bar. Their list opens upward from there, since there is nothing below it to
-   open into. */
+/* The room opens upward, so its cards come up. The board deals them down from
+   under the bar it hangs from — the same distance, the other way. */
+.board-frame .${HOST} [class*='identity'] [class*='roomCard'] {
+  transform: translateY(calc(var(--card-h) + var(--room-gap)));
+}
+
+.board-frame .${HOST} [class*='identity'] [class*='room']:hover [class*='roomCard'],
+.board-frame .${HOST} [class*='identity'] [class*='room']:has(:focus-visible) [class*='roomCard'] {
+  transform: none;
+}
+
+/* The scope's own name. The app already says which session this is, on the
+   surface the table was dealt from. */
+.board-frame .${HOST} [class*='railScope'] {
+  display: none;
+}
+
+/* Invite is the one filled thing on the row and reads as itself. */
+.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] [class*='iconLabel'] {
+  display: none;
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
+  width: 26px;
+  padding: 0;
+}
+
+/* Who you are and who else is here closes the bottom row, opposite the way
+   out and the controls — not the top, where two chips at the far end of an
+   empty strip were all that kept it a bar. Their list opens upward, since
+   there is nothing below it to open into. */
 .board-frame .${HOST} [class*='chromeApp'] [class*='identity'] {
   position: fixed;
-  left: calc(16px + var(--leave-w) + 8px);
+  right: 16px;
   bottom: 16px;
   z-index: 45;
   /* The row's height, so the chips centre on the same line as the pill beside
@@ -370,20 +393,21 @@ const INHERIT = `
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
 }
 
-/* Full screen: the table comes up to meet the ticket.
+/* The three columns, each holding its own middle.
  *
- * The ticket is the one thing in the middle column that grows, and the board
- * pushes the table down with an auto margin — an arrangement that reads well
- * in a window and, on a screen this tall, leaves half of it empty with the
- * people and their hand pressed against the bottom edge. On a full screen the
- * ticket takes the height it needs (it has its own scroll and its own floor)
- * and the group sits under it. */
-:root[data-full-screen] .board-frame .${HOST} [class*='_main_'] > [class*='_ticket_'] {
-  flex: 0 1 auto;
+ * The rail and the aside are as tall as they need to be and no taller, so on a
+ * screen this size they sat at the top of a column of nothing. They take the
+ * centre of the space instead. The middle column keeps its own arrangement —
+ * ticket at the top, the table and the hand at the bottom — and starts a
+ * little lower, clear of the row above it. */
+.board-frame .${HOST} [class*='_rail_'],
+.board-frame .${HOST} [class*='_aside_'] {
+  align-self: center;
 }
 
-:root[data-full-screen] .board-frame .${HOST} [class*='_main_'] > [class*='_table_'] {
-  margin-top: 48px;
+.board-frame .${HOST} [class*='_main_'] {
+  min-height: 0;
+  padding-top: 24px;
 }
 
 /* The board's dock, in the app's floating chrome.
@@ -395,13 +419,14 @@ const INHERIT = `
  * fill and a 1px line, which next to the rest reads as a different surface.
  * These are the same values, written in the board's names. */
 .board-frame .${HOST} [class*='dockApp'] {
-  /* Both floating things on this row sit 16px off their own edge, so the row
-     reads as one. The board parks its dock on a 28px gutter measured in its
-     own JS, and the translate property composes with the transform that
-     placement rides on — so the rest position moves without taking the drag
-     with it. */
+  /* Beside the way out, at the left end of the bottom row. The board parks it
+     on the right in its own JS and lets it be dragged along the wall; here the
+     row has a fixed shape — out of the table, then the table's controls, then
+     who is at it — so the placement is pinned and the drag goes with it. */
+  left: 58px;
   bottom: 16px;
-  translate: 12px 0;
+  transform: none;
+  translate: none;
   border: 0;
   border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
@@ -581,16 +606,14 @@ export function PokerBoard({
       >
         {ready && <PokerApp boot={boot(scope) as never} />}
       </div>
-      {/* The way out, where the app's own dock would be. The board owns the
-          window while it is up, so this is the one piece of the app left on
-          screen besides the duck. */}
+      {/* The way out, where the app's own dock would be — a door and not a
+          sentence: it opens the row the board's own controls continue. */}
       <button
         type="button"
         onClick={onLeave}
-        className="fixed bottom-4 left-4 z-[60] flex h-[34px] w-[var(--leave-w)] items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-card/85 px-4 font-body text-[12px] text-muted-foreground shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-colors hover:text-foreground"
+        className="fixed bottom-4 left-4 z-[60] flex h-[34px] w-[34px] items-center justify-center rounded-2xl bg-card/85 text-muted-foreground shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-colors hover:text-foreground"
       >
-        <LogOut className="h-[13px] w-[13px]" />
-        Leave the table
+        <LogOut className="h-[14px] w-[14px]" />
       </button>
     </div>
   );
