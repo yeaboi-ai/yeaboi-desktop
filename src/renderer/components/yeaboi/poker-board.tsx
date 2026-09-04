@@ -203,21 +203,31 @@ const INHERIT = `
 }
 
 /* Who you are and who else is here: two more of the same capsule. */
-.board-frame .${HOST} [class*='meChip'],
-.board-frame .${HOST} [class*='presenceChip'] {
+.board-frame .${HOST} [class*='chromeApp'] [class*='meChip'],
+.board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip'] {
   height: 26px;
+  /* The board floors every control at its tap target, and the shared control
+     rule below is a class more specific than this one was — hence the extra
+     step and the min. */
+  min-height: 26px;
   padding: 0 9px;
   border: 0;
-  border-radius: calc(var(--app-radius) + 4px);
+  border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-line) 60%, transparent);
   backdrop-filter: blur(12px);
   color: var(--app-muted);
 }
 
-.board-frame .${HOST} [class*='meChip']:hover,
-.board-frame .${HOST} [class*='presenceChip']:hover {
+.board-frame .${HOST} [class*='chromeApp'] [class*='meChip']:hover,
+.board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip']:hover {
   color: var(--app-text);
+}
+
+/* The ticket pager: two round steps either side of the count, the way every
+   small icon control in the app is round. */
+.board-frame .${HOST} [class*='tknav'] button {
+  border-radius: 999px;
 }
 
 /* Everything that opens out of the chrome.
@@ -240,14 +250,16 @@ const INHERIT = `
   backdrop-filter: blur(14px);
 }
 
-/* A field's box, at the app's input size. The board underlines its dropdown
-   trigger instead of boxing it, which on a dark panel reads as a text field
-   halfway through being drawn. */
+/* Fields, at the app's input size — every one of them.
+ *
+ * The board writes some of its fields as boxes and some as a rule under the
+ * text: the ticket editor's title, body and points were underlines sitting
+ * beside three boxed dropdowns, which is two kinds of field in one form and
+ * reads as unfinished. They are all the app's input here: a hairline box on a
+ * faint fill, at one height. */
 .board-frame .${HOST} [class*='ddTrigger'],
-.board-frame .${HOST} [class*='textInput'],
-.board-frame .${HOST} [class*='numberInput'],
-.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) input:not([type='range']),
-.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) select {
+.board-frame .${HOST} select,
+.board-frame .${HOST} input:not([type='range'], [type='checkbox'], [type='radio']) {
   height: 32px;
   min-height: 32px;
   padding: 0 10px;
@@ -259,10 +271,27 @@ const INHERIT = `
   font-size: 12.5px;
 }
 
+/* Same skin, but a box that grows: a textarea's height is its content's. */
+.board-frame .${HOST} textarea {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--app-input);
+  border-radius: var(--app-radius);
+  background: color-mix(in srgb, var(--app-input) 30%, transparent);
+  box-shadow: none;
+  color: var(--app-text);
+}
+
+/* The one being edited is still the ticket's name. */
+.board-frame .${HOST} [class*='editTitle'] {
+  font-size: 15px;
+  font-weight: 500;
+}
+
 .board-frame .${HOST} [class*='ddTrigger']:hover,
 .board-frame .${HOST} [class*='ddTrigger'][aria-expanded='true'],
-.board-frame .${HOST} [class*='textInput']:focus,
-.board-frame .${HOST} [class*='numberInput']:focus {
+.board-frame .${HOST} textarea:focus,
+.board-frame .${HOST} input:focus:not([type='range']) {
   border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-line));
   box-shadow: none;
   outline: none;
@@ -315,6 +344,28 @@ const INHERIT = `
 .board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
 .board-frame .${HOST} [class*='panelAction']:hover {
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
+}
+
+/* The column reads top down.
+ *
+ * The ticket is the one thing in the middle column that grows, so on a tall
+ * screen it takes every spare pixel and pushes the table and the hand to the
+ * bottom edge — half a window of nothing between what is being estimated and
+ * the people estimating it. It takes the height it needs instead (it has its
+ * own scroll and a floor of its own for a short window), and the three sit
+ * together under the heading. */
+.board-frame .${HOST} [class*='_main_'] {
+  gap: 24px;
+}
+
+.board-frame .${HOST} [class*='_main_'] > [class*='_ticket_'] {
+  flex: 0 1 auto;
+}
+
+/* The board pushes the table down with an auto margin, which survives the
+   ticket giving up its stretch — the gap simply moves into the margin. */
+.board-frame .${HOST} [class*='_main_'] > [class*='_table_'] {
+  margin-top: 0;
 }
 
 /* The board's dock, in the app's floating chrome.
