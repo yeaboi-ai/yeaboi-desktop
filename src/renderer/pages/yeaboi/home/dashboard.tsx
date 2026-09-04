@@ -137,7 +137,7 @@ export function HomeDashboard() {
       </div>
 
       <div
-        className={`mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
+        className={`mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
           monthView ? 'peel-out' : 'peel-in'
         } ${tilesGone ? 'hidden' : ''}`}
       >
