@@ -29,6 +29,11 @@ const HOST = 'board-host';
 /**
  * The board wearing this app's colours.
  *
+ * Written one class deeper than the board's own tokens on purpose: those are
+ * inside an `@scope`, and a scoped rule beats an unscoped one of equal
+ * specificity whatever the source order — proximity wins ties. `.board-frame
+ * .board-host` outranks `:scope`, which is what makes any of this apply.
+ *
  * The board's palette is its own — five themes, switched on `[data-theme]`,
  * with `--bg`/`--panel`/`--text` at the bottom of everything it draws. Left
  * alone it arrives in midnight while the window around it is in whatever the
@@ -47,8 +52,12 @@ const INHERIT = `
   --app-muted: var(--muted-foreground);
   --app-accent: var(--primary);
   --app-secondary: var(--secondary);
+  --app-body: var(--font-body);
+  --app-display: var(--font-display);
+  --app-code: var(--font-code);
+  --app-radius: var(--radius);
 }
-.${HOST} {
+.board-frame .${HOST} {
   --bg: var(--app-bg);
   --panel: var(--app-panel);
   --card: var(--app-card);
@@ -59,8 +68,35 @@ const INHERIT = `
   --accent: var(--app-accent);
   --accent2: var(--app-accent);
   --ink: var(--app-bg);
+
+  /* The rest of the house style, not just its colours: the app's faces, its
+     radii and its shadows. The board's own are a different design — a pixel
+     wordmark over Geist at 4px corners — and a screen of this app should not
+     be the only one wearing them. */
+  --font-sans: var(--app-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--app-code), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: var(--app-display), Georgia, serif;
+  --font-rounded: var(--app-body), ui-sans-serif, system-ui, sans-serif;
+  --r-s: calc(var(--app-radius) - 2px);
+  --r-m: var(--app-radius);
+  --r-l: calc(var(--app-radius) + 4px);
+  --edge: none;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 6%), 0 4px 10px rgb(0 0 0 / 6%);
+  --shadow-hover: 0 2px 4px rgb(0 0 0 / 8%), 0 10px 22px rgb(0 0 0 / 8%);
+  --shadow-2: 0 4px 10px rgb(0 0 0 / 10%), 0 16px 36px rgb(0 0 0 / 14%);
+
   color: var(--text);
   background: var(--bg);
+  font-family: var(--font-sans);
+}
+
+/* The masthead's wordmark is set in the board's own pixel face. This app has a
+   display face of its own and uses it for exactly this — the name of the thing
+   you are looking at. */
+.board-frame .${HOST} [class*="wordmark"] {
+  font-family: var(--app-display), Georgia, serif;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 `;
 
