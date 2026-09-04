@@ -294,6 +294,20 @@ export function Schedule({
     onExpand?.(next);
   };
 
+  // Escape closes the month, the way it closes anything that has taken the
+  // surface. Only while it is open, and never over a dialog that has its own
+  // claim on the key.
+  useEffect(() => {
+    if (!expanded) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('dialog[open], [role="dialog"]')) return;
+      swap();
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  });
+
   useLayoutEffect(() => {
     const before = cameFrom.current;
     cameFrom.current = null;
