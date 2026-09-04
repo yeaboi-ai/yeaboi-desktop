@@ -11,6 +11,16 @@ export interface MenuPage {
   accelerator?: string;
 }
 
+/** A menu item that is not a page: it asks the window for something. */
+export interface MenuCommand {
+  label: string;
+  accelerator?: string;
+}
+
+/** The Go menu's first row, and the chord the palette answers to everywhere.
+ *  The menu owns it so the renderer never binds it a second time. */
+export const PALETTE_COMMAND: MenuCommand = { label: 'Find anything…', accelerator: 'CmdOrCtrl+K' };
+
 export const FILE_PAGES: readonly MenuPage[] = [
   { label: 'New project…', route: '/projects?new=1', accelerator: 'CmdOrCtrl+N' },
   { label: 'New session…', route: '/sessions', accelerator: 'CmdOrCtrl+Shift+N' },

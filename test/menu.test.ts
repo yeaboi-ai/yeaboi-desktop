@@ -7,6 +7,7 @@ import {
   ABOUT_PAGES,
   FEEDBACK_PAGES,
   FILE_PAGES,
+  PALETTE_COMMAND,
   PRIVACY_PAGES,
   UPDATES_PAGES,
   goPages,
@@ -52,7 +53,7 @@ describe('menu bar', () => {
   });
 
   it('claims every shortcut once', () => {
-    const accelerators = [...FILE_PAGES, ...goPages('team')]
+    const accelerators = [PALETTE_COMMAND, ...FILE_PAGES, ...goPages('team')]
       .map((p) => p.accelerator)
       .filter((a): a is string => Boolean(a));
     expect(new Set(accelerators).size).toBe(accelerators.length);
@@ -60,6 +61,7 @@ describe('menu bar', () => {
 
   it('labels every item in sentence case', () => {
     for (const page of [
+      PALETTE_COMMAND,
       ...FILE_PAGES,
       ...goPages('team'),
       ...UPDATES_PAGES,

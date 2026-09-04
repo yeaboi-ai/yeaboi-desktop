@@ -126,7 +126,7 @@ export function CheatsheetSheet({ open, onOpenChange }: CheatsheetSheetProps) {
             </kbd>{' '}
             for keyboard shortcuts, or{' '}
             <kbd className="font-mono bg-foreground/[0.06] border border-border/70 rounded px-1.5 py-0.5">
-              ⌘K
+              ⌘⇧K
             </kbd>{' '}
             for the command palette.
           </p>

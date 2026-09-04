@@ -149,6 +149,12 @@ function showAbout(): void {
   mainWindow?.webContents.send('app:about');
 }
 
+/** Bring the window forward with the palette open: the Go menu's first row. */
+function showPalette(): void {
+  openApp();
+  mainWindow?.webContents.send('app:palette');
+}
+
 /** The one path a duck preference travels: store, window, tray checkbox. */
 function setPetPreference(patch: Partial<PetPrefs>): PetPrefs {
   const prefs = settings.setPet(patch);
@@ -376,6 +382,8 @@ if (!gotLock) {
     ipcMain.handle('pet:set-prefs', (_event, patch: unknown) =>
       setPetPreference((patch ?? {}) as Partial<PetPrefs>),
     );
+    ipcMain.handle('rail:get-prefs', () => settings.rail);
+    ipcMain.handle('rail:set-prefs', (_event, patch: unknown) => settings.setRail(patch));
 
     // The renderer reports the active theme's background so the next window
     // opens in the right colour. Fire-and-forget; bad values are dropped.
@@ -455,6 +463,7 @@ if (!gotLock) {
     };
     appMenu = new AppMenu({
       open: (route) => openApp(route),
+      palette: () => showPalette(),
       about: () => showAbout(),
       update: runUpdate,
       // The world flips here, in the store, and in the window at once.

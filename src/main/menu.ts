@@ -9,6 +9,7 @@ import { AUDIENCES, WORLD_COPY, type Audience } from '../shared/audience';
 import {
   FEEDBACK_PAGES,
   FILE_PAGES,
+  PALETTE_COMMAND,
   PRIVACY_PAGES,
   UPDATES_PAGES,
   goPages,
@@ -18,6 +19,7 @@ import { updateLabel, type UpdateState } from '../shared/update';
 
 export interface MenuActions {
   open: (route: string) => void;
+  palette: () => void;
   about: () => void;
   update: () => void;
   setAudience: (audience: Audience) => void;
@@ -169,7 +171,18 @@ export class AppMenu {
       ...appMenu,
       file,
       { role: 'editMenu' },
-      { label: 'Go', submenu: goPages(this.audience).map((page) => this.page(page)) },
+      {
+        label: 'Go',
+        submenu: [
+          {
+            label: PALETTE_COMMAND.label,
+            accelerator: PALETTE_COMMAND.accelerator,
+            click: () => this.actions.palette(),
+          },
+          separator,
+          ...goPages(this.audience).map((page) => this.page(page)),
+        ],
+      },
       world,
       duck,
       updates,

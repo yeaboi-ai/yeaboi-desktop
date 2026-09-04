@@ -10,7 +10,8 @@ import {
   nextActionStatus,
   reviewHeadline,
 } from '../src/renderer/lib/yeaboi/modes';
-import { paletteEntries } from '../src/renderer/lib/yeaboi/palette';
+import { railDestinations } from '../src/renderer/lib/nav/rail-catalogue';
+import { pageHits } from '../src/renderer/lib/yeaboi/palette';
 import { betaKeyFor } from '../src/renderer/lib/yeaboi/ambience';
 
 const action = (over: Partial<ReviewAction> = {}): ReviewAction => ({
@@ -86,11 +87,13 @@ describe('confidenceDrift', () => {
 });
 
 describe('the review route', () => {
-  it('sits in its own palette group', () => {
-    const entries = paletteEntries();
-    expect(entries.find((e) => e.path === '/solo/review')?.group).toBe('Solo');
-    expect(entries.find((e) => e.path === '/solo/review/report')?.group).toBe('Solo');
-    expect(entries.find((e) => e.path === '/team/ship')?.group).toBe('Team');
+  it('is a Solo mode in the palette, wherever it is opened from', () => {
+    const hits = pageHits(railDestinations(), null, 'team');
+    const review = hits.find((hit) => hit.href === '/solo/review');
+    expect(review?.group).toBe('modes');
+    expect(review?.world).toBe('solo');
+    expect(hits.find((hit) => hit.href === '/team/ship')?.world).toBeNull();
+    expect(hits.find((hit) => hit.href === '/solo/review/report')?.world).toBe('solo');
   });
 
   it('is gated by the weekly-review beta notice, sub-routes included', () => {

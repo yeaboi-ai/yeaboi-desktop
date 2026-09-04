@@ -2,8 +2,9 @@
 
 // The window's title bar, drawn by the app so it can hold more than a name:
 // back and forward on the left beside the native traffic lights, the world's
-// mascot and the page's name in the centre, and the pages about the app on
-// the right. The whole strip drags the window; only its buttons do not.
+// mascot and the page's name in the centre, and Find anything beside the pages
+// about the app on the right. The whole strip drags the window; only its
+// buttons do not.
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
@@ -13,11 +14,15 @@ import {
   Lock,
   Megaphone,
   MessageSquareText,
+  Search,
   Stethoscope,
 } from 'lucide-react';
 import { DOOR_MASCOT, WORLD_MASCOT } from '@/lib/audience/worlds';
 import { doorForPath } from '@/lib/yeaboi/home';
 import { useAudience } from '@/components/providers/audience-provider';
+import { usePalette } from '@/components/providers/palette-provider';
+import { platform } from '@/lib/yeaboi/api';
+import { PALETTE_PLACEHOLDER, modGlyph } from '@/lib/yeaboi/palette';
 import { pageTitle } from '@/lib/yeaboi/routes';
 import { ABOUT_PAGES } from '@shared/menu';
 import { updateIndicatorVisible } from '@shared/update';
@@ -71,6 +76,7 @@ export function TitleBar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { audience } = useAudience();
+  const { open } = usePalette();
   const edges = useHistoryEdges();
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
   // On a door's screens the door's own duck leads; elsewhere the world's mark.
@@ -120,6 +126,23 @@ export function TitleBar() {
           className={cn('ml-auto flex items-center gap-0.5', isMac ? 'pr-3' : 'pr-[150px]')}
           style={NO_DRAG}
         >
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  className={BUTTON}
+                  onClick={() => open()}
+                  aria-label={PALETTE_PLACEHOLDER}
+                />
+              }
+            >
+              <Search className="h-4 w-4" />
+            </TooltipTrigger>
+            <TooltipContent>
+              {PALETTE_PLACEHOLDER}, {modGlyph(platform())}K
+            </TooltipContent>
+          </Tooltip>
           {ABOUT_PAGES.map((page) => {
             const Icon = ICONS[page.route];
             const lit = pathname === page.route || pathname.startsWith(`${page.route}/`);

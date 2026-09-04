@@ -78,6 +78,8 @@ export interface YeaboiBridge {
   onNavigate: (callback: (route: string) => void) => void;
   /** The tray asking for the About panel, which is a modal and not a route. */
   onAbout: (callback: () => void) => void;
+  /** The Go menu asking for the palette, which is a dialog and not a route. */
+  onPalette: (callback: () => void) => void;
   /** The shell's own identity — versions the backend cannot know. */
   appMeta: () => Promise<{
     version: string;
@@ -94,6 +96,9 @@ export interface YeaboiBridge {
   petNotify: (notice: PetNotice) => void;
   getPetPrefs: () => Promise<unknown>;
   setPetPrefs: (patch: unknown) => Promise<unknown>;
+  /** The rail's icons per world; a patch names the worlds it replaces. */
+  getRailPrefs: () => Promise<unknown>;
+  setRailPrefs: (patch: unknown) => Promise<unknown>;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** The active theme's background — the next window opens in it. */
@@ -153,12 +158,17 @@ const bridge: YeaboiBridge = {
   onAbout: (callback) => {
     ipcRenderer.on('app:about', () => callback());
   },
+  onPalette: (callback) => {
+    ipcRenderer.on('app:palette', () => callback());
+  },
   appMeta: () => ipcRenderer.invoke('app:meta'),
   getPetEnabled: () => ipcRenderer.invoke('pet:get-enabled'),
   setPetEnabled: (enabled) => ipcRenderer.invoke('pet:set-enabled', enabled),
   petNotify: (notice) => ipcRenderer.send('pet:notify', notice),
   getPetPrefs: () => ipcRenderer.invoke('pet:get-prefs'),
   setPetPrefs: (patch) => ipcRenderer.invoke('pet:set-prefs', patch),
+  getRailPrefs: () => ipcRenderer.invoke('rail:get-prefs'),
+  setRailPrefs: (patch) => ipcRenderer.invoke('rail:set-prefs', patch),
   notify: (banner) => ipcRenderer.send('app:notify', banner),
   setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),
   onUpdateState: (callback) => {

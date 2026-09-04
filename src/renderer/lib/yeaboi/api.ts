@@ -36,6 +36,7 @@ interface Bridge {
   downloadUpdate: () => Promise<unknown>;
   installUpdate: () => Promise<unknown>;
   onAbout: (callback: () => void) => void;
+  onPalette: (callback: () => void) => void;
   platform: string;
 }
 
@@ -179,4 +180,9 @@ export function onUpdateState(callback: (state: UpdateState) => void): void {
 /** The tray asking for the About panel. */
 export function onAbout(callback: () => void): void {
   bridge().onAbout(callback);
+}
+
+/** The Go menu's Find anything: main has already brought the window forward. */
+export function onPalette(callback: () => void): void {
+  bridge().onPalette(callback);
 }
