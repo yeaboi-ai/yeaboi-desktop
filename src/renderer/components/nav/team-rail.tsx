@@ -201,9 +201,16 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       aria-label="Modes"
       // Any movement on the rail is asking for it — including from inside its
       // own notch, which is the only way to open it once you have arrived here
-      // through it.
-      onMouseMove={() => {
+      // through it. Except over Home, which is a destination and not a
+      // handle: reaching for the way back should not cost you the list
+      // opening under your hand. (On Home it is the only row there, so it has
+      // to stay the way the rail opens.)
+      onMouseMove={(event) => {
         sealed.current = false;
+        if (activeHref !== HOME_HREF && (event.target as HTMLElement).closest('[data-home]')) {
+          cancelOpen();
+          return;
+        }
         enter();
       }}
       onMouseLeave={leave}
@@ -261,6 +268,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   href={href}
                   title={label}
                   data-active={active}
+                  data-home={href === HOME_HREF || undefined}
                   // Reaching for Home from somewhere else is a click, not a
                   // request for the list — but on Home it is the only row
                   // there, so it has to be the way the rail opens.

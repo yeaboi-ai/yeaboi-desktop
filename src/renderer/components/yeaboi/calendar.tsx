@@ -181,6 +181,9 @@ const ARRIVE_MS = 420;
  *  given away slowly, which is what makes the week look like it was pushed
  *  rather than moved. */
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+/** How long the surface takes to clear before the month arrives — the fade in
+ *  globals.css, plus a frame to start it. */
+const CLEARING_MS = 300;
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
 
@@ -277,6 +280,9 @@ export function Schedule({
    *  new address. Set only by a swap, so a month *step* — which remounts the
    *  same grid — does not replay it. */
   const cameFrom = useRef<Map<string, DOMRect> | null>(null);
+  /** One shape change at a time: the two halves are sequenced, and a second
+   *  click in the middle would interleave them. */
+  const midSwap = useRef(false);
   const [month, setMonth] = useState(() => new Date());
   const [direction, setDirection] = useState(0);
   const today = isoDate(new Date());
@@ -347,26 +353,46 @@ export function Schedule({
     glide((strip.current?.scrollLeft ?? 0) + by * stride());
   };
 
-  /** Between the two shapes.
-   *
-   *  The days on screen do not go anywhere: their addresses are taken down
-   *  first, and after the other shape has rendered each one is put back where
-   *  it was and moved from there. In the month the week sits further along its
-   *  row, so what the eye sees is the days before it arriving and pushing it
-   *  across, and the rest of the month following it in. */
-  const swap = () => {
+  /** Takes the addresses down and changes shape. Whatever the days are doing
+   *  after that is measured against these. */
+  const change = useCallback((next: boolean) => {
     const seen = new Map<string, DOMRect>();
     for (const cell of document.querySelectorAll<HTMLElement>('[data-day]')) {
       const date = cell.dataset['day'];
       if (date) seen.set(date, cell.getBoundingClientRect());
     }
     cameFrom.current = seen;
-    const next = !expanded;
     setDirection(0);
     setMonth(new Date());
     setExpanded(next);
-    onExpand?.(next);
-  };
+  }, []);
+
+  /**
+   * Between the two shapes, in order.
+   *
+   * The surface is cleared before the month arrives and given back after the
+   * week returns — the calendar never moves while something else is still
+   * fading. Doing both at once also put the two on the same frames, and the
+   * calendar's own move is the expensive half: the fade spent its first third
+   * waiting for it.
+   */
+  const swap = useCallback(() => {
+    if (midSwap.current) return;
+    midSwap.current = true;
+    if (!expanded) {
+      onExpand?.(true);
+      window.setTimeout(() => {
+        change(true);
+        midSwap.current = false;
+      }, CLEARING_MS);
+      return;
+    }
+    change(false);
+    window.setTimeout(() => {
+      onExpand?.(false);
+      midSwap.current = false;
+    }, MOVE_MS);
+  }, [expanded, onExpand, change]);
 
   // The back control comes on with the month and stays through its own exit.
   useEffect(() => {
