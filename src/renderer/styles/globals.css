@@ -1029,6 +1029,15 @@ html[data-audience='agents'] {
    card, top down, so a page turn has a direction rather than simply being a
    different screen. Depth two, because a page's root is a wrapper and its
    items are the wrapper's children. */
+@keyframes board-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes deck-rise {
   from {
     opacity: 0;
@@ -1041,8 +1050,16 @@ html[data-audience='agents'] {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .deck-page > * > * {
+  .deck-page > *:not(.board-frame) > * {
     animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* The board arrives as one thing instead — and only fades. A transform on
+     the frame makes it the containing block for everything the board pins to
+     the window, which pulls its dock and its shell in off the edges. The rise
+     is left to the board's own contents, which have one. */
+  .deck-page > .board-frame {
+    animation: board-in 320ms ease both;
   }
 
   /* The page's sections rise; its heading does not. Which element holds those
@@ -1050,62 +1067,67 @@ html[data-audience='agents'] {
      every wrapper that still contains the h1 — the last one is the stage and
      its children are what deal themselves in. `:where` keeps the descent at
      zero specificity, so the rules below still take the heading, and any
-     wrapper still holding it, back out of the animation. */
+     wrapper still holding it, back out of the animation.
+
+     A staged board is exempt at the first step: it deals itself in, its own
+     modals move on their own terms, and this descent — which walks down
+     through any wrapper still holding an h1 — lands inside it and replays
+     every time the board re-renders that region. */
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > * {
     animation: deck-rise 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(2) {
     animation-delay: 50ms;
   }
 
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(3) {
     animation-delay: 100ms;
   }
 
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(4) {
     animation-delay: 150ms;
   }
 
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(5) {
     animation-delay: 200ms;
   }
 
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(6) {
     animation-delay: 250ms;
@@ -1114,10 +1136,10 @@ html[data-audience='agents'] {
   /* Everything past the sixth arrives together — a stagger long enough to
      count is a wait. */
   :where(
-      .deck-page > * > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-      .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1)
+      .deck-page > *:not(.board-frame) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+      .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1)
     )
     > *:nth-child(n + 7) {
     animation-delay: 290ms;
@@ -1125,10 +1147,10 @@ html[data-audience='agents'] {
 
   /* The heading itself, wherever it sits, and every wrapper still holding it —
      a wrapper that rises carries the title 16px with it. */
-  .deck-page > * > :has(h1),
-  .deck-page > * > :has(h1) > :has(h1),
-  .deck-page > * > :has(h1) > :has(h1) > :has(h1),
-  .deck-page > * > :has(h1) > :has(h1) > :has(h1) > :has(h1),
+  .deck-page > *:not(.board-frame) > :has(h1),
+  .deck-page > *:not(.board-frame) > :has(h1) > :has(h1),
+  .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1),
+  .deck-page > *:not(.board-frame) > :has(h1) > :has(h1) > :has(h1) > :has(h1),
   .deck-page h1,
   .deck-page h1 + p,
   .deck-page :has(> h1),
@@ -1136,27 +1158,27 @@ html[data-audience='agents'] {
     animation: none;
   }
 
-  .deck-page > * > *:nth-child(2) {
+  .deck-page > *:not(.board-frame) > *:nth-child(2) {
     animation-delay: 50ms;
   }
 
-  .deck-page > * > *:nth-child(3) {
+  .deck-page > *:not(.board-frame) > *:nth-child(3) {
     animation-delay: 100ms;
   }
 
-  .deck-page > * > *:nth-child(4) {
+  .deck-page > *:not(.board-frame) > *:nth-child(4) {
     animation-delay: 150ms;
   }
 
-  .deck-page > * > *:nth-child(5) {
+  .deck-page > *:not(.board-frame) > *:nth-child(5) {
     animation-delay: 200ms;
   }
 
-  .deck-page > * > *:nth-child(6) {
+  .deck-page > *:not(.board-frame) > *:nth-child(6) {
     animation-delay: 250ms;
   }
 
-  .deck-page > * > *:nth-child(n + 7) {
+  .deck-page > *:not(.board-frame) > *:nth-child(n + 7) {
     animation-delay: 290ms;
   }
 }

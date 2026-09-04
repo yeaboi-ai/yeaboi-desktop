@@ -147,7 +147,6 @@ const INHERIT = `
  * bottom and the shadow it paints its own screen edge with: this app already
  * draws the window it is in. */
 .board-frame .${HOST} [class*='shellApp'] {
-  top: var(--titlebar-h);
   border-radius: 0;
   box-shadow: none;
 }
@@ -166,7 +165,9 @@ const INHERIT = `
   height: 26px;
   align-items: center;
   gap: 8px;
-  margin: 8px 16px 0;
+  /* Clear of the window buttons, and that is the only inset the board pays:
+     it keeps the whole window otherwise, titlebar strip included. */
+  margin: calc(var(--titlebar-h) + 8px) 16px 0;
   border: 0;
   background: transparent;
   box-shadow: none;
