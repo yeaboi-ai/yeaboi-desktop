@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { CalendarClock, Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
@@ -86,6 +87,11 @@ export function HomeDashboard() {
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const schedule = useSchedule();
+  const { data: session } = useSession();
+  // First name only, and nothing at all until the identity is loaded — the
+  // fallback identity is called "You", and greeting someone by it is worse
+  // than greeting them by nothing.
+  const first = (session?.user?.name ?? '').trim().split(/\s+/)[0];
   // A month grid takes the surface. The tiles leave as it opens and come back
   // with the week — mounted through their own exit, or there is nothing to
   // animate.
@@ -118,7 +124,9 @@ export function HomeDashboard() {
     <Surface>
       {/* Positioned, because what leaves is pinned against it. */}
       <div className="relative">
-        <h1 className="font-display text-2xl text-foreground">Dashboard</h1>
+        <h1 className="font-display text-2xl text-foreground">
+          Welcome{first && first !== 'You' ? `, ${first}` : ''}
+        </h1>
 
         {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}

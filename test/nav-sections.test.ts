@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
-import { navItems, navSections, railSections } from '../src/renderer/lib/nav/sections';
+import { navItems, navSections, opsSection, railSections } from '../src/renderer/lib/nav/sections';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const registry = JSON.parse(
@@ -138,6 +138,29 @@ describe('navSections', () => {
           .filter((href) => !opsHrefs.includes(href));
         expect(rail).toEqual(expected);
       }
+    });
+  });
+
+  describe('opsSection', () => {
+    it('carries exactly what the rail dropped', () => {
+      // The drawer and the rail together are the world's whole nav — the rail
+      // lost a third of it when it stopped drawing Ops, and this is the door
+      // back to that third.
+      for (const audience of AUDIENCES) {
+        const rail = railSections(audience).flatMap((s) => s.items.map((i) => i.href));
+        const drawer = opsSection(audience)?.items.map((i) => i.href) ?? [];
+        expect([...rail, ...drawer].sort()).toEqual(
+          navItems(audience)
+            .map((i) => i.href)
+            .sort(),
+        );
+      }
+    });
+
+    it('is empty only where the rail already carries everything', () => {
+      expect(opsSection('team')?.items.map((i) => i.href)).toContain('/system-check');
+      expect(opsSection('solo')?.items.map((i) => i.href)).toContain('/system-check');
+      expect(opsSection('agents')).toBeNull();
     });
   });
 });

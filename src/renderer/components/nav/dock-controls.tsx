@@ -10,9 +10,22 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Check, ChevronsUpDown, Settings } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  ChevronsUpDown,
+  Gauge,
+  Lock,
+  MessageSquare,
+  ScrollText,
+  Settings,
+  Sparkles,
+  Stethoscope,
+  Wrench,
+} from 'lucide-react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { opsSection, type IconKey } from '@/lib/nav/sections';
 
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
@@ -91,6 +104,83 @@ function ScopeSelect({
   );
 }
 
+/** A face for each of the drawer's pages. The rail's own map does not carry
+ *  them — it never draws these. */
+const OPS_ICONS: Partial<Record<IconKey, typeof Settings>> = {
+  ceremonies: CalendarDays,
+  provenance: ScrollText,
+  usage: Gauge,
+  'whats-new': Sparkles,
+  'system-check': Stethoscope,
+  privacy: Lock,
+  feedback: MessageSquare,
+};
+
+/** Ops, as a menu on the row rather than a third of a sidebar.
+ *
+ * It is the section the rail leaves out — settings-adjacent pages rather than
+ * things you run — so it opens beside settings, in the same shape the scope
+ * selects open in. */
+function OpsMenu({ cmdHeld }: { cmdHeld: boolean }) {
+  const pathname = usePathname();
+  const { audience } = useAudience();
+  const [open, setOpen] = useState(false);
+  const section = opsSection(audience);
+  if (!section) return null;
+
+  const here = (href: string) => Boolean(pathname?.startsWith(href));
+  const active = section.items.some((item) => here(item.href));
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            title={section.label ?? 'Ops'}
+            aria-label={section.label ?? 'Ops'}
+            className={`${FLOAT} ${CONTROL} flex w-8 items-center justify-center transition-colors ${
+              active || open
+                ? 'text-foreground'
+                : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+            }`}
+            style={{
+              boxShadow: active
+                ? `inset 0 0 0 1px var(--${cmdHeld ? 'primary' : 'border'})`
+                : undefined,
+            }}
+          >
+            <Wrench className="h-[14px] w-[14px]" />
+          </button>
+        }
+      />
+      <PopoverContent side="top" align="start" className="w-52 p-1">
+        <div role="menu" aria-label={section.label ?? 'Ops'} className="flex flex-col gap-0.5">
+          {section.items.map((item) => {
+            const Icon = OPS_ICONS[item.icon] ?? Settings;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-body text-[12px] transition-colors duration-150 ${
+                  here(item.href)
+                    ? 'bg-secondary/60 text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -140,6 +230,8 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           >
             <Settings className="h-[14px] w-[14px]" />
           </Link>
+
+          <OpsMenu cmdHeld={cmdHeld} />
 
           <div className={`${FLOAT} ${CONTROL} flex w-8 items-center justify-center`}>
             <ThemeSwitcher />

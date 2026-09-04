@@ -147,3 +147,11 @@ export function navItems(audience: Audience): NavItemSpec[] {
 export function railSections(audience: Audience): NavSectionSpec[] {
   return navSections(audience).filter((section) => section.label !== OPS.label);
 }
+
+/** The section the rail leaves out, for whoever draws the door to it.
+ *
+ * Null in the worlds that have no Ops — the agents world keeps its two
+ * settings-adjacent pages in the rail, so there is nothing left over. */
+export function opsSection(audience: Audience): NavSectionSpec | null {
+  return navSections(audience).find((section) => section.label === OPS.label) ?? null;
+}
