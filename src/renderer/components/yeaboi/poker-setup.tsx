@@ -12,8 +12,12 @@
 // the answer before it makes it relevant. What is about to be estimated is
 // shown before anyone is invited to estimate it — the count, the scope, and the
 // tickets themselves behind one disclosure.
+//
+// Answering the last question is the instruction. There is no button to press
+// afterwards: the tickets are fetched the moment the answers are complete, and
+// again whenever one of them changes.
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type PickOption,
@@ -204,7 +208,7 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
     }
   }
 
-  async function fetchScope() {
+  const fetchScope = useCallback(async () => {
     setBusy(true);
     setError('');
     try {
@@ -223,6 +227,36 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
       setError((e as Error).message);
     }
     setBusy(false);
+  }, [source, scope, asksSprint, asksTypes, sprints, sprintIndex, checked]);
+
+  /** The answers, as one value. While it is empty the wizard is still being
+   *  asked; when it changes there is something new to fetch. */
+  const answers = ready
+    ? JSON.stringify([
+        source,
+        scope,
+        asksSprint ? sprintIndex : null,
+        asksTypes ? [...checked].sort() : null,
+      ])
+    : '';
+  const fetchedFor = useRef('');
+
+  useEffect(() => {
+    // Once per set of answers. A failure leaves this set, so a broken tracker
+    // is reported rather than asked the same question forever; the retry
+    // beside the message is how it is asked again.
+    if (!answers || fetchedFor.current === answers) return;
+    fetchedFor.current = answers;
+    void fetchScope();
+    // `fetchScope` is rebuilt whenever an answer changes, which is exactly when
+    // `answers` changes — following both would fetch twice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers]);
+
+  function retry() {
+    fetchedFor.current = '';
+    setError('');
+    void fetchScope();
   }
 
   async function deal() {
@@ -356,43 +390,31 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {!tickets && (
-          <Button
-            className="h-10 px-4 text-[13px]"
-            disabled={!ready || busy}
-            onClick={() => void fetchScope()}
-          >
-            {busy ? 'Reading the tracker…' : 'Find the tickets'}
-          </Button>
-        )}
         {tickets && tickets.length > 0 && (
-          <>
-            <Button className="h-10 px-4 text-[13px]" disabled={busy} onClick={() => void deal()}>
-              {busy ? 'Dealing…' : `Start the session · ${tickets.length} tickets`}
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-10 px-3 text-[12.5px]"
-              onClick={() => setTickets(null)}
-            >
-              Change the scope
-            </Button>
-          </>
-        )}
-        {tickets && tickets.length === 0 && (
-          <Button variant="secondary" className="h-10 px-4" onClick={() => setTickets(null)}>
-            Nothing came back — pick again
+          <Button className="h-10 px-4 text-[13px]" disabled={busy} onClick={() => void deal()}>
+            {busy ? 'Dealing…' : `Start the session · ${tickets.length} tickets`}
           </Button>
         )}
-        {!ready && !tickets && (
+        {busy && !tickets && (
+          <p className="font-body text-[12px] text-muted-foreground">Reading the tracker…</p>
+        )}
+        {!ready && !busy && (
           <p className="font-body text-[12px] text-muted-foreground">
             {source
               ? 'Pick what to estimate.'
               : 'Pick where the tickets come from and yeaboi does the rest.'}
           </p>
         )}
-        {chosenSprint && !tickets && (
+        {chosenSprint && !tickets && !busy && (
           <p className="font-body text-[12px] text-muted-foreground">{chosenSprint.sub}</p>
+        )}
+        {/* The tracker answered with nothing, or would not answer. Either way
+            the choices above are still there to change; this is for asking the
+            same question again. */}
+        {error && !busy && !tickets?.length && (
+          <Button variant="secondary" className="h-10 px-3 text-[12.5px]" onClick={retry}>
+            Try again
+          </Button>
         )}
       </div>
 
