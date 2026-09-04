@@ -123,8 +123,12 @@ export function HomeDashboard() {
         {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
         {/* The room under the calendar is the calendar's, not the tiles' —
-            what gets pinned in place should carry no margin of its own. */}
-        <div className="mb-6 mt-3">
+            what gets pinned in place should carry no margin of its own. Above
+            them, too: the deck's page-turn leaves a transform on every child
+            of a surface, and a transform is a stacking context — so the
+            calendar's own order counted for nothing against a sibling that
+            came later in the tree. This is the box that has to carry it. */}
+        <div className="relative z-10 mb-6 mt-3">
           <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
         </div>
 

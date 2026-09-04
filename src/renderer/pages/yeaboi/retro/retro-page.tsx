@@ -118,8 +118,12 @@ function RetroBody() {
         )}
       </header>
 
-      {/* When the retro is, before what the last one said. */}
-      <Schedule ceremonies={mine} onExpand={setMonthView} />
+      {/* When the retro is, before what the last one said. Positioned above
+          what it displaces — see the dashboard for why that has to live
+          here. */}
+      <div className="relative z-10">
+        <Schedule ceremonies={mine} onExpand={setMonthView} />
+      </div>
 
       <Displaced away={monthView}>
         <div className="space-y-4">

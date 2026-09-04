@@ -183,6 +183,55 @@ const ARRIVE_MS = 420;
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
+/** The minimised month at the head of the strip. */
+const MINI_W = 76;
+
+/**
+ * The month, small enough to sit in the strip.
+ *
+ * It replaces a button that said "Month". A word telling you what you would
+ * get is a worse offer than the thing itself at a glance — and it puts the two
+ * shapes side by side, which is what the change between them is.
+ */
+function MiniMonth({ month, today, onOpen }: { month: Date; today: string; onOpen: () => void }) {
+  const days = useMemo(() => monthGrid(month), [month]);
+  const weeks = useMemo(
+    () => Array.from({ length: days.length / 7 }, (_, row) => days.slice(row * 7, row * 7 + 7)),
+    [days],
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label="Open the month"
+      title="Open the month"
+      className="flex shrink-0 flex-col justify-center gap-[3px] self-stretch rounded-xl bg-secondary/40 p-2 transition-colors hover:bg-secondary/70"
+      style={{ width: MINI_W }}
+    >
+      {weeks.map((week) => (
+        <span key={isoDate(week[0]!)} className="flex gap-[3px]">
+          {week.map((day) => {
+            const date = isoDate(day);
+            return (
+              <span
+                key={date}
+                aria-hidden
+                className={`h-[5px] flex-1 rounded-[1.5px] ${
+                  date === today
+                    ? 'bg-primary'
+                    : day.getMonth() === month.getMonth()
+                      ? 'bg-muted-foreground/25'
+                      : 'bg-muted-foreground/10'
+                }`}
+              />
+            );
+          })}
+        </span>
+      ))}
+    </button>
+  );
+}
 
 /** The shape of the grid a day is moving through: where its rows start and
  *  end, and how far apart they are. */
@@ -449,11 +498,12 @@ export function Schedule({
   };
 
   return (
-    // Above whatever it is displacing. What leaves is pinned where it stood,
-    // which is exactly where the month is about to draw, and a positioned box
-    // paints over the flow — so the month spent its arrival behind the thing
-    // it was replacing.
-    <section className="relative z-10">
+    // In front of whatever it is displacing, and solid about it. What leaves is
+    // pinned where it stood, which is exactly where the month is about to
+    // draw: a positioned box paints over the flow, so without the order the
+    // month arrived underneath — and without the ground it arrived through,
+    // since a day is a tint and shows whatever is still behind it.
+    <section className="relative z-10 bg-background">
       {/* The controls lead the row. A week needs no title — the days say which
           week it is — and a month puts its name after the controls that
           changed it. */}
@@ -490,9 +540,6 @@ export function Schedule({
           >
             ›
           </button>
-          <button type="button" onClick={swap} className={`${STEP} ml-1`}>
-            {expanded ? 'Week' : 'Month'}
-          </button>
         </div>
         {expanded && (
           <h2 className="font-body text-[13px] font-medium text-foreground">
@@ -528,31 +575,34 @@ export function Schedule({
           ))}
         </div>
       ) : (
-        <div
-          ref={strip}
-          key={expanded ? 'month' : 'week'}
-          data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
-          onPointerDown={stopGlide}
-          onWheel={stopGlide}
-          className="mt-2 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {days.map((day) => (
-            <div
-              key={isoDate(day)}
-              // A seventh of the strip, less its share of the six gaps between
-              // them, so exactly one week is in view at any width.
-              className="w-[calc((100%-48px)/7)] shrink-0 snap-start"
-            >
-              <DayCell
-                day={day}
-                slots={slots.get(isoDate(day)) ?? []}
-                today={today}
-                showWeekday
-                height={84}
-                limit={4}
-              />
-            </div>
-          ))}
+        <div className="mt-2 flex gap-2" style={{ minHeight: 84 }}>
+          <MiniMonth month={month} today={today} onOpen={swap} />
+          <div
+            ref={strip}
+            key={expanded ? 'month' : 'week'}
+            data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
+            onPointerDown={stopGlide}
+            onWheel={stopGlide}
+            className="flex min-w-0 flex-1 snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {days.map((day) => (
+              <div
+                key={isoDate(day)}
+                // A seventh of the strip, less its share of the six gaps
+                // between them, so exactly one week is in view at any width.
+                className="w-[calc((100%-48px)/7)] shrink-0 snap-start"
+              >
+                <DayCell
+                  day={day}
+                  slots={slots.get(isoDate(day)) ?? []}
+                  today={today}
+                  showWeekday
+                  height={84}
+                  limit={4}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>

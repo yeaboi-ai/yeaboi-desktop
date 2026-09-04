@@ -108,8 +108,11 @@ function PokerBody() {
         </header>
 
         {/* When the poker is, before what it is: the calendar leads the
-            surface, and only poker is on it. */}
-        <Schedule ceremonies={mine} onExpand={setMonthView} />
+            surface, and only poker is on it. Positioned above what it
+            displaces — see the dashboard for why that has to live here. */}
+        <div className="relative z-10">
+          <Schedule ceremonies={mine} onExpand={setMonthView} />
+        </div>
 
         {/* The panel leaves as the month opens, and is off the page by the
             time it has. */}
