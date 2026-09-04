@@ -181,12 +181,6 @@ const ARRIVE_MS = 420;
  *  given away slowly, which is what makes the week look like it was pushed
  *  rather than moved. */
 const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
-/** How long the surface takes to clear before the month arrives — the fade in
- *  globals.css, plus a frame to start it. */
-const CLEARING_MS = 300;
-/** How much of the week's return goes by before the surface starts coming
- *  back. Most of the distance is covered in the first half of the move. */
-const RETURNING_MS = 260;
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
 
@@ -371,33 +365,22 @@ export function Schedule({
   }, []);
 
   /**
-   * Between the two shapes, in order.
+   * Between the two shapes.
    *
-   * The surface is cleared before the month arrives and given back after the
-   * week returns — the calendar never moves while something else is still
-   * fading. Doing both at once also put the two on the same frames, and the
-   * calendar's own move is the expensive half: the fade spent its first third
-   * waiting for it.
+   * The surface goes and the calendar changes shape on the same frame: one
+   * gesture, not a handover. What used to make that look like two — the
+   * displaced content falling, a scrollbar for the length of it, and a blink
+   * where a timer cut the fade short — is fixed where it was, in `Displaced`.
    */
   const swap = useCallback(() => {
     if (midSwap.current) return;
     midSwap.current = true;
-    if (!expanded) {
-      onExpand?.(true);
-      window.setTimeout(() => {
-        change(true);
-        midSwap.current = false;
-      }, CLEARING_MS);
-      return;
-    }
-    change(false);
-    // Not after the week has landed — as it is landing. Waiting for the last
-    // of a long tail and then starting a fade is most of a second of nothing
-    // happening.
+    const next = !expanded;
+    onExpand?.(next);
+    change(next);
     window.setTimeout(() => {
-      onExpand?.(false);
       midSwap.current = false;
-    }, RETURNING_MS);
+    }, MOVE_MS);
   }, [expanded, onExpand, change]);
 
   // The back control comes on with the month and stays through its own exit.

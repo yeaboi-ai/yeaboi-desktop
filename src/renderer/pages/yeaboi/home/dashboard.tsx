@@ -122,7 +122,9 @@ export function HomeDashboard() {
 
         {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
-        <div className="mt-3">
+        {/* The room under the calendar is the calendar's, not the tiles' —
+            what gets pinned in place should carry no margin of its own. */}
+        <div className="mb-6 mt-3">
           <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
         </div>
 
