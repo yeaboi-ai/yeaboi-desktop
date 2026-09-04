@@ -8,9 +8,10 @@
 // terminal and the desktop must walk the same wizard, and a demo session skips
 // everything after the source for a reason the backend owns.
 //
-// The questions are one row each, and a row is only there once the answer above
-// it makes it relevant: the panel grows as it is answered rather than standing
-// there as a form.
+// The questions are one line of named choices, and a choice is only there once
+// the answer before it makes it relevant. What is about to be estimated is
+// shown before anyone is invited to estimate it — the count, the scope, and the
+// tickets themselves behind one disclosure.
 
 import { useEffect, useState } from 'react';
 
@@ -31,9 +32,6 @@ interface Ticket {
   title?: string;
   summary?: string;
 }
-
-/** How many of the fetched tickets are named before the rest are counted. */
-const NAMED = 8;
 
 const PILL =
   'rounded-full px-3 py-1.5 text-left font-body text-[12px] transition-colors ring-1 disabled:opacity-50';
@@ -65,15 +63,33 @@ function Pill({
   );
 }
 
-/** One question: its name on the left, its answers on the right. */
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** One question, as a named choice. A select rather than a row of pills: the
+ *  answer is readable at a glance once it is made, which a lit pill among five
+ *  others is not. */
+function Choice({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2 py-2.5">
-      <p className="w-24 shrink-0 font-body text-[10px] uppercase tracking-wide text-muted-foreground">
+    <label className="flex min-w-[160px] flex-1 flex-col gap-1">
+      <span className="font-body text-[10px] uppercase tracking-wide text-muted-foreground">
         {label}
-      </p>
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{children}</div>
-    </div>
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-9 rounded-lg bg-secondary/40 px-2.5 font-body text-[12.5px] text-foreground ring-1 ring-border/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 
@@ -175,60 +191,64 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
     );
   }
 
+  const chosenSprint = sprintOptions[sprintIndex];
+  const summary = tickets
+    ? `${tickets.length} ticket${tickets.length === 1 ? '' : 's'}${scopeLabel ? ` · ${scopeLabel}` : ''}`
+    : '';
+
   return (
-    <div className="divide-y divide-border/40">
-      <Row label="Tickets from">
-        {options.sources.map((option) => (
-          <Pill
-            key={option.key}
-            chosen={source === option.key}
-            label={option.label}
-            sub={option.sub}
-            onClick={() => void pickSource(option.key)}
-          />
-        ))}
-      </Row>
-
-      {asksScope && (
-        <Row label="Which ones">
-          {options.scopes.map((option) => (
-            <Pill
-              key={option.key}
-              chosen={scope === option.key}
-              label={option.label}
-              sub={option.sub}
-              onClick={() => void pickScope(option.key)}
-            />
+    <div className="flex flex-col gap-4">
+      {/* The questions, as one line of choices rather than a wizard of pages.
+          Everything a session needs is visible before it starts: where the
+          tickets come from, which ones, and — once fetched — exactly which. */}
+      <div className="flex flex-wrap items-end gap-3">
+        <Choice label="Tickets from" value={source} onChange={(key) => void pickSource(key)}>
+          <option value="">Pick a source…</option>
+          {options.sources.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.label}
+            </option>
           ))}
-        </Row>
-      )}
+        </Choice>
 
-      {asksSprint && (
-        <Row label="Sprint">
-          {sprintOptions.length === 0 ? (
-            <p className="font-body text-[12px] text-muted-foreground">
-              No sprints found — check the board&apos;s credentials, or estimate the backlog
-              instead.
-            </p>
-          ) : (
-            <select
-              value={String(sprintIndex)}
-              onChange={(e) => setSprintIndex(Number(e.target.value))}
-              className="max-w-full rounded-full bg-secondary/40 px-3 py-1.5 font-body text-[12px] text-foreground ring-1 ring-transparent focus:outline-none focus:ring-primary/40"
-            >
-              {sprintOptions.map((option, index) => (
-                <option key={option.key} value={String(index)}>
-                  {option.label}
-                  {option.sub ? ` · ${option.sub}` : ''}
-                </option>
-              ))}
-            </select>
-          )}
-        </Row>
+        {asksScope && (
+          <Choice label="Which ones" value={scope} onChange={(key) => void pickScope(key)}>
+            <option value="">Pick a scope…</option>
+            {options.scopes.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </Choice>
+        )}
+
+        {asksSprint && sprintOptions.length > 0 && (
+          <Choice
+            label="Sprint"
+            value={String(sprintIndex)}
+            onChange={(key) => setSprintIndex(Number(key))}
+          >
+            {sprintOptions.map((option, index) => (
+              <option key={option.key} value={String(index)}>
+                {option.label}
+                {option.sub ? ` · ${option.sub}` : ''}
+              </option>
+            ))}
+          </Choice>
+        )}
+      </div>
+
+      {asksSprint && sprintOptions.length === 0 && (
+        <p className="font-body text-[12px] text-muted-foreground">
+          No sprints found — check the board&apos;s credentials, or estimate the backlog instead.
+        </p>
       )}
 
       {asksTypes && (
-        <Row label="Types">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="mr-1 font-body text-[10px] uppercase tracking-wide text-muted-foreground">
+            Types
+          </p>
           {types.map((type) => (
             <Pill
               key={type.key}
@@ -244,58 +264,75 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
               }
             />
           ))}
-        </Row>
-      )}
-
-      {ready && (
-        <Row label={tickets ? scopeLabel || 'Scope' : 'Then'}>
-          {!tickets && (
-            <Button size="sm" variant="secondary" disabled={busy} onClick={() => void fetchScope()}>
-              {busy ? 'Fetching…' : 'Fetch tickets'}
-            </Button>
-          )}
-          {tickets && tickets.length > 0 && (
-            <>
-              <Button size="sm" disabled={busy} onClick={() => void deal()}>
-                {busy ? 'Dealing…' : `Deal ${tickets.length} tickets`}
-              </Button>
-              <button
-                type="button"
-                onClick={() => setTickets(null)}
-                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              >
-                change
-              </button>
-            </>
-          )}
-          {tickets && tickets.length === 0 && (
-            <Button size="sm" variant="secondary" onClick={() => setTickets(null)}>
-              Nothing came back — pick again
-            </Button>
-          )}
-        </Row>
-      )}
-
-      {tickets && tickets.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pt-3">
-          {tickets.slice(0, NAMED).map((ticket, index) => (
-            <span
-              key={ticket.key ?? ticket.id ?? index}
-              title={ticket.title ?? ticket.summary}
-              className="max-w-[220px] truncate rounded-md bg-secondary/40 px-2 py-1 font-code text-[10px] text-muted-foreground"
-            >
-              {ticket.key ?? ticket.id} {ticket.title ?? ticket.summary}
-            </span>
-          ))}
-          {tickets.length > NAMED && (
-            <span className="px-1 py-1 font-body text-[11px] text-muted-foreground/70">
-              +{tickets.length - NAMED} more
-            </span>
-          )}
         </div>
       )}
 
-      {error && <p className="pt-3 font-body text-[12px] text-muted-foreground">{error}</p>}
+      {/* What is about to be estimated, before anybody is invited to estimate
+          it: the count, the scope it came from, and the tickets themselves
+          behind one disclosure. */}
+      {tickets && tickets.length > 0 && (
+        <details className="rounded-xl bg-secondary/30 px-3 py-2">
+          <summary className="cursor-pointer select-none font-body text-[12.5px] text-foreground">
+            {summary}
+          </summary>
+          <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain pr-1">
+            {tickets.map((ticket, index) => (
+              <li
+                key={ticket.key ?? ticket.id ?? index}
+                className="flex items-baseline gap-2 font-body text-[12px] text-muted-foreground"
+              >
+                <span className="shrink-0 font-code text-[10px] text-foreground">
+                  {ticket.key ?? ticket.id}
+                </span>
+                <span className="min-w-0 truncate">{ticket.title ?? ticket.summary}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {!tickets && (
+          <Button
+            className="h-10 px-4 text-[13px]"
+            disabled={!ready || busy}
+            onClick={() => void fetchScope()}
+          >
+            {busy ? 'Reading the tracker…' : 'Find the tickets'}
+          </Button>
+        )}
+        {tickets && tickets.length > 0 && (
+          <>
+            <Button className="h-10 px-4 text-[13px]" disabled={busy} onClick={() => void deal()}>
+              {busy ? 'Dealing…' : `Start the session · ${tickets.length} tickets`}
+            </Button>
+            <Button
+              variant="secondary"
+              className="h-10 px-3 text-[12.5px]"
+              onClick={() => setTickets(null)}
+            >
+              Change the scope
+            </Button>
+          </>
+        )}
+        {tickets && tickets.length === 0 && (
+          <Button variant="secondary" className="h-10 px-4" onClick={() => setTickets(null)}>
+            Nothing came back — pick again
+          </Button>
+        )}
+        {!ready && !tickets && (
+          <p className="font-body text-[12px] text-muted-foreground">
+            {source
+              ? 'Pick what to estimate.'
+              : 'Pick where the tickets come from and yeaboi does the rest.'}
+          </p>
+        )}
+        {chosenSprint && !tickets && (
+          <p className="font-body text-[12px] text-muted-foreground">{chosenSprint.sub}</p>
+        )}
+      </div>
+
+      {error && <p className="font-body text-[12px] text-muted-foreground">{error}</p>}
     </div>
   );
 }
