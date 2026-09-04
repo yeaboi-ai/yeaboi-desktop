@@ -1340,23 +1340,25 @@ html[data-audience='agents'] {
   display: none;
 }
 
-/* A staged board is the window. The chrome retreats off its own edges while
-   the table is up and comes back when it goes — the duck stays, being the one
-   thing on screen that is not chrome.
+/* A staged board is the window. Everything of this app's own retreats off its
+   own edge while the table is up and comes back when it goes — the duck
+   included: he stands exactly where the board keeps its invite.
 
    `translate` rather than `transform`: the dock is centred and the rail is
    half-height-offset by their own transforms, and this composes with those
    instead of fighting them for the property. */
 [data-dock],
 [data-rail],
-[data-niko] {
+[data-niko],
+[data-duck] {
   transition:
     translate 460ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 260ms ease;
 }
 
 :root[data-board-staged] [data-dock],
-:root[data-board-staged] [data-niko] {
+:root[data-board-staged] [data-niko],
+:root[data-board-staged] [data-duck] {
   translate: 0 160px;
   opacity: 0;
   pointer-events: none;

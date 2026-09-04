@@ -106,7 +106,19 @@ export function PokerBoard({
     document.documentElement.dataset[STAGED] = boardId;
     const style = document.createElement('style');
     style.dataset['boardTokens'] = '';
-    style.textContent = `${tokens.replaceAll(':root', `.${HOST}`)}\n${INHERIT}`;
+    // Scoped, not merely re-rooted. The board's stylesheet carries element
+    // rules of its own — `:where(button, input, …)` and the rest — and applied
+    // to the document they restyle the app around it: the way out of the table
+    // came back as a bare grey rectangle. `@scope` keeps every rule inside the
+    // board's own subtree. Faces have to be hoisted out: `@font-face` is only
+    // valid at the top level.
+    const faces = tokens.match(/@font-face\s*\{[^}]*\}/g) ?? [];
+    const rest = tokens.replace(/@font-face\s*\{[^}]*\}/g, '');
+    style.textContent = [
+      ...faces,
+      `@scope (.${HOST}) {\n${rest.replaceAll(':root', ':scope')}\n}`,
+      INHERIT,
+    ].join('\n');
     document.head.append(style);
     return () => {
       playBoard('');

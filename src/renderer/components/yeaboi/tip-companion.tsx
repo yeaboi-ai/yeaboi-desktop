@@ -202,6 +202,7 @@ export function TipCompanion() {
         onClick={() => setEnabledSetting(true)}
         title="Show tips"
         aria-label="Show tips"
+        data-duck
         className="fixed bottom-2 right-4 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
       >
         <DuckMark size={QUIET_DUCK_SIZE} facing="left" />
@@ -226,6 +227,7 @@ export function TipCompanion() {
   return (
     <>
       <div
+        data-duck
         className="group fixed bottom-2 right-4 z-30"
         onMouseEnter={() => setEngaged(true)}
         onMouseLeave={() => setEngaged(false)}
