@@ -372,7 +372,7 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
       {tickets && tickets.length > 0 && (
         <div>
           <p className="font-body text-[12.5px] text-foreground">{summary}</p>
-          <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain pr-1">
+          <ul className="quiet-scroll mt-2 max-h-44 space-y-1 overflow-y-auto overscroll-contain">
             {tickets.map((ticket, index) => (
               <li
                 key={ticket.key ?? ticket.id ?? index}

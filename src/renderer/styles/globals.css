@@ -1379,14 +1379,14 @@ html[data-audience='agents'] {
   }
 }
 
-/* The conversation scrolls, but never draws a bar for it: the panel has no
-   background of its own, so a track down its edge is a line hanging in the
-   window. */
-.niko-scroll {
+/* Scrolls, but never draws a bar for it. Used where the scrolling box has no
+   background of its own — a track down its edge is then a line hanging in the
+   window rather than the side of something. */
+.quiet-scroll {
   scrollbar-width: none;
 }
 
-.niko-scroll::-webkit-scrollbar {
+.quiet-scroll::-webkit-scrollbar {
   display: none;
 }
 

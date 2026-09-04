@@ -611,7 +611,7 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              className={`niko-scroll flex min-h-0 flex-1 flex-col px-1 py-1 ${
+              className={`quiet-scroll flex min-h-0 flex-1 flex-col px-1 py-1 ${
                 settling ? 'overflow-hidden' : 'overflow-y-auto'
               }`}
             >
