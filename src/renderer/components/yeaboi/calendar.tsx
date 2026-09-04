@@ -177,9 +177,6 @@ function byDate(ceremonies: Scheduled[], days: Date[]): Map<string, Occurrence[]
  *  what pushes the week across. */
 const MOVE_MS = 620;
 const ARRIVE_MS = 420;
-const AFTER_DELAY_MS = 200;
-/** The most the last day in from the right waits behind the first. */
-const ROUND_THE_CORNER_MS = 260;
 /** Long tail: most of the distance is covered early and the last of it is
  *  given away slowly, which is what makes the week look like it was pushed
  *  rather than moved. */
@@ -408,45 +405,22 @@ export function Schedule({
     // it can say nothing about where a row ends or how far the next one is.
     const geo = rowsOf([...now.values()]) ?? rowsOf([...before.values()]);
 
-    // Everything the two shapes have in common, in the order the new one lays
-    // it out — so "before the week" and "after it" are simply either side.
-    const shared = cells.filter((cell) => before.has(cell.dataset['day'] ?? ''));
-    const first = shared[0] ? cells.indexOf(shared[0]) : 0;
-    const last = shared.at(-1) ? cells.indexOf(shared.at(-1)!) : cells.length;
-
-    for (const [index, cell] of cells.entries()) {
+    for (const cell of cells) {
       const was = before.get(cell.dataset['day'] ?? '');
       const is = now.get(cell.dataset['day'] ?? '');
+      // One motion for every day the two shapes share: same path, same start,
+      // same finish. Nothing is held back and nothing is faded in behind
+      // something else — a calendar that arrives in three goes is three
+      // animations, however well each one is timed.
       if (was && is) {
-        // A day that was on screen is carried from where it was, along the
-        // rows. The strip runs five weeks off the side of the window, though,
-        // and a day fetched from out there would spend the whole move
-        // off-screen and then appear — so it comes round the corner instead,
-        // in at the end of the row it belongs to, a beat behind the row above.
-        if (was.right > 0 && was.left < window.innerWidth) {
-          if (Math.abs(was.left - is.left) < 1 && Math.abs(was.top - is.top) < 1) continue;
-          cell.animate(wrapped(was, is, geo), { duration: MOVE_MS, easing: EASE });
-          continue;
-        }
-        if (geo) {
-          cell.animate(
-            [
-              { transform: `translateX(${geo.right - is.left}px)`, opacity: 0 },
-              { transform: 'none', opacity: 1, offset: 1 },
-            ],
-            {
-              duration: MOVE_MS,
-              delay: Math.min(Math.max(index - last, 0) * 9, ROUND_THE_CORNER_MS),
-              easing: EASE,
-              fill: 'both',
-            },
-          );
-          continue;
-        }
+        if (Math.abs(was.left - is.left) < 1 && Math.abs(was.top - is.top) < 1) continue;
+        cell.animate(wrapped(was, is, geo), { duration: MOVE_MS, easing: EASE });
+        continue;
       }
+      // Only a day neither shape had — the tail of a month the strip does not
+      // reach. It has nowhere to come from.
       cell.animate([{ opacity: 0 }, { opacity: 1 }], {
         duration: ARRIVE_MS,
-        delay: index < first ? 0 : index > last ? AFTER_DELAY_MS : 0,
         easing: EASE,
         fill: 'both',
       });
