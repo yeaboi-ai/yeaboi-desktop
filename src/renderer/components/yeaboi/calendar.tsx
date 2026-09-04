@@ -189,9 +189,9 @@ const GHOST_MS = 220;
 const STRIP_H = 84;
 /** The gap between one of its days and the next, both ways. */
 const MINI_GAP = 3;
-/** How much shorter than a day cell it stands. It is a picture of the month,
- *  not another day, and reads better a size down from its neighbours. */
-const MINI_INSET = 14;
+/** How much shorter than a day cell it stands: nothing. It fills the row the
+ *  strip gives it. */
+const MINI_INSET = 0;
 
 /** Its days come out square, so the width follows the height — and the height
  *  is fixed while the number of weeks in a month is not. */

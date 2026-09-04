@@ -15,17 +15,12 @@
 import { useEffect, useState } from 'react';
 
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { Displaced } from '@/components/yeaboi/displaced';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
-import { Schedule, useSchedule } from '@/components/yeaboi/calendar';
 import { PokerSetup } from '@/components/yeaboi/poker-setup';
 import { PokerBoard } from '@/components/yeaboi/poker-board';
 import { canPlayBoards } from '@/board/board-api';
 import { Panel, Surface } from '@/components/yeaboi/surface';
 import { type BoardSnapshot, loadBoards } from '@/lib/yeaboi/boards';
-
-/** Which ceremonies belong on this surface. */
-const MODES = ['poker'];
 
 interface PokerState {
   phase?: string;
@@ -67,14 +62,11 @@ function TableState({ board }: { board: BoardSnapshot }) {
 }
 
 function PokerBody() {
-  const { ceremonies } = useSchedule();
   const [liveId, setLiveId] = useState('');
   const [board] = useBoard(liveId);
   // Playing the board in the window: the table takes the surface and the app's
   // chrome steps back off its edges until it is left.
   const [staged, setStaged] = useState(false);
-  // A month grid takes the surface; the panel comes back with the week.
-  const [monthView, setMonthView] = useState(false);
 
   useEffect(() => {
     loadBoards().then(
@@ -84,7 +76,6 @@ function PokerBody() {
   }, []);
 
   const playing = staged && Boolean(board);
-  const mine = ceremonies.filter((ceremony) => MODES.includes(ceremony.mode));
 
   // The table is the window, not a panel on it. Rendered outside the surface —
   // no page padding, no centred column, no title above it — because a board
@@ -98,8 +89,7 @@ function PokerBody() {
 
   return (
     <Surface>
-      {/* Positioned, because what leaves is pinned against it. */}
-      <div className="relative flex h-full flex-col gap-4">
+      <div className="flex h-full flex-col gap-4">
         <header>
           <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
           <p className="mt-1 font-body text-[13px] text-muted-foreground">
@@ -107,46 +97,35 @@ function PokerBody() {
           </p>
         </header>
 
-        {/* When the poker is, before what it is: the calendar leads the
-            surface, and only poker is on it. Positioned above what it
-            displaces — see the dashboard for why that has to live here. */}
-        <div className="relative z-10">
-          <Schedule ceremonies={mine} onExpand={setMonthView} />
-        </div>
-
-        {/* The panel leaves as the month opens, and is off the page by the
-            time it has. */}
-        <Displaced away={monthView}>
-          {board ? (
-            <Panel
-              title="At the table"
-              aside={
-                <a
-                  href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
-                  className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  Full view
-                </a>
-              }
-            >
-              <TableState board={board} />
-              <BoardHost
-                board={board}
-                onStage={canPlayBoards() ? () => setStaged(true) : undefined}
-                onClosed={() => {
-                  setLiveId('');
-                  setStaged(false);
-                }}
-              />
-            </Panel>
-          ) : (
-            /* Dealing does not go anywhere: the panel this replaces is the
+        {board ? (
+          <Panel
+            title="At the table"
+            aside={
+              <a
+                href={`#/team/poker/board?id=${encodeURIComponent(board.board_id)}`}
+                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Full view
+              </a>
+            }
+          >
+            <TableState board={board} />
+            <BoardHost
+              board={board}
+              onStage={canPlayBoards() ? () => setStaged(true) : undefined}
+              onClosed={() => {
+                setLiveId('');
+                setStaged(false);
+              }}
+            />
+          </Panel>
+        ) : (
+          /* Dealing does not go anywhere: the panel this replaces is the
                table, on the surface the host is already looking at. The setup
                draws its own panel, because what it asks belongs inside one and
                what it does next does not. */
-            <PokerSetup onOpened={setLiveId} />
-          )}
-        </Displaced>
+          <PokerSetup onOpened={setLiveId} />
+        )}
       </div>
     </Surface>
   );
