@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen">
-        <div className="w-[56px] md:w-[180px] shrink-0 border-r border-border/60 bg-background" />
+        <div className="w-[var(--rail-w)] shrink-0 border-r border-border/60 bg-background" />
         <main className="flex-1" />
       </div>
     );
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <main className="min-h-screen ml-[56px] md:ml-[180px]">{children}</main>
+      <main className="min-h-screen ml-[var(--rail-w)]">{children}</main>
       <ThemePreviewBar />
     </>
   );

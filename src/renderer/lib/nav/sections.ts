@@ -1,6 +1,8 @@
-// The rail's inventory: in every world there are two ways to work — a Project
-// or a Session — and one Settings row. Pure data, so the rail's membership and
-// its active-row rule are testable in the node lane (test/nav-sections.test.ts).
+// The rail's fixed parts and its active rule. The rail's items themselves are
+// a preference (@shared/rail, one list per world); what stays here is the
+// Settings foot, the links the Projects and Sessions pages carry, and which
+// item a location lights. Pure, so the rule is testable in the node lane
+// (test/nav-sections.test.ts).
 //
 // The hrefs are the manifest's paths verbatim (lib/yeaboi/routes.json) — the
 // rail is a view over that registry, not a second list of truths.
@@ -9,34 +11,13 @@ import { projectsHref, type Audience } from '@shared/audience';
 
 export { projectsHref };
 
-export type IconKey = 'projects' | 'sessions' | 'settings';
-
-export interface NavItemSpec {
-  href: string;
-  label: string;
-  icon: IconKey;
-}
-
-export type RailRow = 'projects' | 'sessions' | 'settings';
-
-/** The two rows the rail draws, in order. */
-export function navItems(audience: Audience): NavItemSpec[] {
-  return [
-    { href: projectsHref(audience), label: 'Projects', icon: 'projects' },
-    { href: '/sessions', label: 'Sessions', icon: 'sessions' },
-  ];
-}
-
-export const SETTINGS_ITEM: NavItemSpec = {
-  href: '/settings',
-  label: 'Settings',
-  icon: 'settings',
-};
-
 export interface PageLink {
   href: string;
   label: string;
 }
+
+/** The rail's foot: the one row nobody arranges. */
+export const SETTINGS_ITEM: PageLink = { href: '/settings', label: 'Settings' };
 
 /** Reached from the Projects page header, and lit as Projects on the rail. */
 export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
@@ -70,13 +51,38 @@ function matches(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-/** Which rail row a location lights, or null (the home, and the pages the
- *  Help menu opens). A mode page opened from inside a project carries
- *  `?project=`, and stays under Projects. */
-export function activeRailRow(pathname: string, search = ''): RailRow | null {
-  if (SETTINGS_PREFIXES.some((prefix) => matches(pathname, prefix))) return 'settings';
-  if (new URLSearchParams(search).get('project')) return 'projects';
-  if (PROJECTS_PREFIXES.some((prefix) => matches(pathname, prefix))) return 'projects';
-  if (SESSIONS_PREFIXES.some((prefix) => matches(pathname, prefix))) return 'sessions';
+function inFamily(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => matches(pathname, prefix));
+}
+
+/**
+ * The route of the rail item a location lights, `/settings` for the foot, or
+ * null (the home, and a page no item and no family covers). In order: the
+ * settings family; a mode page opened inside a project (`?project=`), which
+ * stays under the projects item; the item whose route is the longest
+ * whole-segment prefix of the location; then the doors' families, so a
+ * default rail still lights Projects on a ticket and Sessions on a standup.
+ */
+export function activeRailRoute(
+  items: readonly { route: string }[],
+  pathname: string,
+  search = '',
+  audience: Audience,
+): string | null {
+  if (inFamily(pathname, SETTINGS_PREFIXES)) return SETTINGS_ITEM.href;
+  const has = (route: string) => items.some((item) => item.route === route);
+  const projects = projectsHref(audience);
+  if (new URLSearchParams(search).get('project') && has(projects)) return projects;
+
+  let best: string | null = null;
+  for (const item of items) {
+    if (matches(pathname, item.route) && (best === null || item.route.length > best.length)) {
+      best = item.route;
+    }
+  }
+  if (best !== null) return best;
+
+  if (inFamily(pathname, PROJECTS_PREFIXES) && has(projects)) return projects;
+  if (inFamily(pathname, SESSIONS_PREFIXES) && has('/sessions')) return '/sessions';
   return null;
 }
