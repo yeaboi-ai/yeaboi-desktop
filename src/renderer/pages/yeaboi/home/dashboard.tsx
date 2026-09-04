@@ -14,12 +14,10 @@ import { useRouter } from 'next/navigation';
 import { CalendarClock, Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
+import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet } from '@/lib/yeaboi/api';
-
-/** The tiles' own exit, before they come off the page. */
-const PEEL_MS = 380;
 
 interface Project {
   id: string;
@@ -92,16 +90,6 @@ export function HomeDashboard() {
   // with the week — mounted through their own exit, or there is nothing to
   // animate.
   const [monthView, setMonthView] = useState(false);
-  const [tilesGone, setTilesGone] = useState(false);
-
-  useEffect(() => {
-    if (!monthView) {
-      setTilesGone(false);
-      return;
-    }
-    const gone = window.setTimeout(() => setTilesGone(true), PEEL_MS);
-    return () => window.clearTimeout(gone);
-  }, [monthView]);
 
   useEffect(() => {
     if (!ready) return;
@@ -128,100 +116,103 @@ export function HomeDashboard() {
 
   return (
     <Surface>
-      <h1 className="font-display text-2xl text-foreground">Dashboard</h1>
+      {/* Positioned, because what leaves is pinned against it. */}
+      <div className="relative">
+        <h1 className="font-display text-2xl text-foreground">Dashboard</h1>
 
-      {/* What is coming, before what has happened: the calendar leads the
+        {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
-      <div className="mt-3">
-        <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
-      </div>
+        <div className="mt-3">
+          <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
+        </div>
 
-      <div
-        className={`mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
-          monthView ? 'peel-out' : 'peel-in'
-        } ${tilesGone ? 'hidden' : ''}`}
-      >
-        <Tile title="Projects" icon={LayoutGrid}>
-          {projects.length === 0 ? (
-            <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>
-          ) : (
-            <ul className="flex flex-col gap-1.5">
-              {projects.map((project) => (
-                <li key={project.id}>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/projects/${project.id}`)}
-                    className="w-full truncate rounded-lg px-2 py-1 text-left font-body text-[12px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-                  >
-                    {project.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Tile>
+        <Displaced away={monthView}>
+          <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Tile title="Projects" icon={LayoutGrid}>
+              {projects.length === 0 ? (
+                <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {projects.map((project) => (
+                    <li key={project.id}>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/projects/${project.id}`)}
+                        className="w-full truncate rounded-lg px-2 py-1 text-left font-body text-[12px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+                      >
+                        {project.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Tile>
 
-        <Tile title="Recent boards" icon={Columns3}>
-          {boards.length === 0 ? (
-            <Empty>No boards run yet.</Empty>
-          ) : (
-            <ul className="flex flex-col gap-1.5">
-              {boards.map((board) => (
-                <li
-                  key={board.id}
-                  className="truncate px-2 font-body text-[12px] text-muted-foreground"
-                >
-                  {board.title ?? board.name ?? board.mode ?? board.id}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Tile>
+            <Tile title="Recent boards" icon={Columns3}>
+              {boards.length === 0 ? (
+                <Empty>No boards run yet.</Empty>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {boards.map((board) => (
+                    <li
+                      key={board.id}
+                      className="truncate px-2 font-body text-[12px] text-muted-foreground"
+                    >
+                      {board.title ?? board.name ?? board.mode ?? board.id}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Tile>
 
-        <Tile title="Shared out" icon={Share2}>
-          {shares.length === 0 ? (
-            <Empty>Nothing shared yet.</Empty>
-          ) : (
-            <p className="font-body text-[26px] leading-none text-foreground">{shares.length}</p>
-          )}
-        </Tile>
+            <Tile title="Shared out" icon={Share2}>
+              {shares.length === 0 ? (
+                <Empty>Nothing shared yet.</Empty>
+              ) : (
+                <p className="font-body text-[26px] leading-none text-foreground">
+                  {shares.length}
+                </p>
+              )}
+            </Tile>
 
-        <Tile title="What's new" icon={Sparkles}>
-          {changelog.length === 0 ? (
-            <Empty>Up to date.</Empty>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {changelog.map((entry, index) => (
-                <li key={entry.version ?? index}>
-                  <p className="font-body text-[12px] leading-snug text-muted-foreground">
-                    {entry.headline ?? entry.version}
-                  </p>
-                  {entry.headline && entry.date && (
-                    <p className="mt-0.5 font-code text-[10px] text-muted-foreground/50">
-                      {entry.date}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Tile>
+            <Tile title="What's new" icon={Sparkles}>
+              {changelog.length === 0 ? (
+                <Empty>Up to date.</Empty>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {changelog.map((entry, index) => (
+                    <li key={entry.version ?? index}>
+                      <p className="font-body text-[12px] leading-snug text-muted-foreground">
+                        {entry.headline ?? entry.version}
+                      </p>
+                      {entry.headline && entry.date && (
+                        <p className="mt-0.5 font-code text-[10px] text-muted-foreground/50">
+                          {entry.date}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Tile>
 
-        <Tile title="Coming up" icon={CalendarClock}>
-          <Upcoming
-            ceremonies={schedule.ceremonies}
-            count={4}
-            empty={
-              schedule.error
-                ? 'The schedule could not be read.'
-                : 'Nothing scheduled — declare a ceremony and it appears here.'
-            }
-          />
-        </Tile>
+            <Tile title="Coming up" icon={CalendarClock}>
+              <Upcoming
+                ceremonies={schedule.ceremonies}
+                count={4}
+                empty={
+                  schedule.error
+                    ? 'The schedule could not be read.'
+                    : 'Nothing scheduled — declare a ceremony and it appears here.'
+                }
+              />
+            </Tile>
 
-        <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
-        <AwaitingTile title="Last retro" wants="/api/retro/recent" />
-        <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
+            <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
+            <AwaitingTile title="Last retro" wants="/api/retro/recent" />
+            <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
+          </div>
+        </Displaced>
       </div>
     </Surface>
   );

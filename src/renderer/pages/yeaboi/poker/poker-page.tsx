@@ -15,6 +15,7 @@
 import { useEffect, useState } from 'react';
 
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { Displaced } from '@/components/yeaboi/displaced';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { Schedule, useSchedule } from '@/components/yeaboi/calendar';
 import { PokerSetup } from '@/components/yeaboi/poker-setup';
@@ -25,9 +26,6 @@ import { type BoardSnapshot, loadBoards } from '@/lib/yeaboi/boards';
 
 /** Which ceremonies belong on this surface. */
 const MODES = ['poker'];
-
-/** The panel's own exit, before it comes off the page. */
-const PEEL_MS = 380;
 
 interface PokerState {
   phase?: string;
@@ -77,16 +75,6 @@ function PokerBody() {
   const [staged, setStaged] = useState(false);
   // A month grid takes the surface; the panel comes back with the week.
   const [monthView, setMonthView] = useState(false);
-  const [panelGone, setPanelGone] = useState(false);
-
-  useEffect(() => {
-    if (!monthView) {
-      setPanelGone(false);
-      return;
-    }
-    const gone = window.setTimeout(() => setPanelGone(true), PEEL_MS);
-    return () => window.clearTimeout(gone);
-  }, [monthView]);
 
   useEffect(() => {
     loadBoards().then(
@@ -110,7 +98,8 @@ function PokerBody() {
 
   return (
     <Surface>
-      <div className="flex h-full flex-col gap-4">
+      {/* Positioned, because what leaves is pinned against it. */}
+      <div className="relative flex h-full flex-col gap-4">
         <header>
           <h1 className="font-display text-2xl text-foreground">Planning poker</h1>
           <p className="mt-1 font-body text-[13px] text-muted-foreground">
@@ -124,7 +113,7 @@ function PokerBody() {
 
         {/* The panel leaves as the month opens, and is off the page by the
             time it has. */}
-        <div className={`${monthView ? 'peel-out' : 'peel-in'} ${panelGone ? 'hidden' : ''}`}>
+        <Displaced away={monthView}>
           {board ? (
             <Panel
               title="At the table"
@@ -154,7 +143,7 @@ function PokerBody() {
                what it does next does not. */
             <PokerSetup onOpened={setLiveId} />
           )}
-        </div>
+        </Displaced>
       </div>
     </Surface>
   );
