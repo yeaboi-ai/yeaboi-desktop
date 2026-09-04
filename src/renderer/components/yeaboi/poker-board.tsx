@@ -190,9 +190,26 @@ const INHERIT = `
 
 /* And the board takes the space back, stopping only where the window buttons
    are — they sit above y=30, so this clears them. Full screen has no window
-   buttons to clear, so it starts at the top. */
+   buttons to clear, so it starts at the top. The foot of it lands on the line
+   the bottom row sits on, so the hand and the controls read as one edge. */
+/* A flex item is as tall as its content unless it is told it may be shorter,
+   and every box between the board's shell and its columns is one — so a
+   notice appearing in any column grew the whole chain and pushed the hand off
+   the bottom, which is what the shell then found to scroll. */
+.board-frame .${HOST} [class*='_container_'],
+.board-frame .${HOST} [class*='_scroll_'] {
+  min-height: 0;
+}
+
 .board-frame .${HOST} [class*='_layout_'] {
+  min-height: 0;
   padding-top: var(--titlebar-h);
+  padding-bottom: 16px;
+  /* One row, and never taller than the board. Its height was its tallest
+     column's, so a notice appearing in one of them grew the row, grew the
+     middle column with it, and pushed the hand off the bottom — which is what
+     the shell then found to scroll. */
+  grid-template-rows: minmax(0, 1fr);
 }
 
 :root[data-full-screen] .board-frame .${HOST} [class*='_layout_'] {
@@ -242,22 +259,33 @@ const INHERIT = `
   align-items: center;
 }
 
+/* Anchored to the row, and to its right-hand end — the chips close the bottom
+   row, so what comes off them lines up with the edge they sit against. */
 .board-frame .${HOST} [class*='identity'] [class*='roomList'] {
   top: auto;
-  bottom: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  bottom: 100%;
   padding-top: 0;
-  padding-bottom: 20px;
+  padding-bottom: 8px;
+  align-items: flex-end;
+}
+
+.board-frame .${HOST} [class*='identity'] [class*='roomCard'] {
+  margin-left: auto;
 }
 
 /* Who you are and who else is here: two more of the same capsule. */
 .board-frame .${HOST} [class*='chromeApp'] [class*='meChip'],
 .board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip'] {
-  height: 26px;
+  /* The height of the row's other end: the way out and the controls beside it
+     are 34, and a chip half a step shorter reads as a different row. */
+  height: 34px;
   /* The board floors every control at its tap target, and the shared control
      rule below is a class more specific than this one was — hence the extra
      step and the min. */
-  min-height: 26px;
-  padding: 0 9px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 0;
   border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
@@ -393,6 +421,13 @@ const INHERIT = `
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
 }
 
+/* The ticket pager goes. The rail beside it is the whole list, named, with
+   the one under discussion marked — a pair of arrows and a count is a second
+   way to do what is already on screen. */
+.board-frame .${HOST} [class*='tknav'] button {
+  display: none;
+}
+
 /* The three columns, each holding its own middle.
  *
  * The rail and the aside are as tall as they need to be and no taller, so on a
@@ -407,7 +442,25 @@ const INHERIT = `
 
 .board-frame .${HOST} [class*='_main_'] {
   min-height: 0;
+  /* And no taller than the row it is in. It was outgrowing it whenever the
+     board grew a line — locking the vote, most visibly — and taking the hand
+     off the bottom of the screen with it. */
+  max-height: 100%;
   padding-top: 24px;
+}
+
+/* The ticket takes the height it needs and no more. It was laid out to fill
+   the column, which made it as tall as whatever the tallest column happened
+   to be — so a notice appearing anywhere on the board grew it, and the hand
+   went off the bottom with the shell finding something to scroll. The table
+   and the hand keep their own place at the foot of the column. */
+.board-frame .${HOST} [class*='_main_'] > [class*='_ticket_'] {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.board-frame .${HOST} [class*='_main_'] > [class*='_table_'] {
+  margin-top: auto;
 }
 
 /* The board's dock, in the app's floating chrome.
@@ -470,11 +523,10 @@ const INHERIT = `
   height: 14px;
 }
 
-/* The grip is a handle, not a control — it stays at the weight of a label,
-   and at the row's height so it does not set it. */
+/* The grip went with the drag: a handle on something that cannot be picked
+   up is an offer the row does not keep. */
 .board-frame .${HOST} [class*='dockGrip'] {
-  height: 26px;
-  color: color-mix(in srgb, var(--app-muted) 60%, transparent);
+  display: none;
 }
 
 /* The one filled thing on the row. Same height as everything beside it, so
