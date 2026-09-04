@@ -132,12 +132,12 @@ export function HomeDashboard() {
 
       {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
-      <div className="mt-6">
+      <div className="mt-3">
         <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
       </div>
 
       <div
-        className={`mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
+        className={`mt-2 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 ${
           monthView ? 'peel-out' : 'peel-in'
         } ${tilesGone ? 'hidden' : ''}`}
       >

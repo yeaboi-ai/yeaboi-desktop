@@ -4,6 +4,9 @@
 //
 // A live board rejoins rather than restarts: the session lives in the backend
 // so a reloaded window walks back into the ceremony it left.
+//
+// What retro is scheduled leads the surface, as it does on poker: a ceremony
+// hub answers when before it answers what happened last time.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -18,8 +21,15 @@ import {
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { Schedule, useSchedule } from '@/components/yeaboi/calendar';
 import { RunCard, Surface } from '@/components/yeaboi/surface';
 import { Button, buttonVariants } from '@/components/ui/button';
+
+/** Which ceremonies belong on this surface. */
+const MODES = ['retro'];
+
+/** The rest of the page's own exit, before it comes off the screen. */
+const PEEL_MS = 380;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -45,6 +55,19 @@ function Notice({ title, items }: { title: string; items: string[] }) {
 
 function RetroBody() {
   const router = useRouter();
+  const { ceremonies } = useSchedule();
+  // A month grid takes the surface; the rest comes back with the week.
+  const [monthView, setMonthView] = useState(false);
+  const [restGone, setRestGone] = useState(false);
+
+  useEffect(() => {
+    if (!monthView) {
+      setRestGone(false);
+      return;
+    }
+    const gone = window.setTimeout(() => setRestGone(true), PEEL_MS);
+    return () => window.clearTimeout(gone);
+  }, [monthView]);
   const [runs, setRuns] = useState<RetroRun[] | null>(null);
   // The session the history belongs to is a sibling of the rows, not a column
   // on them — an artifact reference needs both halves.
@@ -81,6 +104,8 @@ function RetroBody() {
 
   if (error && !runs) return <Notice title="Could not load past retros" items={[error]} />;
 
+  const mine = ceremonies.filter((ceremony) => MODES.includes(ceremony.mode));
+
   return (
     <div className="space-y-4">
       <header className="flex items-start justify-between gap-4">
@@ -104,38 +129,45 @@ function RetroBody() {
         )}
       </header>
 
-      {error && <Notice title="Could not start the board" items={[error]} />}
-      {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
+      {/* When the retro is, before what the last one said. */}
+      <Schedule ceremonies={mine} onExpand={setMonthView} />
 
-      {runs && runs.length > 0 && (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {runs.map((run) => (
-            <RunCard
-              key={run.id}
-              title={run.sprint_name || run.retro_date}
-              meta={run.retro_date}
-              figures={[
-                { label: 'Cards', value: String(run.card_count ?? 0) },
-                { label: 'Actions', value: String(run.action_count ?? 0) },
-              ]}
-            >
-              <ResultActions
-                refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
-                mode="retro"
-              />
-            </RunCard>
-          ))}
-        </div>
-      )}
+      <div
+        className={`space-y-4 ${monthView ? 'peel-out' : 'peel-in'} ${restGone ? 'hidden' : ''}`}
+      >
+        {error && <Notice title="Could not start the board" items={[error]} />}
+        {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
-      {runs && runs.length === 0 && (
-        <Section title="No retros yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-            <DuckMark state="idle" size={28} /> Start a board and send the invite — everyone adds
-            cards from their own browser, and yeaboi drafts the action items when you are done.
-          </p>
-        </Section>
-      )}
+        {runs && runs.length > 0 && (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {runs.map((run) => (
+              <RunCard
+                key={run.id}
+                title={run.sprint_name || run.retro_date}
+                meta={run.retro_date}
+                figures={[
+                  { label: 'Cards', value: String(run.card_count ?? 0) },
+                  { label: 'Actions', value: String(run.action_count ?? 0) },
+                ]}
+              >
+                <ResultActions
+                  refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
+                  mode="retro"
+                />
+              </RunCard>
+            ))}
+          </div>
+        )}
+
+        {runs && runs.length === 0 && (
+          <Section title="No retros yet">
+            <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+              <DuckMark state="idle" size={28} /> Start a board and send the invite — everyone adds
+              cards from their own browser, and yeaboi drafts the action items when you are done.
+            </p>
+          </Section>
+        )}
+      </div>
     </div>
   );
 }

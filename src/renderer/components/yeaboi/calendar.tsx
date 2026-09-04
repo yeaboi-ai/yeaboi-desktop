@@ -486,7 +486,7 @@ export function Schedule({
         <div
           key={isoDate(month)}
           data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
-          className="mt-4 grid grid-cols-7 gap-2"
+          className="mt-2 grid grid-cols-7 gap-2"
         >
           {DAY_LABELS.map((label) => (
             <div
@@ -515,7 +515,7 @@ export function Schedule({
           data-slide={direction > 0 ? 'forward' : direction < 0 ? 'back' : 'none'}
           onPointerDown={stopGlide}
           onWheel={stopGlide}
-          className="mt-4 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mt-2 flex snap-x snap-proximity gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {days.map((day) => (
             <div
