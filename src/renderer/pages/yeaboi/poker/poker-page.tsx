@@ -43,9 +43,11 @@ function Panel({
   title,
   aside,
   children,
-  /** Takes what height is left, and lets its contents scroll inside it. The
-   *  surface never grows past the window, so a long list has to end
-   *  somewhere — and it should be the list that moves, not the page. */
+  /** Lets its contents scroll inside it rather than growing the page. It takes
+   *  the height its list needs and no more — on a tall window a panel that
+   *  claims what is left is eight rows in a box twice their height — and
+   *  shrinks when there is not enough, which is when the list starts to move
+   *  instead of the page. */
   grow = false,
 }: {
   title: string;
@@ -56,7 +58,7 @@ function Panel({
   return (
     <section
       className={`rounded-2xl bg-card p-5 ring-1 ring-border/60 ${
-        grow ? 'flex min-h-0 flex-1 flex-col' : ''
+        grow ? 'flex min-h-0 flex-initial flex-col' : ''
       }`}
     >
       <header className="mb-3 flex items-baseline justify-between gap-3">

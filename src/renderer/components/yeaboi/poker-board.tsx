@@ -147,7 +147,10 @@ const INHERIT = `
  * bottom and the shadow it paints its own screen edge with: this app already
  * draws the window it is in. */
 .board-frame .${HOST} [class*='shellApp'] {
-  border-radius: 0;
+  /* The page paints the window's corners itself, and this is fixed to the
+     viewport — so the body's clip never reaches it and a square shell cuts
+     them back off. Same curve. */
+  border-radius: var(--window-radius);
   box-shadow: none;
 }
 
@@ -344,28 +347,6 @@ const INHERIT = `
 .board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
 .board-frame .${HOST} [class*='panelAction']:hover {
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
-}
-
-/* The column reads top down.
- *
- * The ticket is the one thing in the middle column that grows, so on a tall
- * screen it takes every spare pixel and pushes the table and the hand to the
- * bottom edge — half a window of nothing between what is being estimated and
- * the people estimating it. It takes the height it needs instead (it has its
- * own scroll and a floor of its own for a short window), and the three sit
- * together under the heading. */
-.board-frame .${HOST} [class*='_main_'] {
-  gap: 24px;
-}
-
-.board-frame .${HOST} [class*='_main_'] > [class*='_ticket_'] {
-  flex: 0 1 auto;
-}
-
-/* The board pushes the table down with an auto margin, which survives the
-   ticket giving up its stretch — the gap simply moves into the margin. */
-.board-frame .${HOST} [class*='_main_'] > [class*='_table_'] {
-  margin-top: 0;
 }
 
 /* The board's dock, in the app's floating chrome.
