@@ -184,6 +184,9 @@ const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 /** How long the surface takes to clear before the month arrives — the fade in
  *  globals.css, plus a frame to start it. */
 const CLEARING_MS = 300;
+/** How much of the week's return goes by before the surface starts coming
+ *  back. Most of the distance is covered in the first half of the move. */
+const RETURNING_MS = 260;
 /** The back control's own exit, before it is taken off the row. */
 const CONTROL_OUT_MS = 150;
 
@@ -388,10 +391,13 @@ export function Schedule({
       return;
     }
     change(false);
+    // Not after the week has landed — as it is landing. Waiting for the last
+    // of a long tail and then starting a fade is most of a second of nothing
+    // happening.
     window.setTimeout(() => {
       onExpand?.(false);
       midSwap.current = false;
-    }, MOVE_MS);
+    }, RETURNING_MS);
   }, [expanded, onExpand, change]);
 
   // The back control comes on with the month and stays through its own exit.

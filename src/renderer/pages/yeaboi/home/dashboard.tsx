@@ -127,7 +127,7 @@ export function HomeDashboard() {
         </div>
 
         <Displaced away={monthView}>
-          <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Tile title="Projects" icon={LayoutGrid}>
               {projects.length === 0 ? (
                 <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>

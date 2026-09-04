@@ -14,6 +14,13 @@
 //
 // The parent must be positioned — `relative` — or the pin lands somewhere else
 // entirely.
+//
+// It is a flow root, and drops its own margins when pinned, so that the box it
+// is pinned *at* is the box it was measured *from*. Without the first, a
+// child's top margin collapses out through this wrapper while it is in the
+// flow and applies inside it once it is not — the content drops by that margin
+// the moment it is pinned. Without the second, a margin the surface put on
+// this wrapper is added to the pin and it drops again.
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -67,8 +74,8 @@ export function Displaced({ away, children }: { away: boolean; children: ReactNo
     <div
       ref={box}
       aria-hidden={away || undefined}
-      className={away ? 'peel-out pointer-events-none absolute inset-x-0' : 'peel-in'}
-      style={away ? { top: pinned.current } : undefined}
+      className={`flow-root ${away ? 'peel-out pointer-events-none absolute inset-x-0' : 'peel-in'}`}
+      style={away ? { top: pinned.current, margin: 0 } : undefined}
     >
       {children}
     </div>
