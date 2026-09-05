@@ -149,6 +149,7 @@ async def get_project(
         "is_demo": project.is_demo,
         "default_generation_style": project.default_generation_style,
         "default_modifiers": list(project.default_modifiers or []),
+        "status": project.status,
     }
     return response
 
@@ -214,6 +215,9 @@ async def update_project(
             # Dedupe preserving order.
             seen: set[str] = set()
             update_data["default_modifiers"] = [m for m in mods_val if not (m in seen or seen.add(m))]
+
+    if "status" in update_data and update_data["status"] not in ("active", "done"):
+        raise HTTPException(status_code=422, detail="status must be 'active' or 'done'")
 
     for key, value in update_data.items():
         setattr(project, key, value)

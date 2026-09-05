@@ -19,6 +19,8 @@ class ProjectUpdate(BaseModel):
     default_modifiers: list[str] | None = Field(default=None)
     # Engine link (proj-<8hex>): set once by the renderer after project_create.
     yeaboi_project_id: str | None = None
+    # "active" | "done"; the router rejects anything else.
+    status: str | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -34,5 +36,6 @@ class ProjectResponse(BaseModel):
     default_generation_style: str | None = None
     default_modifiers: list[str] = Field(default_factory=list)
     yeaboi_project_id: str | None = None
+    status: str = "active"
 
     model_config = {"from_attributes": True}

@@ -42,4 +42,7 @@ class Project(TimestampMixin, Base):
     # engine's sessions.db is a different database, so no FK.
     yeaboi_project_id: Mapped[str | None] = mapped_column(String(64), default=None)
 
+    # `active` | `done`. Done means the owner marked it complete; archive and delete are separate.
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active", default="active")
+
     owner: Mapped["User"] = relationship(back_populates="projects")  # noqa: F821
