@@ -2,6 +2,22 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.1.1",
+      "date": "2026-09-05",
+      "headline": "Settings stays put as you move between sections",
+      "summary": "Every page now sits in the same column, so switching settings sections or moving between pages no longer shifts the layout sideways or leaves a stray scrollbar.",
+      "highlights": [
+        {
+          "text": "Themes and the theme editor line up with the other settings sections",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Short pages no longer scroll, and long ones keep the same margins",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.1.0",
       "date": "2026-09-04",
       "headline": "A front page, a rail you arrange, and eight ducks",
