@@ -175,6 +175,10 @@ function RetroBody() {
             }
           >
             <BoardState board={board} />
+            {/* One row. Drafting the actions is the host's, and the only
+                thing on this page the board itself does not offer; the export
+                and share are the same set of choices about the same session,
+                so they stand beside it rather than under it. */}
             <BoardHost
               board={board}
               onStage={canPlayBoards() ? () => setStaged(true) : undefined}
@@ -186,31 +190,29 @@ function RetroBody() {
                   () => undefined,
                 );
               }}
+              extras={
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy === 'draft'}
+                    onClick={() => void draft()}
+                  >
+                    {busy === 'draft' ? 'Drafting…' : 'Generate action items'}
+                  </Button>
+                  <ResultActions
+                    refer={{ kind: 'retro', session_id: board.session_id }}
+                    mode="retro"
+                    anonNote={anonNote}
+                    onAnonymize={(replacements, note) => {
+                      setMask(replacements);
+                      setAnonNote(note);
+                    }}
+                  />
+                </>
+              }
             />
-            {/* Drafting the actions is the host's, and it is the one thing on
-                this page the board itself does not offer. */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                disabled={busy === 'draft'}
-                onClick={() => void draft()}
-              >
-                {busy === 'draft' ? 'Drafting…' : 'Generate action items'}
-              </Button>
-              {message && <p className="text-[12px] text-muted-foreground">{message}</p>}
-            </div>
-            <div className="mt-3">
-              <ResultActions
-                refer={{ kind: 'retro', session_id: board.session_id }}
-                mode="retro"
-                anonNote={anonNote}
-                onAnonymize={(replacements, note) => {
-                  setMask(replacements);
-                  setAnonNote(note);
-                }}
-              />
-            </div>
+            {message && <p className="mt-2 text-[12px] text-muted-foreground">{message}</p>}
             {mask.length > 0 && (
               <p className="mt-2 text-[11px] text-muted-foreground/70">
                 {mask.length} name{mask.length === 1 ? '' : 's'} replaced in what leaves here.

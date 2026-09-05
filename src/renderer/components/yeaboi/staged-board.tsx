@@ -27,7 +27,7 @@ import { LogOut } from 'lucide-react';
 // onto the board's own container, they reach the board and nothing else.
 import tokens from '@board/design/tokens.css?inline';
 
-import { playBoard, primeBoard } from '@/board/board-api';
+import { playBoard, primeBoard, routeBoardFetch } from '@/board/board-api';
 import { participantId } from '@board/runtime/storage';
 
 /** The board's container, and what its tokens are re-rooted onto. */
@@ -758,6 +758,7 @@ export function StagedBoard({
   useEffect(() => {
     let live = true;
     playBoard(boardId);
+    const unroute = routeBoardFetch();
     // A board that will not answer is still a board: it gets to mount and show
     // its own reconnecting state rather than leaving the window empty.
     primeBoard(boardId, participantId(pidKey)).then(
@@ -766,6 +767,7 @@ export function StagedBoard({
     );
     return () => {
       live = false;
+      unroute();
     };
   }, [boardId, pidKey]);
 

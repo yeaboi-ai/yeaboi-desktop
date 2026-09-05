@@ -55,6 +55,7 @@ export function BoardHost({
   board,
   onClosed,
   onStage,
+  extras,
 }: {
   board: BoardSnapshot;
   onClosed: (runId: number) => void;
@@ -62,6 +63,10 @@ export function BoardHost({
    *  a window is the second choice; withheld (a surface with nowhere to put a
    *  board), the window is the only way in. */
   onStage?: () => void;
+  /** Whatever else this ceremony does with a live board. On the row, not
+   *  under it: three rows of two buttons is a stack of rows, not a set of
+   *  choices. */
+  extras?: React.ReactNode;
 }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -103,6 +108,7 @@ export function BoardHost({
         <Button size="sm" variant="secondary" disabled={busy} onClick={() => void end()}>
           {busy ? 'Closing…' : 'End session'}
         </Button>
+        {extras}
       </div>
       {message && <p className="font-body text-[12px] text-muted-foreground">{message}</p>}
     </div>

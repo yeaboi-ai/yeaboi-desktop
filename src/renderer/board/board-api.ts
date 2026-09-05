@@ -107,6 +107,52 @@ export function apiUrl(_session: Session, path: string): string {
   return path;
 }
 
+/**
+ * The board's own `fetch`, routed through the bridge for as long as one is
+ * staged.
+ *
+ * Almost everything a board asks for comes through this module, because the
+ * build rewrites the boards' transport imports to it. One thing does not: the
+ * invite panel calls `fetch(apiUrl(session, '/api/invite'))` directly, and
+ * `apiUrl` has no address to give it — so the request went to this window's own
+ * origin, came back as the app's own document with a 200, failed to parse, and
+ * was swallowed by the panel's catch. It then asked again every few seconds,
+ * for ever, saying "setting up the shared link" the whole time.
+ *
+ * Only the board's own paths, and only while a board is playing: the app itself
+ * never fetches `/api/…` — its own calls go through the preload bridge.
+ */
+export function routeBoardFetch(): () => void {
+  const real = window.fetch.bind(window);
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : (input as Request).url;
+    const shell = bridge();
+    const method = init?.method?.toUpperCase() ?? 'GET';
+    if (!shell || !playing || method !== 'GET' || !url.startsWith('/api/')) {
+      return real(input, init);
+    }
+    const [path = url, query = ''] = url.split('?');
+    const answer = await shell.boardGet(
+      playing,
+      path,
+      Object.fromEntries(new URLSearchParams(query)),
+      '',
+    );
+    return new Response(JSON.stringify(answer.body ?? {}), {
+      status: answer.status,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  return () => {
+    window.fetch = real;
+  };
+}
+
 export async function postJSON<T>(
   session: Session,
   path: string,
