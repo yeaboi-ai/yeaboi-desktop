@@ -426,7 +426,7 @@ body > [class^='_'] {
  * emoji at 36px, and a solid gold bar across the foot for a button. The app's
  * dialogs are small, sit on the page's own ground behind a hairline ring, and
  * put their actions at the end of a row rather than across it. */
-.board-frame .${HOST}[data-mode='poker'] [class*='_modal_'] {
+.board-frame .${HOST} [class*='_modal_'] {
   border: 0;
   border-radius: calc(var(--app-radius) + 4px);
   background: var(--app-bg);
@@ -435,17 +435,17 @@ body > [class^='_'] {
     var(--shadow-2);
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='_modal_']::backdrop {
+.board-frame .${HOST} [class*='_modal_']::backdrop {
   background: rgb(0 0 0 / 20%);
   backdrop-filter: blur(2px);
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='modalBody'] {
+.board-frame .${HOST} [class*='modalBody'] {
   padding: 16px;
   gap: 12px;
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='modalTitle'] {
+.board-frame .${HOST} [class*='modalTitle'] {
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 500;
@@ -456,12 +456,12 @@ body > [class^='_'] {
 /* The faces, as a tray of tiles rather than a wall of emoji: the app's control
    height, the app's corner, and the one that is chosen wearing the accent as a
    ring instead of a fill. */
-.board-frame .${HOST}[data-mode='poker'] [class*='avatarGrid'] {
+.board-frame .${HOST} [class*='avatarGrid'] {
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 6px;
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoice'] {
+.board-frame .${HOST} [class*='avatarChoice'] {
   width: auto;
   height: 34px;
   min-height: 34px;
@@ -474,24 +474,24 @@ body > [class^='_'] {
     box-shadow 150ms ease;
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoice']:hover {
+.board-frame .${HOST} [class*='avatarChoice']:hover {
   background: var(--app-secondary);
   transform: none;
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoiceOn'] {
+.board-frame .${HOST} [class*='avatarChoiceOn'] {
   background: var(--app-secondary);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 55%, transparent);
 }
 
 /* The action goes at the end of its row, at the size of every other button
    here — not a bar the width of the dialog. */
-.board-frame .${HOST}[data-mode='poker'] [class*='modalActions'] {
+.board-frame .${HOST} [class*='modalActions'] {
   justify-content: flex-end;
   margin-top: 0;
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='modalActions'] > * {
+.board-frame .${HOST} [class*='modalActions'] > * {
   flex: 0 0 auto;
   width: auto;
   min-width: 84px;
@@ -500,7 +500,7 @@ body > [class^='_'] {
 
 /* Who you are opens off the chip that says it, the way the room does — the
    name and the face belong to that corner, not to the middle of the table. */
-.board-frame .${HOST}[data-mode='poker'] [class*='_modal_']:has([class*='avatarGrid']) {
+.board-frame .${HOST} [class*='_modal_']:has([class*='avatarGrid']) {
   position: fixed;
   inset: auto 16px 58px auto;
   width: 360px;
@@ -509,7 +509,7 @@ body > [class^='_'] {
 }
 
 /* The die beside the name field is an icon button, not a filled one. */
-.board-frame .${HOST}[data-mode='poker'] [class*='inputAction'] {
+.board-frame .${HOST} [class*='inputAction'] {
   width: 32px;
   padding: 0;
   border: 1px solid var(--app-input);
@@ -517,7 +517,7 @@ body > [class^='_'] {
   color: var(--app-muted);
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='inputAction']:hover {
+.board-frame .${HOST} [class*='inputAction']:hover {
   background: var(--app-secondary);
   color: var(--app-text);
 }
@@ -707,6 +707,23 @@ body > [class^='_'] {
   font-weight: 400;
   letter-spacing: 0.01em;
 }
+
+/* An empty column offers the one thing there is to do with it. It was saying
+   "Nothing yet." above a button that already says so by being there, which is
+   two lines of furniture for a column with nothing in it. */
+.board-frame .${HOST} [class*='columnEmpty'] {
+  display: none;
+}
+
+/* The compose box shows its own focus: the ring around it takes the column's
+   colour the moment there is a caret in it. The kit's keyboard ring on the
+   textarea inside drew a second one, a few pixels in from the first, in the
+   app's accent — two rings around one field. Focus is still visible; it is
+   the box that carries it. */
+.board-frame .${HOST} [class*='composeBox']:focus-visible {
+  outline: none;
+}
+
 `;
 
 /** The flag the rail, the dock and Niko read to get out of the way. */

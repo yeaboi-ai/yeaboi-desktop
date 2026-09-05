@@ -29,7 +29,7 @@ import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { RetroBoard } from '@/components/yeaboi/retro-board';
-import { Panel, RunCard, Surface } from '@/components/yeaboi/surface';
+import { Panel, Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
 
 const GRID_TITLES: Record<string, string> = {
@@ -221,23 +221,31 @@ function RetroBody() {
 
         {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
+        {/* A ledger, not a wall of tiles. Every past retro carried the same
+            date twice, two figures set at twenty pixels and its own row of
+            buttons — six of them filled the window to say very little. One
+            line each, and the actions sit at the end of the line they belong
+            to. */}
         {runs && runs.length > 0 && (
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="divide-y divide-border/40 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
             {runs.map((run) => (
-              <RunCard
-                key={run.id}
-                title={run.sprint_name || run.retro_date}
-                meta={run.retro_date}
-                figures={[
-                  { label: 'Cards', value: String(run.card_count ?? 0) },
-                  { label: 'Actions', value: String(run.action_count ?? 0) },
-                ]}
-              >
+              <div key={run.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+                <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
+                  {run.sprint_name || run.retro_date}
+                  {run.sprint_name && (
+                    <span className="ml-2 font-code text-[11px] text-muted-foreground/70">
+                      {run.retro_date}
+                    </span>
+                  )}
+                </p>
+                <p className="shrink-0 font-code text-[11px] text-muted-foreground tabular-nums">
+                  {run.card_count ?? 0} cards · {run.action_count ?? 0} actions
+                </p>
                 <ResultActions
                   refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
                   mode="retro"
                 />
-              </RunCard>
+              </div>
             ))}
           </div>
         )}
