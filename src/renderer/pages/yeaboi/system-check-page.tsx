@@ -243,33 +243,39 @@ function SystemCheckBody() {
             : 'This backend reported no checks.'}
         </p>
       ) : (
-        <div className="space-y-4">
-          {/* The header counts describe the whole category; `rows` is what the
+        <div className="grid items-start gap-4 xl:grid-cols-2">
+          {[0, 1].map((column) => (
+            <div key={column} className="space-y-4">
+              {/* The header counts describe the whole category; `rows` is what the
               filter left to render. */}
-          {sections.map(({ category, rows, ok, total }, index) => (
-            <SettingsCard key={category.key || 'all'} index={index}>
-              <SettingsSectionHeader
-                title={category.title}
-                subtitle={category.blurb}
-                icon={<CategoryIcon category={category.key} />}
-                action={
-                  <div className="w-24 space-y-1.5 text-right">
-                    <p className="font-body text-[11px] text-muted-foreground">
-                      {ok}/{total} ready
-                    </p>
-                    <PostureStrip
-                      cells={toCells(rows)}
-                      label={`${ok} of ${total} ready in ${category.title}`}
+              {sections
+                .filter((_, at) => at % 2 === column)
+                .map(({ category, rows, ok, total }, index) => (
+                  <SettingsCard key={category.key || 'all'} index={index}>
+                    <SettingsSectionHeader
+                      title={category.title}
+                      subtitle={category.blurb}
+                      icon={<CategoryIcon category={category.key} />}
+                      action={
+                        <div className="w-24 space-y-1.5 text-right">
+                          <p className="font-body text-[11px] text-muted-foreground">
+                            {ok}/{total} ready
+                          </p>
+                          <PostureStrip
+                            cells={toCells(rows)}
+                            label={`${ok} of ${total} ready in ${category.title}`}
+                          />
+                        </div>
+                      }
                     />
-                  </div>
-                }
-              />
-              <div className="divide-y divide-border/40">
-                {rows.map((check) => (
-                  <CheckRow key={check.key} check={check} />
+                    <div className="divide-y divide-border/40">
+                      {rows.map((check) => (
+                        <CheckRow key={check.key} check={check} />
+                      ))}
+                    </div>
+                  </SettingsCard>
                 ))}
-              </div>
-            </SettingsCard>
+            </div>
           ))}
         </div>
       )}
@@ -278,11 +284,16 @@ function SystemCheckBody() {
 }
 
 export default function SystemCheckPage() {
+  // One surface that fills the window, like the dashboard: the deck clips at
+  // the port, so the page carries its own scroller, and the whole page area is
+  // it rather than the column of content on it.
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 pt-10 pb-28">
-        <SystemCheckBody />
+    <div className="quiet-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="mx-auto w-full max-w-[1360px] px-6 pt-10 pb-28">
+        <BackendGate>
+          <SystemCheckBody />
+        </BackendGate>
       </div>
-    </BackendGate>
+    </div>
   );
 }

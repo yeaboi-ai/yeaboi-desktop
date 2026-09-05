@@ -247,7 +247,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
         href={feedbackActive ? cameFrom.current : '/feedback'}
         title={feedbackActive ? 'Back' : 'Send feedback'}
         aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
-        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center transition-colors ${
+        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center transition-[color,background-color,right,bottom] duration-300 ease-out ${
           feedbackActive
             ? 'text-foreground'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'

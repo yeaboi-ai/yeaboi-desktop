@@ -1509,12 +1509,19 @@ html[data-audience='agents'] {
    `translate` rather than `transform`: the dock is centred and the rail is
    half-height-offset by their own transforms, and this composes with those
    instead of fighting them for the property. */
+/* The turn inset rides here too, for the same reason the rail's width does: a
+   `transition` shorthand replaces the property list rather than adding to it,
+   so a utility class naming `bottom` on one of these was overwritten and the
+   whole bottom row jumped its 10px while everything around it slid. */
 [data-dock],
 [data-niko],
 [data-duck] {
   transition:
     translate 460ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 260ms ease;
+    opacity 260ms ease,
+    bottom 300ms ease-out,
+    left 300ms ease-out,
+    right 300ms ease-out;
 }
 
 /* The rail's own width animation is carried here too. A `transition` shorthand
@@ -1524,7 +1531,16 @@ html[data-audience='agents'] {
   transition:
     translate 460ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 260ms ease,
-    width 200ms ease-out;
+    width 200ms ease-out,
+    filter 300ms ease-out;
+}
+
+/* The rail keeps its place at the edge, so the turn's band goes around it
+   rather than across it or behind it. A drop shadow, because it follows the
+   shape's own silhouette — the rounded end included — where a box shadow would
+   have to replace the ring and the lift the rail already carries. */
+:root[data-turning] [data-rail] {
+  filter: drop-shadow(0 0 calc(var(--turn-inset) * 0.9) rgb(0 0 0 / 0.92));
 }
 
 :root[data-board-staged] [data-dock],

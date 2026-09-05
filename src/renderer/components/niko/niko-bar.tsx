@@ -513,10 +513,14 @@ export function NikoBar() {
         // them at the same time is the second animation nobody asked for. It
         // still eases for the sizes that are the panel's own — settling to fit
         // a reply, or a drag on the grip.
+        // `bottom` is on both branches: the deck holds everything off the
+        // window's edge while it is being turned, and an inline transition
+        // replaces the property list rather than adding to it — named nowhere
+        // here, the bar jumped its 10px while the row beside it slid.
         transition:
           dragging || opening || state === 'collapsed'
-            ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`
-            : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}`,
+            ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out`
+            : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out`,
       }}
     >
       {showChips && state === 'input' && (

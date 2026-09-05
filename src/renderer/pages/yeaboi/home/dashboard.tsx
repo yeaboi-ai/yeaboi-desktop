@@ -121,12 +121,10 @@ const CHECK_TONE: Record<Check['status'], PostureCell['tone']> = {
   unknown: 'idle',
 };
 
-/** System Check, as much of it as a tile holds: the count, every check as one
- *  cell, and the first few that want something done. */
+/** System Check at a glance: which way every check went, and the count. */
 function SystemCheck({ report }: { report: Report }) {
   const total = report.checks.length;
-  const ready = total - needsAttention(report.checks).length;
-  const wanting = needsAttention(report.checks);
+  const wanting = needsAttention(report.checks).length;
   return (
     <>
       <PostureStrip
@@ -135,23 +133,48 @@ function SystemCheck({ report }: { report: Report }) {
           tone: CHECK_TONE[one.status] ?? 'idle',
           title: `${one.label} — ${one.detail || one.status}`,
         }))}
-        label={`${ready} of ${total} ready`}
+        label={`${total - wanting} of ${total} ready`}
       />
       <p className="mt-2 font-body text-[11px] text-muted-foreground">
-        {ready} of {total} ready
-        {wanting.length > 0 && ` · ${wanting.length} want something`}
+        {total - wanting} of {total} ready
+        {wanting > 0 && ` · ${wanting} want something`}
       </p>
-      {wanting.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {wanting.slice(0, 3).map((one) => (
-            <li key={one.key} className="truncate font-body text-[11px] text-muted-foreground/80">
-              <span className="text-foreground/80">{one.label}</span>
-              {one.detail && ` — ${one.detail}`}
-            </li>
-          ))}
-        </ul>
-      )}
     </>
+  );
+}
+
+/** The slim row's shape: a dashed box that says one thing. */
+function SlimTile({
+  title,
+  icon: Icon,
+  href,
+  children,
+}: {
+  title: string;
+  icon: typeof LayoutGrid;
+  href: string;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(href)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          router.push(href);
+        }
+      }}
+      className="cursor-pointer rounded-2xl border border-dashed border-border/50 bg-card/30 p-4 transition-colors hover:border-border hover:bg-card/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      <p className="flex items-center gap-2 font-body text-[12px] font-medium text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {title}
+      </p>
+      <div className="mt-2">{children}</div>
+    </div>
   );
 }
 
@@ -306,13 +329,6 @@ export function HomeDashboard() {
               )}
             </Tile>
 
-            {/* The whole of System Check in a tile: how many are ready, which
-                way each one went, and the first few that want something. The
-                page behind it is the rest of that list. */}
-            <Tile title="System check" icon={Stethoscope} href="/system-check">
-              {check ? <SystemCheck report={check} /> : <Empty>Not run yet.</Empty>}
-            </Tile>
-
             <Tile title="Coming up" icon={CalendarClock}>
               <Upcoming
                 ceremonies={schedule.ceremonies}
@@ -324,6 +340,12 @@ export function HomeDashboard() {
                 }
               />
             </Tile>
+
+            {/* Slim, like the row it sits in: how many are ready and how many
+                want something. Which ones, and what they want, is the page. */}
+            <SlimTile title="System check" icon={Stethoscope} href="/system-check">
+              {check ? <SystemCheck report={check} /> : <Empty>Not run yet.</Empty>}
+            </SlimTile>
 
             <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
             <AwaitingTile title="Last retro" wants="/api/retro/recent" />
