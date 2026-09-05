@@ -205,6 +205,20 @@ html {
   --titlebar-h: 38px;
   /* The icon rail (components/sidebar.tsx); app-shell.tsx keeps content clear of it. */
   --rail-w: 72px;
+  /* The page frame (components/page-shell.tsx): one column width and one
+     bottom clearance for the fixed Niko bar, on every page. */
+  --page-w: 64rem;
+  --page-pb: 7rem;
+  /* What is left of the viewport under the title bar and the provider-health
+     banner (which sets --banner-h on <html>). */
+  --page-min-h: calc(100vh - var(--titlebar-h) - var(--banner-h, 0px));
+}
+
+html {
+  /* Always show the (transparent) scrollbar track, so a short page and a long
+     one centre on the same pixel. scrollbar-gutter would be the modern way, but
+     Chromium ignores it once ::-webkit-scrollbar is styled. */
+  overflow-y: scroll;
 }
 
 body {

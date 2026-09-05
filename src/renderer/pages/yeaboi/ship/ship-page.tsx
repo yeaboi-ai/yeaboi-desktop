@@ -26,6 +26,7 @@ import {
   resolveRepo,
 } from '@/lib/yeaboi/modes';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -328,10 +329,10 @@ function ShipBody() {
 
 export default function ShipPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ShipBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

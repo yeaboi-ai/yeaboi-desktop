@@ -1,28 +1,24 @@
 'use client';
 
 // The frame every settings section renders inside: one header, then the
-// section list beside the content. Themes keeps its own route element, so it
-// wears this rather than being dispatched from the settings page.
+// section list beside the content. Every section wears the same PageShell so
+// switching sections never moves the header, the list or the scrollbar.
 
 import type { ReactNode } from 'react';
+import { PageShell } from '@/components/page-shell';
 import { SettingsSectionList } from '@/components/settings/settings-section-list';
 import { SETTINGS_LEAD } from '@/lib/yeaboi/settings-tabs';
-import { cn } from '@/lib/utils';
 
 export function SettingsPageShell({
   active,
-  maxWidth = 'max-w-5xl',
   children,
 }: {
   /** The current pathname, used to light the row. */
   active: string;
-  maxWidth?: string;
   children: ReactNode;
 }) {
   return (
-    // The Niko bar is fixed to the bottom of the window; the extra bottom
-    // padding is what keeps the last row of a section reachable under it.
-    <div className={cn('mx-auto px-6 pt-10 pb-28', maxWidth)}>
+    <PageShell>
       <header className="mb-8">
         <h1 className="font-display text-[40px] leading-none text-foreground">Settings</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">{SETTINGS_LEAD}</p>
@@ -35,6 +31,6 @@ export function SettingsPageShell({
         />
         <div className="min-w-0">{children}</div>
       </div>
-    </div>
+    </PageShell>
   );
 }

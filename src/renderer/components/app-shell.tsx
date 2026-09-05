@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Wait for session status before rendering layout to prevent content flash
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-[var(--page-min-h)]">
         <div className="w-[var(--rail-w)] shrink-0 border-r border-border/60 bg-background" />
         <main className="flex-1" />
       </div>
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <main className="min-h-screen ml-[var(--rail-w)]">{children}</main>
+      <main className="min-h-[var(--page-min-h)] ml-[var(--rail-w)]">{children}</main>
       <ThemePreviewBar />
     </>
   );

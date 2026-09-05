@@ -3,7 +3,9 @@
 // Every yeaboi-backed page renders through this gate instead of inventing its
 // own probe: children when the sidecar is ready, a quiet skeleton while it
 // starts (cold start is a few seconds), and the reason plainly when it gave
-// up — the sidecar's backoff already retried before saying "down".
+// up — the sidecar's backoff already retried before saying "down". It sits
+// inside a page's PageShell and never supplies a frame of its own, so the
+// skeleton lands in the very column the page then renders in.
 
 import type { ReactNode } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
@@ -16,7 +18,7 @@ export function BackendGate({ children }: { children: ReactNode }) {
 
   if (backend.kind === 'starting') {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-14">
+      <div className="py-14">
         <div className="flex items-center gap-2.5 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span className="text-[13px] font-body">Starting the yeaboi backend…</span>
@@ -31,7 +33,7 @@ export function BackendGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-14">
+    <div className="py-14">
       <div className="rounded-2xl bg-card ring-1 ring-destructive/30 p-5 flex items-start gap-3">
         <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
         <div>

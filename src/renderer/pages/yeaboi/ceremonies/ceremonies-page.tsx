@@ -21,6 +21,7 @@ import {
   runCeremony,
   setCeremonyEnabled,
 } from '@/lib/yeaboi/ops';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -387,10 +388,10 @@ function DeclareForm({
 
 export default function CeremoniesPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <CeremoniesBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

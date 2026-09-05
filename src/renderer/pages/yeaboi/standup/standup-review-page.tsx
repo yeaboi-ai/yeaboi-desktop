@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { callTool } from '@/lib/yeaboi/api';
 import { loadStandup } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { Badge } from '@/components/ui/badge';
@@ -281,10 +282,10 @@ function StandupReviewBody() {
 
 export default function StandupReviewPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <StandupReviewBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

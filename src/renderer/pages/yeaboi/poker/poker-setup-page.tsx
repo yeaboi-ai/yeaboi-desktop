@@ -18,6 +18,7 @@ import {
   loadPokerTypes,
   startPokerBoard,
 } from '@/lib/yeaboi/boards';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -291,10 +292,10 @@ function PokerSetupBody() {
 
 export default function PokerSetupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <PokerSetupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

@@ -181,8 +181,8 @@ export default function ThemesSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <SettingsPageShell active="/settings/themes" maxWidth="max-w-6xl">
+    <>
+      <SettingsPageShell active="/settings/themes">
         <p className="mb-8 max-w-2xl text-sm font-body text-muted-foreground">
           Pick a built-in theme, follow your organization's default, build a custom theme, brand the
           app from a website, or follow your system's light/dark setting — all in one place.
@@ -202,7 +202,7 @@ export default function ThemesSettingsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Built-ins */}
           {BUILTIN_ORDER.map((id) => (
             <BuiltInCard
@@ -340,7 +340,7 @@ export default function ThemesSettingsPage() {
           />
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
 

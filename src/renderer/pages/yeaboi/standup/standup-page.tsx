@@ -30,6 +30,7 @@ import {
   runStandup,
 } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
 import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
@@ -781,10 +782,10 @@ function ArtifactEditor({ refer, onApplied }: { refer: ArtifactRef; onApplied?: 
 
 export default function StandupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <PageShell>
+      <BackendGate>
         <StandupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

@@ -8,6 +8,7 @@ import { DuckMark } from '@/components/brand/duck';
 import { maskText } from '@/lib/yeaboi/boards';
 import { type ReportRun, reportingHistory } from '@/lib/yeaboi/modes';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -119,10 +120,10 @@ function ReportingBody() {
 
 export default function ReportingPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ReportingBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

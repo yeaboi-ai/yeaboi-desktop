@@ -24,6 +24,7 @@ import {
   retryLink,
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button, buttonVariants } from '@/components/ui/button';
 
@@ -290,10 +291,10 @@ export default function RetroBoardPage() {
   /** The `?id=` this board page was opened with. */
   const boardId = searchParams.get('id') ?? '';
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <RetroBoardBody boardId={boardId} />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

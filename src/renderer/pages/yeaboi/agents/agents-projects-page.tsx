@@ -9,6 +9,7 @@ import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { repoHost } from '@/lib/yeaboi/project-scope';
 import { relativeDay } from '@/lib/yeaboi/sessions';
+import { PageShell } from '@/components/page-shell';
 
 interface Project {
   id: string;
@@ -41,7 +42,7 @@ export default function AgentsProjectsPage() {
   const sorted = [...(projects ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-14 pb-40">
+    <PageShell>
       <header className="animate-slide-up stagger-1">
         <div className="flex items-center gap-4">
           <Mascot size={40} />
@@ -93,6 +94,6 @@ export default function AgentsProjectsPage() {
           </ul>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

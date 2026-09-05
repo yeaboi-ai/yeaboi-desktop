@@ -33,6 +33,7 @@ import {
   type CheckStatus,
   type Report,
 } from '@/lib/yeaboi/system-check';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import {
@@ -273,7 +274,7 @@ function SystemCheckBody() {
 
 export default function SystemCheckPage() {
   return (
-    <div className="mx-auto max-w-3xl px-6 pt-10 pb-28">
+    <PageShell width="narrow">
       <header className="mb-7">
         <h1 className="font-display text-[40px] leading-none text-foreground">System check</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">What is ready on this machine.</p>
@@ -281,6 +282,6 @@ export default function SystemCheckPage() {
       <BackendGate>
         <SystemCheckBody />
       </BackendGate>
-    </div>
+    </PageShell>
   );
 }

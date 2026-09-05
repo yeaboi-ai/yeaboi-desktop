@@ -23,6 +23,7 @@ import {
   Microscope,
 } from 'lucide-react';
 import { BlueprintLauncher, type FocusTarget } from '@/components/blueprint/blueprint-launcher';
+import { PageShell } from '@/components/page-shell';
 
 type Pace = 'fast' | 'balanced' | 'deep';
 type TechnicalComfort = 'non_technical' | 'comfortable' | 'expert';
@@ -420,478 +421,474 @@ export default function NewSessionPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <main className="mx-auto max-w-2xl px-6 py-14">
-        <div className="mb-8 animate-slide-up stagger-1">
-          <button
-            onClick={() => router.back()}
-            className="text-[11px] font-body text-muted-foreground/50 hover:text-foreground/70 transition-colors mb-4 flex items-center gap-1"
-          >
-            ← Back to project
-          </button>
-          <p className="text-[10px] font-body font-medium tracking-[0.18em] uppercase text-muted-foreground mb-3">
-            New Session
-          </p>
-          <h1 className="font-display text-4xl italic text-foreground">Start Planning</h1>
-        </div>
+    <PageShell width="narrow">
+      <div className="mb-8 animate-slide-up stagger-1">
+        <button
+          onClick={() => router.back()}
+          className="text-[11px] font-body text-muted-foreground/50 hover:text-foreground/70 transition-colors mb-4 flex items-center gap-1"
+        >
+          ← Back to project
+        </button>
+        <p className="text-[10px] font-body font-medium tracking-[0.18em] uppercase text-muted-foreground mb-3">
+          New Session
+        </p>
+        <h1 className="font-display text-4xl italic text-foreground">Start Planning</h1>
+      </div>
 
-        {/* First release gate: must complete first release before creating new ones */}
-        {!firstReleaseComplete && coverage?.hasBlueprint && (
-          <div className="mb-8 animate-slide-up stagger-2">
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 text-center">
-              <p className="text-sm font-body text-foreground/80 mb-2">
-                Complete your first release first
-              </p>
-              <p className="text-[11px] font-body text-muted-foreground/60 mb-4">
-                Finalize your initial release before starting new ones.
-              </p>
-              {activeSessions.length > 0 && (
+      {/* First release gate: must complete first release before creating new ones */}
+      {!firstReleaseComplete && coverage?.hasBlueprint && (
+        <div className="mb-8 animate-slide-up stagger-2">
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-6 text-center">
+            <p className="text-sm font-body text-foreground/80 mb-2">
+              Complete your first release first
+            </p>
+            <p className="text-[11px] font-body text-muted-foreground/60 mb-4">
+              Finalize your initial release before starting new ones.
+            </p>
+            {activeSessions.length > 0 && (
+              <button
+                onClick={() =>
+                  router.push(`/projects/${projectId}/sessions/${activeSessions[0].id}`)
+                }
+                className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-body font-medium hover:bg-primary/90 transition-colors"
+              >
+                Go to active session
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Active session warning (for subsequent releases) */}
+      {firstReleaseComplete && activeSessions.length > 0 && !warningDismissed && (
+        <div className="mb-6 animate-slide-up stagger-2">
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-body text-foreground/70">
+                You have {activeSessions.length} active release
+                {activeSessions.length > 1 ? 's' : ''}.{' '}
                 <button
                   onClick={() =>
                     router.push(`/projects/${projectId}/sessions/${activeSessions[0].id}`)
                   }
-                  className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-body font-medium hover:bg-primary/90 transition-colors"
+                  className="text-primary hover:text-primary/80 underline"
                 >
-                  Go to active session
+                  Resume {activeSessions[0].title || activeSessions[0].release_name || 'session'}
                 </button>
-              )}
+              </p>
+              <button
+                onClick={() => setWarningDismissed(true)}
+                className="text-[10px] font-body text-muted-foreground/40 hover:text-foreground/60 ml-3"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Active session warning (for subsequent releases) */}
-        {firstReleaseComplete && activeSessions.length > 0 && !warningDismissed && (
-          <div className="mb-6 animate-slide-up stagger-2">
-            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-body text-foreground/70">
-                  You have {activeSessions.length} active release
-                  {activeSessions.length > 1 ? 's' : ''}.{' '}
-                  <button
-                    onClick={() =>
-                      router.push(`/projects/${projectId}/sessions/${activeSessions[0].id}`)
-                    }
-                    className="text-primary hover:text-primary/80 underline"
-                  >
-                    Resume {activeSessions[0].title || activeSessions[0].release_name || 'session'}
-                  </button>
-                </p>
+      {/* Session focus suggestions */}
+      {suggestions.length > 0 && !allLocked && !iterationTypes.length && (
+        <div className="mb-6 animate-slide-up stagger-2">
+          <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+            {coverage?.hasBlueprint ? 'Suggested focus areas' : 'Get started with'}
+          </p>
+          {coverage?.hasBlueprint && (
+            <p className="text-[11px] font-body text-muted-foreground/60 mb-3">
+              Blueprint is at {coverage.overall}% coverage (grade {coverage.grade}). These sessions
+              will help fill the gaps:
+            </p>
+          )}
+          <div className="space-y-2">
+            {suggestions.map((s, i) => {
+              const isGeneral = s.type === 'general';
+              const isSelected = selectedIdx === i;
+              return (
                 <button
-                  onClick={() => setWarningDismissed(true)}
-                  className="text-[10px] font-body text-muted-foreground/40 hover:text-foreground/60 ml-3"
+                  key={i}
+                  onClick={() => handlePickSuggestion(s, i)}
+                  className={`w-full text-left px-4 py-3 rounded-lg border transition-all group ${
+                    isSelected
+                      ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+                      : 'border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30'
+                  }`}
                 >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Session focus suggestions */}
-        {suggestions.length > 0 && !allLocked && !iterationTypes.length && (
-          <div className="mb-6 animate-slide-up stagger-2">
-            <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
-              {coverage?.hasBlueprint ? 'Suggested focus areas' : 'Get started with'}
-            </p>
-            {coverage?.hasBlueprint && (
-              <p className="text-[11px] font-body text-muted-foreground/60 mb-3">
-                Blueprint is at {coverage.overall}% coverage (grade {coverage.grade}). These
-                sessions will help fill the gaps:
-              </p>
-            )}
-            <div className="space-y-2">
-              {suggestions.map((s, i) => {
-                const isGeneral = s.type === 'general';
-                const isSelected = selectedIdx === i;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => handlePickSuggestion(s, i)}
-                    className={`w-full text-left px-4 py-3 rounded-lg border transition-all group ${
-                      isSelected
-                        ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-                        : 'border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-sm font-body font-medium group-hover:text-foreground ${isSelected ? 'text-foreground' : 'text-foreground/90'}`}
-                      >
-                        {isGeneral ? 'Start from scratch' : s.label}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <span className="text-[9px] font-body text-primary px-1.5 py-0.5 rounded bg-primary/15 font-medium">
-                            Selected
-                          </span>
-                        )}
-                        {s.persona && (
-                          <span className="text-[9px] font-body text-muted-foreground/40 px-1.5 py-0.5 rounded bg-muted/30">
-                            {s.persona === 'default'
-                              ? 'Engineer'
-                              : s.persona === 'pm'
-                                ? 'PM'
-                                : s.persona === 'architect'
-                                  ? 'Architect'
-                                  : s.persona === 'challenger'
-                                    ? 'Challenger'
-                                    : 'Mentor'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-[11px] font-body text-muted-foreground/60 mt-0.5">
-                      {s.description}
-                    </p>
-                    {s.sections && s.sections.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {s.sections.map((sec) => (
-                          <span
-                            key={sec}
-                            className={`text-[9px] font-body px-1.5 py-0.5 rounded ${isSelected ? 'bg-primary/15 text-primary/70' : 'bg-muted/40 text-muted-foreground/50'}`}
-                          >
-                            {sec.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-3 mt-4">
-              <div className="flex-1 h-px bg-border/30" />
-              <span className="text-[10px] font-body text-muted-foreground/30">
-                or describe your own
-              </span>
-              <div className="flex-1 h-px bg-border/30" />
-            </div>
-          </div>
-        )}
-
-        {/* Release type selector */}
-        {iterationTypes.length > 0 && (firstReleaseComplete || !coverage?.hasBlueprint) && (
-          <div className="mb-6 animate-slide-up stagger-2">
-            <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
-              What are you building?
-            </p>
-            {parentOos && (
-              <p className="text-[11px] font-body text-muted-foreground/50 mb-3">
-                From previous release: {parentOos.slice(0, 120)}
-                {parentOos.length > 120 ? '...' : ''}
-              </p>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              {iterationTypes.map((t) => {
-                const isSelected = selectedType === t.id;
-                const isDetected = autoDetectedType === t.id && !selectedType;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedType(null);
-                        setIdea(projectDesc || '');
-                      } else {
-                        setSelectedType(t.id);
-                        const starter = TYPE_STARTERS[t.id] || '';
-                        // Combine starter with project description for a natural sentence
-                        const desc = projectDesc
-                          ? (projectDesc.charAt(0).toLowerCase() + projectDesc.slice(1)).replace(
-                              /\.$/,
-                              '',
-                            )
-                          : '';
-                        const combined = desc ? `${starter}${desc}` : starter;
-                        setIdea(combined);
-                        // Focus textarea and place cursor at end
-                        setTimeout(() => {
-                          if (ideaRef.current) {
-                            ideaRef.current.focus();
-                            ideaRef.current.selectionStart = combined.length;
-                            ideaRef.current.selectionEnd = combined.length;
-                          }
-                        }, 50);
-                      }
-                    }}
-                    className={`text-left px-3 py-2.5 rounded-lg border transition-all group ${
-                      isSelected
-                        ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
-                        : isDetected
-                          ? 'border-primary/30 bg-primary/5'
-                          : 'border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30'
-                    }`}
-                  >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-sm font-body font-medium group-hover:text-foreground ${isSelected ? 'text-foreground' : 'text-foreground/90'}`}
+                    >
+                      {isGeneral ? 'Start from scratch' : s.label}
+                    </span>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`${isSelected ? 'text-primary' : 'text-muted-foreground/60'}`}
-                      >
-                        {TYPE_ICONS[t.icon] || <Zap className="h-4 w-4" />}
-                      </span>
-                      <span
-                        className={`text-xs font-body font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
-                      >
-                        {t.label}
-                      </span>
-                      {isDetected && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium ml-auto">
-                          Suggested
-                        </span>
-                      )}
                       {isSelected && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium ml-auto">
+                        <span className="text-[9px] font-body text-primary px-1.5 py-0.5 rounded bg-primary/15 font-medium">
                           Selected
                         </span>
                       )}
+                      {s.persona && (
+                        <span className="text-[9px] font-body text-muted-foreground/40 px-1.5 py-0.5 rounded bg-muted/30">
+                          {s.persona === 'default'
+                            ? 'Engineer'
+                            : s.persona === 'pm'
+                              ? 'PM'
+                              : s.persona === 'architect'
+                                ? 'Architect'
+                                : s.persona === 'challenger'
+                                  ? 'Challenger'
+                                  : 'Mentor'}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-[10px] font-body text-muted-foreground/50 mt-0.5 ml-6">
-                      {t.description}
-                    </p>
-                    {isSelected && (t.sections || []).length > 0 && (
-                      <div className="mt-1.5 ml-6 flex flex-wrap items-center gap-1">
-                        {t.sections_count <= 6 ? (
-                          <>
-                            {(t.sections || []).map((sec) => (
-                              <span
-                                key={sec}
-                                className="text-[8px] font-body px-1.5 py-0.5 rounded bg-primary/15 text-primary/70"
-                              >
-                                {TYPE_SECTION_LABELS[sec] ||
-                                  sec.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                              </span>
-                            ))}
-                            {t.sections_count < 13 && (
-                              <span className="text-[8px] font-body text-muted-foreground/30">
-                                +{13 - t.sections_count} defaulted
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-[8px] font-body text-muted-foreground/40">
-                            All {t.sections_count} sections
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                  <p className="text-[11px] font-body text-muted-foreground/60 mt-0.5">
+                    {s.description}
+                  </p>
+                  {s.sections && s.sections.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {s.sections.map((sec) => (
+                        <span
+                          key={sec}
+                          className={`text-[9px] font-body px-1.5 py-0.5 rounded ${isSelected ? 'bg-primary/15 text-primary/70' : 'bg-muted/40 text-muted-foreground/50'}`}
+                        >
+                          {sec.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
+          <div className="flex items-center gap-3 mt-4">
+            <div className="flex-1 h-px bg-border/30" />
+            <span className="text-[10px] font-body text-muted-foreground/30">
+              or describe your own
+            </span>
+            <div className="flex-1 h-px bg-border/30" />
+          </div>
+        </div>
+      )}
 
-        {/* Technical-comfort + pace selectors — segmented pill controls mirror
+      {/* Release type selector */}
+      {iterationTypes.length > 0 && (firstReleaseComplete || !coverage?.hasBlueprint) && (
+        <div className="mb-6 animate-slide-up stagger-2">
+          <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+            What are you building?
+          </p>
+          {parentOos && (
+            <p className="text-[11px] font-body text-muted-foreground/50 mb-3">
+              From previous release: {parentOos.slice(0, 120)}
+              {parentOos.length > 120 ? '...' : ''}
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            {iterationTypes.map((t) => {
+              const isSelected = selectedType === t.id;
+              const isDetected = autoDetectedType === t.id && !selectedType;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedType(null);
+                      setIdea(projectDesc || '');
+                    } else {
+                      setSelectedType(t.id);
+                      const starter = TYPE_STARTERS[t.id] || '';
+                      // Combine starter with project description for a natural sentence
+                      const desc = projectDesc
+                        ? (projectDesc.charAt(0).toLowerCase() + projectDesc.slice(1)).replace(
+                            /\.$/,
+                            '',
+                          )
+                        : '';
+                      const combined = desc ? `${starter}${desc}` : starter;
+                      setIdea(combined);
+                      // Focus textarea and place cursor at end
+                      setTimeout(() => {
+                        if (ideaRef.current) {
+                          ideaRef.current.focus();
+                          ideaRef.current.selectionStart = combined.length;
+                          ideaRef.current.selectionEnd = combined.length;
+                        }
+                      }, 50);
+                    }
+                  }}
+                  className={`text-left px-3 py-2.5 rounded-lg border transition-all group ${
+                    isSelected
+                      ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/20'
+                      : isDetected
+                        ? 'border-primary/30 bg-primary/5'
+                        : 'border-border/50 bg-card/40 hover:bg-card/80 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`${isSelected ? 'text-primary' : 'text-muted-foreground/60'}`}>
+                      {TYPE_ICONS[t.icon] || <Zap className="h-4 w-4" />}
+                    </span>
+                    <span
+                      className={`text-xs font-body font-medium ${isSelected ? 'text-foreground' : 'text-foreground/80'}`}
+                    >
+                      {t.label}
+                    </span>
+                    {isDetected && (
+                      <span className="text-[8px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium ml-auto">
+                        Suggested
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="text-[8px] px-1 py-0.5 rounded bg-primary/15 text-primary font-medium ml-auto">
+                        Selected
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-body text-muted-foreground/50 mt-0.5 ml-6">
+                    {t.description}
+                  </p>
+                  {isSelected && (t.sections || []).length > 0 && (
+                    <div className="mt-1.5 ml-6 flex flex-wrap items-center gap-1">
+                      {t.sections_count <= 6 ? (
+                        <>
+                          {(t.sections || []).map((sec) => (
+                            <span
+                              key={sec}
+                              className="text-[8px] font-body px-1.5 py-0.5 rounded bg-primary/15 text-primary/70"
+                            >
+                              {TYPE_SECTION_LABELS[sec] ||
+                                sec.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </span>
+                          ))}
+                          {t.sections_count < 13 && (
+                            <span className="text-[8px] font-body text-muted-foreground/30">
+                              +{13 - t.sections_count} defaulted
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[8px] font-body text-muted-foreground/40">
+                          All {t.sections_count} sections
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Technical-comfort + pace selectors — segmented pill controls mirror
             the AI settings drawer so the visual language is consistent across
             session-start and in-session editing. Both write into
             Session.ai_config; see backend/src/app/services/facilitator.py
             (TECHNICAL_COMFORT_PROMPTS) and backend/src/app/services/pace.py. */}
-        {(firstReleaseComplete || !coverage?.hasBlueprint) && (
-          <div className="mb-6 animate-slide-up stagger-2 space-y-4">
-            <div className="space-y-2">
-              <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground">
-                How comfortable are you with technical terms?
-              </p>
-              <div
-                className="flex gap-1 bg-foreground/[0.04] rounded-md p-1"
-                role="radiogroup"
-                aria-label="Comfort with technical terms"
-              >
-                {TECHNICAL_COMFORT_OPTIONS.map((opt) => {
-                  const active = technicalComfort === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setTechnicalComfort(opt.id)}
-                      title={opt.description}
-                      className={`flex-1 text-[11px] py-1.5 rounded transition-all font-medium ${
-                        active
-                          ? 'bg-foreground/[0.12] text-foreground'
-                          : 'text-muted-foreground/80 hover:text-foreground/80'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] font-body text-muted-foreground/50 leading-snug">
-                {TECHNICAL_COMFORT_OPTIONS.find((o) => o.id === technicalComfort)?.description}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground">
-                How fast should personas rotate?
-              </p>
-              <div
-                className="flex gap-1 bg-foreground/[0.04] rounded-md p-1"
-                role="radiogroup"
-                aria-label="Per-persona question budget"
-              >
-                {PACE_OPTIONS.map((opt) => {
-                  const active = pace === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setPace(opt.id)}
-                      title={opt.description}
-                      className={`flex-1 text-[11px] py-1.5 rounded transition-all font-medium ${
-                        active
-                          ? 'bg-foreground/[0.12] text-foreground'
-                          : 'text-muted-foreground/80 hover:text-foreground/80'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] font-body text-muted-foreground/50 leading-snug">
-                {PACE_OPTIONS.find((o) => o.id === pace)?.description}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Coverage-aware launcher — replaces the old 5-pill picker with a
-            view of the current blueprint plus four continuation modes. */}
-        {(firstReleaseComplete || !coverage?.hasBlueprint) && coverage?.hasBlueprint && (
-          <div className="mb-6 animate-slide-up stagger-2">
-            <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
-              How do you want to spend this session?
+      {(firstReleaseComplete || !coverage?.hasBlueprint) && (
+        <div className="mb-6 animate-slide-up stagger-2 space-y-4">
+          <div className="space-y-2">
+            <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground">
+              How comfortable are you with technical terms?
             </p>
-            <BlueprintLauncher projectId={projectId} onChange={setFocusTarget} />
-          </div>
-        )}
-
-        {(firstReleaseComplete || !coverage?.hasBlueprint) && (
-          <div className="space-y-5 animate-slide-up stagger-2">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-body font-medium text-muted-foreground">
-                  {coverage?.hasBlueprint
-                    ? 'What should this session focus on?'
-                    : 'What are you planning?'}
-                </Label>
-                <button
-                  type="button"
-                  onClick={handleRewrite}
-                  disabled={!idea.trim() || rewriting || !!suggestion}
-                  title="Improve clarity, fix spelling, and tighten up your description"
-                  className="group flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-                >
-                  <Sparkles
-                    className={`h-3 w-3 ${rewriting ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`}
-                  />
-                  <span>{rewriting ? 'Rewriting…' : 'AI Rewrite'}</span>
-                </button>
-              </div>
-              <Textarea
-                ref={ideaRef}
-                value={idea}
-                onChange={(e) => {
-                  setIdea(e.target.value);
-                  if (selectedIdx !== null) setSelectedIdx(null);
-                  detectType(e.target.value);
-                }}
-                placeholder={
-                  coverage?.hasBlueprint
-                    ? 'e.g. Define the user personas and prioritize features...'
-                    : 'Describe your idea, project, or problem...'
-                }
-                rows={4}
-                className="font-body text-sm bg-card border-border/70 focus:border-primary/50"
-              />
-            </div>
-
-            {/* Suggestion card */}
-            {suggestion && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 overflow-hidden animate-slide-up">
-                <div className="px-4 py-2.5 border-b border-primary/20 flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-body font-medium text-primary">
-                    Suggested rewrite
-                  </span>
-                </div>
-
-                {editing ? (
-                  <div className="p-4">
-                    <Textarea
-                      value={editDraft}
-                      onChange={(e) => setEditDraft(e.target.value)}
-                      rows={4}
-                      autoFocus
-                      className="font-body text-sm bg-background border-border/70 focus:border-primary/50"
-                    />
-                    <div className="flex justify-end gap-2 mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditing(false)}
-                        className="font-body text-xs h-7 px-3"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveEdit}
-                        className="font-body text-xs h-7 px-3"
-                      >
-                        <Check className="h-3 w-3 mr-1" />
-                        Use this
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="px-4 py-3">
-                      <p className="font-body text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                        {suggestion}
-                      </p>
-                    </div>
-                    <div className="px-4 py-2.5 border-t border-primary/20 flex items-center gap-2 justify-end">
-                      <button
-                        onClick={handleDeny}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
-                        Dismiss
-                      </button>
-                      <button
-                        onClick={handleStartEdit}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={handleAccept}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
-                      >
-                        <Check className="h-3 w-3" />
-                        Accept
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {error && <p className="text-xs font-body text-destructive">{error}</p>}
-            <Button
-              onClick={handleCreate}
-              disabled={loading || !ready || !idea.trim()}
-              className="w-full font-body font-medium"
+            <div
+              className="flex gap-1 bg-foreground/[0.04] rounded-md p-1"
+              role="radiogroup"
+              aria-label="Comfort with technical terms"
             >
-              {loading ? 'Creating...' : !ready ? 'Connecting...' : 'Start Release'}
-            </Button>
+              {TECHNICAL_COMFORT_OPTIONS.map((opt) => {
+                const active = technicalComfort === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setTechnicalComfort(opt.id)}
+                    title={opt.description}
+                    className={`flex-1 text-[11px] py-1.5 rounded transition-all font-medium ${
+                      active
+                        ? 'bg-foreground/[0.12] text-foreground'
+                        : 'text-muted-foreground/80 hover:text-foreground/80'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] font-body text-muted-foreground/50 leading-snug">
+              {TECHNICAL_COMFORT_OPTIONS.find((o) => o.id === technicalComfort)?.description}
+            </p>
           </div>
-        )}
-      </main>
-    </div>
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground">
+              How fast should personas rotate?
+            </p>
+            <div
+              className="flex gap-1 bg-foreground/[0.04] rounded-md p-1"
+              role="radiogroup"
+              aria-label="Per-persona question budget"
+            >
+              {PACE_OPTIONS.map((opt) => {
+                const active = pace === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setPace(opt.id)}
+                    title={opt.description}
+                    className={`flex-1 text-[11px] py-1.5 rounded transition-all font-medium ${
+                      active
+                        ? 'bg-foreground/[0.12] text-foreground'
+                        : 'text-muted-foreground/80 hover:text-foreground/80'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] font-body text-muted-foreground/50 leading-snug">
+              {PACE_OPTIONS.find((o) => o.id === pace)?.description}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Coverage-aware launcher — replaces the old 5-pill picker with a
+            view of the current blueprint plus four continuation modes. */}
+      {(firstReleaseComplete || !coverage?.hasBlueprint) && coverage?.hasBlueprint && (
+        <div className="mb-6 animate-slide-up stagger-2">
+          <p className="text-[10px] font-body font-medium tracking-[0.15em] uppercase text-muted-foreground mb-3">
+            How do you want to spend this session?
+          </p>
+          <BlueprintLauncher projectId={projectId} onChange={setFocusTarget} />
+        </div>
+      )}
+
+      {(firstReleaseComplete || !coverage?.hasBlueprint) && (
+        <div className="space-y-5 animate-slide-up stagger-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-body font-medium text-muted-foreground">
+                {coverage?.hasBlueprint
+                  ? 'What should this session focus on?'
+                  : 'What are you planning?'}
+              </Label>
+              <button
+                type="button"
+                onClick={handleRewrite}
+                disabled={!idea.trim() || rewriting || !!suggestion}
+                title="Improve clarity, fix spelling, and tighten up your description"
+                className="group flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                <Sparkles
+                  className={`h-3 w-3 ${rewriting ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`}
+                />
+                <span>{rewriting ? 'Rewriting…' : 'AI Rewrite'}</span>
+              </button>
+            </div>
+            <Textarea
+              ref={ideaRef}
+              value={idea}
+              onChange={(e) => {
+                setIdea(e.target.value);
+                if (selectedIdx !== null) setSelectedIdx(null);
+                detectType(e.target.value);
+              }}
+              placeholder={
+                coverage?.hasBlueprint
+                  ? 'e.g. Define the user personas and prioritize features...'
+                  : 'Describe your idea, project, or problem...'
+              }
+              rows={4}
+              className="font-body text-sm bg-card border-border/70 focus:border-primary/50"
+            />
+          </div>
+
+          {/* Suggestion card */}
+          {suggestion && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 overflow-hidden animate-slide-up">
+              <div className="px-4 py-2.5 border-b border-primary/20 flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-body font-medium text-primary">
+                  Suggested rewrite
+                </span>
+              </div>
+
+              {editing ? (
+                <div className="p-4">
+                  <Textarea
+                    value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    rows={4}
+                    autoFocus
+                    className="font-body text-sm bg-background border-border/70 focus:border-primary/50"
+                  />
+                  <div className="flex justify-end gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditing(false)}
+                      className="font-body text-xs h-7 px-3"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveEdit}
+                      className="font-body text-xs h-7 px-3"
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      Use this
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="px-4 py-3">
+                    <p className="font-body text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {suggestion}
+                    </p>
+                  </div>
+                  <div className="px-4 py-2.5 border-t border-primary/20 flex items-center gap-2 justify-end">
+                    <button
+                      onClick={handleDeny}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                      Dismiss
+                    </button>
+                    <button
+                      onClick={handleStartEdit}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleAccept}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
+                    >
+                      <Check className="h-3 w-3" />
+                      Accept
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {error && <p className="text-xs font-body text-destructive">{error}</p>}
+          <Button
+            onClick={handleCreate}
+            disabled={loading || !ready || !idea.trim()}
+            className="w-full font-body font-medium"
+          >
+            {loading ? 'Creating...' : !ready ? 'Connecting...' : 'Start Release'}
+          </Button>
+        </div>
+      )}
+    </PageShell>
   );
 }
