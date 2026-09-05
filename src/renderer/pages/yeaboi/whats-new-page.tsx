@@ -13,7 +13,8 @@
 // the preload bridge, and a shell update may be exactly what fixes a sidecar
 // that will not start.
 
-import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight, Sparkles } from 'lucide-react';
 import { apiGet, checkForUpdate, getShellMeta, type ShellMeta } from '@/lib/yeaboi/api';
 import {
@@ -37,9 +38,12 @@ import { useUpdateFlow } from '@/hooks/use-update-state';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const SEEN_KEY = 'whats-new.last-seen';
-const PAGE_SIZE = 24;
+// Months past the newest are collapsed, so a page of the ledger costs a row
+// each rather than a screen each.
+const PAGE_SIZE = 48;
 const NEUTRAL_ACCENT = 'var(--muted-foreground)';
 
 /** The reader's own markers, per ledger. Absent or unreadable means a first visit. */
@@ -153,7 +157,55 @@ function SinceYouLastLooked({
   );
 }
 
-/** The newest release, given room to be read. */
+/** A release's identity across both ledgers. */
+const keyOf = (entry: MergedEntry) => `${entry.channel}-${entry.version}`;
+
+/** A pane that scrolls inside itself, and says so: a scrollbar while there is
+ *  somewhere to go, and the content fading at whichever edge it runs past.
+ *  Cut off square, a column that carries on reads as one that has ended. */
+function ScrollPane({ className, children }: { className?: string; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ top: false, bottom: false });
+
+  useLayoutEffect(() => {
+    const el = box.current;
+    const content = inner.current;
+    if (!el || !content) return;
+    const read = () =>
+      setEdge({
+        top: el.scrollTop > 4,
+        bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 4,
+      });
+    read();
+    el.addEventListener('scroll', read, { passive: true });
+    // The pane's own height rarely changes; what it holds does — a month
+    // opening is what puts it past its edge.
+    const watch = new ResizeObserver(read);
+    watch.observe(content);
+    watch.observe(el);
+    return () => {
+      el.removeEventListener('scroll', read);
+      watch.disconnect();
+    };
+  }, []);
+
+  const fade = `linear-gradient(to bottom, transparent 0, #000 ${edge.top ? 28 : 0}px, #000 calc(100% - ${
+    edge.bottom ? 28 : 0
+  }px), transparent 100%)`;
+
+  return (
+    <div
+      ref={box}
+      className={cn('slim-scroll min-h-0 overflow-y-auto overscroll-contain', className)}
+      style={{ maskImage: fade, WebkitMaskImage: fade }}
+    >
+      <div ref={inner}>{children}</div>
+    </div>
+  );
+}
+
+/** The release the reader is on, given room to be read. */
 function LatestRelease({
   entry,
   accents,
@@ -165,7 +217,7 @@ function LatestRelease({
   isLatest: boolean;
 }) {
   return (
-    <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5 mb-6">
+    <section className="animate-slide-up mb-6 rounded-2xl bg-card p-5 ring-1 ring-border/60 motion-reduce:animate-none">
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-body text-muted-foreground/70">
         <ChannelBadge channel={entry.channel} />
         <span>v{entry.version}</span>
@@ -192,46 +244,53 @@ function LatestRelease({
   );
 }
 
-/** One row of the timeline: headline and colour signature, expanding in place. */
-function ReleaseRow({ entry, accents }: { entry: MergedEntry; accents: Map<string, string> }) {
-  const [open, setOpen] = useState(false);
+/** One row of the timeline: headline and colour signature. It picks the
+ *  release rather than unfolding it — the panel beside the list is where a
+ *  release is read, and expanding in place moved the rest of the list under
+ *  the cursor every time you looked at one. */
+function ReleaseRow({
+  entry,
+  accents,
+  picked,
+  onPick,
+}: {
+  entry: MergedEntry;
+  accents: Map<string, string>;
+  picked: boolean;
+  onPick: () => void;
+}) {
   return (
-    <div className="rounded-xl ring-1 ring-transparent transition-colors hover:ring-border/60 hover:bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-start gap-3 px-3 py-2.5 text-left"
-        aria-expanded={open}
-      >
-        <ChevronRight
-          className={`mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform ${
-            open ? 'rotate-90' : ''
-          }`}
-        />
-        <span className="w-16 shrink-0 text-[11px] font-body text-muted-foreground/70 tabular-nums">
-          v{entry.version}
-        </span>
-        <span className="flex-1 text-[12px] text-foreground leading-snug">
-          {entryHeadline(entry)}
-        </span>
-        <span className="flex items-center gap-1.5 shrink-0">
-          <ChannelBadge channel={entry.channel} />
-          <span className="flex gap-0.5">
-            {(areasOf(entry).length ? areasOf(entry) : ['general']).map((area) => (
-              <AreaDot key={area} area={area} accents={accents} />
-            ))}
-          </span>
-        </span>
-      </button>
-      {open && (
-        <div className="px-3 pb-4 pl-[3.4rem]">
-          {entry.summary && (
-            <p className="text-[12px] text-muted-foreground leading-relaxed">{entry.summary}</p>
-          )}
-          <Highlights entry={entry} accents={accents} />
-        </div>
+    <button
+      type="button"
+      onClick={onPick}
+      aria-pressed={picked}
+      className={cn(
+        'flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left ring-1 transition-colors',
+        picked
+          ? 'bg-card ring-border/60'
+          : 'ring-transparent hover:bg-card/60 hover:ring-border/40',
       )}
-    </div>
+    >
+      <span
+        aria-hidden
+        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full transition-colors"
+        style={{ background: picked ? 'var(--primary)' : 'transparent' }}
+      />
+      <span className="w-16 shrink-0 font-body text-[11px] text-muted-foreground/70 tabular-nums">
+        v{entry.version}
+      </span>
+      <span className="flex-1 text-[12px] leading-snug text-foreground">
+        {entryHeadline(entry)}
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <ChannelBadge channel={entry.channel} />
+        <span className="flex gap-0.5">
+          {(areasOf(entry).length ? areasOf(entry) : ['general']).map((area) => (
+            <AreaDot key={area} area={area} accents={accents} />
+          ))}
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -246,7 +305,7 @@ function ShellUpdateSection() {
   const version = shell?.version ?? '…';
 
   return (
-    <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5 mb-6">
+    <section className="mb-6 shrink-0 rounded-2xl bg-card p-5 ring-1 ring-border/60">
       {state.kind === 'unsupported' ? (
         <p className="text-[12px] text-muted-foreground">
           You&apos;re on yeaboi.ai {version}. {state.reason}
@@ -317,6 +376,62 @@ function ShellUpdateSection() {
   );
 }
 
+/** One month of the ledger. The newest is open; the rest are a line each until
+ *  you ask for them — a year of releases is a year of scrolling otherwise. */
+function MonthGroup({
+  month,
+  rows,
+  accents,
+  defaultOpen,
+  picked,
+  onPick,
+}: {
+  month: string;
+  rows: MergedEntry[];
+  accents: Map<string, string>;
+  defaultOpen: boolean;
+  picked: string;
+  onPick: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="mb-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left font-body text-[11px] tracking-wide text-muted-foreground/60 uppercase transition-colors hover:text-foreground"
+      >
+        <ChevronRight
+          className={`h-3 w-3 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+        />
+        {month}
+        <span className="ml-auto tabular-nums normal-case">{rows.length}</span>
+      </button>
+      {/* 0fr to 1fr: the rows are of no known height, and a max-height guess
+          either clips a long month or coasts through an empty gap. */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="space-y-0.5 pt-1" inert={open ? undefined : true}>
+            {rows.map((entry) => (
+              <ReleaseRow
+                key={keyOf(entry)}
+                entry={entry}
+                accents={accents}
+                picked={keyOf(entry) === picked}
+                onPick={() => onPick(keyOf(entry))}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function WhatsNewBody() {
   const [entries, setEntries] = useState<MergedEntry[] | null>(null);
   const [accents, setAccents] = useState<Map<string, string>>(new Map());
@@ -326,6 +441,10 @@ function WhatsNewBody() {
   // Read once, on mount: the digest must survive "Mark as read" writing the marker.
   const [seen] = useState<SeenVersions>(readSeen);
   const [dismissed, setDismissed] = useState(false);
+  // Empty until you pick one, which means the head of whatever the filter
+  // leaves — a filter just applied should not leave the panel reading a
+  // release that no longer matches it.
+  const [picked, setPicked] = useState('');
 
   useEffect(() => {
     apiGet<{ entries: Entry[]; areas?: AreaAccent[] }>('/api/meta/changelog').then(
@@ -368,8 +487,11 @@ function WhatsNewBody() {
         .map((e) => ({ ...e, highlights: e.highlights.filter((h) => h.areas.includes(area)) }))
         .filter((e) => e.highlights.length > 0)
     : entries;
-  const [latest, ...rest] = matching;
-  const visible = rest.slice(0, shown);
+  // The whole of the filtered ledger is in the list, the newest included:
+  // once the panel beside it is where a release is read, leaving the newest
+  // out of the list leaves no way back to it.
+  const visible = matching.slice(0, shown);
+  const reading = matching.find((entry) => keyOf(entry) === picked) ?? matching[0];
 
   const chip = (active: boolean) =>
     `rounded-full px-3 py-1 text-[11px] font-body transition-colors ${
@@ -378,7 +500,7 @@ function WhatsNewBody() {
         : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
     }`;
 
-  // Group the tail by release month so a long ledger stays navigable.
+  // Group by release month so a long ledger stays navigable.
   const groups: { month: string; rows: MergedEntry[] }[] = [];
   for (const entry of visible) {
     const month = monthOf(entry.date);
@@ -389,9 +511,7 @@ function WhatsNewBody() {
 
   return (
     <>
-      <SinceYouLastLooked since={since} accents={accents} onDismiss={() => setDismissed(true)} />
-
-      <div className="flex flex-wrap items-center gap-1.5 mb-6">
+      <div className="mb-6 flex shrink-0 flex-wrap items-center gap-1.5">
         <button
           type="button"
           className={chip(area === null)}
@@ -417,46 +537,76 @@ function WhatsNewBody() {
         ))}
       </div>
 
-      {latest ? (
-        <LatestRelease entry={latest} accents={accents} isLatest={!area} />
-      ) : (
-        <p className="text-[13px] text-muted-foreground">Nothing tagged that yet.</p>
-      )}
+      {/* Two readings of the same ledger side by side: the history to the
+          left, and whichever release you are reading to the right. Each
+          column scrolls inside itself — the page does not move, so the filter
+          chips and the release you are on stay put while you go back through
+          the months. */}
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] items-stretch gap-x-8 xl:grid-cols-2">
+        <ScrollPane className="pr-2">
+          {groups.map((group, at) => (
+            <MonthGroup
+              key={group.month}
+              month={group.month}
+              rows={group.rows}
+              accents={accents}
+              defaultOpen={at === 0}
+              picked={reading ? keyOf(reading) : ''}
+              onPick={setPicked}
+            />
+          ))}
 
-      {groups.map((group) => (
-        <section key={group.month} className="mb-5">
-          <h3 className="text-[11px] font-body uppercase tracking-wide text-muted-foreground/60 mb-1.5 px-3">
-            {group.month}
-          </h3>
-          <div className="space-y-0.5">
-            {group.rows.map((entry) => (
-              <ReleaseRow
-                key={`${entry.channel}-${entry.version}`}
-                entry={entry}
-                accents={accents}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+          {visible.length < matching.length && (
+            <Button variant="outline" size="sm" onClick={() => setShown((n) => n + PAGE_SIZE)}>
+              Show older releases
+            </Button>
+          )}
+        </ScrollPane>
 
-      {visible.length < rest.length && (
-        <Button variant="outline" size="sm" onClick={() => setShown((n) => n + PAGE_SIZE)}>
-          Show older releases
-        </Button>
-      )}
+        <ScrollPane className="pr-2">
+          <SinceYouLastLooked
+            since={since}
+            accents={accents}
+            onDismiss={() => setDismissed(true)}
+          />
+          {reading ? (
+            <LatestRelease
+              key={keyOf(reading)}
+              entry={reading}
+              accents={accents}
+              isLatest={keyOf(reading) === keyOf(entries[0]!)}
+            />
+          ) : (
+            <p className="text-[13px] text-muted-foreground">Nothing tagged that yet.</p>
+          )}
+        </ScrollPane>
+      </div>
     </>
   );
 }
 
 export default function WhatsNewPage() {
+  // One surface that fills the window, like the dashboard and the system
+  // check. The page itself never scrolls — the two columns of the ledger do,
+  // each in its own box, so the heading and the filter stay where you left
+  // them.
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="font-display text-2xl text-foreground mb-6">What&apos;s New</h1>
-      <ShellUpdateSection />
-      <BackendGate>
-        <WhatsNewBody />
-      </BackendGate>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-10">
+        <header className="mb-7 shrink-0">
+          <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            Releases and updates
+          </p>
+          <h1 className="font-display mt-0.5 text-3xl text-foreground">What&apos;s New</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Everything that shipped in this window and in the backend behind it.
+          </p>
+        </header>
+        <ShellUpdateSection />
+        <BackendGate>
+          <WhatsNewBody />
+        </BackendGate>
+      </div>
     </div>
   );
 }

@@ -236,10 +236,16 @@ export function Deck({ children }: { children: React.ReactNode }) {
           plus the same gutter it gets on the right — otherwise the content
           runs to within a fraction of the right edge of the window. The floor
           is the dock's: it floats over the page too, and a list that ends
-          under it looks like a list that was cut off. */}
+          under it looks like a list that was cut off.
+
+          The page itself does not move while the window is being turned. Only
+          what floats over it does: the dock, the duck, Niko. Pushing the page
+          in too made the thing you were reading shift under your eyes on
+          every scroll — the frame is meant to close around the reading, not
+          reflow it. */}
       <div
         key={pathname}
-        className="deck-page flex h-screen flex-col pt-[calc(var(--titlebar-h)+var(--turn-inset))] pr-[calc(1.5rem+var(--turn-inset))] pb-[calc(var(--dock-clear)+var(--turn-inset))] pl-[calc(var(--rail-clear)+var(--turn-inset))] transition-[padding] duration-300 ease-out"
+        className="deck-page flex h-screen flex-col pt-[var(--titlebar-h)] pr-6 pb-[var(--dock-clear)] pl-[var(--rail-clear)]"
       >
         {children}
       </div>

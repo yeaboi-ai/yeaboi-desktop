@@ -241,7 +241,7 @@ function Outcome({
 
 function Skeleton() {
   return (
-    <div role="status" aria-busy="true" className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div role="status" aria-busy="true" className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <span className="sr-only">Loading the feedback form…</span>
       <div className="space-y-4" aria-hidden>
         <div className="h-8 w-64 animate-pulse rounded-full bg-secondary/50" />
@@ -281,7 +281,7 @@ function FeedbackBody() {
   );
 
   const header = (
-    <header className="mb-8">
+    <header className="mb-8 shrink-0">
       <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
         Bugs, requests and complaints
       </p>
@@ -380,7 +380,7 @@ function FeedbackBody() {
       area={area}
       title={title}
       attachments={attachments}
-      className="animate-slide-up max-w-sm lg:sticky lg:top-10 lg:max-w-none motion-reduce:animate-none"
+      className="animate-slide-up max-w-sm self-start lg:max-w-none motion-reduce:animate-none"
       actions={
         proposal ? null : (
           <>
@@ -406,21 +406,29 @@ function FeedbackBody() {
   return (
     <>
       {header}
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      {/* The composer takes the height as well as the width: an issue is
+          written at whatever length it takes, and a fixed twelve rows in the
+          top third of the window left the page mostly floor. */}
+      {/* One explicit row, not an implicit one: a grid's auto row is as tall
+          as its content, so `flex-1` on the grid box alone gave the composer a
+          taller box to sit at the top of rather than a taller composer. */}
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {proposal ? (
-          <PolishPreview
-            mine={{ title, description }}
-            polished={proposal}
-            onUse={() => {
-              setTitle(proposal.title);
-              setDescription(proposal.description);
-              setProposal(null);
-            }}
-            onKeep={() => setProposal(null)}
-          />
+          <div className="quiet-scroll min-h-0 overflow-y-auto">
+            <PolishPreview
+              mine={{ title, description }}
+              polished={proposal}
+              onUse={() => {
+                setTitle(proposal.title);
+                setDescription(proposal.description);
+                setProposal(null);
+              }}
+              onKeep={() => setProposal(null)}
+            />
+          </div>
         ) : (
           <div
-            className="animate-slide-up relative space-y-5 motion-reduce:animate-none"
+            className="animate-slide-up relative flex min-h-0 flex-col gap-5 motion-reduce:animate-none"
             onDragEnter={(event) => {
               event.preventDefault();
               dragDepth.current += 1;
@@ -451,7 +459,7 @@ function FeedbackBody() {
           >
             {dragging && <DropVeil label="Drop to attach a screenshot or a log" />}
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
               <TypePicker types={options.types} active={kind} onPick={setKind} disabled={working} />
               <AreaPicker options={options} area={area} onPick={setArea} disabled={working} />
             </div>
@@ -459,8 +467,8 @@ function FeedbackBody() {
             {/* The sheet the issue is written on. The fields keep no chrome of
                 their own — the rules between them are what separates one from
                 the next, as they would on the issue itself. */}
-            <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
-              <div className="border-b border-border/50 px-5 py-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+              <div className="shrink-0 border-b border-border/50 px-5 py-4">
                 <label htmlFor="feedback-title" className="sr-only">
                   Title
                 </label>
@@ -475,7 +483,7 @@ function FeedbackBody() {
                 />
               </div>
 
-              <div className="px-5 py-4">
+              <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
                 <label htmlFor="feedback-description" className="sr-only">
                   What happened
                 </label>
@@ -486,11 +494,11 @@ function FeedbackBody() {
                   disabled={sending}
                   placeholder="What you did. What you expected. What happened instead."
                   onChange={(event) => setDescription(event.target.value)}
-                  className="w-full resize-none border-0 bg-transparent text-[13.5px] leading-relaxed text-foreground/95 outline-none placeholder:text-muted-foreground/45"
+                  className="min-h-0 w-full flex-1 resize-none border-0 bg-transparent text-[13.5px] leading-relaxed text-foreground/95 outline-none placeholder:text-muted-foreground/45"
                 />
               </div>
 
-              <div className="border-t border-border/50 bg-secondary/25 px-5 py-3.5">
+              <div className="shrink-0 border-t border-border/50 bg-secondary/25 px-5 py-3.5">
                 <AttachmentTray
                   options={options}
                   attachments={attachments}
@@ -502,7 +510,7 @@ function FeedbackBody() {
               </div>
             </div>
 
-            <p aria-live="polite" className="min-h-[1rem] text-[12px]">
+            <p aria-live="polite" className="min-h-[1rem] shrink-0 text-[12px]">
               {notice && (
                 <span
                   className={notice.tone === 'error' ? 'text-destructive' : 'text-muted-foreground'}
@@ -513,18 +521,24 @@ function FeedbackBody() {
             </p>
           </div>
         )}
-        {slip}
+        <div className="quiet-scroll min-h-0 overflow-y-auto">{slip}</div>
       </div>
     </>
   );
 }
 
 export default function FeedbackPage() {
+  // One surface that fills the window, like the dashboard and the system
+  // check. The page itself does not scroll: the composer takes the height
+  // that is going spare, and the two panes that can outgrow it — a polish
+  // comparison, a long filing slip — scroll inside themselves.
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 pt-10 pb-28">
-        <FeedbackBody />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-10">
+        <BackendGate>
+          <FeedbackBody />
+        </BackendGate>
       </div>
-    </BackendGate>
+    </div>
   );
 }

@@ -39,7 +39,7 @@ const OUT_MS = 120;
 /** How long a row takes to grow into or out of the rail — the same transition
  *  the rows carry, and the beat the rail's own height needs before the slots a
  *  shorter list left empty can be taken away from under it. */
-const ROW_MS = 220;
+const ROW_MS = 340;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -110,21 +110,20 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // exceptions — their rows are the only nav those pages have.
   const notch = !settings && !aside && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
-  // A list where two rows are visible is not a list changing hands: it is one
-  // row doing it. Cascading through nine slots to swap the second of them left
-  // the rail a row short in the middle of it, because the row leaving collapsed
-  // three beats before the row arriving grew.
-  // A list where two rows are visible is not a list changing hands: it is one
-  // row doing it. A notch shows two, and so does an aside pair — cascading
-  // through nine slots to swap the second of them left the rail short in the
-  // middle going one way, and briefly showing both the old row and the new one
-  // going the other.
-  const twoish = (list: typeof rows, shape: { notch: boolean; active: string | undefined }) =>
-    list.length <= 2 ||
-    (shape.notch &&
-      list.filter((row) => row.href === HOME_HREF || row.href === shape.active).length <= 2);
-  const oneStep =
-    twoish(rows, { notch, active: activeHref }) && (!leaving || twoish(leaving.rows, leaving));
+  // The cascade is for one list handing over to another, a row at a time. A
+  // slot that only one of the two lists has is not handing anything over — it
+  // is a row growing into the rail or collapsing out of it, and it has nothing
+  // to wait its turn behind. Counting those in was why stepping aside to a
+  // two-row page took half a second to close: seven of the nine rows were
+  // queueing to do nothing, and the rail did not start shrinking until the
+  // queue reached them.
+  const handovers = leaving
+    ? leaving.rows.filter((from, slot) => {
+        const to = rows[slot];
+        return Boolean(to) && to!.href !== from.href;
+      }).length
+    : 0;
+  const oneStep = handovers <= 1;
   was.current = { notch, active: activeHref };
 
   // Escape leaves. On settings and on a page you stepped aside to there is one
@@ -168,10 +167,16 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       return () => clearTimeout(settle);
     }
     // The first row waits out its own exit; every row after it waits for the
-    // one above to have finished changing.
+    // one above to have finished changing. A one-step swap waits for neither:
+    // there is no cascade behind it, so the beat before it only delayed the
+    // rail closing to the two rows those pages have — which is the movement
+    // that answers the click. A frame or two, though, and not none: a longer
+    // list's extra slots mount at no height, and growing them in the same task
+    // they mounted in means the browser never paints the closed state and the
+    // rail arrives whole instead of opening.
     const next = setTimeout(
       () => setRevealed((far) => (oneStep ? slots : far + 1)),
-      revealed === 0 ? OUT_MS : SWAP_STAGGER_MS,
+      revealed === 0 ? (oneStep ? 32 : OUT_MS) : SWAP_STAGGER_MS,
     );
     return () => clearTimeout(next);
   }, [revealed, slots, leaving, oneStep]);
@@ -324,12 +329,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
-        {/* Nothing is lit where nothing is active. The marker holds its place
-            through a swap so it does not blink on the way across, but a page
-            you stepped aside to has no row of its own — and leaving the mark
-            on Home said you were on Home. It fades rather than vanishing:
-            taken away in a frame it reads as a glitch beside the row that is
-            arriving. */}
+        {/* Nothing is lit where nothing is active. A page you stepped aside to
+            has no row of its own, so the mark goes — and it goes from the
+            press, not from the end of the swap: the click is what left, and a
+            highlight that sits on the old row for the length of the cascade
+            and only then fades is answering a question nobody is still
+            asking. It fades rather than vanishing, so it does not read as a
+            glitch beside the row arriving under it. */}
         {markerTop !== null && (
           <span
             aria-hidden
@@ -337,7 +343,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
             style={{
               top: markerTop,
               height: ROW,
-              opacity: activeHref || leaving ? 1 : 0,
+              opacity: activeHref ? 1 : 0,
               transition: `${
                 travelling ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1), ' : ''
               }opacity 200ms ease-out`,
@@ -377,7 +383,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                 it through a swap. */}
               <div
                 aria-hidden
-                className="mx-2 bg-border/50 transition-all duration-200 ease-out"
+                className="mx-2 bg-border/50 transition-all duration-300 ease-out"
                 style={{
                   height: row?.opensGroup && !shape.notch ? 1 : 0,
                   opacity: row?.opensGroup && !shape.notch ? 1 : 0,
@@ -406,7 +412,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                 }}
                 aria-hidden={hidden}
                 tabIndex={hidden ? -1 : undefined}
-                className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
+                className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-300 ease-out ${
                   active
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
