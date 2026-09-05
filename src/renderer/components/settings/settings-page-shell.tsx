@@ -16,11 +16,12 @@ import { cn } from '@/lib/utils';
 
 export function SettingsPageShell({
   active,
-  maxWidth = 'max-w-3xl',
+  maxWidth = 'max-w-[1360px]',
   children,
 }: {
   /** The current pathname, which names the section. */
   active: string;
+  /** Capped where a tab is one column of prose rather than a set of cards. */
   maxWidth?: string;
   children: ReactNode;
 }) {

@@ -167,7 +167,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
           under it looks like a list that was cut off. */}
       <div
         key={pathname}
-        className="deck-page flex h-screen flex-col pl-[72px] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)]"
+        className="deck-page flex h-screen flex-col pl-[var(--rail-clear)] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)] transition-[padding-left] duration-200 ease-out"
       >
         {children}
       </div>

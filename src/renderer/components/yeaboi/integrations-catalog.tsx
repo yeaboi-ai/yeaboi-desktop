@@ -172,7 +172,7 @@ export function IntegrationsCatalog() {
             <h3 className="mb-2 text-[10px] font-body tracking-[0.14em] text-muted-foreground uppercase">
               {f.label}
             </h3>
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               {filtered
                 .filter((row) => row.family === f.key)
                 .map((row) => (

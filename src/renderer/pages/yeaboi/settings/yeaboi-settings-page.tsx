@@ -389,7 +389,10 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           onSave={(env, value) => void save(env, value)}
           onSignIn={() => setSigningIn(true)}
         />
-        <div className="mt-6 space-y-4">
+        {/* The groups run across the page rather than down it: each is one or
+            two cards, and a column of them left two thirds of the window empty
+            to say so. */}
+        <div className="mt-6 grid items-start gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
           {grouped.map((group) => (
             <div key={group.label}>
               <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
@@ -434,34 +437,36 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     return (
       <div>
         {banners}
-        <SettingsCard index={0}>
-          <SettingsSectionHeader
-            title="Sharing"
-            subtitle="Who can open a board you share"
-            icon={<SectionIcon section="sharing" />}
-          />
-          <div className="px-5 py-4">
-            {shareMode && (
-              <ShareModeChoice
-                active={shareMode.active_choice}
-                onPick={(value) => void save(shareMode.env, value)}
-              />
+        <div className="grid items-start gap-4 xl:grid-cols-2">
+          <SettingsCard index={0}>
+            <SettingsSectionHeader
+              title="Sharing"
+              subtitle="Who can open a board you share"
+              icon={<SectionIcon section="sharing" />}
+            />
+            <div className="px-5 py-4">
+              {shareMode && (
+                <ShareModeChoice
+                  active={shareMode.active_choice}
+                  onPick={(value) => void save(shareMode.env, value)}
+                />
+              )}
+            </div>
+            {timeout && (
+              <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>
             )}
-          </div>
-          {timeout && <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>}
-        </SettingsCard>
-        {/* The five keys mean nothing on the default path, so they appear with
+          </SettingsCard>
+          {/* The five keys mean nothing on the default path, so they appear with
             the tier — the same rule the terminal's Sharing section follows. */}
-        {shareAccess && accessFields.length > 0 && (
-          <div className="mt-4">
+          {shareAccess && accessFields.length > 0 && (
             <AccessCard
               fields={accessFields}
               open={openCard === 'cloudflare'}
               onToggle={() => setOpenCard((s) => (s === 'cloudflare' ? '' : 'cloudflare'))}
               onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
             />
-          </div>
-        )}
+          )}
+        </div>
         {footer}
       </div>
     );
@@ -657,7 +662,7 @@ function DictationRow() {
  *  outside the backend gate — the theme still switches with the sidecar down. */
 function AppearanceTab() {
   return (
-    <div className="space-y-4">
+    <div className="grid items-start gap-4 xl:grid-cols-2">
       <SettingsCard index={0}>
         <SettingsSectionHeader title="Appearance" subtitle="Colour scheme, for this window" />
         <div className="px-5 py-5">

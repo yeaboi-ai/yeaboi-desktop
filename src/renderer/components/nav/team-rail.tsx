@@ -81,6 +81,15 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
 
   const slots = Math.max(rows.length, leaving?.length ?? 0);
 
+  // The pages keep off the rail by its width, and on settings that width is
+  // the open one. Declared on the root so every surface moves together with
+  // it rather than each one knowing where the rail is.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings) root.dataset.railWide = '';
+    else delete root.dataset.railWide;
+  }, [settings]);
+
   useEffect(() => {
     if (!leaving) return;
     if (revealed >= slots) {

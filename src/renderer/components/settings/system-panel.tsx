@@ -114,7 +114,11 @@ export function SystemPanel({
     onSaved,
   });
 
-  return (
+  // Two columns where there is room, and each one packed by hand rather than
+  // left to the grid: a row of cells is as tall as its tallest, so panels that
+  // stand open beside rows that collapse leave holes down the short side.
+  // Left is what this machine does; right is what it talks to.
+  const panels = (
     <div className="space-y-4">
       {storage.length > 0 && (
         <SettingsCard index={0}>
@@ -124,19 +128,6 @@ export function SystemPanel({
               wholesale. That is worth keeping in plain sight. */}
           <div className="py-1.5">{storage.map(renderRow)}</div>
         </SettingsCard>
-      )}
-
-      {standup.length > 0 && (
-        <ConnectionCard
-          card={STANDUP_CARD}
-          fields={standup}
-          prefillNonSecret
-          configured={Boolean(valueOf('STANDUP_GITHUB_REPO') || valueOf('STANDUP_SMTP_HOST'))}
-          summary={[valueOf('STANDUP_GITHUB_REPO'), valueOf('STANDUP_SMTP_HOST')]
-            .filter(Boolean)
-            .join(DOT)}
-          {...card('standup')}
-        />
       )}
 
       {(dictation.length > 0 || dictationRow) && (
@@ -151,6 +142,30 @@ export function SystemPanel({
             {dictation.map(renderRow)}
           </div>
         </SettingsCard>
+      )}
+
+      {advanced.length > 0 && (
+        <SettingsCard index={3}>
+          <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
+          <div className="py-1.5">{advanced.map(renderRow)}</div>
+        </SettingsCard>
+      )}
+    </div>
+  );
+
+  const connections = (
+    <div className="space-y-4">
+      {standup.length > 0 && (
+        <ConnectionCard
+          card={STANDUP_CARD}
+          fields={standup}
+          prefillNonSecret
+          configured={Boolean(valueOf('STANDUP_GITHUB_REPO') || valueOf('STANDUP_SMTP_HOST'))}
+          summary={[valueOf('STANDUP_GITHUB_REPO'), valueOf('STANDUP_SMTP_HOST')]
+            .filter(Boolean)
+            .join(DOT)}
+          {...card('standup')}
+        />
       )}
 
       {elevenlabs.length > 0 && (
@@ -178,14 +193,14 @@ export function SystemPanel({
         </SettingsCard>
       )}
 
-      {advanced.length > 0 && (
-        <SettingsCard index={3}>
-          <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
-          <div className="py-1.5">{advanced.map(renderRow)}</div>
-        </SettingsCard>
-      )}
-
       {extras}
+    </div>
+  );
+
+  return (
+    <div className="grid items-start gap-4 xl:grid-cols-2">
+      {panels}
+      {connections}
     </div>
   );
 }
