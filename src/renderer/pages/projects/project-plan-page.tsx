@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GeneratePlanDialog } from '@/components/projects/generate-plan-dialog';
 import { PlanPanel } from '@/components/projects/plan-panel';
@@ -73,8 +74,8 @@ export default function ProjectPlanPage() {
   );
 
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10 space-y-4">
+    <PageShell width="narrow" className="space-y-4">
+      <BackendGate>
         <div className="flex items-center gap-3">
           <Link
             href={`/projects/${projectId}`}
@@ -121,7 +122,7 @@ export default function ProjectPlanPage() {
             }}
           />
         )}
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

@@ -15,6 +15,7 @@ import {
   provenanceAudit,
   provenanceTrace,
 } from '@/lib/yeaboi/ops';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Badge } from '@/components/ui/badge';
 
@@ -275,10 +276,10 @@ function ProvenanceBody() {
 
 export default function ProvenancePage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <PageShell>
+      <BackendGate>
         <ProvenanceBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

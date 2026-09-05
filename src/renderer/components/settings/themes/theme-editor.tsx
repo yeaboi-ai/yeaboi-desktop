@@ -195,7 +195,7 @@ export function ThemeEditor({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(360px,500px)] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] gap-6">
       <div className="space-y-6">
         <SectionShell title="Theme info">
           <div className="space-y-3">

@@ -29,6 +29,7 @@ import {
   reduceAgentRun,
   runAgentMode,
 } from '@/lib/yeaboi/ops';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -169,10 +170,10 @@ function AgentsBody() {
 
 export default function AgentsPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <PageShell>
+      <BackendGate>
         <AgentsBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

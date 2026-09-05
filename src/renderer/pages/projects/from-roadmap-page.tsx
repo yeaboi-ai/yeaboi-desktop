@@ -25,6 +25,7 @@ import {
   planProject,
   reduceModeRun,
 } from '@/lib/yeaboi/modes';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -262,10 +263,10 @@ function RoadmapBody() {
 
 export default function FromRoadmapPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <RoadmapBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

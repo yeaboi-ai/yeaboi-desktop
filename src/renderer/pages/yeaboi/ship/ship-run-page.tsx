@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'react-router';
 import { type ShipSnapshot, answerGate, cancelShip, loadShipRun } from '@/lib/yeaboi/modes';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -236,10 +237,10 @@ export default function ShipRunPage() {
   const runKey = searchParams.get('key') ?? '';
   const cardId = searchParams.get('card') ?? '';
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <RunBody key={runKey} runKey={runKey} cardId={cardId} />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

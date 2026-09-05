@@ -16,6 +16,7 @@ import { HiddenPanelsMenu } from '@/components/layout-toolbar';
 import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-layout';
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
 import { DemoTour } from '@/components/onboarding/demo-tour';
+import { PageShell } from '@/components/page-shell';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1284,7 +1285,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   if (notFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      <div className="min-h-[var(--page-min-h)] flex items-center justify-center text-muted-foreground">
         Project not found.
       </div>
     );
@@ -1292,7 +1293,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      <div className="min-h-[var(--page-min-h)] flex items-center justify-center text-muted-foreground">
         Loading...
       </div>
     );
@@ -1333,8 +1334,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen">
-      <main className="mx-auto max-w-6xl px-6 py-14">
+    <>
+      <PageShell>
         {/* Breadcrumb */}
         <div className="mb-8 animate-fade-in">
           <Link
@@ -1895,7 +1896,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </DashboardGrid>
         </div>
-      </main>
+      </PageShell>
 
       {project && (
         <EditProjectDialog
@@ -1909,6 +1910,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {project?.is_demo && <DemoTour />}
-    </div>
+    </>
   );
 }

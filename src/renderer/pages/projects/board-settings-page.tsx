@@ -10,6 +10,7 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useBoard } from '@/hooks/use-board';
 import { callTool } from '@/lib/yeaboi/api';
 import { ensureEngineProject, type EngineLinkable } from '@/lib/yeaboi/engine-project';
+import { PageShell } from '@/components/page-shell';
 import {
   BUILTIN_PRESETS,
   fetchOrgPresets,
@@ -341,9 +342,9 @@ export default function BoardSettingsPage({ params }: PageProps) {
   const activePreset = detectActivePreset(presets, defaultGranularity, defaultModifiers);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60 bg-card/60 px-8 py-5 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+    <>
+      <header className="border-b border-border/60 bg-card/60 py-5 backdrop-blur">
+        <div className="mx-auto flex max-w-[var(--page-w)] items-center justify-between gap-4 px-6">
           <div className="min-w-0">
             <Link
               href="/board"
@@ -366,7 +367,7 @@ export default function BoardSettingsPage({ params }: PageProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-8 py-10">
+      <PageShell>
         {loading && (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -610,7 +611,7 @@ export default function BoardSettingsPage({ params }: PageProps) {
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </PageShell>
+    </>
   );
 }

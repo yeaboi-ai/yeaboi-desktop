@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -118,10 +119,10 @@ function PokerBody() {
 
 export default function PokerPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <PokerBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

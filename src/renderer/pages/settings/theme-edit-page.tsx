@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save, Sparkles, Trash2, Users } from 'lucide-react';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { ThemeEditor } from '@/components/settings/themes/theme-editor';
 import type { ThemeEditorState } from '@/components/settings/themes/theme-editor';
 import { useTheme } from '@/components/providers/theme-provider';
@@ -180,104 +181,102 @@ export default function ThemeEditorPage() {
 
   if (loading || !initial) {
     return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <p className="text-xs font-body text-muted-foreground">Loading…</p>
-      </div>
+      <SettingsPageShell active="/settings/themes">
+        <p className="py-14 text-xs font-body text-muted-foreground">Loading…</p>
+      </SettingsPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <Link
-          href="/settings/themes"
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Themes
-        </Link>
+    <SettingsPageShell active="/settings/themes">
+      <Link
+        href="/settings/themes"
+        className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6"
+      >
+        <ArrowLeft className="h-3 w-3" />
+        Themes
+      </Link>
 
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display italic text-4xl text-foreground leading-none mb-2">
-              {isNew ? 'New custom theme' : 'Edit theme'}
-            </h1>
-            <p className="text-sm font-body text-muted-foreground">
-              Pick colors group by group. The preview on the right updates as you go.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {!isNew && (
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={saving}
-                className="px-3 py-1.5 rounded text-[11px] font-body border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                <Trash2 className="h-3 w-3" />
-                Delete
-              </button>
-            )}
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="font-display italic text-4xl text-foreground leading-none mb-2">
+            {isNew ? 'New custom theme' : 'Edit theme'}
+          </h2>
+          <p className="text-sm font-body text-muted-foreground">
+            Pick colors group by group. The preview on the right updates as you go.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!isNew && (
             <button
               type="button"
-              onClick={() => onSave(false)}
+              onClick={onDelete}
               disabled={saving}
-              className="px-3 py-1.5 rounded text-[11px] font-body border border-border hover:border-primary/50 text-foreground transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded text-[11px] font-body border border-destructive/50 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
             >
-              <Save className="h-3 w-3" />
-              {saving ? 'Saving…' : 'Save'}
+              <Trash2 className="h-3 w-3" />
+              Delete
             </button>
-            <button
-              type="button"
-              onClick={() => onSave(true)}
-              disabled={saving}
-              className="px-3 py-1.5 rounded text-[11px] font-body bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-1.5"
-            >
-              <Sparkles className="h-3 w-3" />
-              Save & apply
-            </button>
-          </div>
-        </header>
+          )}
+          <button
+            type="button"
+            onClick={() => onSave(false)}
+            disabled={saving}
+            className="px-3 py-1.5 rounded text-[11px] font-body border border-border hover:border-primary/50 text-foreground transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+          >
+            <Save className="h-3 w-3" />
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(true)}
+            disabled={saving}
+            className="px-3 py-1.5 rounded text-[11px] font-body bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 inline-flex items-center gap-1.5"
+          >
+            <Sparkles className="h-3 w-3" />
+            Save & apply
+          </button>
+        </div>
+      </header>
 
-        {savedFlash && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-success/15 border border-success/40 text-[11px] font-body text-success">
-            Saved.
-          </div>
-        )}
-        {error && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/15 border border-destructive/40 text-[11px] font-body text-destructive">
-            {error}
-          </div>
-        )}
+      {savedFlash && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-success/15 border border-success/40 text-[11px] font-body text-success">
+          Saved.
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/15 border border-destructive/40 text-[11px] font-body text-destructive">
+          {error}
+        </div>
+      )}
 
-        {isNew && isOrgAdmin && currentOrgId && (
-          <div className="mb-6 px-4 py-3 rounded-lg border border-border bg-card flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-[11px] font-body text-foreground">Share with organization</p>
-                <p className="text-[10px] font-body text-muted-foreground/70">
-                  Org admins can see and apply this theme. Required to set it as the org default.
-                </p>
-              </div>
+      {isNew && isOrgAdmin && currentOrgId && (
+        <div className="mb-6 px-4 py-3 rounded-lg border border-border bg-card flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-[11px] font-body text-foreground">Share with organization</p>
+              <p className="text-[10px] font-body text-muted-foreground/70">
+                Org admins can see and apply this theme. Required to set it as the org default.
+              </p>
             </div>
-            <input
-              type="checkbox"
-              checked={shareWithOrg}
-              onChange={(e) => setShareWithOrg(e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
           </div>
-        )}
+          <input
+            type="checkbox"
+            checked={shareWithOrg}
+            onChange={(e) => setShareWithOrg(e.target.checked)}
+            className="w-4 h-4 accent-primary"
+          />
+        </div>
+      )}
 
-        <ThemeEditor
-          initialName={initial.name}
-          initialColorScheme={initial.color_scheme}
-          initialTokens={initial.tokens}
-          initialBase={initial.base}
-          onChange={setDraft}
-        />
-      </div>
-    </div>
+      <ThemeEditor
+        initialName={initial.name}
+        initialColorScheme={initial.color_scheme}
+        initialTokens={initial.tokens}
+        initialBase={initial.base}
+        onChange={setDraft}
+      />
+    </SettingsPageShell>
   );
 }

@@ -14,6 +14,7 @@ import {
   resetDeckStyle,
   saveDeckStyle,
 } from '@/lib/yeaboi/modes';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -242,10 +243,10 @@ function StyleInput({
 
 export default function ReportingStylePage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ReportingStyleBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

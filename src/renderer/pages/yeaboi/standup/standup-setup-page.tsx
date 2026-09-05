@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { callTool } from '@/lib/yeaboi/api';
 import { loadStandup } from '@/lib/yeaboi/dashboards';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
 import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
@@ -416,10 +417,10 @@ function StandupSetupBody() {
 
 export default function StandupSetupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <StandupSetupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

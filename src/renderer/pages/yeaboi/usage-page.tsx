@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { callTool } from '@/lib/yeaboi/api';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 
 interface UsageData {
@@ -69,11 +70,11 @@ function UsageBody() {
 
 export default function UsagePage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <PageShell>
+      <BackendGate>
         <h1 className="font-display text-2xl text-foreground mb-6">Usage</h1>
         <UsageBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

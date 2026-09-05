@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'react-router';
 import { maskText } from '@/lib/yeaboi/boards';
 import { type AnalysisResult, loadAnalysisResult } from '@/lib/yeaboi/dashboards';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { useAudience } from '@/components/providers/audience-provider';
 import { ResultActions } from '@/components/yeaboi/result-actions';
@@ -529,10 +530,10 @@ function InsightGroups({ examples }: { examples: Record<string, any> }) {
 
 export default function AnalysisResultsPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <AnalysisResultsBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

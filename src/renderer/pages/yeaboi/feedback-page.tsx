@@ -34,6 +34,7 @@ import {
 import { attachmentPaths, submitLabel, type FeedbackOptions } from '@/lib/yeaboi/feedback';
 import { toast } from '@/components/ui/toast';
 import { useLocation } from 'react-router';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 import { FilingSlip, toneFor } from '@/components/feedback/filing-slip';
@@ -478,7 +479,7 @@ function kindFromQuery(search: string): string {
 
 export default function FeedbackPage() {
   return (
-    <div className="mx-auto max-w-5xl px-6 pt-10 pb-28">
+    <PageShell>
       <header className="mb-7">
         <h1 className="font-display text-[40px] leading-none text-foreground">Feedback</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">
@@ -489,6 +490,6 @@ export default function FeedbackPage() {
       <BackendGate>
         <FeedbackBody />
       </BackendGate>
-    </div>
+    </PageShell>
   );
 }

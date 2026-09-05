@@ -34,6 +34,7 @@ import {
   type SeenVersions,
 } from '@/lib/yeaboi/shell-changelog';
 import { useUpdateFlow } from '@/hooks/use-update-state';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -451,7 +452,7 @@ function WhatsNewBody() {
 
 export default function WhatsNewPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 pt-10 pb-28">
+    <PageShell width="narrow">
       <header className="mb-7">
         <h1 className="font-display text-[40px] leading-none text-foreground">What&apos;s new</h1>
         <p className="mt-2 text-[13px] text-muted-foreground">
@@ -462,6 +463,6 @@ export default function WhatsNewPage() {
       <BackendGate>
         <WhatsNewBody />
       </BackendGate>
-    </div>
+    </PageShell>
   );
 }

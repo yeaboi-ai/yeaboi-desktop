@@ -22,6 +22,7 @@ import {
   runAnalysis,
   reduceRun,
 } from '@/lib/yeaboi/dashboards';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
 import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
@@ -455,10 +456,10 @@ function AnalysisSetupBody() {
 
 export default function AnalysisSetupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <AnalysisSetupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

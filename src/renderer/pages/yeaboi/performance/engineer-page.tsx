@@ -21,6 +21,7 @@ import {
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -234,10 +235,10 @@ export default function EngineerPage() {
   /** The engineer named in `/team/performance/engineer?name=…`. */
   const name = searchParams.get('name') ?? '';
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <EngineerBody name={name} />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

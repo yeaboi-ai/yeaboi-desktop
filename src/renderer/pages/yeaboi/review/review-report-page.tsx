@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'react-router';
 import { Download } from 'lucide-react';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { ReviewBody } from '@/components/yeaboi/review-body';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -91,10 +92,10 @@ function ReportBody() {
 
 export default function ReviewReportPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ReportBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

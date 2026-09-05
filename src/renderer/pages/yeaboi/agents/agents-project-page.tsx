@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useLocation, useParams } from 'react-router';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -393,10 +394,10 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
 export default function AgentsProjectPage() {
   const { id = '' } = useParams();
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-14 pb-40">
+    <PageShell>
+      <BackendGate>
         <AgentsProjectBody projectId={id} />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

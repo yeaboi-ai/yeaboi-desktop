@@ -17,6 +17,7 @@ import {
   startRetroBoard,
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button, buttonVariants } from '@/components/ui/button';
 
@@ -147,10 +148,10 @@ function RetroBody() {
 
 export default function RetroPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <RetroBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

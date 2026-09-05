@@ -41,6 +41,7 @@ import {
   type SettingField,
   type SettingsSnapshot,
 } from '@/lib/yeaboi/settings';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
@@ -532,7 +533,7 @@ function AboutFooter() {
 
 export default function PrivacyPage() {
   return (
-    <div className="relative mx-auto max-w-3xl px-6 pt-10 pb-28">
+    <PageShell width="narrow" className="relative">
       {/* The onboarding hero's pool of light, scaled to a page header —
           color-mix over --primary so it follows both themes. */}
       <div
@@ -553,6 +554,6 @@ export default function PrivacyPage() {
           <AboutFooter />
         </div>
       </BackendGate>
-    </div>
+    </PageShell>
   );
 }

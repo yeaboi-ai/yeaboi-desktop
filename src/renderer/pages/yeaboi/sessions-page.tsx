@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAudience } from '@/components/providers/audience-provider';
 import { useAgentStamps } from '@/hooks/yeaboi/use-agent-stamps';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GlimpseList } from '@/components/yeaboi/glimpse-list';
 import { ModeList } from '@/components/yeaboi/mode-list';
@@ -149,13 +150,13 @@ function SessionsBody() {
 }
 
 export default function SessionsPage() {
+  // The tip dock floats over the bottom of the window above Niko's pill; the
+  // extra padding keeps the last row reachable under both.
   return (
-    <BackendGate>
-      {/* The tip dock and Niko's pill float over the bottom of the window; the
-          padding keeps the last row reachable under them. */}
-      <div className="mx-auto max-w-5xl px-6 py-14 pb-64">
+    <PageShell className="pb-36">
+      <BackendGate>
         <SessionsBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

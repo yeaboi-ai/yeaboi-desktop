@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { type PerformanceRoster, loadPerformanceRoster } from '@/lib/yeaboi/modes';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -77,10 +78,10 @@ function PerformanceBody() {
 
 export default function PerformancePage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <PerformanceBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

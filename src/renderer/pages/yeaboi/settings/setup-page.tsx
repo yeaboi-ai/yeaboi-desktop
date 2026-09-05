@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { useProviderSetup, type ProviderPhase } from '@/hooks/yeaboi/use-provider-setup';
 import { ProviderSetupFlow } from '@/components/yeaboi/provider-setup-flow';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -71,10 +72,10 @@ function SetupBody() {
 
 export default function SetupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <SetupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

@@ -61,6 +61,18 @@ yeaboi PR carrying the regenerated manifest. `node scripts/gen-routes-manifest.m
 what the app has. Never edit anything under `contracts/` by hand — `.prettierignore` exempts it so
 that a formatter cannot make the two copies differ.
 
+## The page frame
+
+Every page inside the app shell renders through `PageShell`
+(`src/renderer/components/page-shell.tsx`): one column width (`--page-w`), one
+top padding, one bottom clearance for the Niko bar (`--page-pb`), on every page.
+A page that reads better narrow passes `width="narrow"`, which centres an inner
+column inside the *same* frame — the frame never changes, so switching pages or
+settings sections never moves the header, the centring or the scrollbar. The
+settings sections share it through `SettingsPageShell`. `test/page-shell.test.ts`
+fails on a hand-rolled `mx-auto max-w-*` container or a `min-h-screen` wrapper
+in `src/renderer/pages/`.
+
 ## Brand assets are committed, not built
 
 `make icons` re-renders `build/` and the tray icons from the **yeaboi-site** duck art (`$YEABOI_SITE`,
