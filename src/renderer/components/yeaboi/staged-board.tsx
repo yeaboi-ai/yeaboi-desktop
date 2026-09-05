@@ -114,6 +114,12 @@ body > [class^='_'] {
   color: var(--text);
   background: var(--bg);
   font-family: var(--font-sans);
+  /* The board sets its base size on the document body, and the scoped copy of
+     its stylesheet only rewrites the root selector — so everything with no
+     size of its own was inheriting this window's 16px against a scale drawn
+     for 15. The body rules are not rewritten as well on purpose: they paint,
+     and the same block is what the portals read. */
+  font-size: var(--fs-m, 15px);
 }
 
 /* The controls, in this app's hand.
@@ -154,19 +160,10 @@ body > [class^='_'] {
   font-size: 12.5px;
 }
 
-/* Cards, panels and the sections either side: the app rounds its containers
-   twice as far as its controls.
- 
-   Poker's, because the boards already take their radii from the app through
-   --r-s/--r-m/--r-l above, and a second answer here only contradicts the
-   first: a retro card asks for --r-l and came out four pixels rounder than
-   the board that drew it. */
-.board-frame .${HOST}[data-mode='poker'] [class*='card'],
-.board-frame .${HOST}[data-mode='poker'] [class*='panel'],
-.board-frame .${HOST}[data-mode='poker'] [class*='modal'],
-.board-frame .${HOST}[data-mode='poker'] [class*='sheet'] {
-  border-radius: calc(var(--app-radius) * 2);
-}
+/* The boards take their radii from the app through --r-s/--r-m/--r-l above,
+   so there is nothing left for a blanket rule to say — and what it said was
+   wrong: a playing card asks for a radius scaled to its own size and came out
+   at 16px, a chip that wants to be round came out square. */
 
 /* The window's own top edge belongs to the window.
  *
@@ -752,6 +749,27 @@ body > [class^='_'] {
  * the panel, the link is not still being set up. */
 .board-frame .${HOST} [class*='invite']:has([class*='copyField']) [class*='panelNote'] {
   display: none;
+}
+
+
+/* "reconnecting…" — clear of the window buttons.
+ *
+ * The board hangs it off its masthead's subtitle, which is fine on a page that
+ * starts at the top of a browser tab. Here the top bar is collapsed to nothing
+ * and the notice landed at 0,0, on top of the traffic lights. It is a status,
+ * so it keeps the top-left corner — just past them. Full screen has no buttons
+ * to clear. */
+.board-frame .${HOST} [class*='offline'] {
+  position: fixed;
+  top: 10px;
+  left: 92px;
+  z-index: 60;
+  font-size: 11px;
+  line-height: 20px;
+}
+
+:root[data-full-screen] .board-frame .${HOST} [class*='offline'] {
+  left: 16px;
 }
 
 `;
