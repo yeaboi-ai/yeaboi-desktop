@@ -147,10 +147,6 @@ export function Deck({ children }: { children: React.ReactNode }) {
       // moves a surface nobody is looking at.
       if (document.documentElement.dataset['overlay']) return;
       const now = Date.now();
-      // Every wheel event the deck could act on, including the ones a box with
-      // its own scrollbar ends up owning: the window is being scrolled through
-      // either way, and the frame is about the gesture rather than the turn.
-      turning();
       const fresh = now - lastWheel.current > GESTURE_GAP_MS;
       lastWheel.current = now;
       if (fresh) travel.current = 0;
@@ -162,6 +158,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
         travel.current = 0;
         return;
       }
+
+      // Only now: the window closes in when the deck is what is being scrolled,
+      // never when a page is being read down its own scrollbar.
+      turning();
 
       // An isolated event is one detent of a wheel, and one detent is one
       // page. A trackpad instead streams deltas at frame rate, so its events

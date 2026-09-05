@@ -16,6 +16,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useAudience } from '@/components/providers/audience-provider';
 import { isSettingsPath, railRows } from '@/lib/nav/rail-rows';
+import { cameFrom, isAsidePath, rememberRoute } from '@/lib/nav/came-from';
 import { useActiveHref } from './use-nav-shortcuts';
 
 /** Collapsed and expanded widths. The icon column is the same in both. */
@@ -57,7 +58,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // rows are named things rather than a map you already know, so hiding their
   // labels behind a hover would be worse than the strip of tabs they replace.
   const pathname = usePathname();
-  const mode = isSettingsPath(pathname) ? 'settings' : audience;
+  // One place records where you were, because the rail and the dock both offer
+  // the way back to it.
+  rememberRoute(pathname);
+  const aside = isAsidePath(pathname);
+  const mode = isSettingsPath(pathname) ? 'settings' : aside ? 'aside' : audience;
   const settings = mode === 'settings';
   const wide = (open && labelled) || settings;
 
@@ -67,17 +72,18 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // the new one has got. A slot below that line still holds the old row, which
   // is what makes this a cascade of single rows changing rather than the whole
   // rail blinking.
-  const rows = useMemo(() => railRows(mode), [mode]);
+  const back = cameFrom();
+  const rows = useMemo(() => railRows(mode, back), [mode, back]);
   const [leaving, setLeaving] = useState<typeof rows | null>(null);
   const [revealed, setRevealed] = useState(Number.POSITIVE_INFINITY);
   const lastMode = useRef<typeof mode>(mode);
 
   useEffect(() => {
     if (lastMode.current === mode) return;
-    setLeaving(railRows(lastMode.current));
+    setLeaving(railRows(lastMode.current, back));
     setRevealed(0);
     lastMode.current = mode;
-  }, [mode]);
+  }, [mode, back]);
 
   const slots = Math.max(rows.length, leaving?.length ?? 0);
 
@@ -232,7 +238,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     <nav
       ref={navRef}
       data-rail
-      aria-label={settings ? 'Settings sections' : 'Modes'}
+      aria-label={settings ? 'Settings sections' : aside ? 'Where to go back to' : 'Modes'}
       // Any movement on the rail is asking for it — including from inside its
       // own notch, which is the only way to open it once you have arrived here
       // through it. Except over Home, which is a destination and not a

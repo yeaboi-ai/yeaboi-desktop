@@ -12,22 +12,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import {
-  CalendarClock,
-  Columns3,
-  Gauge,
-  LayoutGrid,
-  Share2,
-  Sparkles,
-  Stethoscope,
-} from 'lucide-react';
+import { CalendarClock, Columns3, Gauge, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { apiGet, callTool } from '@/lib/yeaboi/api';
-import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
-import { needsAttention, type Check, type Report } from '@/lib/yeaboi/system-check';
 
 interface Board {
   id: string;
@@ -114,70 +104,6 @@ function Tile({
   );
 }
 
-const CHECK_TONE: Record<Check['status'], PostureCell['tone']> = {
-  ok: 'good',
-  missing: 'warn',
-  unsupported: 'bad',
-  unknown: 'idle',
-};
-
-/** System Check at a glance: which way every check went, and the count. */
-function SystemCheck({ report }: { report: Report }) {
-  const total = report.checks.length;
-  const wanting = needsAttention(report.checks).length;
-  return (
-    <>
-      <PostureStrip
-        cells={report.checks.map((one) => ({
-          key: one.key,
-          tone: CHECK_TONE[one.status] ?? 'idle',
-          title: `${one.label} — ${one.detail || one.status}`,
-        }))}
-        label={`${total - wanting} of ${total} ready`}
-      />
-      <p className="mt-2 font-body text-[11px] text-muted-foreground">
-        {total - wanting} of {total} ready
-        {wanting > 0 && ` · ${wanting} want something`}
-      </p>
-    </>
-  );
-}
-
-/** The slim row's shape: a dashed box that says one thing. */
-function SlimTile({
-  title,
-  icon: Icon,
-  href,
-  children,
-}: {
-  title: string;
-  icon: typeof LayoutGrid;
-  href: string;
-  children: React.ReactNode;
-}) {
-  const router = useRouter();
-  return (
-    <div
-      role="link"
-      tabIndex={0}
-      onClick={() => router.push(href)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          router.push(href);
-        }
-      }}
-      className="cursor-pointer rounded-2xl border border-dashed border-border/50 bg-card/30 p-4 transition-colors hover:border-border hover:bg-card/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-    >
-      <p className="flex items-center gap-2 font-body text-[12px] font-medium text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-        {title}
-      </p>
-      <div className="mt-2">{children}</div>
-    </div>
-  );
-}
-
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="font-body text-[11px] text-muted-foreground/70">{children}</p>;
 }
@@ -188,7 +114,6 @@ export function HomeDashboard() {
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [check, setCheck] = useState<Report | null>(null);
   const schedule = useSchedule();
   const { data: session } = useSession();
   // First name only, and nothing at all until the identity is loaded — the
@@ -212,10 +137,6 @@ export function HomeDashboard() {
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
       (data) => setChangelog((data?.entries ?? []).slice(0, 3)),
       () => setChangelog([]),
-    );
-    apiGet<Report>('/api/system/check').then(
-      (payload) => setCheck(payload),
-      () => setCheck(null),
     );
     callTool<Usage>('usage_get').then(
       (envelope) => setUsage(envelope.ok ? (envelope.data ?? null) : null),
@@ -340,12 +261,6 @@ export function HomeDashboard() {
                 }
               />
             </Tile>
-
-            {/* Slim, like the row it sits in: how many are ready and how many
-                want something. Which ones, and what they want, is the page. */}
-            <SlimTile title="System check" icon={Stethoscope} href="/system-check">
-              {check ? <SystemCheck report={check} /> : <Empty>Not run yet.</Empty>}
-            </SlimTile>
 
             <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
             <AwaitingTile title="Last retro" wants="/api/retro/recent" />

@@ -28,6 +28,13 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { opsSection, type IconKey } from '@/lib/nav/sections';
 import { isSettingsPath } from '@/lib/nav/rail-rows';
+import { cameFrom } from '@/lib/nav/came-from';
+import {
+  needsAttention,
+  type Check as SystemCheckRow,
+  type Report,
+} from '@/lib/yeaboi/system-check';
+import { apiGet } from '@/lib/yeaboi/api';
 
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
@@ -206,6 +213,57 @@ function SwapIcon({ away, back }: { away: React.ReactElement; back: boolean }) {
   );
 }
 
+/** A dot per status and how many are in it. The strip of one cell per check
+ *  said the same thing in twenty-one marks; at this size a count reads and a
+ *  cell does not. */
+const CHECK_TONES: { status: SystemCheckRow['status']; dot: string; says: string }[] = [
+  { status: 'ok', dot: 'bg-success/80', says: 'ready' },
+  { status: 'missing', dot: 'bg-warning/80', says: 'not set up' },
+  { status: 'unsupported', dot: 'bg-destructive/80', says: 'unsupported' },
+  { status: 'unknown', dot: 'bg-muted-foreground/40', says: 'unknown' },
+];
+
+/** The system check, as a pill on the row.
+ *
+ *  It was a panel on the dashboard saying two numbers and a strip. The counts
+ *  are the whole of what it had to say at a glance, and they fit here. The
+ *  page behind it is which ones, and what they want. */
+function SystemCheckPill() {
+  const [report, setReport] = useState<Report | null>(null);
+  const pathname = usePathname();
+  const here = Boolean(pathname?.startsWith('/system-check'));
+
+  useEffect(() => {
+    apiGet<Report>('/api/system/check').then(
+      (payload) => setReport(payload),
+      () => setReport(null),
+    );
+  }, []);
+
+  if (!report || report.checks.length === 0) return null;
+  const counts = CHECK_TONES.map((tone) => ({
+    ...tone,
+    count: report.checks.filter((one) => one.status === tone.status).length,
+  })).filter((tone) => tone.count > 0);
+  const label = `System check — ${counts.map((one) => `${one.count} ${one.says}`).join(', ')}`;
+
+  return (
+    <Link
+      href={here ? cameFrom() : '/system-check'}
+      title={label}
+      aria-label={label}
+      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center gap-2.5 px-3 font-code text-[11px] text-muted-foreground transition-[color,background-color,right,bottom] duration-300 ease-out hover:bg-secondary/50 hover:text-foreground`}
+    >
+      {counts.map((tone) => (
+        <span key={tone.status} className="flex items-center gap-1.5">
+          <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+          {tone.count}
+        </span>
+      ))}
+    </Link>
+  );
+}
+
 export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -218,16 +276,12 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
 
   const feedbackActive = Boolean(pathname?.startsWith('/feedback'));
 
-  // Where the chrome was reached from. These buttons are a way in and back out
-  // again: pressed a second time they return you to the page you left rather
-  // than leaving you to find it, which on a surface whose whole nav is its own
-  // sections means finding it through Home.
-  const cameFrom = useRef(DEFAULT_ROUTE);
-  useEffect(() => {
-    if (pathname && !isSettingsPath(pathname) && !pathname.startsWith('/feedback')) {
-      cameFrom.current = pathname;
-    }
-  }, [pathname]);
+  // These buttons are a way in and back out again: pressed a second time they
+  // return you to the page you left rather than leaving you to find it, which
+  // on a surface whose whole nav is its own sections means finding it through
+  // Home. Where that is is remembered in one place, because the rail offers
+  // the same way back.
+  const back = cameFrom();
 
   // Flipping world while standing in the other world's route would leave the
   // page orphaned from the nav — go home instead.
@@ -244,7 +298,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           something is not a setting, and he is the one on screen who looks
           like he would pass it on. Clear of his perch, on the row's baseline. */}
       <Link
-        href={feedbackActive ? cameFrom.current : '/feedback'}
+        href={feedbackActive ? back : '/feedback'}
         title={feedbackActive ? 'Back' : 'Send feedback'}
         aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
         className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center transition-[color,background-color,right,bottom] duration-300 ease-out ${
@@ -255,6 +309,8 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
       >
         <SwapIcon away={<MessageSquare />} back={feedbackActive} />
       </Link>
+
+      <SystemCheckPill />
 
       <div
         data-dock
@@ -274,8 +330,8 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           </div>
 
           <Link
-            href={settingsActive ? cameFrom.current : '/settings'}
-            title={settingsActive ? `Back to ${cameFrom.current}` : 'Settings'}
+            href={settingsActive ? back : '/settings'}
+            title={settingsActive ? `Back to ${back}` : 'Settings'}
             aria-label={settingsActive ? 'Leave settings' : 'Settings'}
             className={`${FLOAT} ${CONTROL} flex w-8 items-center justify-center transition-colors ${
               settingsActive

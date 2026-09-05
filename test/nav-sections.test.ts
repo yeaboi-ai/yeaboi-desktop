@@ -183,9 +183,7 @@ describe('navSections', () => {
       );
       // What's New opens from its tile; Usage has no page left, so its tile
       // carries the figures the page used to draw.
-      for (const href of ['/whats-new', '/system-check']) {
-        expect(dashboard.includes(`href="${href}"`), `no tile opens ${href}`).toBe(true);
-      }
+      expect(dashboard.includes('href="/whats-new"'), 'no tile opens /whats-new').toBe(true);
       expect(dashboard.includes('usage_get'), 'no tile reads the usage figures').toBe(true);
       const tabs = readFileSync(
         new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),
@@ -200,7 +198,11 @@ describe('navSections', () => {
       );
       // The button is a toggle, so its href is conditional — what matters is
       // that the dock is what carries the route.
-      expect(dock.includes("'/feedback'"), 'nothing in the dock opens /feedback').toBe(true);
+      // Both are buttons on the dock's row: feedback beside the duck, the
+      // system check as the pill next to it.
+      for (const route of ['/feedback', '/system-check']) {
+        expect(dock.includes(`'${route}'`), `nothing in the dock opens ${route}`).toBe(true);
+      }
     });
 
     it('is down to what has nowhere better to be', () => {

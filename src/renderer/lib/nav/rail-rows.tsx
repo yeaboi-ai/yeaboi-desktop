@@ -7,6 +7,7 @@
 // the "where you are" surface, so settings borrows it.
 
 import {
+  ArrowLeft,
   BarChart3,
   Bird,
   Blocks,
@@ -119,7 +120,17 @@ function settingsRows(): RailRow[] {
   ];
 }
 
-/** The rail's list for a mode: an audience, or settings. */
-export function railRows(mode: Audience | 'settings'): RailRow[] {
+/** What a page you stepped aside to leaves in the rail: the way home, and the
+ *  way back to whatever you were doing. Nothing else — these pages are a
+ *  detour, and a list of modes beside one is an invitation to forget you were
+ *  in the middle of something. */
+function asideRows(back: string): RailRow[] {
+  return [HOME_ROW, { href: back, label: 'Back', Icon: ArrowLeft, opensGroup: true }];
+}
+
+/** The rail's list: a world's modes, the settings sections, or the way out of
+ *  a page you stepped aside to. */
+export function railRows(mode: Audience | 'settings' | 'aside', back = '/home'): RailRow[] {
+  if (mode === 'aside') return asideRows(back);
   return mode === 'settings' ? settingsRows() : modeRows(mode);
 }
