@@ -11,49 +11,12 @@
 // Ops is not in here; see `railSections`.
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import {
-  BarChart3,
-  Bot,
-  CalendarClock,
-  Columns3,
-  Gauge,
-  Home,
-  LayoutGrid,
-  Map,
-  Megaphone,
-  Presentation,
-  RotateCcw,
-  Rocket,
-  ShieldCheck,
-  Spade,
-  Sunrise,
-  TrendingUp,
-} from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useAudience } from '@/components/providers/audience-provider';
-import { railSections, type IconKey } from '@/lib/nav/sections';
+import { isSettingsPath, railGroups } from '@/lib/nav/rail-rows';
 import { useActiveHref } from './use-nav-shortcuts';
-
-const ICONS: Partial<Record<IconKey, typeof Home>> = {
-  home: Home,
-  projects: LayoutGrid,
-  board: Columns3,
-  roadmap: Map,
-  analysis: BarChart3,
-  standup: Sunrise,
-  retro: RotateCcw,
-  poker: Spade,
-  performance: TrendingUp,
-  reporting: Presentation,
-  ship: Rocket,
-  review: CalendarClock,
-  'agent-usage': Gauge,
-  'agent-advisor': Megaphone,
-  'agent-standup': Sunrise,
-  'agent-security': ShieldCheck,
-};
 
 /** Collapsed and expanded widths. The icon column is the same in both. */
 const NARROW = 48;
@@ -66,6 +29,12 @@ const HOME_HREF = '/home';
 /** How long the cursor has to stay on the rail before the list opens. Long
  *  enough that passing over a row on the way to another one does not. */
 const OPEN_DWELL_MS = 180;
+/** The list changing hands: every row leaves, top to bottom, and the new one
+ *  arrives the same way. Staggered rather than crossfaded, because what is
+ *  being shown is one list turning into another and not two lists overlapping. */
+const OUT_STAGGER_MS = 18;
+const OUT_MS = 110;
+const IN_STAGGER_MS = 24;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -80,8 +49,33 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // two-row notch wearing full-width labels, and every row in it was then a
   // click that landed on the page behind.
   const wide = open && labelled;
-  const sections = railSections(audience);
-  const items = sections.flatMap((section) => section.items);
+
+  // Settings borrows the rail for its own sections. The swap is a state of the
+  // rail rather than a route of its own: the rows leave in the order they are
+  // drawn and the new ones arrive behind them, so it reads as this list
+  // becoming that one.
+  const pathname = usePathname();
+  const mode = isSettingsPath(pathname) ? 'settings' : audience;
+  const [shownMode, setShownMode] = useState<typeof mode>(mode);
+  const [leaving, setLeaving] = useState(false);
+  const groups = useMemo(() => railGroups(shownMode), [shownMode]);
+  const rowCount = groups.reduce((total, group) => total + group.rows.length, 0);
+
+  useEffect(() => {
+    if (mode === shownMode) return;
+    setLeaving(true);
+    const out = setTimeout(
+      () => {
+        setShownMode(mode);
+        setLeaving(false);
+      },
+      (rowCount - 1) * OUT_STAGGER_MS + OUT_MS,
+    );
+    return () => clearTimeout(out);
+  }, [mode, shownMode, rowCount]);
+
+  const items = groups.flatMap((group) => group.rows);
+  const order = new Map(items.map((item, index) => [item.href, index]));
   const activeHref = useActiveHref(items.map((item) => item.href));
 
   // A marker that slides to wherever you are, rather than a highlight that
@@ -156,7 +150,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // A panel is a notch until you reach for the rail. Home is the map — the one
   // surface you go to in order to see where everything is — so it shows the
   // whole list of icons. The labels still wait for a hover, everywhere.
-  const notch = !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+  // Settings is the exception: its sections are the only nav that page has, so
+  // collapsing them to a notch would leave it with none.
+  const notch =
+    shownMode !== 'settings' && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
   // The marker travels on a page turn and only then. Hovering changes the rows'
   // heights, and a marker that animates to catch up reads as a second thing
@@ -192,13 +189,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     };
     frame = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(frame);
-  }, [activeHref, open, wide, audience, notch]);
+  }, [activeHref, open, wide, shownMode, notch, leaving]);
 
   return (
     <nav
       ref={navRef}
       data-rail
-      aria-label="Modes"
+      aria-label={shownMode === 'settings' ? 'Settings sections' : 'Modes'}
       // Any movement on the rail is asking for it — including from inside its
       // own notch, which is the only way to open it once you have arrived here
       // through it. Except over Home, which is a destination and not a
@@ -241,8 +238,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
             }}
           />
         )}
-        {sections.map((section, index) => (
-          <div key={section.label ?? `top-${index}`}>
+        {groups.map((group, index) => (
+          <div key={group.key}>
             {/* A hairline instead of a heading: at 48px wide there is nowhere to
               put the word, and the group still needs to read as a group. */}
             {index > 0 && (
@@ -256,9 +253,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                 }}
               />
             )}
-            {section.items.map(({ href, label, icon }) => {
-              const Icon = ICONS[icon] ?? Bot;
+            {group.rows.map(({ href, label, Icon }) => {
               const active = activeHref === href;
+              // Where this row sits in the whole list, so a swap runs top to
+              // bottom across the rail rather than restarting in each group.
+              const position = order.get(href) ?? 0;
               // Home is always in the notch: the way back to the map should
               // never be a hover away.
               const kept = active || href === HOME_HREF;
@@ -295,15 +294,28 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                     boxShadow: active && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
                   }}
                 >
-                  <Icon className="h-[15px] w-[15px] shrink-0" />
-                  {/* Present in both states, so the icon never shifts: the label
-                    is what fades and the rail is what widens. */}
+                  {/* The row's frame stays; what it holds is what changes
+                    hands. Keyed on the list it belongs to, so arriving is a
+                    mount and the animation has something to run on. */}
                   <span
-                    className="whitespace-nowrap transition-opacity duration-150"
-                    style={{ opacity: wide ? 1 : 0 }}
-                    aria-hidden={!wide}
+                    key={shownMode}
+                    className={`flex min-w-0 flex-1 items-center gap-3 ${
+                      leaving ? 'rail-row-out' : 'rail-row-in'
+                    }`}
+                    style={{
+                      animationDelay: `${position * (leaving ? OUT_STAGGER_MS : IN_STAGGER_MS)}ms`,
+                    }}
                   >
-                    {label}
+                    <Icon className="h-[15px] w-[15px] shrink-0" />
+                    {/* Present in both states, so the icon never shifts: the
+                      label is what fades and the rail is what widens. */}
+                    <span
+                      className="whitespace-nowrap transition-opacity duration-150"
+                      style={{ opacity: wide ? 1 : 0 }}
+                      aria-hidden={!wide}
+                    >
+                      {label}
+                    </span>
                   </span>
                 </Link>
               );
