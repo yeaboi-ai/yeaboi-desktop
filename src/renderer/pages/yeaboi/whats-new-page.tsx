@@ -616,10 +616,19 @@ function WhatsNewBody() {
             />
           ))}
 
+          {/* The foot of a list, not a control sitting on it: nothing until
+              you reach for it, and the button under your cursor when you do. */}
           {visible.length < matching.length && (
-            <Button variant="outline" size="sm" onClick={() => setShown((n) => n + PAGE_SIZE)}>
-              Show older releases
-            </Button>
+            <div className="flex justify-center pt-1 pb-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground/70"
+                onClick={() => setShown((n) => n + PAGE_SIZE)}
+              >
+                Show older releases
+              </Button>
+            </div>
           )}
         </ScrollPane>
 
