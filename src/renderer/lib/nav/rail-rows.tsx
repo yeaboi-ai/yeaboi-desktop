@@ -17,6 +17,7 @@ import {
   Home,
   KeyRound,
   LayoutGrid,
+  Lock,
   Map,
   Megaphone,
   Palette,
@@ -75,13 +76,20 @@ const SETTINGS_ICONS: Record<string, RailIcon> = {
   '/settings/appearance': Palette,
   '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
+  '/privacy': Lock,
 };
 
 /** The way back, kept at the top of every list the rail holds. */
 export const HOME_ROW: RailRow = { href: '/home', label: 'Home', Icon: Home };
 
+/** Whether the rail is holding settings. Not simply a prefix: settings has
+ *  adopted a page or two that keep their own top-level route. */
 export function isSettingsPath(pathname: string | null | undefined): boolean {
-  return Boolean(pathname && (pathname === '/settings' || pathname.startsWith('/settings/')));
+  if (!pathname) return false;
+  if (pathname === '/settings' || pathname.startsWith('/settings/')) return true;
+  return OFFERED_SETTINGS_TABS.some(
+    (tab) => pathname === tab.route || pathname.startsWith(`${tab.route}/`),
+  );
 }
 
 function modeRows(audience: Audience): RailRow[] {

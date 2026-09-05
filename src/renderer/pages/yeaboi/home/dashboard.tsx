@@ -12,13 +12,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { CalendarClock, Columns3, LayoutGrid, Share2, Sparkles } from 'lucide-react';
+import { CalendarClock, Columns3, Gauge, LayoutGrid, Share2, Sparkles } from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
-import { apiGet } from '@/lib/yeaboi/api';
+import { apiGet, callTool } from '@/lib/yeaboi/api';
 
 interface Project {
   id: string;
@@ -33,6 +33,12 @@ interface Board {
   name?: string;
   mode?: string;
   created_at?: string;
+}
+
+/** What the Usage page totals, summarised on one tile. */
+interface Usage {
+  call_count: number;
+  total_tokens: number;
 }
 
 interface ChangelogEntry {
@@ -55,17 +61,45 @@ function AwaitingTile({ title, wants }: { title: string; wants: string }) {
   );
 }
 
+/** A tile, and where it opens.
+ *
+ *  A tile that summarises a page is the door to it: the nav used to carry a
+ *  row for each of those pages as well, which is two ways in for one screen
+ *  and a drawer of seven icons to hold them. */
 function Tile({
   title,
   icon: Icon,
+  href,
   children,
 }: {
   title: string;
   icon: typeof LayoutGrid;
+  href?: string;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const opens = Boolean(href);
   return (
-    <div className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+    <div
+      role={opens ? 'link' : undefined}
+      tabIndex={opens ? 0 : undefined}
+      onClick={opens ? () => router.push(href!) : undefined}
+      onKeyDown={
+        opens
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                router.push(href!);
+              }
+            }
+          : undefined
+      }
+      className={`rounded-2xl bg-card p-4 ring-1 ring-border/60 ${
+        opens
+          ? 'cursor-pointer transition-colors hover:bg-secondary/30 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+          : ''
+      }`}
+    >
       <p className="flex items-center gap-2 font-body text-[12px] font-medium text-foreground">
         <Icon className="h-3.5 w-3.5 text-primary" />
         {title}
@@ -86,6 +120,7 @@ export function HomeDashboard() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
+  const [usage, setUsage] = useState<Usage | null>(null);
   const schedule = useSchedule();
   const { data: session } = useSession();
   // First name only, and nothing at all until the identity is loaded — the
@@ -117,6 +152,10 @@ export function HomeDashboard() {
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
       (data) => setChangelog((data?.entries ?? []).slice(0, 3)),
       () => setChangelog([]),
+    );
+    callTool<Usage>('usage_get').then(
+      (envelope) => setUsage(envelope.ok ? (envelope.data ?? null) : null),
+      () => setUsage(null),
     );
   }, []);
 
@@ -189,7 +228,7 @@ export function HomeDashboard() {
               )}
             </Tile>
 
-            <Tile title="What's new" icon={Sparkles}>
+            <Tile title="What's new" icon={Sparkles} href="/whats-new">
               {changelog.length === 0 ? (
                 <Empty>Up to date.</Empty>
               ) : (
@@ -207,6 +246,31 @@ export function HomeDashboard() {
                     </li>
                   ))}
                 </ul>
+              )}
+            </Tile>
+
+            <Tile title="Usage" icon={Gauge} href="/usage">
+              {usage ? (
+                <dl className="grid grid-cols-2 gap-2">
+                  <div>
+                    <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
+                      LLM calls
+                    </dt>
+                    <dd className="font-code text-[13px] text-foreground">
+                      {usage.call_count.toLocaleString('en-US')}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
+                      Tokens
+                    </dt>
+                    <dd className="font-code text-[13px] text-foreground">
+                      {usage.total_tokens.toLocaleString('en-US')}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <Empty>Nothing counted yet.</Empty>
               )}
             </Tile>
 

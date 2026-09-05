@@ -26,6 +26,11 @@ export const CHROME_TABS: readonly { route: string; title: string }[] = [
   { route: '/settings/appearance', title: 'Appearance' },
   { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
+  // Privacy is a settings page that happens to live at the top level: what is
+  // sent where, and the switches that decide it. It keeps its route — the
+  // manifest and the terminal both name it — and reads as a settings section
+  // here, which is where anyone would look for it.
+  { route: '/privacy', title: 'Privacy' },
 ];
 
 /** Every tab the contract and this window declare between them. */

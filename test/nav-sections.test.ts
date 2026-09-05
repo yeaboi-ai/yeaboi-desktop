@@ -5,7 +5,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
-import { navItems, navSections, opsSection, railSections } from '../src/renderer/lib/nav/sections';
+import {
+  navItems,
+  navSections,
+  OPS_ELSEWHERE,
+  opsSection,
+  railSections,
+} from '../src/renderer/lib/nav/sections';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const registry = JSON.parse(
@@ -142,19 +148,40 @@ describe('navSections', () => {
   });
 
   describe('opsSection', () => {
-    it('carries exactly what the rail dropped', () => {
-      // The drawer and the rail together are the world's whole nav — the rail
-      // lost a third of it when it stopped drawing Ops, and this is the door
-      // back to that third.
+    it('carries what the rail dropped, less what has a door elsewhere', () => {
+      // The rail, the drawer and the handful of pages the window surfaces
+      // somewhere better are the world's whole nav between them. Nothing is
+      // orphaned; some things simply have a better way in than a nav row.
       for (const audience of AUDIENCES) {
         const rail = railSections(audience).flatMap((s) => s.items.map((i) => i.href));
         const drawer = opsSection(audience)?.items.map((i) => i.href) ?? [];
-        expect([...rail, ...drawer].sort()).toEqual(
-          navItems(audience)
-            .map((i) => i.href)
-            .sort(),
+        const elsewhere = navItems(audience)
+          .map((i) => i.href)
+          .filter((href) => OPS_ELSEWHERE.has(href));
+        // As sets: the agents world's rail already carries What's New, so a
+        // page can have a door in more than one of the three.
+        expect([...new Set([...rail, ...drawer, ...elsewhere])].sort()).toEqual(
+          [...new Set(navItems(audience).map((i) => i.href))].sort(),
         );
       }
+    });
+
+    it('never hides a page that has no other door', () => {
+      // Every one of these is reachable from somewhere the window draws: two
+      // dashboard tiles and a settings section.
+      expect([...OPS_ELSEWHERE].sort()).toEqual(['/privacy', '/usage', '/whats-new']);
+      const dashboard = readFileSync(
+        new URL('../src/renderer/pages/yeaboi/home/dashboard.tsx', import.meta.url),
+        'utf8',
+      );
+      for (const href of ['/whats-new', '/usage']) {
+        expect(dashboard.includes(`href="${href}"`), `no tile opens ${href}`).toBe(true);
+      }
+      const tabs = readFileSync(
+        new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),
+        'utf8',
+      );
+      expect(tabs.includes("'/privacy'"), '/privacy is not a settings tab').toBe(true);
     });
 
     it('is empty only where the rail already carries everything', () => {

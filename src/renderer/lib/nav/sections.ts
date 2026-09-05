@@ -148,10 +148,21 @@ export function railSections(audience: Audience): NavSectionSpec[] {
   return navSections(audience).filter((section) => section.label !== OPS.label);
 }
 
+/** Ops pages the window offers somewhere better.
+ *
+ *  What's New and Usage are what two of the dashboard's tiles say — the tile
+ *  is the door, and a nav row for the same screen is a second one. Privacy
+ *  reads as a settings section and sits with them. A drawer of seven icons for
+ *  four things anyone opens is most of why it lost its place to begin with. */
+export const OPS_ELSEWHERE: ReadonlySet<string> = new Set(['/whats-new', '/usage', '/privacy']);
+
 /** The section the rail leaves out, for whoever draws the door to it.
  *
  * Null in the worlds that have no Ops — the agents world keeps its two
  * settings-adjacent pages in the rail, so there is nothing left over. */
 export function opsSection(audience: Audience): NavSectionSpec | null {
-  return navSections(audience).find((section) => section.label === OPS.label) ?? null;
+  const section = navSections(audience).find((one) => one.label === OPS.label);
+  if (!section) return null;
+  const items = section.items.filter((item) => !OPS_ELSEWHERE.has(item.href));
+  return items.length > 0 ? { ...section, items } : null;
 }

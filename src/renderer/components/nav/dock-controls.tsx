@@ -26,6 +26,7 @@ import {
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { opsSection, type IconKey } from '@/lib/nav/sections';
+import { isSettingsPath } from '@/lib/nav/rail-rows';
 
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
@@ -186,7 +187,10 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   const router = useRouter();
   const { audience, setAudience } = useAudience();
   const scope = useTeamScope(audience);
-  const settingsActive = Boolean(pathname?.startsWith('/settings'));
+  // The same test the rail uses, so the gear lights wherever the rail is
+  // holding settings — including the page or two settings has adopted that
+  // keep a top-level route of their own.
+  const settingsActive = isSettingsPath(pathname);
 
   // Where settings was reached from. The gear is a way in and back out again:
   // pressed a second time it returns you to the page you left rather than
@@ -194,7 +198,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   // sections means finding it through Home.
   const cameFrom = useRef(DEFAULT_ROUTE);
   useEffect(() => {
-    if (pathname && !pathname.startsWith('/settings')) cameFrom.current = pathname;
+    if (pathname && !isSettingsPath(pathname)) cameFrom.current = pathname;
   }, [pathname]);
 
   // Flipping world while standing in the other world's route would leave the
