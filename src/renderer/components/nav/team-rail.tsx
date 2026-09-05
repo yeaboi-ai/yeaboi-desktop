@@ -284,6 +284,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
           // when the old list was shorter and owns nothing there. Falling back
           // to the new row would deal the tail of a longer list all at once.
           const row = arrived || !leaving ? rows[slot] : leaving[slot];
+          // A row that is in both lists is not changing hands. Home heads every
+          // list the rail holds, and fading it out and back in said it had —
+          // the point of the swap is that what stays put stays put.
+          const staying = Boolean(leaving && leaving[slot]?.href === rows[slot]?.href);
           const empty = !row;
           const active = Boolean(row) && activeHref === row!.href;
           // Home is always in the notch: the way back to the map should never
@@ -347,11 +351,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                   <span
                     key={row.href}
                     className={`flex min-w-0 flex-1 items-center gap-3 ${
-                      leaving && !arrived ? 'rail-row-out' : 'rail-row-in'
+                      staying ? '' : leaving && !arrived ? 'rail-row-out' : 'rail-row-in'
                     }`}
                     style={{
                       animationDelay:
-                        leaving && !arrived ? `${slot * SWAP_STAGGER_MS}ms` : undefined,
+                        !staying && leaving && !arrived ? `${slot * SWAP_STAGGER_MS}ms` : undefined,
                     }}
                   >
                     <Icon className="h-[15px] w-[15px] shrink-0" />

@@ -153,13 +153,15 @@ export function railSections(audience: Audience): NavSectionSpec[] {
  *  What's New is what a dashboard tile says, so the tile is the door and a nav
  *  row for the same screen is a second one; Usage is not a page at all any
  *  more, only the tile. Ceremonies and Privacy read as settings sections and
- *  are in the settings rail. A drawer of seven icons for the three things left
- *  is most of why it lost its place to begin with. */
+ *  are in the settings rail, and Feedback is a button beside the duck. A
+ *  drawer of seven icons for the two things left is most of why it lost its
+ *  place to begin with. */
 export const OPS_ELSEWHERE: ReadonlySet<string> = new Set([
   '/whats-new',
   '/usage',
   '/ceremonies',
   '/privacy',
+  '/feedback',
 ]);
 
 /** The section the rail leaves out, for whoever draws the door to it.

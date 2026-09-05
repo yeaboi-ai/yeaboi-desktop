@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { cloneElement, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -183,6 +183,29 @@ function OpsMenu({ cmdHeld }: { cmdHeld: boolean }) {
   );
 }
 
+/** A button that changes job in front of you.
+ *
+ *  Both faces are here and one of them is always leaving: the icon winds a
+ *  quarter turn out as the arrow swings in, rather than the two swapping
+ *  between frames. */
+function SwapIcon({ away, back }: { away: React.ReactElement; back: boolean }) {
+  const face = 'absolute h-[14px] w-[14px] transition-all duration-200 ease-out';
+  return (
+    <span className="relative flex h-[14px] w-[14px] items-center justify-center">
+      {cloneElement(away as React.ReactElement<{ className?: string; 'aria-hidden'?: boolean }>, {
+        'aria-hidden': true,
+        className: `${face} ${back ? 'rotate-90 scale-75 opacity-0' : 'rotate-0 scale-100 opacity-100'}`,
+      })}
+      <ArrowLeft
+        aria-hidden
+        className={`${face} ${
+          back ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-75 opacity-0'
+        }`}
+      />
+    </span>
+  );
+}
+
 export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -193,13 +216,17 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   // keep a top-level route of their own.
   const settingsActive = isSettingsPath(pathname);
 
-  // Where settings was reached from. The gear is a way in and back out again:
-  // pressed a second time it returns you to the page you left rather than
-  // leaving you to find it, which on a surface whose whole nav is its own
+  const feedbackActive = Boolean(pathname?.startsWith('/feedback'));
+
+  // Where the chrome was reached from. These buttons are a way in and back out
+  // again: pressed a second time they return you to the page you left rather
+  // than leaving you to find it, which on a surface whose whole nav is its own
   // sections means finding it through Home.
   const cameFrom = useRef(DEFAULT_ROUTE);
   useEffect(() => {
-    if (pathname && !isSettingsPath(pathname)) cameFrom.current = pathname;
+    if (pathname && !isSettingsPath(pathname) && !pathname.startsWith('/feedback')) {
+      cameFrom.current = pathname;
+    }
   }, [pathname]);
 
   // Flipping world while standing in the other world's route would leave the
@@ -213,6 +240,22 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
 
   return (
     <>
+      {/* Beside the duck rather than in the row on the left: telling us
+          something is not a setting, and he is the one on screen who looks
+          like he would pass it on. Clear of his perch, on the row's baseline. */}
+      <Link
+        href={feedbackActive ? cameFrom.current : '/feedback'}
+        title={feedbackActive ? 'Back' : 'Send feedback'}
+        aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
+        className={`${FLOAT} ${CONTROL} fixed right-16 bottom-4 z-40 flex w-8 items-center justify-center transition-colors ${
+          feedbackActive
+            ? 'text-foreground'
+            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+        }`}
+      >
+        <SwapIcon away={<MessageSquare />} back={feedbackActive} />
+      </Link>
+
       <div data-dock className="fixed bottom-4 left-3 z-40 flex flex-col items-start gap-2">
         {/* Loud enough to interrupt, so it sits above the row rather than in
             it. Renders nothing when there is nothing to say. */}
@@ -242,26 +285,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
                 : undefined,
             }}
           >
-            {/* The gear turns into the way back. Both faces are here and one
-                of them is always leaving: the gear winds a quarter turn out as
-                the arrow swings in, so the button changes job in front of you
-                rather than swapping glyphs between frames. */}
-            <span className="relative flex h-[14px] w-[14px] items-center justify-center">
-              <Settings
-                aria-hidden
-                className={`absolute h-[14px] w-[14px] transition-all duration-200 ease-out ${
-                  settingsActive ? 'rotate-90 scale-75 opacity-0' : 'rotate-0 scale-100 opacity-100'
-                }`}
-              />
-              <ArrowLeft
-                aria-hidden
-                className={`absolute h-[14px] w-[14px] transition-all duration-200 ease-out ${
-                  settingsActive
-                    ? 'rotate-0 scale-100 opacity-100'
-                    : '-rotate-90 scale-75 opacity-0'
-                }`}
-              />
-            </span>
+            <SwapIcon away={<Settings />} back={settingsActive} />
           </Link>
 
           <OpsMenu cmdHeld={cmdHeld} />

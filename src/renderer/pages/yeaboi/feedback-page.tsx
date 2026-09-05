@@ -44,6 +44,7 @@ import {
 } from '@/components/feedback/attachment-tray';
 import { PolishPreview, type Polished } from '@/components/feedback/polish-preview';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 /** A mark per feedback type. The wire carries the vocabulary, never the icon. */
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -114,41 +115,75 @@ function AreaPicker({
   onPick: (area: string) => void;
   disabled?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const color = options.area_colors?.[area];
+
+  // A popover, not a `<select>`. The native menu is drawn by the OS in the
+  // OS's own style — it lands on a pale list looking like a system dialog that
+  // wandered in, and none of the app's tokens reach it.
   return (
-    <label className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center gap-1.5">
       <span className="font-body text-[12px] text-muted-foreground">in</span>
-      <span
-        className={cn(
-          'relative inline-flex items-center gap-2 rounded-full bg-secondary/60 py-1.5 pr-7 pl-3',
-          'transition-colors focus-within:ring-2 focus-within:ring-ring/50',
-          disabled && 'opacity-50',
-        )}
-      >
-        <span
-          aria-hidden
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: color ?? 'var(--muted-foreground)' }}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label="Area"
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full bg-secondary/60 py-1.5 pr-2.5 pl-3',
+                'font-body text-[12px] text-foreground transition-colors',
+                'hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+                disabled && 'pointer-events-none opacity-50',
+              )}
+            >
+              <span
+                aria-hidden
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ background: color ?? 'var(--muted-foreground)' }}
+              />
+              {area}
+              <ChevronDown aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            </button>
+          }
         />
-        <select
-          value={area}
-          disabled={disabled}
-          onChange={(event) => onPick(event.target.value)}
-          aria-label="Area"
-          className="appearance-none bg-transparent font-body text-[12px] text-foreground outline-none"
-        >
-          {options.areas.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          aria-hidden
-          className="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-muted-foreground"
-        />
-      </span>
-    </label>
+        <PopoverContent side="bottom" align="start" className="w-44 p-1">
+          <div role="menu" aria-label="Area" className="flex flex-col gap-0.5">
+            {options.areas.map((option) => {
+              const on = option === area;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={on}
+                  onClick={() => {
+                    setOpen(false);
+                    onPick(option);
+                  }}
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-body text-[12px] transition-colors duration-150',
+                    on
+                      ? 'bg-secondary/60 text-foreground'
+                      : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground',
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      background: options.area_colors?.[option] ?? 'var(--muted-foreground)',
+                    }}
+                  />
+                  <span className="truncate">{option}</span>
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </span>
   );
 }
 

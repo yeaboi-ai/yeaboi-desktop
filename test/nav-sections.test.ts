@@ -171,6 +171,7 @@ describe('navSections', () => {
       // dashboard tiles and a settings section.
       expect([...OPS_ELSEWHERE].sort()).toEqual([
         '/ceremonies',
+        '/feedback',
         '/privacy',
         '/usage',
         '/whats-new',
@@ -190,6 +191,13 @@ describe('navSections', () => {
       for (const route of ['/ceremonies', '/privacy']) {
         expect(tabs.includes(`'${route}'`), `${route} is not a settings tab`).toBe(true);
       }
+      const dock = readFileSync(
+        new URL('../src/renderer/components/nav/dock-controls.tsx', import.meta.url),
+        'utf8',
+      );
+      // The button is a toggle, so its href is conditional — what matters is
+      // that the dock is what carries the route.
+      expect(dock.includes("'/feedback'"), 'nothing in the dock opens /feedback').toBe(true);
     });
 
     it('is empty only where the rail already carries everything', () => {
