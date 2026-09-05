@@ -155,7 +155,8 @@ export default function ProjectsPage() {
           </div>
           <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
             Every run inside a project reads what the others left behind: the plan frames the
-            standups, the standups feed the retro, the report is about this project alone.
+            standups, each later run reads what the earlier ones left, and the report is about this
+            project alone.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -190,12 +191,9 @@ export default function ProjectsPage() {
             ))}
           </div>
         ) : active.length === 0 && done.length === 0 ? (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <p className="text-[14px] leading-relaxed text-muted-foreground">
-              Nothing here yet. Describe what you&rsquo;re building and yeaboi names it.
-            </p>
-            <CreateProjectDialog onCreate={createProject} onCreated={openCreated} />
-          </div>
+          <p className="text-[14px] leading-relaxed text-muted-foreground">
+            Nothing here yet. New project asks what you&rsquo;re building and yeaboi names it.
+          </p>
         ) : (
           <div className="space-y-12">
             <section aria-labelledby="projects-active">

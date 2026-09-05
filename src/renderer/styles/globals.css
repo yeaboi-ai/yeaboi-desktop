@@ -980,6 +980,7 @@ html[data-audience='agents'] {
   transition:
     color 250ms ease,
     background-color 250ms ease,
+    border-color 250ms ease,
     box-shadow 250ms ease;
 }
 @media (prefers-reduced-motion: reduce) {
