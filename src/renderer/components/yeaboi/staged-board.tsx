@@ -136,11 +136,16 @@ const INHERIT = `
 }
 
 /* Cards, panels and the sections either side: the app rounds its containers
-   twice as far as its controls. */
-.board-frame .${HOST} [class*='card'],
-.board-frame .${HOST} [class*='panel'],
-.board-frame .${HOST} [class*='modal'],
-.board-frame .${HOST} [class*='sheet'] {
+   twice as far as its controls.
+ 
+   Poker's, because the boards already take their radii from the app through
+   --r-s/--r-m/--r-l above, and a second answer here only contradicts the
+   first: a retro card asks for --r-l and came out four pixels rounder than
+   the board that drew it. */
+.board-frame .${HOST}[data-mode='poker'] [class*='card'],
+.board-frame .${HOST}[data-mode='poker'] [class*='panel'],
+.board-frame .${HOST}[data-mode='poker'] [class*='modal'],
+.board-frame .${HOST}[data-mode='poker'] [class*='sheet'] {
   border-radius: calc(var(--app-radius) * 2);
 }
 

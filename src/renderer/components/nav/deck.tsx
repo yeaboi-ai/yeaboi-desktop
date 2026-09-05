@@ -153,6 +153,11 @@ export function Deck({ children }: { children: React.ReactNode }) {
       // Something is open over the deck and has the window: paging beneath it
       // moves a surface nobody is looking at.
       if (document.documentElement.dataset['overlay']) return;
+      // A staged board is the window, and it has its own gestures — cards are
+      // dragged on it. Turning would close the frame in around a room and
+      // swallow the press that started a drag, since nothing is clickable
+      // while the deck is moving.
+      if (document.documentElement.dataset['boardStaged']) return;
       const now = Date.now();
       const fresh = now - lastWheel.current > GESTURE_GAP_MS;
       lastWheel.current = now;
@@ -200,6 +205,9 @@ export function Deck({ children }: { children: React.ReactNode }) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || e.metaKey || e.ctrlKey || e.altKey) return;
       if (document.documentElement.dataset['overlay']) return;
+      // On a staged board Tab is the board's: a room full of controls is
+      // somewhere you tab around, not off.
+      if (document.documentElement.dataset['boardStaged']) return;
       const focused = document.activeElement as HTMLElement | null;
       if (focused && (isEditable(focused) || focused.closest('[role="dialog"], [role="menu"]')))
         return;
