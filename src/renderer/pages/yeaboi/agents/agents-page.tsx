@@ -10,7 +10,7 @@
 // session log on the machine and ends in an LLM call, so re-running on every
 // open was the thing that "kept running in the background".
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { DuckMark } from '@/components/brand/duck';
 import {
@@ -20,11 +20,11 @@ import {
   Section,
   type Report,
 } from '@/components/agents/agent-report';
+import { useSecurityActions } from '@/components/agents/use-security-actions';
 import {
   AGENT_WINDOWS,
   type AgentModes,
   type AgentRunState,
-  dismissAgentFinding,
   emptyAgentRun,
   exportAgentReport,
   loadAgentLatest,
@@ -35,7 +35,6 @@ import {
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 /** The agents mode a `/agents/<kind>` pathname addresses. */
 function agentKindFromPathname(pathname: string): string {
@@ -53,10 +52,14 @@ function AgentsBody() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [windowDays, setWindowDays] = useState(30);
-  const [includeInfo, setIncludeInfo] = useState(false);
-  const [dismissing, setDismissing] = useState<{ key: string; pattern: string } | null>(null);
-  const [reason, setReason] = useState('');
   const windowed = kind === 'usage' || kind === 'advisor';
+  const swapReport = useCallback((next: Report) => {
+    setReport(next);
+    setAsOf('');
+  }, []);
+  // Security's verbs answer with the re-derived report — no scan for a
+  // dismissal, a fix or the info toggle.
+  const security = useSecurityActions({ setReport: swapReport });
 
   useEffect(() => {
     loadAgentModes().then(setModes, (e: Error) => setError(e.message));
@@ -84,13 +87,13 @@ function AgentsBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
-  async function refresh(opts: { windowDays?: number; includeInfo?: boolean } = {}) {
+  async function refresh(opts: { windowDays?: number } = {}) {
     setRefreshing(true);
     setRun(emptyAgentRun());
     let state = emptyAgentRun();
     const runOpts = {
       ...(windowed ? { windowDays: opts.windowDays ?? windowDays } : {}),
-      ...(kind === 'security' ? { includeInfo: opts.includeInfo ?? includeInfo } : {}),
+      ...(kind === 'security' ? { includeInfo: security.includeInfo } : {}),
     };
     try {
       await runAgentMode(
@@ -124,25 +127,6 @@ function AgentsBody() {
     void refresh({ windowDays: days });
   }
 
-  function toggleInfo() {
-    const next = !includeInfo;
-    setIncludeInfo(next);
-    void refresh({ includeInfo: next });
-  }
-
-  async function confirmDismiss() {
-    if (!dismissing) return;
-    try {
-      await dismissAgentFinding(dismissing.key, reason.trim());
-      setNotice(`Dismissed ${dismissing.pattern} — ${reason.trim()}`);
-      setDismissing(null);
-      setReason('');
-      void refresh();
-    } catch (e) {
-      setNotice((e as Error).message);
-    }
-  }
-
   return (
     <div className="space-y-4">
       <header className="flex items-start justify-between gap-4">
@@ -169,11 +153,6 @@ function AgentsBody() {
                 </Button>
               ))}
             </div>
-          )}
-          {kind === 'security' && (
-            <Button variant="outline" size="sm" disabled={refreshing} onClick={toggleInfo}>
-              {includeInfo ? 'Hide info' : 'Show info'}
-            </Button>
           )}
           <Button
             variant="outline"
@@ -225,33 +204,6 @@ function AgentsBody() {
           Re-run scans now.
         </p>
       )}
-      {dismissing && (
-        <Section title={`Dismiss ${dismissing.pattern}`}>
-          <p className="text-[12px] text-muted-foreground mb-2">
-            Say why this finding is expected. The reason is kept with the dismissal, and the report
-            counts it rather than hiding it.
-          </p>
-          <div className="flex items-center gap-2">
-            <Input
-              autoFocus
-              value={reason}
-              placeholder="e.g. fixture key in the redaction tests"
-              onChange={(e) => setReason(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && reason.trim()) void confirmDismiss();
-                if (e.key === 'Escape') setDismissing(null);
-              }}
-            />
-            <Button size="sm" disabled={!reason.trim()} onClick={() => void confirmDismiss()}>
-              Dismiss
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDismissing(null)}>
-              Keep
-            </Button>
-          </div>
-        </Section>
-      )}
-
       {(refreshing || !report) && <ScanProgress run={run} />}
 
       {!report ? (
@@ -262,15 +214,7 @@ function AgentsBody() {
           </p>
         </Section>
       ) : (
-        <ReportView
-          kind={kind}
-          report={report}
-          actions={
-            kind === 'security'
-              ? { onDismiss: (key, pattern) => setDismissing({ key, pattern }), infoToggle: true }
-              : {}
-          }
-        />
+        <ReportView kind={kind} report={report} actions={kind === 'security' ? { security } : {}} />
       )}
     </div>
   );

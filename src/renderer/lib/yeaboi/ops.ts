@@ -240,6 +240,9 @@ export const kindOf = (key: string): string => key.replace(/^agent-/, '');
 export interface AgentScopeOpts {
   /** An engine project id (`proj-<8hex>`); its repo path scopes the read. */
   projectId?: string;
+  /** Security: list the informational findings the saved report only counts.
+   *  Answered by re-deriving the saved report, never by a scan. */
+  includeInfo?: boolean;
 }
 
 /** Per-run knobs a page exposes; each reaches only the engines that take it. */
@@ -255,8 +258,13 @@ export const loadAgentLatest = (
   kind: string,
   opts: AgentScopeOpts = {},
 ): Promise<AgentLatest | null> => {
-  const query = opts.projectId ? `?project_id=${encodeURIComponent(opts.projectId)}` : '';
-  return apiGetOptional(`/api/agents/${encodeURIComponent(kind)}/latest${query}`);
+  const params = new URLSearchParams();
+  if (opts.projectId) params.set('project_id', opts.projectId);
+  if (opts.includeInfo) params.set('include_info', '1');
+  const query = params.toString();
+  return apiGetOptional(
+    `/api/agents/${encodeURIComponent(kind)}/latest${query ? `?${query}` : ''}`,
+  );
 };
 
 export const runAgentMode = (
@@ -279,13 +287,152 @@ export interface AgentDismissal {
   expires: string;
 }
 
-/** Set one security finding aside with the reason why; `undo` restores it. */
+/** Set one security finding aside with the reason why; `undo` restores it.
+ *  The answer carries the re-derived report, so the page needs no scan. */
 export const dismissAgentFinding = (
   key: string,
   reason: string,
   undo = false,
-): Promise<{ ok: boolean; dismissed: AgentDismissal[] }> =>
-  apiPost('/api/agents/security/dismiss', undo ? { key, undo: true } : { key, reason });
+  includeInfo = false,
+): Promise<{ ok: boolean; dismissed: AgentDismissal[]; report?: Record<string, unknown> | null }> =>
+  apiPost(
+    '/api/agents/security/dismiss',
+    undo
+      ? { key, undo: true, include_info: includeInfo }
+      : { key, reason, include_info: includeInfo },
+  );
+
+// ── Security: verdicts, fixes, replay ──────────────────────────────────────
+
+export interface SecurityFix {
+  id: string;
+  /** write | pr | link | dismiss | manual */
+  kind: string;
+  label: string;
+  target: string;
+  detail: string;
+  scope: string;
+}
+
+export interface SecurityIssue {
+  id: string;
+  category: string;
+  pattern: string;
+  title: string;
+  why: string;
+  /** needs-decision | unsure | test-data | handled | info */
+  verdict: string;
+  severity: string;
+  signals: number;
+  sessions: number;
+  files: number;
+  last_seen: string;
+  finding_keys: string[];
+  fixes: SecurityFix[];
+}
+
+export interface SecurityFindingRow {
+  key: string;
+  category: string;
+  pattern: string;
+  severity: string;
+  location: string;
+  line_no: number;
+  occurrences: number;
+  verdict: string;
+  verdict_reason: string;
+  context: string;
+  target: string;
+  snippet: string;
+  at: string;
+  session_id: string;
+  project_label: string;
+  fixes: SecurityFix[];
+}
+
+export interface ReplayTurn {
+  index: number;
+  line_no: number;
+  at: string;
+  /** you | agent | result | system */
+  role: string;
+  /** text | tool_use | tool_result */
+  kind: string;
+  tool: string;
+  text: string;
+  truncated: boolean;
+  flagged: boolean;
+}
+
+export interface Replay {
+  session_id: string;
+  source_path: string;
+  project_path: string;
+  started_at: string;
+  line_no: number;
+  pattern: string;
+  turns: ReplayTurn[];
+  focus: number;
+  warnings: string[];
+}
+
+export interface SecuritySignal {
+  line_no: number;
+  at: string;
+  session_id: string;
+  context: string;
+  snippet: string;
+}
+
+export interface SecurityActionResult {
+  ok: boolean;
+  fix_id?: string;
+  detail?: string;
+  pr_url?: string;
+  paths?: string[];
+  handled?: string[];
+  restored?: string[];
+  report?: Record<string, unknown> | null;
+}
+
+/** Many findings at once: `test-data` (reason filled in), `dismiss` (needs a reason) or `undo`. */
+export const setSecurityVerdict = (
+  keys: string[],
+  verdict: 'test-data' | 'dismiss' | 'undo',
+  opts: { reason?: string; includeInfo?: boolean } = {},
+): Promise<SecurityActionResult> =>
+  apiPost('/api/agents/security/verdict', {
+    keys,
+    verdict,
+    ...(opts.reason ? { reason: opts.reason } : {}),
+    include_info: Boolean(opts.includeInfo),
+  });
+
+/** Apply one of a finding's fixes; `keys` widens the handled set to the whole issue. */
+export const applySecurityFix = (
+  key: string,
+  fixId: string,
+  opts: { keys?: string[]; reason?: string; repo?: string; includeInfo?: boolean } = {},
+): Promise<SecurityActionResult> =>
+  apiPost('/api/agents/security/fix', {
+    key,
+    fix_id: fixId,
+    ...(opts.keys?.length ? { keys: opts.keys } : {}),
+    ...(opts.reason ? { reason: opts.reason } : {}),
+    ...(opts.repo ? { repo: opts.repo } : {}),
+    include_info: Boolean(opts.includeInfo),
+  });
+
+export const loadSecurityReplay = (key: string, line = 0): Promise<Replay> => {
+  const params = new URLSearchParams({ key });
+  if (line > 0) params.set('line', String(line));
+  return apiGet(`/api/agents/security/replay?${params.toString()}`);
+};
+
+export const loadSecuritySignals = (
+  key: string,
+): Promise<{ key: string; signals: SecuritySignal[] }> =>
+  apiGet(`/api/agents/security/signals?key=${encodeURIComponent(key)}`);
 
 export const exportAgentReport = (
   kind: string,

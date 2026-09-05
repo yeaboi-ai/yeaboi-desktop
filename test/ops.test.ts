@@ -116,9 +116,66 @@ describe('runAgentMode and dismissAgentFinding wire bodies', () => {
     await dismissAgentFinding('secret:p:/a', 'fixture');
     await dismissAgentFinding('secret:p:/a', '', true);
     expect(calls).toEqual([
-      ['/api/agents/security/dismiss', { key: 'secret:p:/a', reason: 'fixture' }],
-      ['/api/agents/security/dismiss', { key: 'secret:p:/a', undo: true }],
+      [
+        '/api/agents/security/dismiss',
+        { key: 'secret:p:/a', reason: 'fixture', include_info: false },
+      ],
+      ['/api/agents/security/dismiss', { key: 'secret:p:/a', undo: true, include_info: false }],
     ]);
     post.mockRestore();
+  });
+});
+
+describe('security wire bodies', () => {
+  it('sends a verdict with its keys and the info flag', async () => {
+    const api = await import('../src/renderer/lib/yeaboi/api');
+    const ops = await import('../src/renderer/lib/yeaboi/ops');
+    const post = vi.spyOn(api, 'apiPost').mockResolvedValue({ ok: true });
+    await ops.setSecurityVerdict(['a', 'b'], 'test-data', { includeInfo: true });
+    expect(post).toHaveBeenLastCalledWith('/api/agents/security/verdict', {
+      keys: ['a', 'b'],
+      verdict: 'test-data',
+      include_info: true,
+    });
+    await ops.setSecurityVerdict(['a'], 'dismiss', { reason: 'known' });
+    expect(post).toHaveBeenLastCalledWith('/api/agents/security/verdict', {
+      keys: ['a'],
+      verdict: 'dismiss',
+      reason: 'known',
+      include_info: false,
+    });
+    post.mockRestore();
+  });
+
+  it('sends a fix with the whole issue behind it', async () => {
+    const api = await import('../src/renderer/lib/yeaboi/api');
+    const ops = await import('../src/renderer/lib/yeaboi/ops');
+    const post = vi.spyOn(api, 'apiPost').mockResolvedValue({ ok: true });
+    await ops.applySecurityFix('k1', 'guard-hook', { keys: ['k1', 'k2'], repo: '/r' });
+    expect(post).toHaveBeenLastCalledWith('/api/agents/security/fix', {
+      key: 'k1',
+      fix_id: 'guard-hook',
+      keys: ['k1', 'k2'],
+      repo: '/r',
+      include_info: false,
+    });
+    post.mockRestore();
+  });
+
+  it('asks for a replay by key and line, and lists info without a scan', async () => {
+    const api = await import('../src/renderer/lib/yeaboi/api');
+    const ops = await import('../src/renderer/lib/yeaboi/ops');
+    const get = vi.spyOn(api, 'apiGet').mockResolvedValue({});
+    const getOptional = vi.spyOn(api, 'apiGetOptional').mockResolvedValue(null);
+    await ops.loadSecurityReplay('a:b:/p q', 12);
+    expect(get).toHaveBeenLastCalledWith('/api/agents/security/replay?key=a%3Ab%3A%2Fp+q&line=12');
+    await ops.loadSecurityReplay('k');
+    expect(get).toHaveBeenLastCalledWith('/api/agents/security/replay?key=k');
+    await ops.loadAgentLatest('security', { includeInfo: true });
+    expect(getOptional).toHaveBeenLastCalledWith('/api/agents/security/latest?include_info=1');
+    await ops.loadAgentLatest('usage', { projectId: 'proj-1' });
+    expect(getOptional).toHaveBeenLastCalledWith('/api/agents/usage/latest?project_id=proj-1');
+    get.mockRestore();
+    getOptional.mockRestore();
   });
 });

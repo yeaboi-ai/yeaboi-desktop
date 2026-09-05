@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useLocation, useParams } from 'react-router';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
+import { useSecurityActions } from '@/components/agents/use-security-actions';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,11 @@ function ScopedReport({
   const [run, setRun] = useState<AgentRunState>(emptyAgentRun);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState('');
+  const swapReport = useCallback((next: Report) => {
+    setReport(next);
+    setAsOf('');
+  }, []);
+  const security = useSecurityActions({ setReport: swapReport });
 
   const refresh = useCallback(async () => {
     setRunning(true);
@@ -216,7 +222,7 @@ function ScopedReport({
       )}
       {(running || !report) && <ScanProgress run={run} />}
       {report ? (
-        <ReportView kind={kind} report={report} />
+        <ReportView kind={kind} report={report} actions={kind === 'security' ? { security } : {}} />
       ) : (
         state !== 'unsupported' &&
         !running && (

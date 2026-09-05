@@ -4,9 +4,9 @@
 // they are built from. The machine-wide page (/agents/<kind>) and a project's
 // scoped tabs draw the same report the same way.
 
-import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SecurityIssues } from '@/components/agents/security-issues';
+import type { SecurityActions } from '@/components/agents/use-security-actions';
 import type { AgentRunState } from '@/lib/yeaboi/ops';
 
 export type Report = Record<string, unknown>;
@@ -16,21 +16,6 @@ const text = (report: Report, field: string): string => String(report[field] ?? 
 const rows = (report: Report, field: string): Report[] => (report[field] as Report[]) ?? [];
 const lines = (report: Report, field: string): string[] => (report[field] as string[]) ?? [];
 const money = (value: number): string => `$${value.toFixed(2)}`;
-
-type Category = 'todo' | 'inprogress' | 'done' | 'blocked';
-
-function severityCategory(severity: string): Category {
-  if (severity === 'critical' || severity === 'high') return 'blocked';
-  if (severity === 'medium') return 'inprogress';
-  return 'todo';
-}
-
-const CATEGORY_VARIANT: Record<Category, 'outline' | 'secondary' | 'default' | 'destructive'> = {
-  todo: 'outline',
-  inprogress: 'secondary',
-  done: 'default',
-  blocked: 'destructive',
-};
 
 export function Section({
   title,
@@ -165,10 +150,8 @@ export function ScanProgress({ run }: { run: AgentRunState }) {
 }
 
 export interface ReportActions {
-  /** Security: set one finding aside with a reason (the page owns the prompt). */
-  onDismiss?: (key: string, pattern: string) => void;
-  /** Security: the page offers a "Show info" toggle, so the hidden-count hint may name it. */
-  infoToggle?: boolean;
+  /** Security: the verbs the page acts through (fix, verdict, info toggle). */
+  security?: SecurityActions;
 }
 
 export function ReportView({
@@ -181,24 +164,38 @@ export function ReportView({
   actions?: ReportActions;
 }) {
   const warnings = lines(report, 'warnings');
+  if (kind === 'security') {
+    return (
+      <>
+        {warnings.length > 0 && <Notice title="Read this first" items={warnings} />}
+        {actions.security ? (
+          <SecurityIssues report={report} actions={actions.security} />
+        ) : (
+          <SecurityIssues report={report} actions={READ_ONLY} />
+        )}
+      </>
+    );
+  }
   return (
     <>
       {warnings.length > 0 && <Notice title="Read this first" items={warnings} />}
       {kind === 'usage' && <UsageView report={report} />}
       {kind === 'advisor' && <AdvisorView report={report} />}
-      {kind === 'security' && (
-        <SecurityView
-          report={report}
-          onDismiss={actions.onDismiss}
-          infoToggle={actions.infoToggle}
-        />
-      )}
       <Advice report={report} />
     </>
   );
 }
 
-/** The qualifier that follows a total — mirrors agentwatch/billing.py. */
+// A report drawn with nothing to act through (a saved snapshot): the list
+// still reads, the buttons say so instead of failing.
+const READ_ONLY: SecurityActions = {
+  includeInfo: false,
+  busy: false,
+  fix: async () => 'Open the Security page to act on this.',
+  verdict: async () => 'Open the Security page to act on this.',
+  toggleInfo: async () => 'Open the Security page to act on this.',
+};
+
 export function billingLabel(kind: string): string {
   if (kind === 'subscription') return 'API-equivalent — included in your subscription, not a bill';
   if (kind === 'api') return 'estimated at public API rates';
@@ -333,168 +330,6 @@ function AdvisorView({ report }: { report: Report }) {
               Number(row['calls']),
               money(Number(row['est_usd'])),
               String(row['note'] ?? ''),
-            ],
-          }))}
-        />
-      </Section>
-    </>
-  );
-}
-
-const FINDINGS_CAP = 25;
-
-function SecurityView({
-  report,
-  onDismiss,
-  infoToggle = false,
-}: {
-  report: Report;
-  onDismiss?: (key: string, pattern: string) => void;
-  infoToggle?: boolean;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const posture = text(report, 'posture');
-  const findings = rows(report, 'findings');
-  const newKeys = lines(report, 'new_findings');
-  const resolved = lines(report, 'resolved_findings');
-  const dismissed = num(report, 'dismissed_count');
-  const hiddenInfo = num(report, 'hidden_info_count');
-  const totals = (report['pattern_totals'] as [string, string][] | undefined) ?? [];
-  const shown = showAll ? findings : findings.slice(0, FINDINGS_CAP);
-  return (
-    <>
-      <Section
-        title={`Posture: ${posture || 'unknown'}`}
-        actions={
-          <Badge variant={posture === 'good' ? 'default' : 'destructive'}>
-            {posture || 'unknown'}
-          </Badge>
-        }
-      >
-        <Tiles>
-          <Tile label="Sessions scanned" value={String(num(report, 'sessions_scanned'))} />
-          <Tile label="Files scanned" value={String(num(report, 'files_scanned'))} />
-          <Tile label="Distinct secret signals" value={String(num(report, 'secrets_found'))} />
-          <Tile label="Dismissed" value={String(dismissed)} />
-        </Tiles>
-        {text(report, 'posture_reason') && (
-          <p className="text-[12px] text-muted-foreground">{text(report, 'posture_reason')}</p>
-        )}
-        {(newKeys.length > 0 || resolved.length > 0) && (
-          <p className="mt-1 text-[12px]">
-            <span className={newKeys.length ? 'text-destructive' : 'text-muted-foreground'}>
-              +{newKeys.length} new
-            </span>
-            <span className="text-muted-foreground"> / </span>
-            <span className={resolved.length ? 'text-foreground' : 'text-muted-foreground'}>
-              −{resolved.length} resolved
-            </span>
-            <span className="text-muted-foreground"> since the last scan</span>
-          </p>
-        )}
-        {text(report, 'summary') && (
-          <p className="mt-2 text-[13px] text-muted-foreground">{text(report, 'summary')}</p>
-        )}
-      </Section>
-      {totals.length > 0 && (
-        <Section title="Transcript signals">
-          <ul className="space-y-1">
-            {totals.map(([pattern, total]) => (
-              <li key={pattern} className="text-[12px] text-muted-foreground">
-                <code className="text-foreground">{pattern}</code> — {total}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      )}
-      <Section
-        title={`Findings${findings.length ? ` (${findings.length})` : ''}`}
-        actions={
-          findings.length > FINDINGS_CAP ? (
-            <Button variant="outline" size="sm" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? `Show ${FINDINGS_CAP}` : 'Show all'}
-            </Button>
-          ) : undefined
-        }
-      >
-        <Table
-          empty="Nothing flagged."
-          columns={[
-            { header: 'Severity' },
-            { header: 'Finding' },
-            { header: 'Pattern' },
-            { header: 'Where' },
-            { header: '×', numeric: true },
-            { header: 'Fix' },
-            { header: '' },
-          ]}
-          rows={shown.map((row, index) => {
-            const key = String(row['key'] ?? '');
-            const pattern = String(row['pattern'] ?? '');
-            const scopes = (row['scopes'] as string[] | undefined) ?? [];
-            const times = Number(row['occurrences'] ?? 1);
-            const isNew = key !== '' && newKeys.includes(key);
-            return {
-              key: `${key || String(row['title'])}-${index}`,
-              cells: [
-                <Badge
-                  key="severity"
-                  variant={CATEGORY_VARIANT[severityCategory(String(row['severity']))]}
-                >
-                  {String(row['severity'])}
-                </Badge>,
-                <span key="title">
-                  {isNew && <Badge variant="outline">new</Badge>} {String(row['title'])}
-                </span>,
-                <code key="pattern" className="text-[11px]">
-                  {pattern}
-                </code>,
-                <span key="where">
-                  {String(row['location'] ?? '')}
-                  {row['line_no'] ? `:${String(row['line_no'])}` : ''}
-                  {scopes.length > 1 ? ` (${scopes.length} scopes)` : ''}
-                </span>,
-                times > 1 ? String(times) : '',
-                String(row['remediation'] ?? ''),
-                onDismiss && key ? (
-                  <Button
-                    key="dismiss"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDismiss(key, pattern)}
-                  >
-                    Dismiss
-                  </Button>
-                ) : (
-                  ''
-                ),
-              ],
-            };
-          })}
-        />
-        {hiddenInfo > 0 && (
-          <p className="mt-2 text-[12px] text-muted-foreground">
-            {hiddenInfo} informational finding(s) hidden
-            {infoToggle ? ' — toggle “Show info” above to list them.' : '.'}
-          </p>
-        )}
-      </Section>
-      <Section title="MCP servers">
-        <Table
-          empty="No MCP servers configured."
-          columns={[
-            { header: 'Name' },
-            { header: 'Scope' },
-            { header: 'Transport' },
-            { header: 'Flags' },
-          ]}
-          rows={rows(report, 'mcp_servers').map((row) => ({
-            key: `${String(row['scope'])}/${String(row['name'])}`,
-            cells: [
-              String(row['name']),
-              String(row['scope']),
-              String(row['transport']),
-              lines(row, 'flags').join(', ') || '—',
             ],
           }))}
         />
