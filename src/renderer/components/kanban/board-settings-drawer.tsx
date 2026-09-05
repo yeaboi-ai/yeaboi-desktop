@@ -46,7 +46,12 @@ export function BoardSettingsDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className={expanded ? 'sm:max-w-none w-full' : 'sm:max-w-xl'}>
+      {/* Expanded is full width less the margin the sheet floats on, not the
+          window's own width — `w-full` would put its left edge off screen. */}
+      <SheetContent
+        side="right"
+        className={expanded ? 'w-[calc(100%-2rem)] sm:max-w-none' : 'sm:max-w-xl'}
+      >
         <SheetHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">

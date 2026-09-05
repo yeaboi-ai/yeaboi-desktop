@@ -8,19 +8,30 @@ import { cn } from '@/lib/utils';
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
 
+// A sheet floats off the window's edges rather than filling one of them: the
+// rail, the dock and every card in this app are objects sitting on the page,
+// and a panel welded to three sides is the only thing that was not. It clears
+// the edge by the same margin they do, and travels far enough on the way out
+// to take that margin with it.
+const INSET = 'inset-4';
+
 const SIDE_STYLES: Record<Side, string> = {
   right:
-    'fixed top-0 right-0 h-full w-full sm:max-w-md ' +
-    'data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full',
+    `fixed ${INSET} left-auto w-[calc(100%-2rem)] sm:max-w-md ` +
+    'data-[starting-style]:translate-x-[calc(100%+1rem)] ' +
+    'data-[ending-style]:translate-x-[calc(100%+1rem)]',
   left:
-    'fixed top-0 left-0 h-full w-full sm:max-w-md ' +
-    'data-[starting-style]:-translate-x-full data-[ending-style]:-translate-x-full',
+    `fixed ${INSET} right-auto w-[calc(100%-2rem)] sm:max-w-md ` +
+    'data-[starting-style]:-translate-x-[calc(100%+1rem)] ' +
+    'data-[ending-style]:-translate-x-[calc(100%+1rem)]',
   bottom:
-    'fixed left-0 right-0 bottom-0 w-full max-h-[90vh] ' +
-    'data-[starting-style]:translate-y-full data-[ending-style]:translate-y-full',
+    `fixed ${INSET} top-auto max-h-[calc(90vh-2rem)] ` +
+    'data-[starting-style]:translate-y-[calc(100%+1rem)] ' +
+    'data-[ending-style]:translate-y-[calc(100%+1rem)]',
   top:
-    'fixed left-0 right-0 top-0 w-full max-h-[90vh] ' +
-    'data-[starting-style]:-translate-y-full data-[ending-style]:-translate-y-full',
+    `fixed ${INSET} bottom-auto max-h-[calc(90vh-2rem)] ` +
+    'data-[starting-style]:-translate-y-[calc(100%+1rem)] ' +
+    'data-[ending-style]:-translate-y-[calc(100%+1rem)]',
 };
 
 const SIDE_SWIPE: Record<Side, 'right' | 'left' | 'down' | 'up'> = {
@@ -73,7 +84,7 @@ function SheetContent({
       <DrawerPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          'z-[280] bg-card ring-1 ring-border/70 shadow-2xl outline-none flex flex-col',
+          'z-[280] flex flex-col overflow-hidden rounded-2xl bg-card ring-1 ring-border/70 shadow-2xl outline-none',
           'transition-transform duration-200 ease-out',
           SIDE_STYLES[side],
           className,
