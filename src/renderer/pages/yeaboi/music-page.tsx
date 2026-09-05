@@ -9,7 +9,7 @@ import { Pause, Play } from 'lucide-react';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { EmbedSlot } from '@/components/music/embed-slot';
 import { Library } from '@/components/music/library';
-import { NativeNowPlayingBlock } from '@/components/music/native-now-playing';
+import { NowPlayingBlock } from '@/components/music/now-playing';
 import { ServiceOff } from '@/components/music/service-off';
 import { SourceTabs } from '@/components/music/source-tabs';
 import { Visualizer } from '@/components/music/visualizer';
@@ -167,17 +167,22 @@ function RadioPanel() {
 }
 
 function ServicePanel({ service }: { service: MusicService }) {
-  const { serviceFor, backend, embed, native, nativeApp } = useMusicPlayer();
+  const { serviceFor, backend, embed, nowPlaying } = useMusicPlayer();
   const state = serviceFor(service);
   if (!state?.connected) return <ServiceOff service={service} offline={backend === 'offline'} />;
   const app = SERVICE_APPS[service];
   const showEmbed = embed && embed.service === service;
-  const nowPlaying =
-    nativeApp === service && native.nowPlaying && native.nowPlaying.status !== 'stopped'
-      ? native.nowPlaying
-      : null;
+  const on = nowPlaying !== null && nowPlaying.service === service ? nowPlaying : null;
   return (
     <div>
+      {on && (
+        <>
+          <div className="mt-6 flex items-center justify-end">
+            <VisualizerStyleButton />
+          </div>
+          <Visualizer size="page" className="mt-2 block h-[120px] w-full" />
+        </>
+      )}
       <div className="mt-8">
         {showEmbed ? (
           <EmbedSlot />
@@ -194,9 +199,9 @@ function ServicePanel({ service }: { service: MusicService }) {
           {app ? `Previews here. Full tracks play in the ${app} app.` : 'Plays here in full.'}
         </p>
       </div>
-      {nowPlaying && (
+      {on && (
         <div className="mt-8">
-          <NativeNowPlayingBlock nowPlaying={nowPlaying} />
+          <NowPlayingBlock nowPlaying={on} />
         </div>
       )}
       <Library service={service} />

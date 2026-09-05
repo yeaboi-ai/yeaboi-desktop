@@ -1,9 +1,9 @@
 'use client';
 
 // The music pocket at the foot of the rail — the window's answer to the
-// two-row alcove on the terminal's bottom border. Four glyphs while the radio
-// plays, the vendor's mark while an embed or Spotify or Music does, a dim note
-// otherwise.
+// two-row alcove on the terminal's bottom border. Four glyphs while anything
+// plays — the radio to its own sound, an embed or Spotify or Music in spirit,
+// with the vendor's mark in the corner — and a dim note otherwise.
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -25,7 +25,7 @@ import { STATUS_WORDS } from '@/lib/music/state';
 import { useRouter } from 'next/navigation';
 
 export function RailPocket({ ring }: { ring: boolean }) {
-  const { radio, channels, mood, native, nativeApp, embed, embedTitle, clearEmbed, toggle, next } =
+  const { radio, channels, mood, native, nativeApp, embed, nowPlaying, clearEmbed, toggle, next } =
     useMusicPlayer();
   const pathname = usePathname() ?? '';
   const router = useRouter();
@@ -34,23 +34,29 @@ export function RailPocket({ ring }: { ring: boolean }) {
   const station = channels[state.channel]?.name ?? 'Radio';
 
   const label =
-    mood === 'embed' && embed
-      ? `${embedTitle || embed.label} · playing here`
+    mood === 'embed' && nowPlaying
+      ? `${nowPlaying.title} · ${nowPlaying.status === 'paused' ? 'paused' : 'playing'} here`
       : mood === 'native' && native.nowPlaying
         ? `${native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name} · in ${NATIVE_APPS[native.nowPlaying.app].name}`
         : mood === 'off'
           ? 'Music'
           : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
 
+  const badge = mood === 'embed' && embed ? embed.service : mood === 'native' ? nativeApp : null;
   const face =
-    mood === 'embed' && embed ? (
-      <ServiceMark service={embed.service} size={18} className="text-primary" />
-    ) : mood === 'native' && nativeApp ? (
-      <ServiceMark service={nativeApp} size={18} className="text-primary" />
-    ) : mood === 'off' ? (
+    mood === 'off' ? (
       <span className="font-mono text-[18px] leading-none text-muted-foreground">♪</span>
     ) : (
-      <Visualizer size="pocket" className="size-12" />
+      <span className="relative block size-12">
+        <Visualizer size="pocket" className="size-12" />
+        {badge && (
+          <ServiceMark
+            service={badge}
+            size={11}
+            className="absolute bottom-0.5 right-0.5 text-primary"
+          />
+        )}
+      </span>
     );
 
   return (

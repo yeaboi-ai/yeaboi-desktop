@@ -43,7 +43,7 @@ async function isRunning(app: NativeApp): Promise<boolean> {
 export async function nativeState(app: NativeApp): Promise<NativeNowPlaying | null> {
   if (!darwin || !(await isRunning(app))) return null;
   const out = await osascript(stateScript(app));
-  return out === null ? null : parseNativeState(app, out);
+  return out === null ? null : parseNativeState(app, out, Date.now());
 }
 
 const installed = new Map<NativeApp, boolean>();

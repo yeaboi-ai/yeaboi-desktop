@@ -22,6 +22,9 @@ export const EMBED_FRAME_ORIGINS = [
   'https://www.youtube-nocookie.com',
 ] as const;
 
+/** Where the Now Playing art comes from: Spotify's covers and YouTube's stills. */
+export const ARTWORK_IMAGE_ORIGINS = ['https://i.scdn.co', 'https://i.ytimg.com'] as const;
+
 /** The same hosts as webRequest URL patterns, for the header filter in main. */
 export function radioUrlPatterns(origins: readonly string[] = RADIO_MEDIA_ORIGINS): string[] {
   return origins.map((origin) => `${origin}/*`);

@@ -83,6 +83,14 @@ describe('rendererCsp', () => {
     expect(media).not.toMatch(/\shttps:(\s|$)/);
   });
 
+  it('shows track art from the two art hosts and no other https host', () => {
+    const csp = rendererCsp({ planningPorts: [8000] });
+    const img = csp.split('; ').find((d) => d.startsWith('img-src'))!;
+    expect(img).toContain('https://i.scdn.co');
+    expect(img).toContain('https://i.ytimg.com');
+    expect(img).not.toMatch(/\shttps:(\s|$)/);
+  });
+
   it('frames only the three embed players', () => {
     const csp = rendererCsp({ planningPorts: [8000] });
     const frame = csp.split('; ').find((d) => d.startsWith('frame-src'))!;

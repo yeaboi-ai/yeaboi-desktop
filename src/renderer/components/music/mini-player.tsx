@@ -1,53 +1,33 @@
 'use client';
 
 // The popover off the rail pocket: what is on, and the transport for it.
-// Radio gets the sixteen-glyph spectrum and the volume; an embed gets its name
-// and a way to stop it; a native app gets its own line, since its volume is
-// its own.
+// Radio gets the sixteen-glyph spectrum and the volume; an embed or a native
+// app gets Now Playing over the same spectrum, moving to its beat in spirit
+// only, since its sound is its own.
 
 import Link from 'next/link';
-import { Pause, Play, SkipBack, SkipForward, Square } from 'lucide-react';
+import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useMusicPlayer } from '@/components/providers/music-provider';
-import { NativeNowPlayingBlock } from '@/components/music/native-now-playing';
-import { ServiceMark } from '@/components/music/service-mark';
+import { NowPlayingBlock } from '@/components/music/now-playing';
 import { Visualizer } from '@/components/music/visualizer';
-import { SERVICE_LABELS } from '@shared/music-links';
 import { Slider } from '@/components/ui/slider';
 import { STATUS_WORDS } from '@/lib/music/state';
 import { cn } from '@/lib/utils';
 
 export function MiniPlayer() {
-  const { radio, channels, native, backend, embed, embedTitle, clearEmbed } = useMusicPlayer();
+  const { radio, channels, backend, nowPlaying, embedNote } = useMusicPlayer();
   const { state } = radio;
   const live = state.status === 'playing' || state.status === 'connecting';
   const station = channels[state.channel]?.name ?? 'Radio';
-  const embedOn = embed !== null && !live;
-  const nativeOn = native.nowPlaying && native.nowPlaying.status !== 'stopped' && !live;
+  const on = !live && nowPlaying ? nowPlaying : null;
 
   return (
     <div className="w-72 p-3">
-      {embedOn && embed ? (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Stop"
-            onClick={clearEmbed}
-            className="rounded-full p-1.5 text-primary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <Square className="size-4" aria-hidden />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-[15px] text-foreground">
-              {embedTitle || embed.label}
-            </p>
-            <p className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
-              <ServiceMark service={embed.service} size={11} />
-              {SERVICE_LABELS[embed.service]} · playing here
-            </p>
-          </div>
-        </div>
-      ) : nativeOn && native.nowPlaying ? (
-        <NativeNowPlayingBlock nowPlaying={native.nowPlaying} compact />
+      {on ? (
+        <>
+          <NowPlayingBlock nowPlaying={on} compact />
+          <Visualizer size="popover" className="mt-3 block h-11 w-full" />
+        </>
       ) : (
         <>
           <div className="flex items-center gap-3">
@@ -107,6 +87,9 @@ export function MiniPlayer() {
             </div>
           </div>
           <Visualizer size="popover" className="mt-3 block h-11 w-full" />
+          {embedNote && (
+            <p className="mt-2 font-mono text-[11px] text-muted-foreground">{embedNote}</p>
+          )}
           <div className="mt-3 flex items-center gap-3">
             <Slider
               aria-label="Volume"

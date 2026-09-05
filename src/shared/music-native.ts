@@ -40,7 +40,13 @@ export interface NativeNowPlaying {
   /** Seconds into the track, and the track's length. */
   position: number;
   duration: number;
+  /** Clock at the poll, so the position can run forward between polls. */
+  asOf: number;
+  /** Spotify's cover on i.scdn.co; Music has no URL for its art. */
+  artworkUrl: string | null;
 }
+
+const ARTWORK_URL = /^https:\/\/i\.scdn\.co\/[A-Za-z0-9/._-]+$/;
 
 /** Asks System Events, never the app itself — asking the app would launch it. */
 export function isRunningScript(app: NativeApp): string[] {
@@ -48,17 +54,19 @@ export function isRunningScript(app: NativeApp): string[] {
   return [`tell application "System Events" to (name of processes) contains "${process}"`];
 }
 
-/** One tab-separated line: state, title, artist, album, position, duration. */
+/** One tab-separated line: state, title, artist, album, position, duration,
+ *  artwork URL (Spotify only; Music's art is a blob, so its field is empty). */
 export function stateScript(app: NativeApp): string[] {
   const { name } = NATIVE_APPS[app];
   // Spotify reports duration in milliseconds; Music in seconds.
   const duration =
     app === 'spotify' ? '(duration of current track) / 1000' : 'duration of current track';
+  const artwork = app === 'spotify' ? '(artwork url of current track)' : '""';
   return [
     `tell application "${name}"`,
     'set s to player state as text',
     'if s is "stopped" then return s',
-    `return s & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as integer) & tab & (${duration} as integer)`,
+    `return s & tab & (name of current track) & tab & (artist of current track) & tab & (album of current track) & tab & (player position as integer) & tab & (${duration} as integer) & tab & ${artwork}`,
     'end tell',
   ];
 }
@@ -76,11 +84,23 @@ export function openScript(app: NativeApp, nativeUrl: string): string[] | null {
   return [`tell application "Spotify" to play track "${nativeUrl}"`];
 }
 
-export function parseNativeState(app: NativeApp, stdout: string): NativeNowPlaying | null {
+export function parseNativeState(
+  app: NativeApp,
+  stdout: string,
+  asOf = 0,
+): NativeNowPlaying | null {
   const line = stdout.trim().split('\n').pop() ?? '';
-  const [state = '', title = '', artist = '', album = '', position = '0', duration = '0'] =
-    line.split('\t');
+  const [
+    state = '',
+    title = '',
+    artist = '',
+    album = '',
+    position = '0',
+    duration = '0',
+    artwork = '',
+  ] = line.split('\t');
   if (state !== 'playing' && state !== 'paused' && state !== 'stopped') return null;
+  const artworkUrl = artwork.trim();
   return {
     app,
     status: state,
@@ -89,5 +109,7 @@ export function parseNativeState(app: NativeApp, stdout: string): NativeNowPlayi
     album: album.trim(),
     position: Math.max(0, Number.parseInt(position, 10) || 0),
     duration: Math.max(0, Number.parseInt(duration, 10) || 0),
+    asOf,
+    artworkUrl: ARTWORK_URL.test(artworkUrl) ? artworkUrl : null,
   };
 }

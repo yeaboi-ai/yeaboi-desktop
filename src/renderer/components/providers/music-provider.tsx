@@ -38,12 +38,25 @@ import {
   type MusicServiceState,
 } from '@/lib/yeaboi/ambience';
 import { onCatalogueChanged } from '@/lib/music/catalogue-changed';
+import {
+  bridgedEmbedUrl,
+  hasChannel,
+  type EmbedCommand,
+  type EmbedPlayback,
+} from '@/lib/music/embed/bridge';
+import { onMusicHoldChange } from '@/lib/music/hold';
+import { nowPlayingFrom, type NowPlaying } from '@/lib/music/now-playing';
 import { pocketMood, type PocketMood } from '@/lib/music/state';
-import { vizMode } from '@/lib/music/viz/mode';
+import { vizModeFor } from '@/lib/music/viz/mode';
 import type { VizFrameSource } from '@/lib/music/viz/source';
+import { useEmbedBridge } from '@/hooks/use-embed-bridge';
 import { useVizFrames } from '@/hooks/use-viz-frames';
 import { useMusicPrefs } from '@/hooks/use-music-prefs';
-import { useNativePlayer, type NativePlayerApi } from '@/hooks/use-native-player';
+import {
+  useNativePlayer,
+  type NativeCadence,
+  type NativePlayerApi,
+} from '@/hooks/use-native-player';
 import { useRadio, type RadioApi } from '@/hooks/use-radio';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 
@@ -73,6 +86,15 @@ export interface MusicPlayer {
   embedTitle: string;
   showEmbed(link: SavedLink): void;
   clearEmbed(): void;
+  /** The player's last word over its channel; null with no embed up, and
+   *  never more than 'unknown' for Apple's frame, which has no channel. */
+  embedPlayback: EmbedPlayback | null;
+  /** Tell the embed's player something. False when it takes no commands. */
+  sendEmbed(command: EmbedCommand): boolean;
+  /** Why the last embed went away on its own, for the popover to say. */
+  embedNote: string;
+  /** What is on, from whichever source sounds: the embed, else the app. */
+  nowPlaying: NowPlaying | null;
   /** What EmbedHost mounts: the frame's ref and source. Nothing else reads it. */
   embedFrame: { ref: RefObject<HTMLIFrameElement | null>; src: string; onLoad(): void };
   /** The Music page's slot while the page shows this embed, else null. */
@@ -114,8 +136,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const viz = useVizFrames();
   const [embed, setEmbed] = useState<MusicLink | null>(null);
   const [embedTitle, setEmbedTitle] = useState('');
+  const [embedNote, setEmbedNote] = useState('');
   const [embedSlot, setEmbedSlot] = useState<HTMLElement | null>(null);
   const embedFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const bridge = useEmbedBridge(embedFrameRef, embed);
   const [lastApp, setLastApp] = useState<NativeApp | null>(null);
   const [installed, setInstalled] = useState<Partial<Record<NativeApp, boolean | null>>>({});
   const pathname = usePathname() ?? '';
@@ -123,9 +147,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const source = prefs.source;
   const sourceApp = NATIVE[source] ?? null;
   const nativeApp = lastApp ?? sourceApp;
-  // Poll while the page or the pocket has a reason to show the app: on the
-  // Music page, or once a link has been handed to the app this session.
-  const native = useNativePlayer(nativeApp, pathname === '/music' || lastApp !== null);
+  // Poll quickly while the Music page shows the app; slowly while only the
+  // pocket watches it, and only an app that is installed and chosen.
+  const watched =
+    nativeApp !== null &&
+    installed[nativeApp] === true &&
+    (sourceApp === nativeApp || lastApp === nativeApp);
+  const cadence: NativeCadence =
+    nativeApp === null ? 'off' : pathname === '/music' ? 'fast' : watched ? 'slow' : 'off';
+  const native = useNativePlayer(nativeApp, cadence);
 
   // The backend half: the stations, the shared station index, the services.
   const hydrated = useRef(false);
@@ -242,15 +272,36 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       // Two sounds at once is never what anyone meant.
       if (radio.state.status === 'playing' || radio.state.status === 'connecting') stop();
       setEmbedTitle(link.label);
+      setEmbedNote('');
       // The same link again is a no-op: a new frame would start it over.
       setEmbed((current) => (current?.embedUrl === parsed.embedUrl ? current : parsed));
     },
     [radio.state.status, stop],
   );
 
+  const { onLoad: onEmbedLoad } = bridge;
   const embedFrame = useMemo(
-    () => ({ ref: embedFrameRef, src: embed?.embedUrl ?? '', onLoad: () => undefined }),
-    [embed?.embedUrl],
+    () => ({
+      ref: embedFrameRef,
+      src: embed ? bridgedEmbedUrl(embed, window.location.origin) : '',
+      onLoad: onEmbedLoad,
+    }),
+    [embed, onEmbedLoad],
+  );
+
+  // A hold can pause a player it can talk to (the bridge does that); Apple's
+  // frame takes no commands, so a call stops it outright and says so.
+  const embedRef = useRef(embed);
+  embedRef.current = embed;
+  useEffect(
+    () =>
+      onMusicHoldChange((held) => {
+        const current = embedRef.current;
+        if (!held || !current || hasChannel(current.service)) return;
+        setEmbed(null);
+        setEmbedNote('stopped for the call');
+      }),
+    [],
   );
 
   const openInApp = useCallback(
@@ -270,16 +321,31 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     [radio.state.status, stop, native],
   );
 
-  // The visualiser follows the radio: its analyser, its status, and the feel
-  // the person chose. One loop, however many canvases are mounted.
+  // The visualiser follows the radio's analyser while the radio is on, and
+  // moves synthetically for an embed or the app, whose sound never passes
+  // through here. One loop, however many canvases are mounted.
   const { gain, smoothing, peaks } = prefs.visualizer;
+  const embedStatus = embed ? (bridge.playback?.status ?? 'unknown') : null;
+  const nativeStatus = native.nowPlaying?.status ?? null;
   useEffect(() => {
     viz.set({
-      analyser: radio.analyser,
-      mode: vizMode(radio.state.status),
+      analyser: radio.state.status === 'stopped' ? null : radio.analyser,
+      mode: vizModeFor({ radio: radio.state.status, embed: embedStatus, native: nativeStatus }),
       opts: { gain, smoothing, peaks },
     });
-  }, [viz, radio.analyser, radio.state.status, gain, smoothing, peaks]);
+  }, [viz, radio.analyser, radio.state.status, embedStatus, nativeStatus, gain, smoothing, peaks]);
+
+  const nowPlaying = useMemo(
+    () =>
+      nowPlayingFrom({
+        embed,
+        embedPlayback: bridge.playback,
+        embedTitle,
+        native: native.nowPlaying,
+        nativeApp,
+      }),
+    [embed, bridge.playback, embedTitle, native.nowPlaying, nativeApp],
+  );
 
   // A partial block: the prefs hook and main both merge it a level deep, so two
   // quick changes (a tile, then a colour) never overwrite each other.
@@ -295,14 +361,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const embedLive = embed !== null;
 
   // Transport goes to whichever source is sounding: the radio, else the
-  // embed (which a toggle stops — it has no pause from out here), else the app.
+  // embed (paused over its channel, or stopped when it has none), else the app.
+  const { send: sendEmbed } = bridge;
   const toggle = useCallback(() => {
     const radioLive = radio.state.status === 'playing' || radio.state.status === 'connecting';
     if (radioLive) radioApi.toggle();
-    else if (embedLive) setEmbed(null);
-    else if (nativeLive) void native.send('playpause');
+    else if (embedLive) {
+      if (!sendEmbed('toggle')) setEmbed(null);
+    } else if (nativeLive) void native.send('playpause');
     else radioApi.toggle();
-  }, [radio.state.status, embedLive, nativeLive, native, radioApi]);
+  }, [radio.state.status, embedLive, sendEmbed, nativeLive, native, radioApi]);
 
   const next = useCallback(() => {
     const radioLive = radio.state.status === 'playing' || radio.state.status === 'connecting';
@@ -343,6 +411,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       embedTitle,
       showEmbed,
       clearEmbed: () => setEmbed(null),
+      embedPlayback: bridge.playback,
+      sendEmbed,
+      embedNote,
+      nowPlaying,
       embedFrame,
       embedSlot,
       registerEmbedSlot: setEmbedSlot,
@@ -372,6 +444,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       embed,
       embedTitle,
       showEmbed,
+      bridge.playback,
+      sendEmbed,
+      embedNote,
+      nowPlaying,
       embedFrame,
       embedSlot,
       openInApp,

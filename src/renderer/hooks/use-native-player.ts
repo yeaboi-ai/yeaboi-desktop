@@ -1,24 +1,26 @@
 'use client';
 
-// What Spotify or Music is playing, polled through main while the Music page
-// or the pocket cares. Main never polls on its own, and a closed app is never
+// What Spotify or Music is playing, polled through main at the cadence the
+// caller asks for. Main never polls on its own, and a closed app is never
 // opened by a poll (see src/main/music-native.ts).
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NativeApp, NativeCommand, NativeNowPlaying } from '@shared/music-native';
 
-const POLL_MS = 3_000;
+/** `fast` while the Music page shows the app; `slow` while only the pocket
+ *  watches it from elsewhere; `off` when nobody is looking. */
+export type NativeCadence = 'off' | 'slow' | 'fast';
+
+const CADENCE_MS: Record<Exclude<NativeCadence, 'off'>, number> = { slow: 10_000, fast: 3_000 };
 const AFTER_COMMAND_MS = 400;
 
 export interface NativePlayerApi {
   nowPlaying: NativeNowPlaying | null;
-  /** True once the app has reported a track this session, so the pocket can
-   *  keep showing it between polls. */
   send(command: NativeCommand): Promise<void>;
   refresh(): Promise<void>;
 }
 
-export function useNativePlayer(app: NativeApp | null, active: boolean): NativePlayerApi {
+export function useNativePlayer(app: NativeApp | null, cadence: NativeCadence): NativePlayerApi {
   const [nowPlaying, setNowPlaying] = useState<NativeNowPlaying | null>(null);
   const appRef = useRef(app);
   appRef.current = app;
@@ -38,14 +40,17 @@ export function useNativePlayer(app: NativeApp | null, active: boolean): NativeP
   }, []);
 
   useEffect(() => {
-    if (!app || !active) {
+    if (!app || cadence === 'off') {
       setNowPlaying(null);
       return;
     }
     void refresh();
-    const timer = setInterval(() => void refresh(), POLL_MS);
+    // A hidden window keeps its last answer rather than asking again.
+    const timer = setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, CADENCE_MS[cadence]);
     return () => clearInterval(timer);
-  }, [app, active, refresh]);
+  }, [app, cadence, refresh]);
 
   const send = useCallback(
     async (command: NativeCommand) => {

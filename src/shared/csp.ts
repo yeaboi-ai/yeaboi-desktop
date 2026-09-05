@@ -11,7 +11,7 @@
  * the tags in index.html rather than sitting beside them.
  */
 
-import { EMBED_FRAME_ORIGINS, RADIO_MEDIA_ORIGINS } from './music';
+import { ARTWORK_IMAGE_ORIGINS, EMBED_FRAME_ORIGINS, RADIO_MEDIA_ORIGINS } from './music';
 
 /**
  * The ports this worktree's sidecar may take. In the main checkout the variable
@@ -97,7 +97,7 @@ export function rendererCsp(opts: {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${http.join(' ')}`,
+    `img-src 'self' data: blob: ${http.join(' ')} ${ARTWORK_IMAGE_ORIGINS.join(' ')}`,
     "font-src 'self'",
     `connect-src 'self' ${connect.join(' ')}`,
     // The radio stations by host, never `https:` wholesale — a station that

@@ -27,6 +27,9 @@ describe('the scripts', () => {
     // Spotify's duration is milliseconds; Music's is seconds.
     expect(spotify).toContain('/ 1000');
     expect(stateScript('apple_music').join('\n')).not.toContain('/ 1000');
+    // Spotify has a URL for its art; Music only a blob, so its field is empty.
+    expect(spotify).toContain('artwork url of current track');
+    expect(stateScript('apple_music').join('\n')).not.toContain('artwork');
   });
 
   it('name the transport verbs the apps share', () => {
@@ -47,7 +50,11 @@ describe('the scripts', () => {
 
 describe('parseNativeState', () => {
   it('reads a playing line', () => {
-    const state = parseNativeState('spotify', 'playing\tDeep Focus\tNils Frahm\tScrews\t42\t311\n');
+    const state = parseNativeState(
+      'spotify',
+      'playing\tDeep Focus\tNils Frahm\tScrews\t42\t311\thttps://i.scdn.co/image/ab67616d\n',
+      1_000,
+    );
     expect(state).toEqual({
       app: 'spotify',
       status: 'playing',
@@ -56,7 +63,16 @@ describe('parseNativeState', () => {
       album: 'Screws',
       position: 42,
       duration: 311,
+      asOf: 1_000,
+      artworkUrl: 'https://i.scdn.co/image/ab67616d',
     });
+  });
+
+  it("keeps art only from Spotify's own host", () => {
+    const line = (art: string) => `paused\tA\tB\tC\t1\t2\t${art}`;
+    expect(parseNativeState('spotify', line('https://evil.example/x.jpg'))?.artworkUrl).toBeNull();
+    expect(parseNativeState('spotify', line('javascript:alert(1)'))?.artworkUrl).toBeNull();
+    expect(parseNativeState('apple_music', line(''))?.artworkUrl).toBeNull();
   });
 
   it('reads a stopped app as stopped with nothing on', () => {
