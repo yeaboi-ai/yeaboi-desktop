@@ -741,6 +741,19 @@ body > [class^='_'] {
   border-radius: var(--app-radius);
 }
 
+
+/* "Setting up the shared link", above the link.
+ *
+ * The panel decides it is still waiting from whether its QR image loaded —
+ * and the QR cannot load here: it is an <img> pointing at the board's own
+ * origin, which this window has no address for. Poker's invite endpoint also
+ * sends no shareState at all, so the other half of the test never rescues it,
+ * and the note sat above a perfectly good link every time. If the link is on
+ * the panel, the link is not still being set up. */
+.board-frame .${HOST} [class*='invite']:has([class*='copyField']) [class*='panelNote'] {
+  display: none;
+}
+
 `;
 
 /** The flag the rail, the dock and Niko read to get out of the way. */
