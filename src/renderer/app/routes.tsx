@@ -146,7 +146,6 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/team/poker/board': <PokerBoardPage />,
   '/agents/usage': <AgentsPage />,
   '/agents/advisor': <AgentsPage />,
-  '/agents/standup': <AgentsPage />,
   '/agents/security': <AgentsPage />,
   '/agents/projects': <AgentsProjectsPage />,
   '/agents/projects/:id': <AgentsProjectPage />,

@@ -4,7 +4,9 @@
 // they are built from. The machine-wide page (/agents/<kind>) and a project's
 // scoped tabs draw the same report the same way.
 
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { AgentRunState } from '@/lib/yeaboi/ops';
 
 export type Report = Record<string, unknown>;
@@ -162,17 +164,72 @@ export function ScanProgress({ run }: { run: AgentRunState }) {
   );
 }
 
-export function ReportView({ kind, report }: { kind: string; report: Report }) {
+export interface ReportActions {
+  /** Security: set one finding aside with a reason (the page owns the prompt). */
+  onDismiss?: (key: string, pattern: string) => void;
+  /** Security: the page offers a "Show info" toggle, so the hidden-count hint may name it. */
+  infoToggle?: boolean;
+}
+
+export function ReportView({
+  kind,
+  report,
+  actions = {},
+}: {
+  kind: string;
+  report: Report;
+  actions?: ReportActions;
+}) {
   const warnings = lines(report, 'warnings');
   return (
     <>
       {warnings.length > 0 && <Notice title="Read this first" items={warnings} />}
       {kind === 'usage' && <UsageView report={report} />}
       {kind === 'advisor' && <AdvisorView report={report} />}
-      {kind === 'standup' && <StandupView report={report} />}
-      {kind === 'security' && <SecurityView report={report} />}
+      {kind === 'security' && (
+        <SecurityView
+          report={report}
+          onDismiss={actions.onDismiss}
+          infoToggle={actions.infoToggle}
+        />
+      )}
       <Advice report={report} />
     </>
+  );
+}
+
+/** The qualifier that follows a total — mirrors agentwatch/billing.py. */
+export function billingLabel(kind: string): string {
+  if (kind === 'subscription') return 'API-equivalent — included in your subscription, not a bill';
+  if (kind === 'api') return 'estimated at public API rates';
+  return 'estimated from local session logs at public rates';
+}
+
+function TrendBars({ points }: { points: Report[] }) {
+  const tail = points.slice(-30);
+  const peak = Math.max(0, ...tail.map((p) => Number(p['cost_usd'] ?? 0)));
+  if (tail.length === 0) return null;
+  return (
+    <div>
+      <div className="flex items-end gap-[3px] h-14" aria-label="Cost per day">
+        {tail.map((p) => {
+          const cost = Number(p['cost_usd'] ?? 0);
+          const height = peak > 0 ? Math.max(2, Math.round((cost / peak) * 56)) : 2;
+          return (
+            <div
+              key={String(p['date'])}
+              title={`${String(p['date'])} · ${money(cost)} · ${Number(p['sessions'] ?? 0)} session(s)`}
+              className="flex-1 rounded-sm bg-primary/70"
+              style={{ height }}
+            />
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {String(tail[0]?.['date'] ?? '')} → {String(tail[tail.length - 1]?.['date'] ?? '')} · peak{' '}
+        {money(peak)} / day
+      </p>
+    </div>
   );
 }
 
@@ -191,6 +248,8 @@ function Advice({ report }: { report: Report }) {
 }
 
 function UsageView({ report }: { report: Report }) {
+  const cacheShare = num(report, 'cache_cost_share');
+  const trend = rows(report, 'daily_trend');
   return (
     <>
       <Section title={`${text(report, 'period_start')} to ${text(report, 'period_end')}`}>
@@ -201,8 +260,16 @@ function UsageView({ report }: { report: Report }) {
           <Tile label="Output tokens" value={num(report, 'total_output_tokens').toLocaleString()} />
         </Tiles>
         <p className="text-[12px] text-muted-foreground">
-          Rates as of {text(report, 'pricing_as_of') || 'unknown'}.
+          {billingLabel(text(report, 'billing_kind'))}. Rates as of{' '}
+          {text(report, 'pricing_as_of') || 'unknown'}
+          {cacheShare > 0 && ` · ${Math.round(cacheShare * 100)}% of the estimate is cache traffic`}
+          .
         </p>
+        {trend.length > 1 && (
+          <div className="mt-3">
+            <TrendBars points={trend} />
+          </div>
+        )}
       </Section>
       <Section title="By model">
         <Table
@@ -274,64 +341,26 @@ function AdvisorView({ report }: { report: Report }) {
   );
 }
 
-function StandupView({ report }: { report: Report }) {
-  const highlights = lines(report, 'highlights');
-  const inFlight = lines(report, 'in_flight');
-  const attention = lines(report, 'attention_items');
-  const coverage = lines(report, 'coverage_notes');
-  return (
-    <>
-      <Section title={text(report, 'digest_date') || 'Digest'}>
-        <Tiles>
-          <Tile label="Sessions worked" value={String(num(report, 'sessions_worked'))} />
-          <Tile label="Estimated spend" value={money(num(report, 'total_cost_usd'))} />
-        </Tiles>
-        {text(report, 'narrative') && (
-          <p className="text-[13px] text-muted-foreground">{text(report, 'narrative')}</p>
-        )}
-        {coverage.length > 0 && (
-          <div className="mt-3">
-            <Notice title="What this could not see" items={coverage} />
-          </div>
-        )}
-      </Section>
-      {highlights.length > 0 && (
-        <Section title="Highlights">
-          <ReviewList items={highlights} />
-        </Section>
-      )}
-      {inFlight.length > 0 && (
-        <Section title="Still in flight">
-          <ReviewList items={inFlight} />
-        </Section>
-      )}
-      {attention.length > 0 && <Notice title="Needs a person" items={attention} />}
-      <Section title="Repo activity">
-        <Table
-          empty="No tracked repository activity in the window."
-          columns={[
-            { header: 'Repo' },
-            { header: 'Kind' },
-            { header: 'What' },
-            { header: 'Status' },
-          ]}
-          rows={rows(report, 'repo_activity').map((row, index) => ({
-            key: `${String(row['repo'])}-${index}`,
-            cells: [
-              String(row['repo']),
-              String(row['kind']),
-              String(row['title']),
-              String(row['status'] ?? ''),
-            ],
-          }))}
-        />
-      </Section>
-    </>
-  );
-}
+const FINDINGS_CAP = 25;
 
-function SecurityView({ report }: { report: Report }) {
+function SecurityView({
+  report,
+  onDismiss,
+  infoToggle = false,
+}: {
+  report: Report;
+  onDismiss?: (key: string, pattern: string) => void;
+  infoToggle?: boolean;
+}) {
+  const [showAll, setShowAll] = useState(false);
   const posture = text(report, 'posture');
+  const findings = rows(report, 'findings');
+  const newKeys = lines(report, 'new_findings');
+  const resolved = lines(report, 'resolved_findings');
+  const dismissed = num(report, 'dismissed_count');
+  const hiddenInfo = num(report, 'hidden_info_count');
+  const totals = (report['pattern_totals'] as [string, string][] | undefined) ?? [];
+  const shown = showAll ? findings : findings.slice(0, FINDINGS_CAP);
   return (
     <>
       <Section
@@ -345,36 +374,110 @@ function SecurityView({ report }: { report: Report }) {
         <Tiles>
           <Tile label="Sessions scanned" value={String(num(report, 'sessions_scanned'))} />
           <Tile label="Files scanned" value={String(num(report, 'files_scanned'))} />
-          <Tile label="Secrets found" value={String(num(report, 'secrets_found'))} />
+          <Tile label="Distinct secret signals" value={String(num(report, 'secrets_found'))} />
+          <Tile label="Dismissed" value={String(dismissed)} />
         </Tiles>
+        {text(report, 'posture_reason') && (
+          <p className="text-[12px] text-muted-foreground">{text(report, 'posture_reason')}</p>
+        )}
+        {(newKeys.length > 0 || resolved.length > 0) && (
+          <p className="mt-1 text-[12px]">
+            <span className={newKeys.length ? 'text-destructive' : 'text-muted-foreground'}>
+              +{newKeys.length} new
+            </span>
+            <span className="text-muted-foreground"> / </span>
+            <span className={resolved.length ? 'text-foreground' : 'text-muted-foreground'}>
+              −{resolved.length} resolved
+            </span>
+            <span className="text-muted-foreground"> since the last scan</span>
+          </p>
+        )}
         {text(report, 'summary') && (
-          <p className="text-[13px] text-muted-foreground">{text(report, 'summary')}</p>
+          <p className="mt-2 text-[13px] text-muted-foreground">{text(report, 'summary')}</p>
         )}
       </Section>
-      <Section title="Findings">
+      {totals.length > 0 && (
+        <Section title="Transcript signals">
+          <ul className="space-y-1">
+            {totals.map(([pattern, total]) => (
+              <li key={pattern} className="text-[12px] text-muted-foreground">
+                <code className="text-foreground">{pattern}</code> — {total}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      <Section
+        title={`Findings${findings.length ? ` (${findings.length})` : ''}`}
+        actions={
+          findings.length > FINDINGS_CAP ? (
+            <Button variant="outline" size="sm" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? `Show ${FINDINGS_CAP}` : 'Show all'}
+            </Button>
+          ) : undefined
+        }
+      >
         <Table
           empty="Nothing flagged."
           columns={[
             { header: 'Severity' },
             { header: 'Finding' },
+            { header: 'Pattern' },
             { header: 'Where' },
+            { header: '×', numeric: true },
             { header: 'Fix' },
+            { header: '' },
           ]}
-          rows={rows(report, 'findings').map((row, index) => ({
-            key: `${String(row['title'])}-${index}`,
-            cells: [
-              <Badge
-                key="severity"
-                variant={CATEGORY_VARIANT[severityCategory(String(row['severity']))]}
-              >
-                {String(row['severity'])}
-              </Badge>,
-              String(row['title']),
-              String(row['location'] ?? ''),
-              String(row['remediation'] ?? ''),
-            ],
-          }))}
+          rows={shown.map((row, index) => {
+            const key = String(row['key'] ?? '');
+            const pattern = String(row['pattern'] ?? '');
+            const scopes = (row['scopes'] as string[] | undefined) ?? [];
+            const times = Number(row['occurrences'] ?? 1);
+            const isNew = key !== '' && newKeys.includes(key);
+            return {
+              key: `${key || String(row['title'])}-${index}`,
+              cells: [
+                <Badge
+                  key="severity"
+                  variant={CATEGORY_VARIANT[severityCategory(String(row['severity']))]}
+                >
+                  {String(row['severity'])}
+                </Badge>,
+                <span key="title">
+                  {isNew && <Badge variant="outline">new</Badge>} {String(row['title'])}
+                </span>,
+                <code key="pattern" className="text-[11px]">
+                  {pattern}
+                </code>,
+                <span key="where">
+                  {String(row['location'] ?? '')}
+                  {row['line_no'] ? `:${String(row['line_no'])}` : ''}
+                  {scopes.length > 1 ? ` (${scopes.length} scopes)` : ''}
+                </span>,
+                times > 1 ? String(times) : '',
+                String(row['remediation'] ?? ''),
+                onDismiss && key ? (
+                  <Button
+                    key="dismiss"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDismiss(key, pattern)}
+                  >
+                    Dismiss
+                  </Button>
+                ) : (
+                  ''
+                ),
+              ],
+            };
+          })}
         />
+        {hiddenInfo > 0 && (
+          <p className="mt-2 text-[12px] text-muted-foreground">
+            {hiddenInfo} informational finding(s) hidden
+            {infoToggle ? ' — toggle “Show info” above to list them.' : '.'}
+          </p>
+        )}
       </Section>
       <Section title="MCP servers">
         <Table
@@ -391,7 +494,7 @@ function SecurityView({ report }: { report: Report }) {
               String(row['name']),
               String(row['scope']),
               String(row['transport']),
-              ((row['flags'] as string[]) ?? []).join(', '),
+              lines(row, 'flags').join(', ') || '—',
             ],
           }))}
         />

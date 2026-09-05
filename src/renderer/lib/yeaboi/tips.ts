@@ -53,7 +53,6 @@ export const MODE_ROUTES: Record<string, string> = {
   settings: '/settings/credentials',
   'agent-usage': '/agents/usage',
   'agent-advisor': '/agents/advisor',
-  'agent-standup': '/agents/standup',
   'agent-security': '/agents/security',
 };
 

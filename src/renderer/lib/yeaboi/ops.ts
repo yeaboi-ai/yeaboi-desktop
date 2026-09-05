@@ -146,6 +146,8 @@ export interface AgentModes {
   modes: AgentModeOption[];
   actions: string[];
   beta_notice: string;
+  /** How long a saved report counts as fresh; a page re-runs only past it. */
+  fresh_minutes?: number;
 }
 
 export interface AgentLatest {
@@ -153,6 +155,9 @@ export interface AgentLatest {
   label: string;
   report: Record<string, unknown> | null;
   as_of: string;
+  /** The backend's verdict: true means the page shows `report` and does not
+   *  re-run on open. An older sidecar omits it, which reads as stale. */
+  fresh?: boolean;
   /** Present only when the read was scoped to a project's repo: saved reports
    *  carry no project, so `report` is null and the surface runs fresh. */
   scoped_to?: string;
@@ -237,6 +242,14 @@ export interface AgentScopeOpts {
   projectId?: string;
 }
 
+/** Per-run knobs a page exposes; each reaches only the engines that take it. */
+export interface AgentRunOpts extends AgentScopeOpts {
+  windowDays?: number;
+  includeInfo?: boolean;
+}
+
+export const AGENT_WINDOWS: readonly number[] = [7, 30, 90];
+
 /** The latest saved report; null when the sidecar has no such route. */
 export const loadAgentLatest = (
   kind: string,
@@ -249,13 +262,30 @@ export const loadAgentLatest = (
 export const runAgentMode = (
   kind: string,
   onLine: (line: unknown) => void,
-  opts: AgentScopeOpts = {},
-): Promise<void> =>
-  apiStream(
-    `/api/agents/${encodeURIComponent(kind)}/run`,
-    opts.projectId ? { project_id: opts.projectId } : {},
-    onLine,
-  );
+  opts: AgentRunOpts = {},
+): Promise<void> => {
+  const body: Record<string, unknown> = {};
+  if (opts.projectId) body.project_id = opts.projectId;
+  if (opts.windowDays !== undefined) body.window_days = opts.windowDays;
+  if (opts.includeInfo !== undefined) body.include_info = opts.includeInfo;
+  return apiStream(`/api/agents/${encodeURIComponent(kind)}/run`, body, onLine);
+};
+
+export interface AgentDismissal {
+  key: string;
+  reason: string;
+  by: string;
+  at: string;
+  expires: string;
+}
+
+/** Set one security finding aside with the reason why; `undo` restores it. */
+export const dismissAgentFinding = (
+  key: string,
+  reason: string,
+  undo = false,
+): Promise<{ ok: boolean; dismissed: AgentDismissal[] }> =>
+  apiPost('/api/agents/security/dismiss', undo ? { key, undo: true } : { key, reason });
 
 export const exportAgentReport = (
   kind: string,

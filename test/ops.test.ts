@@ -1,7 +1,7 @@
 // The Agents wire's pure decisions: whether a sidecar honoured a project
 // scope, and the fold over a run's lines.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   MACHINE_WIDE_KINDS,
   agentScopeState,
@@ -81,5 +81,44 @@ describe('reduceAgentRun', () => {
   it('ignores a line type it does not know', () => {
     const state = emptyAgentRun();
     expect(reduceAgentRun(state, { type: 'telemetry' })).toBe(state);
+  });
+});
+
+describe('runAgentMode and dismissAgentFinding wire bodies', () => {
+  it('sends only the knobs that were set, and keeps a zero window', async () => {
+    const api = await import('../src/renderer/lib/yeaboi/api');
+    const calls: [string, unknown][] = [];
+    const stream = vi.spyOn(api, 'apiStream').mockImplementation(async (path, body) => {
+      calls.push([path, body]);
+    });
+    const { runAgentMode } = await import('../src/renderer/lib/yeaboi/ops');
+    await runAgentMode('usage', () => {});
+    await runAgentMode('usage', () => {}, { projectId: 'proj-1', windowDays: 7 });
+    await runAgentMode('security', () => {}, { includeInfo: false });
+    await runAgentMode('usage', () => {}, { windowDays: 0 });
+    expect(calls).toEqual([
+      ['/api/agents/usage/run', {}],
+      ['/api/agents/usage/run', { project_id: 'proj-1', window_days: 7 }],
+      ['/api/agents/security/run', { include_info: false }],
+      ['/api/agents/usage/run', { window_days: 0 }],
+    ]);
+    stream.mockRestore();
+  });
+
+  it('posts a reason to dismiss and an undo flag to restore', async () => {
+    const api = await import('../src/renderer/lib/yeaboi/api');
+    const calls: [string, unknown][] = [];
+    const post = vi.spyOn(api, 'apiPost').mockImplementation(async (path, body) => {
+      calls.push([path, body]);
+      return { ok: true, dismissed: [] };
+    });
+    const { dismissAgentFinding } = await import('../src/renderer/lib/yeaboi/ops');
+    await dismissAgentFinding('secret:p:/a', 'fixture');
+    await dismissAgentFinding('secret:p:/a', '', true);
+    expect(calls).toEqual([
+      ['/api/agents/security/dismiss', { key: 'secret:p:/a', reason: 'fixture' }],
+      ['/api/agents/security/dismiss', { key: 'secret:p:/a', undo: true }],
+    ]);
+    post.mockRestore();
   });
 });

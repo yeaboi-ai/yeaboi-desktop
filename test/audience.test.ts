@@ -49,7 +49,6 @@ describe('audiencesForRoute', () => {
     for (const path of [
       '/agents/usage',
       '/agents/advisor',
-      '/agents/standup',
       '/agents/security',
       '/agents/projects',
       '/agents/projects/p1',

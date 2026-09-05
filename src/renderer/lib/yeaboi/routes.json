@@ -44,12 +44,12 @@
     {
       "path": "/team/analysis/new",
       "capability": "team-analysis",
-      "title": "Analysis · New"
+      "title": "Analysis \u00b7 New"
     },
     {
       "path": "/team/analysis/results",
       "capability": "team-analysis",
-      "title": "Analysis · Results"
+      "title": "Analysis \u00b7 Results"
     },
     {
       "path": "/team/standup",
@@ -59,17 +59,17 @@
     {
       "path": "/team/standup/setup",
       "capability": "standup",
-      "title": "Standup · Setup"
+      "title": "Standup \u00b7 Setup"
     },
     {
       "path": "/team/standup/schedule",
       "capability": "standup",
-      "title": "Standup · Schedule"
+      "title": "Standup \u00b7 Schedule"
     },
     {
       "path": "/team/standup/review",
       "capability": "standup",
-      "title": "Standup · Transcript review"
+      "title": "Standup \u00b7 Transcript review"
     },
     {
       "path": "/team/retro",
@@ -79,7 +79,7 @@
     {
       "path": "/team/retro/board",
       "capability": "retro-board",
-      "title": "Retro · Board"
+      "title": "Retro \u00b7 Board"
     },
     {
       "path": "/team/poker",
@@ -89,12 +89,12 @@
     {
       "path": "/team/poker/new",
       "capability": "scrum-poker",
-      "title": "Poker · New session"
+      "title": "Poker \u00b7 New session"
     },
     {
       "path": "/team/poker/board",
       "capability": "scrum-poker",
-      "title": "Poker · Table"
+      "title": "Poker \u00b7 Table"
     },
     {
       "path": "/team/performance",
@@ -104,7 +104,7 @@
     {
       "path": "/team/performance/engineer",
       "capability": "performance",
-      "title": "Performance · Engineer"
+      "title": "Performance \u00b7 Engineer"
     },
     {
       "path": "/team/reporting",
@@ -114,12 +114,12 @@
     {
       "path": "/team/reporting/new",
       "capability": "reporting",
-      "title": "Reporting · New report"
+      "title": "Reporting \u00b7 New report"
     },
     {
       "path": "/team/reporting/style",
       "capability": "reporting",
-      "title": "Reporting · Deck style"
+      "title": "Reporting \u00b7 Deck style"
     },
     {
       "path": "/team/ship",
@@ -129,7 +129,7 @@
     {
       "path": "/team/ship/run",
       "capability": "ship",
-      "title": "Ship · Run"
+      "title": "Ship \u00b7 Run"
     },
     {
       "path": "/solo/review",
@@ -139,7 +139,7 @@
     {
       "path": "/solo/review/report",
       "capability": "weekly-review",
-      "title": "Weekly Review · Report"
+      "title": "Weekly Review \u00b7 Report"
     },
     {
       "path": "/agents/usage",
@@ -150,11 +150,6 @@
       "path": "/agents/advisor",
       "capability": "agent-advisor",
       "title": "Agent Advisor"
-    },
-    {
-      "path": "/agents/standup",
-      "capability": "agent-standup",
-      "title": "Agent Standup"
     },
     {
       "path": "/agents/security",
@@ -179,7 +174,7 @@
     {
       "path": "/ceremonies/slack",
       "capability": "slack-inbound",
-      "title": "Ceremonies · Slack"
+      "title": "Ceremonies \u00b7 Slack"
     },
     {
       "path": "/provenance",
@@ -189,22 +184,22 @@
     {
       "path": "/settings/credentials",
       "capability": "settings",
-      "title": "Settings · Credentials"
+      "title": "Settings \u00b7 Credentials"
     },
     {
       "path": "/settings/connections",
       "capability": "connections",
-      "title": "Settings · Catalog"
+      "title": "Settings \u00b7 Catalog"
     },
     {
       "path": "/settings/sharing",
       "capability": "settings",
-      "title": "Settings · Sharing"
+      "title": "Settings \u00b7 Sharing"
     },
     {
       "path": "/settings/system",
       "capability": "settings",
-      "title": "Settings · System"
+      "title": "Settings \u00b7 System"
     },
     {
       "path": "/setup",
@@ -264,12 +259,12 @@
     {
       "path": "/projects/:id/plan",
       "capability": "planning",
-      "title": "Project · Plan"
+      "title": "Project \u00b7 Plan"
     },
     {
       "path": "/projects/new/from-roadmap",
       "capability": "roadmap",
-      "title": "New project · From roadmap"
+      "title": "New project \u00b7 From roadmap"
     },
     {
       "path": "/projects/:id/sessions/new",
@@ -309,7 +304,7 @@
     {
       "path": "/settings/appearance",
       "capability": null,
-      "title": "Settings · Appearance"
+      "title": "Settings \u00b7 Appearance"
     },
     {
       "path": "/settings/music",
@@ -319,12 +314,12 @@
     {
       "path": "/settings/duck",
       "capability": null,
-      "title": "Settings · Duck"
+      "title": "Settings \u00b7 Duck"
     },
     {
       "path": "/settings/news",
       "capability": null,
-      "title": "Settings · Front page"
+      "title": "Settings \u00b7 Front page"
     },
     {
       "path": "/settings/themes",

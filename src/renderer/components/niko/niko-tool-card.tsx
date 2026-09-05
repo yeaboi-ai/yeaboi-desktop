@@ -7,7 +7,6 @@
 
 import {
   BarChart3,
-  Bot,
   Calendar,
   CheckCircle2,
   Clock,
@@ -48,7 +47,6 @@ const TOOL_ICONS: Record<string, React.ElementType> = {
   ship_history: Ship,
   agents_usage_history: BarChart3,
   agents_advisor_history: Wallet,
-  agents_standup_history: Bot,
   agents_security_history: ShieldCheck,
   llm_usage: Wallet,
   ceremonies_list: Calendar,
@@ -74,7 +72,6 @@ const TOOL_LABELS: Record<string, string> = {
   ship_history: 'Reading Ship runs',
   agents_usage_history: 'Reading agent spend',
   agents_advisor_history: 'Reading recoverable spend',
-  agents_standup_history: 'Reading what agents shipped',
   agents_security_history: 'Reading agent security',
   llm_usage: "Reading yeaboi's own spend",
   ceremonies_list: 'Reading the schedule',

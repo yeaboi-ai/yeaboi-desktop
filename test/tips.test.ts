@@ -221,7 +221,6 @@ describe('tipRoute', () => {
       'settings',
       'agent-usage',
       'agent-advisor',
-      'agent-standup',
       'agent-security',
       'ship',
       'weekly-review',

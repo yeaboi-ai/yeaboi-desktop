@@ -1,7 +1,7 @@
 'use client';
 
 // One project, seen by the agents: the repo path its reports are scoped to,
-// then the four kinds as tabs over that repo's sessions. Security stays
+// then the three kinds as tabs over that repo's sessions. Security stays
 // machine-wide whatever project it is opened from.
 //
 // Opening the page only reads the engine pointer; a project with none is
@@ -50,7 +50,7 @@ interface Project {
   repo_url?: string | null;
 }
 
-const KINDS = ['usage', 'advisor', 'standup', 'security'];
+const KINDS = ['usage', 'advisor', 'security'];
 
 function RepoPathField({
   ensureEngineId,
@@ -377,7 +377,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
             </>
           ) : (
             <p className="text-[14px] leading-relaxed text-muted-foreground">
-              Link a repo path and the four reports will read that repo&rsquo;s sessions alone.
+              Link a repo path and the three reports will read that repo&rsquo;s sessions alone.
               Until then,{' '}
               <Link href="/agents/usage" className="text-primary hover:underline">
                 the machine-wide reports
