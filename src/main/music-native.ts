@@ -13,9 +13,15 @@ import {
   commandScript,
   isNativeApp,
   isNativeCommand,
+  isPersistentId,
   isRunningScript,
+  libraryPlaylistsScript,
+  libraryTracksScript,
   openScript,
+  parseNativePlaylists,
   parseNativeState,
+  parseNativeTracks,
+  playItemScript,
   stateScript,
   type NativeApp,
   type NativeNowPlaying,
@@ -23,12 +29,14 @@ import {
 import { parseMusicLink } from '../shared/music-links';
 
 const TIMEOUT_MS = 1_500;
+/** A library read walks lists; a big playlist takes longer than a state poll. */
+const LIBRARY_TIMEOUT_MS = 20_000;
 const darwin = process.platform === 'darwin';
 
-function osascript(lines: string[]): Promise<string | null> {
+function osascript(lines: string[], timeout = TIMEOUT_MS): Promise<string | null> {
   return new Promise((resolve) => {
     const args = lines.flatMap((line) => ['-e', line]);
-    execFile('osascript', args, { timeout: TIMEOUT_MS }, (error, stdout) => {
+    execFile('osascript', args, { timeout, maxBuffer: 8 * 1024 * 1024 }, (error, stdout) => {
       resolve(error ? null : String(stdout));
     });
   });
@@ -91,5 +99,36 @@ export function registerMusicNative(): void {
     }
     await shell.openExternal(link.nativeUrl);
     return { ok: true, via: 'external' };
+  });
+  // The Music app's own library, read only while the app is running: a
+  // browse must not launch it either. `{running: false}` is the answer then.
+  ipcMain.handle('music:native-library', async (_event, app: unknown, playlistId: unknown) => {
+    if (!darwin || !isNativeApp(app)) return { running: false, items: [] };
+    if (!(await isRunning(app))) return { running: false, items: [] };
+    const script =
+      typeof playlistId === 'string' && playlistId
+        ? libraryTracksScript(app, playlistId)
+        : libraryPlaylistsScript(app);
+    if (!script) return { running: true, items: [] };
+    const out = await osascript(script, LIBRARY_TIMEOUT_MS);
+    if (out === null) return { running: true, items: [] };
+    const items = playlistId ? parseNativeTracks(out) : parseNativePlaylists(out);
+    return { running: true, items };
+  });
+  // A click on a row: may launch the app, which is what the click asked for.
+  ipcMain.handle(
+    'music:native-play-item',
+    async (_event, app: unknown, kind: unknown, id: unknown) => {
+      if (!darwin || !isNativeApp(app) || !isPersistentId(id)) return { ok: false };
+      const script = kind === 'playlist' || kind === 'track' ? playItemScript(app, kind, id) : null;
+      if (!script) return { ok: false };
+      const out = await osascript(script, LIBRARY_TIMEOUT_MS);
+      return { ok: out !== null };
+    },
+  );
+  ipcMain.handle('music:native-launch', async (_event, app: unknown) => {
+    if (!darwin || !isNativeApp(app)) return { ok: false };
+    const out = await osascript([`tell application "${NATIVE_APPS[app].name}" to activate`]);
+    return { ok: out !== null };
   });
 }

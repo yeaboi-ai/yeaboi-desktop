@@ -37,6 +37,8 @@ import { saveSetting } from '@/lib/yeaboi/settings';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { MusicConnectorNote } from '@/components/music/music-connector-note';
+import { ServiceAccount } from '@/components/music/service-account';
+import { isMusicService } from '@shared/music-links';
 import { catalogueChanged } from '@/lib/music/catalogue-changed';
 import { ChoicePills } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
@@ -328,9 +330,13 @@ function ConnectorSheetBody({
   const isManaged = row.managed_by === 'credentials';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
+  // A sign-in's fields are minted by the flow, never typed: the account row
+  // below the fields stands in for them.
   const shownFields = (row.fields ?? []).filter(
     (f) =>
-      f.env !== row.auth_env && (!methods.length || !f.auth_method || f.auth_method === method),
+      f.env !== row.auth_env &&
+      f.action !== 'signin' &&
+      (!methods.length || !f.auth_method || f.auth_method === method),
   );
   const touched = shownFields.some((f) => (values[f.env] ?? '').trim());
 
@@ -544,6 +550,11 @@ function ConnectorSheetBody({
               {step.body}
             </Step>
           ))
+        )}
+        {row.family === 'music' && isMusicService(row.key) && row.signin !== undefined && (
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <ServiceAccount service={row.key} compact />
+          </div>
         )}
         {row.family === 'music' && <MusicConnectorNote connectorKey={row.key} />}
       </div>

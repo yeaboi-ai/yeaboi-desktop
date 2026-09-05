@@ -164,3 +164,35 @@ describe('isMusicService', () => {
     expect(isMusicService('apple')).toBe(false);
   });
 });
+
+describe('the rows the backend hands back', () => {
+  // contracts/v1/app_http.md, "Music": every row's url is one of these forms.
+  it('parse through the same grammar a pasted link does', () => {
+    const rows = [
+      ['spotify', 'track', 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC'],
+      ['spotify', 'playlist', 'https://open.spotify.com/playlist/37i9dQZF1DX8Uebhn9wzrS'],
+      ['spotify', 'album', 'https://open.spotify.com/album/4uLU6hMCjMI75M1A2tKUQC'],
+      ['youtube_music', 'video', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'],
+      [
+        'youtube_music',
+        'playlist',
+        'https://www.youtube.com/playlist?list=PL590L5WQmH8dpP0RyH5pCfIWUOSmqVKN6',
+      ],
+      [
+        'apple_music',
+        'song',
+        'https://music.apple.com/us/album/random-access-memories-deluxe/1440935400?i=1440935467',
+      ],
+      [
+        'apple_music',
+        'album',
+        'https://music.apple.com/gb/album/random-access-memories/1440935400',
+      ],
+    ] as const;
+    for (const [service, kind, url] of rows) {
+      const parsed = parseMusicLink(url);
+      expect(parsed?.service, url).toBe(service);
+      expect(parsed?.kind, url).toBe(kind);
+    }
+  });
+});

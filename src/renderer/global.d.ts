@@ -66,6 +66,9 @@ interface YeaboiBridge {
   musicNativeCommand: (app: string, command: string) => Promise<unknown>;
   musicNativeOpen: (app: string, url: string) => Promise<unknown>;
   musicNativeInstalled: (app: string) => Promise<unknown>;
+  musicNativeLibrary: (app: string, playlistId?: string) => Promise<unknown>;
+  musicNativePlayItem: (app: string, kind: string, id: string) => Promise<unknown>;
+  musicNativeLaunch: (app: string) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;

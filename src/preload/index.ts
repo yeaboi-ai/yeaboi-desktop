@@ -107,6 +107,10 @@ export interface YeaboiBridge {
   musicNativeCommand: (app: string, command: string) => Promise<unknown>;
   musicNativeOpen: (app: string, url: string) => Promise<unknown>;
   musicNativeInstalled: (app: string) => Promise<unknown>;
+  /** The Music app's own library, by shelf or playlist; and a click on a row. */
+  musicNativeLibrary: (app: string, playlistId?: string) => Promise<unknown>;
+  musicNativePlayItem: (app: string, kind: string, id: string) => Promise<unknown>;
+  musicNativeLaunch: (app: string) => Promise<unknown>;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** The active theme's background — the next window opens in it. */
@@ -186,6 +190,11 @@ const bridge: YeaboiBridge = {
   musicNativeCommand: (app, command) => ipcRenderer.invoke('music:native-command', app, command),
   musicNativeOpen: (app, url) => ipcRenderer.invoke('music:native-open', app, url),
   musicNativeInstalled: (app) => ipcRenderer.invoke('music:native-installed', app),
+  musicNativeLibrary: (app, playlistId) =>
+    ipcRenderer.invoke('music:native-library', app, playlistId ?? ''),
+  musicNativePlayItem: (app, kind, id) =>
+    ipcRenderer.invoke('music:native-play-item', app, kind, id),
+  musicNativeLaunch: (app) => ipcRenderer.invoke('music:native-launch', app),
   notify: (banner) => ipcRenderer.send('app:notify', banner),
   setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),
   onUpdateState: (callback) => {

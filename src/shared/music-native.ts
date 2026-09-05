@@ -84,6 +84,111 @@ export function openScript(app: NativeApp, nativeUrl: string): string[] | null {
   return [`tell application "Spotify" to play track "${nativeUrl}"`];
 }
 
+/** Music's persistent IDs: sixteen upper-case hex digits. The one shape a
+ *  user-picked value may take before it reaches a script. */
+const PERSISTENT_ID = /^[0-9A-F]{16}$/;
+
+export function isPersistentId(value: unknown): value is string {
+  return typeof value === 'string' && PERSISTENT_ID.test(value);
+}
+
+/** How many rows a library read hands back at most; a shelf, not a dump. */
+export const NATIVE_LIBRARY_LIMIT = 500;
+
+/** The user's playlists in Music, one `id<tab>name` line each. Properties are
+ *  fetched a list at a time — one Apple Event per property, never one per row,
+ *  which is the difference between a blink and a minute. Music only. */
+export function libraryPlaylistsScript(app: NativeApp): string[] | null {
+  if (app !== 'apple_music') return null;
+  return [
+    'tell application "Music"',
+    'set theIds to persistent ID of user playlists',
+    'set theNames to name of user playlists',
+    'set out to ""',
+    'repeat with i from 1 to count of theIds',
+    'set out to out & (item i of theIds) & tab & (item i of theNames) & linefeed',
+    'end repeat',
+    'return out',
+    'end tell',
+  ];
+}
+
+/** The tracks of one playlist: `id<tab>name<tab>artist<tab>album<tab>seconds`. */
+export function libraryTracksScript(app: NativeApp, playlistId: string): string[] | null {
+  if (app !== 'apple_music' || !isPersistentId(playlistId)) return null;
+  return [
+    'tell application "Music"',
+    `set p to first user playlist whose persistent ID is "${playlistId}"`,
+    // An empty playlist has no list to read; asking is an error, not [].
+    'if (count of tracks of p) is 0 then return ""',
+    'set theIds to persistent ID of tracks of p',
+    'set theNames to name of tracks of p',
+    'set theArtists to artist of tracks of p',
+    'set theAlbums to album of tracks of p',
+    'set theDurations to duration of tracks of p',
+    'set out to ""',
+    'repeat with i from 1 to count of theIds',
+    `if i > ${NATIVE_LIBRARY_LIMIT} then exit repeat`,
+    'set out to out & (item i of theIds) & tab & (item i of theNames) & tab & (item i of theArtists) & tab & (item i of theAlbums) & tab & ((item i of theDurations) as integer) & linefeed',
+    'end repeat',
+    'return out',
+    'end tell',
+  ];
+}
+
+export type NativeItemKind = 'playlist' | 'track';
+
+/** Start a playlist or a track in Music, by persistent ID. Launches the app if
+ *  it is closed — this is the one script that may, because it is a click. */
+export function playItemScript(app: NativeApp, kind: NativeItemKind, id: string): string[] | null {
+  if (app !== 'apple_music' || !isPersistentId(id)) return null;
+  if (kind === 'playlist')
+    return [
+      `tell application "Music" to play (first user playlist whose persistent ID is "${id}")`,
+    ];
+  if (kind === 'track')
+    return [
+      `tell application "Music" to play (first track of library playlist 1 whose persistent ID is "${id}")`,
+    ];
+  return null;
+}
+
+export interface NativeLibraryItem {
+  id: string;
+  kind: NativeItemKind;
+  title: string;
+  subtitle: string;
+  /** Seconds; 0 for a playlist. */
+  duration: number;
+}
+
+function lines(stdout: string): string[][] {
+  return stdout
+    .split('\n')
+    .map((line) => line.split('\t'))
+    .filter((cells) => isPersistentId(cells[0] ?? ''));
+}
+
+export function parseNativePlaylists(stdout: string): NativeLibraryItem[] {
+  return lines(stdout).map(([id = '', name = '']) => ({
+    id,
+    kind: 'playlist',
+    title: name.trim(),
+    subtitle: '',
+    duration: 0,
+  }));
+}
+
+export function parseNativeTracks(stdout: string): NativeLibraryItem[] {
+  return lines(stdout).map(([id = '', name = '', artist = '', album = '', seconds = '0']) => ({
+    id,
+    kind: 'track',
+    title: name.trim(),
+    subtitle: [artist.trim(), album.trim()].filter(Boolean).join(' · '),
+    duration: Math.max(0, Number.parseInt(seconds, 10) || 0),
+  }));
+}
+
 export function parseNativeState(
   app: NativeApp,
   stdout: string,

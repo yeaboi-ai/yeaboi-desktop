@@ -127,7 +127,7 @@ export function Library({ service }: { service: MusicService }) {
         })}
         {rows.length === 0 && (
           <li className="py-3 text-[13px] text-muted-foreground">
-            Paste a {label} link to start a shelf.
+            Paste a {label} link to start a shelf, or add one from Browse above.
           </li>
         )}
       </ul>

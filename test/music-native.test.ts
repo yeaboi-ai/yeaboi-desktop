@@ -2,12 +2,19 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  NATIVE_LIBRARY_LIMIT,
   commandScript,
   isNativeApp,
   isNativeCommand,
+  isPersistentId,
   isRunningScript,
+  libraryPlaylistsScript,
+  libraryTracksScript,
   openScript,
+  parseNativePlaylists,
   parseNativeState,
+  parseNativeTracks,
+  playItemScript,
   stateScript,
 } from '../src/shared/music-native';
 
@@ -45,6 +52,57 @@ describe('the scripts', () => {
     ]);
     expect(openScript('spotify', 'spotify:playlist:x" & (do shell script "id")')).toBeNull();
     expect(openScript('apple_music', 'music://music.apple.com/us/album/x/1440935467')).toBeNull();
+  });
+});
+
+describe('the library scripts', () => {
+  it('read Music only, a property list at a time, never a row at a time', () => {
+    expect(libraryPlaylistsScript('spotify')).toBeNull();
+    const playlists = libraryPlaylistsScript('apple_music')!.join('\n');
+    expect(playlists).toContain('persistent ID of user playlists');
+    expect(playlists).toContain('name of user playlists');
+    // AppleScript reads `names` as the plural of the property; the variables must not.
+    expect(playlists).not.toMatch(/set (names|ids|artists|albums|durations) to/);
+    const tracks = libraryTracksScript('apple_music', 'FCF8BDA2124B353F')!.join('\n');
+    expect(tracks).toContain('whose persistent ID is "FCF8BDA2124B353F"');
+    expect(tracks).toContain('if (count of tracks of p) is 0 then return ""');
+    expect(tracks).toContain(`if i > ${NATIVE_LIBRARY_LIMIT} then exit repeat`);
+    expect(tracks).not.toMatch(/repeat with t in/);
+  });
+
+  it('accept only a persistent ID, so nothing typed reaches a script', () => {
+    expect(isPersistentId('FCF8BDA2124B353F')).toBe(true);
+    expect(isPersistentId('fcf8bda2124b353f')).toBe(false);
+    expect(isPersistentId('FCF8BDA2124B353F" & (do shell script "id")')).toBe(false);
+    expect(libraryTracksScript('apple_music', 'nope')).toBeNull();
+    expect(playItemScript('apple_music', 'track', '../x')).toBeNull();
+    expect(playItemScript('spotify', 'track', 'FCF8BDA2124B353F')).toBeNull();
+  });
+
+  it('play a playlist or a track by persistent ID', () => {
+    expect(playItemScript('apple_music', 'playlist', 'FCF8BDA2124B353F')).toEqual([
+      'tell application "Music" to play (first user playlist whose persistent ID is "FCF8BDA2124B353F")',
+    ]);
+    expect(playItemScript('apple_music', 'track', 'FCF8BDA2124B353F')![0]).toContain(
+      'first track of library playlist 1 whose persistent ID is "FCF8BDA2124B353F"',
+    );
+  });
+
+  it('parse the rows and drop anything that is not one', () => {
+    expect(parseNativePlaylists('FCF8BDA2124B353F\tFocus\nnot-an-id\tjunk\n')).toEqual([
+      { id: 'FCF8BDA2124B353F', kind: 'playlist', title: 'Focus', subtitle: '', duration: 0 },
+    ]);
+    expect(parseNativeTracks('AB12CD34EF56AB78\tDeep Focus\tNils Frahm\tScrews\t311\n')).toEqual([
+      {
+        id: 'AB12CD34EF56AB78',
+        kind: 'track',
+        title: 'Deep Focus',
+        subtitle: 'Nils Frahm · Screws',
+        duration: 311,
+      },
+    ]);
+    expect(parseNativeTracks('')).toEqual([]);
+    expect(parseNativeTracks('execution error: Music got an error')).toEqual([]);
   });
 });
 

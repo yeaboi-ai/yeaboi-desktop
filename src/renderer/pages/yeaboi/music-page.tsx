@@ -7,7 +7,9 @@
 import { useEffect, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { useMusicPlayer } from '@/components/providers/music-provider';
+import { Browser } from '@/components/music/browser';
 import { EmbedSlot } from '@/components/music/embed-slot';
+import { ServiceAccount } from '@/components/music/service-account';
 import { Library } from '@/components/music/library';
 import { NowPlayingBlock } from '@/components/music/now-playing';
 import { ServiceOff } from '@/components/music/service-off';
@@ -204,6 +206,10 @@ function ServicePanel({ service }: { service: MusicService }) {
           <NowPlayingBlock nowPlaying={on} />
         </div>
       )}
+      <div className="mt-6">
+        <ServiceAccount service={service} />
+      </div>
+      <Browser service={service} />
       <Library service={service} />
     </div>
   );

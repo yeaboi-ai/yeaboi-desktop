@@ -23,6 +23,10 @@ export interface MusicServiceState {
   label: string;
   connected: boolean;
   playback: string;
+  /** Absent on an older backend, which has no sign-in and no library routes. */
+  can_sign_in?: boolean;
+  signed_in?: boolean;
+  account?: string;
 }
 
 export interface AmbienceState {
