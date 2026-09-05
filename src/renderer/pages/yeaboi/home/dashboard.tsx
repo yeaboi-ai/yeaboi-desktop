@@ -12,12 +12,22 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { CalendarClock, Columns3, Gauge, LayoutGrid, Share2, Sparkles } from 'lucide-react';
+import {
+  CalendarClock,
+  Columns3,
+  Gauge,
+  LayoutGrid,
+  Share2,
+  Sparkles,
+  Stethoscope,
+} from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { apiGet, callTool } from '@/lib/yeaboi/api';
+import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
+import { needsAttention, type Check, type Report } from '@/lib/yeaboi/system-check';
 
 interface Board {
   id: string;
@@ -104,6 +114,47 @@ function Tile({
   );
 }
 
+const CHECK_TONE: Record<Check['status'], PostureCell['tone']> = {
+  ok: 'good',
+  missing: 'warn',
+  unsupported: 'bad',
+  unknown: 'idle',
+};
+
+/** System Check, as much of it as a tile holds: the count, every check as one
+ *  cell, and the first few that want something done. */
+function SystemCheck({ report }: { report: Report }) {
+  const total = report.checks.length;
+  const ready = total - needsAttention(report.checks).length;
+  const wanting = needsAttention(report.checks);
+  return (
+    <>
+      <PostureStrip
+        cells={report.checks.map((one) => ({
+          key: one.key,
+          tone: CHECK_TONE[one.status] ?? 'idle',
+          title: `${one.label} — ${one.detail || one.status}`,
+        }))}
+        label={`${ready} of ${total} ready`}
+      />
+      <p className="mt-2 font-body text-[11px] text-muted-foreground">
+        {ready} of {total} ready
+        {wanting.length > 0 && ` · ${wanting.length} want something`}
+      </p>
+      {wanting.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {wanting.slice(0, 3).map((one) => (
+            <li key={one.key} className="truncate font-body text-[11px] text-muted-foreground/80">
+              <span className="text-foreground/80">{one.label}</span>
+              {one.detail && ` — ${one.detail}`}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="font-body text-[11px] text-muted-foreground/70">{children}</p>;
 }
@@ -114,6 +165,7 @@ export function HomeDashboard() {
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [check, setCheck] = useState<Report | null>(null);
   const schedule = useSchedule();
   const { data: session } = useSession();
   // First name only, and nothing at all until the identity is loaded — the
@@ -137,6 +189,10 @@ export function HomeDashboard() {
     apiGet<{ entries?: ChangelogEntry[] }>('/api/meta/changelog').then(
       (data) => setChangelog((data?.entries ?? []).slice(0, 3)),
       () => setChangelog([]),
+    );
+    apiGet<Report>('/api/system/check').then(
+      (payload) => setCheck(payload),
+      () => setCheck(null),
     );
     callTool<Usage>('usage_get').then(
       (envelope) => setUsage(envelope.ok ? (envelope.data ?? null) : null),
@@ -248,6 +304,13 @@ export function HomeDashboard() {
               ) : (
                 <Empty>Nothing counted yet.</Empty>
               )}
+            </Tile>
+
+            {/* The whole of System Check in a tile: how many are ready, which
+                way each one went, and the first few that want something. The
+                page behind it is the rest of that list. */}
+            <Tile title="System check" icon={Stethoscope} href="/system-check">
+              {check ? <SystemCheck report={check} /> : <Empty>Not run yet.</Empty>}
             </Tile>
 
             <Tile title="Coming up" icon={CalendarClock}>

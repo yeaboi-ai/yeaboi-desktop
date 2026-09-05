@@ -173,6 +173,7 @@ describe('navSections', () => {
         '/ceremonies',
         '/feedback',
         '/privacy',
+        '/system-check',
         '/usage',
         '/whats-new',
       ]);
@@ -182,7 +183,9 @@ describe('navSections', () => {
       );
       // What's New opens from its tile; Usage has no page left, so its tile
       // carries the figures the page used to draw.
-      expect(dashboard.includes('href="/whats-new"'), 'no tile opens /whats-new').toBe(true);
+      for (const href of ['/whats-new', '/system-check']) {
+        expect(dashboard.includes(`href="${href}"`), `no tile opens ${href}`).toBe(true);
+      }
       expect(dashboard.includes('usage_get'), 'no tile reads the usage figures').toBe(true);
       const tabs = readFileSync(
         new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),
@@ -200,9 +203,9 @@ describe('navSections', () => {
       expect(dock.includes("'/feedback'"), 'nothing in the dock opens /feedback').toBe(true);
     });
 
-    it('is empty only where the rail already carries everything', () => {
-      expect(opsSection('team')?.items.map((i) => i.href)).toContain('/system-check');
-      expect(opsSection('solo')?.items.map((i) => i.href)).toContain('/system-check');
+    it('is down to what has nowhere better to be', () => {
+      expect(opsSection('team')?.items.map((i) => i.href)).toEqual(['/provenance']);
+      expect(opsSection('solo')?.items.map((i) => i.href)).toEqual(['/provenance']);
       expect(opsSection('agents')).toBeNull();
     });
   });
