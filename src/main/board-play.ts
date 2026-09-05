@@ -71,6 +71,20 @@ function address(host: Host, path: string, extra: Record<string, string>): strin
   return `${host.base}${path}?${params.toString()}`;
 }
 
+/**
+ * The board's answer, re-asking once with a fresh address if it was refused.
+ *
+ * A host link is cached for the life of a board, and a board that restarts
+ * behind it mints a new token — every read then comes back 403 and the board
+ * sits on "reconnecting…" until the whole app is restarted, because nothing in
+ * here ever doubted the address it had. A refusal is exactly the evidence that
+ * the address is stale, so it is thrown away and asked for again. Once: if the
+ * new token is the same one, the refusal is about something else.
+ */
+function refused(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
 async function readBody(response: Response): Promise<unknown> {
   const text = await response.text();
   if (!text) return {};
@@ -100,11 +114,18 @@ export function registerBoardPlay(sidecar: Sidecar): void {
       }
       const host = await hostOf(sidecar, id);
       if (!host) return { status: 503, body: { error: 'no live board' } };
-      try {
-        const response = await fetch(address(host, path, (extra ?? {}) as Record<string, string>), {
+      const ask = (at: Host) =>
+        fetch(address(at, path, (extra ?? {}) as Record<string, string>), {
           cache: 'no-store',
           headers: typeof etag === 'string' && etag ? { 'If-None-Match': etag } : {},
         });
+      try {
+        let response = await ask(host);
+        if (refused(response.status)) {
+          forgetBoard(id);
+          const fresh = await hostOf(sidecar, id);
+          if (fresh && fresh.token !== host.token) response = await ask(fresh);
+        }
         return {
           status: response.status,
           etag: response.headers.get('ETag') ?? '',
@@ -127,12 +148,19 @@ export function registerBoardPlay(sidecar: Sidecar): void {
       }
       const host = await hostOf(sidecar, id);
       if (!host) return { status: 503, body: { error: 'no live board' } };
-      try {
-        const response = await fetch(address(host, path, {}), {
+      const ask = (at: Host) =>
+        fetch(address(at, path, {}), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...(body as object), admin: host.admin, token: host.token }),
+          body: JSON.stringify({ ...(body as object), admin: at.admin, token: at.token }),
         });
+      try {
+        let response = await ask(host);
+        if (refused(response.status)) {
+          forgetBoard(id);
+          const fresh = await hostOf(sidecar, id);
+          if (fresh && fresh.token !== host.token) response = await ask(fresh);
+        }
         return { status: response.status, body: await readBody(response) };
       } catch (error) {
         return { status: 0, body: { error: (error as Error).message } };
