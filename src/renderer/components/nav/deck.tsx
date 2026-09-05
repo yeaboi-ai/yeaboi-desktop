@@ -21,6 +21,8 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { useAudience } from '@/components/providers/audience-provider';
 import { railSections } from '@/lib/nav/sections';
+import { isSettingsPath } from '@/lib/nav/rail-rows';
+import { isAsidePath } from '@/lib/nav/came-from';
 
 /** How long after the last scroll input the window settles back. Long enough
  *  that the frame does not blink between two flicks of the same gesture. */
@@ -74,9 +76,14 @@ export function Deck({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // What a turn moves through: the world's modes, and only those. Settings and
+  // a page you stepped aside to are somewhere you went on purpose and leave the
+  // same way — turning between their sections by scrolling would mean the
+  // gesture that reads a page also changes which page you are reading.
+  const aside = isAsidePath(pathname) || isSettingsPath(pathname);
   const routes = useMemo(
-    () => railSections(audience).flatMap((section) => section.items.map((item) => item.href)),
-    [audience],
+    () => (aside ? [] : railSections(audience).flatMap((s) => s.items.map((i) => i.href))),
+    [audience, aside],
   );
 
   const travel = useRef(0);
@@ -159,9 +166,10 @@ export function Deck({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Only now: the window closes in when the deck is what is being scrolled,
-      // never when a page is being read down its own scrollbar.
-      turning();
+      // Only now, and only where there is a page to turn to: the window closes
+      // in when the deck is what is being scrolled, never when a page is being
+      // read down its own scrollbar and never where scrolling turns nothing.
+      if (routes.length > 0) turning();
 
       // An isolated event is one detent of a wheel, and one detent is one
       // page. A trackpad instead streams deltas at frame rate, so its events
@@ -182,7 +190,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('wheel', onWheel, { passive: true });
     return () => window.removeEventListener('wheel', onWheel);
-  }, [deal, turning]);
+  }, [deal, turning, routes]);
 
   // Tab pages the deck, Shift+Tab pages back — the keyboard equivalent of a
   // detent. It only takes the key where there is nothing to type into and no

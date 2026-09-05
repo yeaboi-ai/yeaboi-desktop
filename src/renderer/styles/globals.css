@@ -1269,6 +1269,14 @@ html[data-audience='agents'] {
     animation-delay: 250ms;
   }
 
+  /* A page's heading does not rise, and neither does anything else in the
+     header it sits in: the eyebrow and the standfirst are the same furniture,
+     and flicking between the settings sections replayed all three every time
+     while the only thing that had changed was one word. */
+  .deck-page header:has(h1) > * {
+    animation: none;
+  }
+
   /* Everything past the sixth arrives together — a stagger long enough to
      count is a wait. */
   :where(
@@ -1533,7 +1541,6 @@ html[data-audience='agents'] {
     opacity 260ms ease,
     width 200ms ease-out;
 }
-
 
 :root[data-board-staged] [data-dock],
 :root[data-board-staged] [data-niko],

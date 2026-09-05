@@ -78,12 +78,16 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const [revealed, setRevealed] = useState(Number.POSITIVE_INFINITY);
   const lastMode = useRef<typeof mode>(mode);
 
-  useEffect(() => {
-    if (lastMode.current === mode) return;
-    setLeaving(railRows(lastMode.current, back));
-    setRevealed(0);
+  // Set while rendering, not after it. An effect runs once the frame is on
+  // screen, so the first painted frame of a new list was the whole of it with
+  // no swap in progress — a row three places down appeared, retreated as the
+  // swap took hold, and came back when its turn arrived.
+  if (lastMode.current !== mode) {
+    const from = lastMode.current;
     lastMode.current = mode;
-  }, [mode, back]);
+    setLeaving(railRows(from, back));
+    setRevealed(0);
+  }
 
   const slots = Math.max(rows.length, leaving?.length ?? 0);
   const activeHref = useActiveHref(rows.map((item) => item.href));
