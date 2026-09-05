@@ -61,6 +61,7 @@ describe('the library scripts', () => {
     const playlists = libraryPlaylistsScript('apple_music')!.join('\n');
     expect(playlists).toContain('persistent ID of user playlists');
     expect(playlists).toContain('name of user playlists');
+    expect(playlists).toContain('special kind of user playlists');
     // AppleScript reads `names` as the plural of the property; the variables must not.
     expect(playlists).not.toMatch(/set (names|ids|artists|albums|durations) to/);
     const tracks = libraryTracksScript('apple_music', 'FCF8BDA2124B353F')!.join('\n');
@@ -89,9 +90,17 @@ describe('the library scripts', () => {
   });
 
   it('parse the rows and drop anything that is not one', () => {
-    expect(parseNativePlaylists('FCF8BDA2124B353F\tFocus\nnot-an-id\tjunk\n')).toEqual([
+    expect(parseNativePlaylists('FCF8BDA2124B353F\tFocus\tnone\nnot-an-id\tjunk\tnone\n')).toEqual([
       { id: 'FCF8BDA2124B353F', kind: 'playlist', title: 'Focus', subtitle: '', duration: 0 },
     ]);
+    // Apple's own rows — the library, Purchased, a folder — are not playlists a person made.
+    expect(
+      parseNativePlaylists(
+        'FCF8BDA2124B353F\tMusic\tMusic\nAB12CD34EF56AB78\tPurchased\tPurchased Music\n1234567890ABCDEF\tMine\tnone\n',
+      ).map((p) => p.title),
+    ).toEqual(['Mine']);
+    // An older line without the kind column still reads as a person's playlist.
+    expect(parseNativePlaylists('FCF8BDA2124B353F\tFocus\n')).toHaveLength(1);
     expect(parseNativeTracks('AB12CD34EF56AB78\tDeep Focus\tNils Frahm\tScrews\t311\n')).toEqual([
       {
         id: 'AB12CD34EF56AB78',

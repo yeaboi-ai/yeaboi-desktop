@@ -104,9 +104,12 @@ export function libraryPlaylistsScript(app: NativeApp): string[] | null {
     'tell application "Music"',
     'set theIds to persistent ID of user playlists',
     'set theNames to name of user playlists',
+    // Apple's own rows — the library itself, Purchased, folders — carry a
+    // special kind; the parser keeps only a person's own.
+    'set theKinds to special kind of user playlists',
     'set out to ""',
     'repeat with i from 1 to count of theIds',
-    'set out to out & (item i of theIds) & tab & (item i of theNames) & linefeed',
+    'set out to out & (item i of theIds) & tab & (item i of theNames) & tab & ((item i of theKinds) as text) & linefeed',
     'end repeat',
     'return out',
     'end tell',
@@ -169,14 +172,17 @@ function lines(stdout: string): string[][] {
     .filter((cells) => isPersistentId(cells[0] ?? ''));
 }
 
+/** Only a person's own playlists: Apple's special ones are the library itself. */
 export function parseNativePlaylists(stdout: string): NativeLibraryItem[] {
-  return lines(stdout).map(([id = '', name = '']) => ({
-    id,
-    kind: 'playlist',
-    title: name.trim(),
-    subtitle: '',
-    duration: 0,
-  }));
+  return lines(stdout)
+    .filter(([, , kind = 'none']) => kind.trim() === 'none' || kind.trim() === '')
+    .map(([id = '', name = '']) => ({
+      id,
+      kind: 'playlist',
+      title: name.trim(),
+      subtitle: '',
+      duration: 0,
+    }));
 }
 
 export function parseNativeTracks(stdout: string): NativeLibraryItem[] {

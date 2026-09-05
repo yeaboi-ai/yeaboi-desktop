@@ -310,14 +310,18 @@ export function Browser({ service }: { service: MusicService }) {
         {items.map((item) => {
           const isFolder = item.kind === 'playlist' || item.kind === 'album';
           const appName = local ? NATIVE_APPS.apple_music.name : app;
+          // A local row plays outright; a catalogue link opens in the app,
+          // where Play is the person's to press.
           const playLabel =
             local && !item.url
               ? `Play in ${appName}`
-              : service === 'spotify' && playback === 'desktop'
-                ? 'Play in Spotify'
-                : playback === 'browser'
-                  ? 'Open in the browser'
-                  : 'Play';
+              : local && playback === 'desktop'
+                ? 'Open in Music'
+                : service === 'spotify' && playback === 'desktop'
+                  ? 'Play in Spotify'
+                  : playback === 'browser'
+                    ? 'Open in the browser'
+                    : 'Play';
           return (
             <li
               key={`${item.kind}-${item.id}`}
@@ -396,14 +400,31 @@ export function Browser({ service }: { service: MusicService }) {
           );
         })}
         {!loading && !error && items.length === 0 && (
-          <li className="py-3 text-[13px] text-muted-foreground">
-            {view.tab === 'search'
-              ? submitted
-                ? 'Nothing found.'
-                : 'Search the catalogue.'
-              : local && appRunning === false
-                ? ''
-                : 'Nothing here yet.'}
+          <li className="py-3 text-[13px] leading-relaxed text-muted-foreground">
+            {view.tab === 'search' ? (
+              submitted ? (
+                'Nothing found.'
+              ) : (
+                'Search the catalogue.'
+              )
+            ) : local && appRunning === false ? (
+              ''
+            ) : local && !view.playlist ? (
+              <>
+                No playlists in your Music library yet. Anything you add to your library in the
+                Music app shows up here; until then,{' '}
+                <button
+                  type="button"
+                  onClick={() => go('search')}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  search the catalogue
+                </button>{' '}
+                and open what you find in Music.
+              </>
+            ) : (
+              'Nothing here yet.'
+            )}
           </li>
         )}
         {loading && <li className="py-3 font-mono text-[12px] text-muted-foreground">reading…</li>}
