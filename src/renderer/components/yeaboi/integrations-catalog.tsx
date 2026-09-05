@@ -111,7 +111,9 @@ export function IntegrationsCatalog() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* The shelves below deal themselves in; what sits above them was simply
+          already there, which made the page look like it had arrived twice. */}
+      <div className="flex animate-slide-up flex-wrap items-center justify-between gap-3 motion-reduce:animate-none">
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative min-w-56 flex-1">
             <Search
@@ -140,7 +142,12 @@ export function IntegrationsCatalog() {
         </div>
       </div>
 
-      <div role="group" aria-label="Family filter" className="flex flex-wrap gap-1.5">
+      <div
+        role="group"
+        aria-label="Family filter"
+        className="flex animate-slide-up flex-wrap gap-1.5 motion-reduce:animate-none"
+        style={{ animationDelay: '60ms' }}
+      >
         <FamilyChip label="All" active={!family} onPick={() => setFamily('')} />
         {(payload?.families ?? []).map((f) => (
           <FamilyChip
@@ -167,7 +174,12 @@ export function IntegrationsCatalog() {
           <section
             key={f.key}
             className="animate-slide-up motion-reduce:animate-none"
-            style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'backwards' }}
+            /* Capped: nine shelves at a beat each is half a second of waiting
+               for the last one, and a stagger long enough to count is a wait. */
+            style={{
+              animationDelay: `${120 + Math.min(index, 4) * 60}ms`,
+              animationFillMode: 'backwards',
+            }}
           >
             <h3 className="mb-2 text-[10px] font-body tracking-[0.14em] text-muted-foreground uppercase">
               {f.label}
@@ -183,10 +195,15 @@ export function IntegrationsCatalog() {
         ))
       )}
 
+      {/* Last in, after the shelves it sits under. */}
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
+        style={{
+          animationDelay: `${120 + Math.min(shelfFamilies.length, 5) * 60}ms`,
+          animationFillMode: 'backwards',
+        }}
+        className="flex w-full animate-slide-up items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 motion-reduce:animate-none focus-visible:outline-none"
       >
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
           <Plus aria-hidden className="size-5 text-muted-foreground" />

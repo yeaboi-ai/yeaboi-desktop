@@ -170,6 +170,7 @@ export function SystemPanel({
           summary={[valueOf('STANDUP_GITHUB_REPO'), valueOf('STANDUP_SMTP_HOST')]
             .filter(Boolean)
             .join(DOT)}
+          index={2}
           {...card('standup')}
         />
       )}
@@ -180,16 +181,23 @@ export function SystemPanel({
           fields={elevenlabs}
           prefillNonSecret
           summary={valueOf('ELEVENLABS_MODEL_ID') || 'eleven_turbo_v2_5'}
+          index={3}
           {...card('elevenlabs')}
         />
       )}
 
       {tavus.length > 0 && (
-        <ConnectionCard card={TAVUS_CARD} fields={tavus} prefillNonSecret {...card('tavus')} />
+        <ConnectionCard
+          card={TAVUS_CARD}
+          fields={tavus}
+          prefillNonSecret
+          index={4}
+          {...card('tavus')}
+        />
       )}
 
       {privacy.length > 0 && (
-        <SettingsCard index={2}>
+        <SettingsCard index={5}>
           <SettingsSectionHeader
             title="Privacy"
             subtitle="The switches the Privacy page's disclosure table names"

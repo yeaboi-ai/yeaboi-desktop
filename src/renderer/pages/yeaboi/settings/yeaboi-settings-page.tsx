@@ -360,7 +360,10 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   );
 
   const footer = (
-    <p className="mt-6 text-[11px] text-muted-foreground/70">
+    <p
+      className="mt-6 animate-slide-up text-[11px] text-muted-foreground/70 motion-reduce:animate-none"
+      style={{ animationDelay: '240ms' }}
+    >
       Written to <span className="font-mono text-muted-foreground">{snapshot.config_path}</span> —
       the same file the terminal reads.
     </p>
@@ -393,8 +396,12 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
             two cards, and a column of them left two thirds of the window empty
             to say so. */}
         <div className="mt-6 grid items-start gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
-          {grouped.map((group) => (
-            <div key={group.label}>
+          {grouped.map((group, position) => (
+            <div
+              key={group.label}
+              className="animate-slide-up motion-reduce:animate-none"
+              style={{ animationDelay: `${position * 60}ms` }}
+            >
               <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
                 {group.label}
               </h3>
@@ -407,6 +414,10 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
                       key={spec.section}
                       card={spec}
                       fields={fields}
+                      /* The heading and its cards arrive together, as the group
+                         they are — a card rising inside a rising group is two
+                         movements for one thing appearing. */
+                      animate={false}
                       prefillNonSecret
                       summary={connectionSummary(spec.section, valueOf)}
                       open={openCard === spec.section}
@@ -439,7 +450,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
 
     return (
       <>
-        <SettingsCard index={4}>
+        <SettingsCard index={0}>
           <SettingsSectionHeader
             title="Sharing"
             subtitle="Who can open a board you share"
@@ -459,6 +470,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           the tier — the same rule the terminal's Sharing section follows. */}
         {shareAccess && accessFields.length > 0 && (
           <AccessCard
+            index={1}
             fields={accessFields}
             open={openCard === 'cloudflare'}
             onToggle={() => setOpenCard((s) => (s === 'cloudflare' ? '' : 'cloudflare'))}

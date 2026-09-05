@@ -190,11 +190,14 @@ export function AccessCard({
   open,
   onToggle,
   onSaved,
+  index = 0,
 }: {
   fields: SettingField[];
   open: boolean;
   onToggle: () => void;
   onSaved: (title: string) => void;
+  /** Its place in the stack it arrives with. */
+  index?: number;
 }) {
   const [state, setState] = useState<AccessState | null>(null);
 
@@ -219,6 +222,7 @@ export function AccessCard({
     <ConnectionCard
       card={CLOUDFLARE_CARD}
       fields={fields}
+      index={index}
       open={open}
       onToggle={onToggle}
       summary={summary}

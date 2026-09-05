@@ -249,7 +249,10 @@ export function DuckTab() {
         </SettingsCard>
       </div>
 
-      <div className="flex justify-end xl:col-span-2">
+      <div
+        className="flex animate-slide-up justify-end motion-reduce:animate-none xl:col-span-2"
+        style={{ animationDelay: '240ms' }}
+      >
         <Button variant="ghost" size="sm" onClick={reset}>
           <RotateCcw className="size-3.5" aria-hidden="true" />
           Reset to defaults

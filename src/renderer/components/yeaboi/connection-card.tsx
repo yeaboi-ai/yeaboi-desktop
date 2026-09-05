@@ -68,6 +68,8 @@ export function ConnectionCard({
   onSaved,
   headerRef,
   onHeaderKeyDown,
+  index = 0,
+  animate = true,
 }: {
   card: ConnectionCardSpec;
   fields: SettingField[];
@@ -90,6 +92,11 @@ export function ConnectionCard({
   onSaved: (title: string) => void;
   headerRef?: (el: HTMLButtonElement | null) => void;
   onHeaderKeyDown?: (event: React.KeyboardEvent) => void;
+  /** Its place in the stack it arrives with, which is what it waits by. */
+  index?: number;
+  /** Off where something around it already carries the entrance — a group of
+   *  these rising inside a group that is itself rising is two movements. */
+  animate?: boolean;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -147,7 +154,12 @@ export function ConnectionCard({
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+    <section
+      className={`overflow-hidden rounded-2xl bg-card ring-1 ring-border/60 ${
+        animate ? 'animate-slide-up motion-reduce:animate-none' : ''
+      }`}
+      style={animate ? { animationDelay: `${index * 60}ms` } : undefined}
+    >
       <button
         type="button"
         ref={headerRef}
