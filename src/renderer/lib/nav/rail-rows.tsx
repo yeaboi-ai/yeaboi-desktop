@@ -106,11 +106,13 @@ function modeRows(audience: Audience): RailRow[] {
   );
 }
 
-/** Home, then the sections — the same shape the worlds have, so the hairline
- *  lands in the same place and only the icons below it change. */
-function settingsRows(): RailRow[] {
+/** The way back, then the sections. Not Home: settings is somewhere you went
+ *  from a page you were on, and the useful door out of it is the one back to
+ *  that page. The hairline lands where it does in every other list, so only
+ *  the icons below it change. */
+function settingsRows(back: string): RailRow[] {
   return [
-    HOME_ROW,
+    { href: back, label: 'Back', Icon: ArrowLeft },
     ...OFFERED_SETTINGS_TABS.map((tab, index) => ({
       href: tab.route,
       label: tab.title,
@@ -132,5 +134,5 @@ function asideRows(back: string): RailRow[] {
  *  a page you stepped aside to. */
 export function railRows(mode: Audience | 'settings' | 'aside', back = '/home'): RailRow[] {
   if (mode === 'aside') return asideRows(back);
-  return mode === 'settings' ? settingsRows() : modeRows(mode);
+  return mode === 'settings' ? settingsRows(back) : modeRows(mode);
 }

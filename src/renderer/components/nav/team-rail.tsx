@@ -86,6 +86,19 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   }, [mode, back]);
 
   const slots = Math.max(rows.length, leaving?.length ?? 0);
+  const activeHref = useActiveHref(rows.map((item) => item.href));
+
+  // On a panel the rail is a notch: Home and the row you are on. The rest are
+  // still here at no height, so the list grows back out of it on hover rather
+  // than appearing beside it. Settings and a page you stepped aside to are the
+  // exceptions — their rows are the only nav those pages have.
+  const notch = !settings && !aside && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+
+  // A list where two rows are visible is not a list changing hands: it is one
+  // row doing it. Cascading through nine slots to swap the second of them left
+  // the rail a row short in the middle of it, because the row leaving collapsed
+  // three beats before the row arriving grew.
+  const oneStep = notch || (leaving?.length ?? 0) <= 2;
 
   // The pages keep off the rail by its width, and on settings that width is
   // the open one. Declared on the root so every surface moves together with
@@ -111,13 +124,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     // The first row waits out its own exit; every row after it waits for the
     // one above to have finished changing.
     const next = setTimeout(
-      () => setRevealed((far) => far + 1),
+      () => setRevealed((far) => (oneStep ? slots : far + 1)),
       revealed === 0 ? OUT_MS : SWAP_STAGGER_MS,
     );
     return () => clearTimeout(next);
-  }, [revealed, slots, leaving]);
-
-  const activeHref = useActiveHref(rows.map((item) => item.href));
+  }, [revealed, slots, leaving, oneStep]);
 
   // A marker that slides to wherever you are, rather than a highlight that
   // simply appears there. Scrolling the deck moves through the rail, and the
@@ -191,9 +202,6 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // A panel is a notch until you reach for the rail. Home is the map — the one
   // surface you go to in order to see where everything is — so it shows the
   // whole list of icons. The labels still wait for a hover, everywhere.
-  // Settings is the exception: its sections are the only nav that page has, so
-  // collapsing them to a notch would leave it with none.
-  const notch = !settings && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
   // The marker travels on a page turn and only then. Hovering changes the rows'
   // heights, and a marker that animates to catch up reads as a second thing
