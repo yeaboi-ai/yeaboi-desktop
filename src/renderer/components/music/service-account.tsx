@@ -25,6 +25,11 @@ const POLL_MS = 1_500;
 /** Where the backend's callback listener answers; the vendor must know it. */
 const REDIRECT_URI = 'http://127.0.0.1:8643/callback/spotify';
 
+interface Step {
+  text: string;
+  link?: { label: string; url: string };
+}
+
 interface Vendor {
   /** The page-card title and the sentence under it. */
   title: string;
@@ -35,9 +40,8 @@ interface Vendor {
   needs: string;
   /** Why yeaboi's own app may not do, in the catalogue. */
   why: string;
-  consoleUrl: string;
-  consoleLabel: string;
-  steps: string[];
+  /** The walkthrough, one click at a time; a step may open the exact page. */
+  steps: Step[];
   redirect?: string;
 }
 
@@ -49,12 +53,23 @@ const VENDORS: Record<Exclude<MusicService, 'apple_music'>, Vendor> = {
     signIn: 'Sign in to Spotify',
     needs: 'This build carries no Spotify app of its own, so the sign-in needs one you create.',
     why: "Spotify allows an unapproved app five sign-ins, and this build carries no app of yeaboi's own — so the sign-in goes through a Spotify app you create. It takes a minute.",
-    consoleUrl: 'https://developer.spotify.com/dashboard',
-    consoleLabel: 'Spotify developer dashboard',
     steps: [
-      'Create an app, tick Web API, and add the Redirect URI below.',
-      'Under User Management, add the Spotify account you will sign in with.',
-      'Paste the Client ID here.',
+      {
+        text: 'Open the dashboard and press Create app. Any name and description will do.',
+        link: {
+          label: 'Spotify developer dashboard',
+          url: 'https://developer.spotify.com/dashboard',
+        },
+      },
+      {
+        text: 'In the form, paste the Redirect URI below into Redirect URIs and press Add, tick Web API under "Which API/SDKs are you planning to use?", accept the terms and Save.',
+      },
+      {
+        text: "On the app's page press Settings: the Client ID is at the top. Paste it into the field above.",
+      },
+      {
+        text: 'Still in Settings, open User Management and add the name and email of the Spotify account you will sign in with. Without this Spotify refuses the sign-in.',
+      },
     ],
     redirect: REDIRECT_URI,
   },
@@ -65,12 +80,31 @@ const VENDORS: Record<Exclude<MusicService, 'apple_music'>, Vendor> = {
     signIn: 'Sign in with Google',
     needs: 'This build carries no Google client of its own, so the sign-in needs one you create.',
     why: "Google caps an unverified app at a hundred testers, and this build carries no client of yeaboi's own — so the sign-in goes through a Google client you create. It takes a few minutes.",
-    consoleUrl: 'https://console.cloud.google.com/apis/credentials',
-    consoleLabel: 'Google Cloud console',
     steps: [
-      'In a project of yours, enable the YouTube Data API v3.',
-      'On the OAuth consent screen, add your Google account as a test user.',
-      'Create credentials: an OAuth client ID of type Desktop app. Paste its Client ID and Client secret into the fields above.',
+      {
+        text: 'Open the OAuth consent screen and configure it: External, an app name such as yeaboi, your email as the support and developer contact. Skip the scopes page. On Test users, add your own Google account: an unverified app lets only listed testers in.',
+        link: {
+          label: 'OAuth consent screen',
+          url: 'https://console.cloud.google.com/apis/credentials/consent',
+        },
+      },
+      {
+        text: 'Open the YouTube Data API v3 in the library and press Enable.',
+        link: {
+          label: 'YouTube Data API v3',
+          url: 'https://console.cloud.google.com/apis/library/youtube.googleapis.com',
+        },
+      },
+      {
+        text: 'On Credentials press Create credentials, choose OAuth client ID, set the application type to Desktop app, name it and press Create.',
+        link: { label: 'Credentials', url: 'https://console.cloud.google.com/apis/credentials' },
+      },
+      {
+        text: 'Google shows a Client ID ending in apps.googleusercontent.com and a Client secret starting with GOCSPX-. Paste both into the fields above and save.',
+      },
+      {
+        text: 'Signing in, Google warns the app is unverified. That is the test-user path: press Continue.',
+      },
     ],
   },
 };
@@ -298,22 +332,25 @@ export function SetupSteps({ vendor }: { vendor: Vendor }) {
   return (
     <div>
       <p className="max-w-[60ch] text-[12.5px] leading-relaxed text-foreground">{vendor.why}</p>
-      <ol className="mt-2.5 max-w-[60ch] list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-muted-foreground marker:font-mono marker:text-[11px] marker:text-muted-foreground/70">
-        <li>
-          Open the{' '}
-          <a
-            href={vendor.consoleUrl}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex items-center gap-0.5 text-primary underline-offset-4 hover:underline"
-          >
-            {vendor.consoleLabel}
-            <ArrowUpRight className="size-3" aria-hidden />
-          </a>
-          .
-        </li>
+      <ol className="mt-2.5 max-w-[60ch] list-decimal space-y-2 pl-5 text-[12.5px] leading-relaxed text-muted-foreground marker:font-mono marker:text-[11px] marker:text-muted-foreground/70">
         {vendor.steps.map((step) => (
-          <li key={step}>{step}</li>
+          <li key={step.text}>
+            {step.text}
+            {step.link && (
+              <>
+                {' '}
+                <a
+                  href={step.link.url}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-0.5 whitespace-nowrap text-primary underline-offset-4 hover:underline"
+                >
+                  {step.link.label}
+                  <ArrowUpRight className="size-3" aria-hidden />
+                </a>
+              </>
+            )}
+          </li>
         ))}
       </ol>
       {vendor.redirect && (
