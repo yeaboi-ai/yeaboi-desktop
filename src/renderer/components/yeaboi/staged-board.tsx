@@ -826,6 +826,13 @@ body > [class^='_'] {
   background: transparent;
   box-shadow: none;
   color: var(--app-muted);
+  /* Some of these keys hold a wrapped glyph and some a bare svg. The wrapper
+     centres itself; the bare ones sat against the left edge of the key, which
+     is why three of the five icons looked shoved off-centre. The key centres
+     whatever it is given. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:hover {
