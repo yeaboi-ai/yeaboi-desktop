@@ -22,6 +22,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAudience } from '@/components/providers/audience-provider';
 import { railSections } from '@/lib/nav/sections';
 
+/** How long after the last scroll input the window settles back. Long enough
+ *  that the frame does not blink between two flicks of the same gesture. */
+const SETTLE_MS = 1000;
+
 /** A wheel event arriving this long after the last one starts a new gesture.
  *  This, not the size of the delta, is what tells a wheel from a trackpad: a
  *  wheel's detents are isolated in time, a trackpad streams at frame rate. */
@@ -95,12 +99,58 @@ export function Deck({ children }: { children: React.ReactNode }) {
     [routes, pathname, router],
   );
 
+  // While the deck is being turned the window draws its own edge and holds
+  // everything off it. A property of the document rather than React state,
+  // because every surface that has to move by it is somewhere else in the
+  // tree.
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const turning = useCallback(() => {
+    document.documentElement.dataset['turning'] = '';
+    if (settle.current) clearTimeout(settle.current);
+    settle.current = setTimeout(() => {
+      delete document.documentElement.dataset['turning'];
+      settle.current = null;
+    }, SETTLE_MS);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (settle.current) clearTimeout(settle.current);
+      delete document.documentElement.dataset['turning'];
+    },
+    [],
+  );
+
+  // And nothing is clickable while it is moving: a control that slides out
+  // from under the cursor mid-press is a click that lands somewhere else.
+  //
+  // Swallowed here rather than with `pointer-events: none`, which would take
+  // the wheel's own hit testing with it — the deck decides whether a box under
+  // the pointer owns the gesture by looking at what the event landed on, and a
+  // page with no targets left hands every scroll straight to the deck.
+  useEffect(() => {
+    const swallow = (e: Event) => {
+      if (!('turning' in document.documentElement.dataset)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const kinds = ['pointerdown', 'mousedown', 'click'] as const;
+    for (const kind of kinds) window.addEventListener(kind, swallow, true);
+    return () => {
+      for (const kind of kinds) window.removeEventListener(kind, swallow, true);
+    };
+  }, []);
+
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
       // Something is open over the deck and has the window: paging beneath it
       // moves a surface nobody is looking at.
       if (document.documentElement.dataset['overlay']) return;
       const now = Date.now();
+      // Every wheel event the deck could act on, including the ones a box with
+      // its own scrollbar ends up owning: the window is being scrolled through
+      // either way, and the frame is about the gesture rather than the turn.
+      turning();
       const fresh = now - lastWheel.current > GESTURE_GAP_MS;
       lastWheel.current = now;
       if (fresh) travel.current = 0;
@@ -132,7 +182,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('wheel', onWheel, { passive: true });
     return () => window.removeEventListener('wheel', onWheel);
-  }, [deal]);
+  }, [deal, turning]);
 
   // Tab pages the deck, Shift+Tab pages back — the keyboard equivalent of a
   // detent. It only takes the key where there is nothing to type into and no
@@ -158,6 +208,16 @@ export function Deck({ children }: { children: React.ReactNode }) {
     // a page that slides under the dock reads as one that was cut off, and a
     // scroll that moves the title is a page pretending to be a document.
     <div data-deck className="h-screen overflow-hidden">
+      {/* The frame, growing in from the sides. Painted over everything and
+          never in the way of anything: it is the window's own edge moving. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed z-[100] rounded-[var(--window-radius)] border border-foreground/45 transition-[inset,opacity] duration-300 ease-out"
+        style={{
+          inset: 'var(--turn-inset)',
+          opacity: 'var(--turn-frame-opacity, 0)',
+        }}
+      />
       {/* Keyed on the route so the surface remounts and its contents deal
           themselves in again on every turn. */}
       {/* The rail overlays the left edge, so the page is inset by the rail
@@ -167,7 +227,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
           under it looks like a list that was cut off. */}
       <div
         key={pathname}
-        className="deck-page flex h-screen flex-col pl-[var(--rail-clear)] pr-6 pt-[var(--titlebar-h)] pb-[var(--dock-clear)] transition-[padding-left] duration-200 ease-out"
+        className="deck-page flex h-screen flex-col pt-[calc(var(--titlebar-h)+var(--turn-inset))] pr-[calc(1.5rem+var(--turn-inset))] pb-[calc(var(--dock-clear)+var(--turn-inset))] pl-[calc(var(--rail-clear)+var(--turn-inset))] transition-[padding] duration-300 ease-out"
       >
         {children}
       </div>

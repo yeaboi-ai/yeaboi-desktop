@@ -104,6 +104,12 @@
      air a page keeps off it. Settings takes the rail open, which is wider, so
      the pages move over rather than run underneath it. */
   --rail-clear: 72px;
+  /* What everything on the window's edges keeps off them. Zero at rest; while
+     the deck is being turned it opens up and a hairline frame comes in from
+     the sides, so the whole window reads as a card being flicked through
+     rather than a page that happens to be changing. */
+  --turn-inset: 0px;
+  --turn-frame-opacity: 0;
 
   --background: #fafaf9;
   --foreground: #171717;
@@ -1077,6 +1083,11 @@ html[data-audience='agents'] {
 
 :root[data-rail-wide] {
   --rail-clear: 192px;
+}
+
+:root[data-turning] {
+  --turn-inset: 10px;
+  --turn-frame-opacity: 1;
 }
 
 /* The rail changing hands: the modes leave and the settings sections arrive,

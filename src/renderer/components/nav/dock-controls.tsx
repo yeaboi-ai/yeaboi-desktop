@@ -247,7 +247,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
         href={feedbackActive ? cameFrom.current : '/feedback'}
         title={feedbackActive ? 'Back' : 'Send feedback'}
         aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
-        className={`${FLOAT} ${CONTROL} fixed right-16 bottom-4 z-40 flex w-8 items-center justify-center transition-colors ${
+        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center transition-colors ${
           feedbackActive
             ? 'text-foreground'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
@@ -256,7 +256,10 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
         <SwapIcon away={<MessageSquare />} back={feedbackActive} />
       </Link>
 
-      <div data-dock className="fixed bottom-4 left-3 z-40 flex flex-col items-start gap-2">
+      <div
+        data-dock
+        className="fixed bottom-[calc(1rem+var(--turn-inset))] left-[calc(0.75rem+var(--turn-inset))] z-40 flex flex-col items-start gap-2 transition-[bottom,left] duration-300 ease-out"
+      >
         {/* Loud enough to interrupt, so it sits above the row rather than in
             it. Renders nothing when there is nothing to say. */}
         <div className="w-[230px] empty:hidden">

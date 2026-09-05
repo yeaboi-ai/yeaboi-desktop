@@ -203,7 +203,7 @@ export function TipCompanion() {
         title="Show tips"
         aria-label="Show tips"
         data-duck
-        className="fixed bottom-2 right-4 z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
+        className="fixed right-[calc(1rem+var(--turn-inset))] bottom-[calc(0.5rem+var(--turn-inset))] z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-opacity hover:opacity-100"
       >
         <DuckMark size={QUIET_DUCK_SIZE} facing="left" />
       </button>
@@ -228,7 +228,7 @@ export function TipCompanion() {
     <>
       <div
         data-duck
-        className="group fixed bottom-2 right-4 z-30"
+        className="group fixed right-[calc(1rem+var(--turn-inset))] bottom-[calc(0.5rem+var(--turn-inset))] z-30 transition-[right,bottom] duration-300 ease-out"
         onMouseEnter={() => setEngaged(true)}
         onMouseLeave={() => setEngaged(false)}
         onFocusCapture={() => setEngaged(true)}

@@ -260,7 +260,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       onBlurCapture={leave}
       // Centred, and it stays centred as it grows: opening it takes the rail
       // out both ways from the notch rather than dropping a list beneath it.
-      className="fixed left-0 top-1/2 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
+      className="fixed top-1/2 left-[var(--turn-inset)] z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width,left] duration-200 ease-out"
       style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
@@ -350,12 +350,16 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                 {Icon && row && (
                   <span
                     key={row.href}
+                    // Only while a swap is running. Left on afterwards, the
+                    // class was there to be re-applied the moment the swap
+                    // state cleared, and the row that had held still through
+                    // the whole thing faded a beat after it ended.
                     className={`flex min-w-0 flex-1 items-center gap-3 ${
-                      staying ? '' : leaving && !arrived ? 'rail-row-out' : 'rail-row-in'
+                      !leaving || staying ? '' : arrived ? 'rail-row-in' : 'rail-row-out'
                     }`}
                     style={{
                       animationDelay:
-                        !staying && leaving && !arrived ? `${slot * SWAP_STAGGER_MS}ms` : undefined,
+                        leaving && !staying && !arrived ? `${slot * SWAP_STAGGER_MS}ms` : undefined,
                     }}
                   >
                     <Icon className="h-[15px] w-[15px] shrink-0" />
