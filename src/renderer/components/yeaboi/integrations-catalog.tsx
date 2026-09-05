@@ -254,6 +254,7 @@ const FAMILY_OPTIONS = [
   'docs',
   'chat',
   'media',
+  'music',
 ];
 
 const EMPTY_SPEC: CustomConnectionSpec = {

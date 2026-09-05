@@ -11,6 +11,8 @@
  * the tags in index.html rather than sitting beside them.
  */
 
+import { EMBED_FRAME_ORIGINS, RADIO_MEDIA_ORIGINS } from './music';
+
 /**
  * The ports this worktree's sidecar may take. In the main checkout the variable
  * is unset and this is the 8000..8010 it has always been. The renderer's CSP is
@@ -98,7 +100,12 @@ export function rendererCsp(opts: {
     `img-src 'self' data: blob: ${http.join(' ')}`,
     "font-src 'self'",
     `connect-src 'self' ${connect.join(' ')}`,
-    "media-src 'self' blob: https://cdn.replica.tavus.io https://storage.googleapis.com/eleven-public-prod/",
+    // The radio stations by host, never `https:` wholesale — a station that
+    // moves fails as the player's own error rather than opening every host.
+    `media-src 'self' blob: https://cdn.replica.tavus.io https://storage.googleapis.com/eleven-public-prod/ ${RADIO_MEDIA_ORIGINS.join(' ')}`,
     "worker-src 'self' blob:",
+    // Only the three embed players; without this line frame-src falls back
+    // to default-src and no third-party frame loads at all.
+    `frame-src ${EMBED_FRAME_ORIGINS.join(' ')}`,
   ].join('; ');
 }

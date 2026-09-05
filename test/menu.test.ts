@@ -7,6 +7,8 @@ import {
   ABOUT_PAGES,
   FEEDBACK_PAGES,
   FILE_PAGES,
+  MUSIC_COMMANDS,
+  MUSIC_PAGES,
   PALETTE_COMMAND,
   PRIVACY_PAGES,
   UPDATES_PAGES,
@@ -53,7 +55,7 @@ describe('menu bar', () => {
   });
 
   it('claims every shortcut once', () => {
-    const accelerators = [PALETTE_COMMAND, ...FILE_PAGES, ...goPages('team')]
+    const accelerators = [PALETTE_COMMAND, ...FILE_PAGES, ...goPages('team'), ...MUSIC_COMMANDS]
       .map((p) => p.accelerator)
       .filter((a): a is string => Boolean(a));
     expect(new Set(accelerators).size).toBe(accelerators.length);
@@ -64,6 +66,8 @@ describe('menu bar', () => {
       PALETTE_COMMAND,
       ...FILE_PAGES,
       ...goPages('team'),
+      ...MUSIC_COMMANDS,
+      ...MUSIC_PAGES,
       ...UPDATES_PAGES,
       ...PRIVACY_PAGES,
       ...FEEDBACK_PAGES,
@@ -71,5 +75,12 @@ describe('menu bar', () => {
       expect(page.label.length).toBeGreaterThan(0);
       expect(page.label).not.toMatch(/\b[A-Z]{2,}\b/);
     }
+  });
+
+  it('gives the music transport two shifted chords and a page each', () => {
+    // Shift keeps them off Cmd+M (minimize) and the rail's unshifted arrows.
+    for (const command of MUSIC_COMMANDS)
+      expect(command.accelerator).toMatch(/^CmdOrCtrl\+Shift\+/);
+    expect(MUSIC_PAGES.map((p) => p.route)).toEqual(['/music', '/settings/music']);
   });
 });

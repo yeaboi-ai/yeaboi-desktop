@@ -74,6 +74,25 @@ describe('rendererCsp', () => {
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toContain("'unsafe-eval'");
   });
+
+  it('permits the radio stations by host, never every https host', () => {
+    const csp = rendererCsp({ planningPorts: [8000] });
+    const media = csp.split('; ').find((d) => d.startsWith('media-src'))!;
+    expect(media).toContain('https://*.somafm.com');
+    expect(media).toContain('https://icecast.radiofrance.fr');
+    expect(media).not.toMatch(/\shttps:(\s|$)/);
+  });
+
+  it('frames only the three embed players', () => {
+    const csp = rendererCsp({ planningPorts: [8000] });
+    const frame = csp.split('; ').find((d) => d.startsWith('frame-src'))!;
+    expect(frame.split(' ').slice(1).sort()).toEqual([
+      'https://embed.music.apple.com',
+      'https://open.spotify.com',
+      'https://www.youtube-nocookie.com',
+    ]);
+    expect(frame).not.toContain("'self'");
+  });
 });
 
 describe('corsOrigins', () => {

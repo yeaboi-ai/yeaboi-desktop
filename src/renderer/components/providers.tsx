@@ -18,6 +18,7 @@ import { AudienceProvider } from '@/components/providers/audience-provider';
 import { AudienceGate } from '@/components/audience/audience-gate';
 import { RailProvider } from '@/components/providers/rail-provider';
 import { PaletteProvider } from '@/components/providers/palette-provider';
+import { MusicProvider } from '@/components/providers/music-provider';
 import { GlobalPalette } from '@/components/palette/global-palette';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -40,14 +41,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
                       {/* Find anything: one dialog the home's field, the title
                           bar and the Go menu all open. */}
                       <PaletteProvider>
-                        <AudienceGate>
-                          <ProviderHealthBanner />
-                          <AppShell>{children}</AppShell>
-                          <NikoBar />
-                          <GlobalPalette />
-                          <AmbienceHost />
-                          <ScreensaverHost />
-                        </AudienceGate>
+                        {/* One player for the rail's pocket, the Music page
+                            and the menu chords; the radio's station is the
+                            backend's, shared with the terminal. */}
+                        <MusicProvider>
+                          <AudienceGate>
+                            <ProviderHealthBanner />
+                            <AppShell>{children}</AppShell>
+                            <NikoBar />
+                            <GlobalPalette />
+                            <AmbienceHost />
+                            <ScreensaverHost />
+                          </AudienceGate>
+                        </MusicProvider>
                       </PaletteProvider>
                     </RailProvider>
                   </AudienceProvider>

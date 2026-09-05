@@ -27,6 +27,8 @@ import iconPath from '../../build/icon.png?asset';
 import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
+import { registerMusicNative } from './music-native';
+import { registerRadioHeaders } from './radio';
 import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
 import { LivekitSidecar } from './livekit';
@@ -384,6 +386,10 @@ if (!gotLock) {
     );
     ipcMain.handle('rail:get-prefs', () => settings.rail);
     ipcMain.handle('rail:set-prefs', (_event, patch: unknown) => settings.setRail(patch));
+    ipcMain.handle('music:get-prefs', () => settings.music);
+    ipcMain.handle('music:set-prefs', (_event, patch: unknown) => settings.setMusic(patch));
+    registerMusicNative();
+    registerRadioHeaders();
 
     // The renderer reports the active theme's background so the next window
     // opens in the right colour. Fire-and-forget; bad values are dropped.
@@ -475,6 +481,8 @@ if (!gotLock) {
       togglePet: (enabled) => void setPetPreference({ enabled }),
       recenterPet: () => pet.recenter(),
       petSettings: () => openApp('/settings/duck'),
+      // The transport chords: the window that holds the player answers them.
+      music: (id) => mainWindow?.webContents.send('app:music', id),
     });
     appMenu.install({ audience: settings.audience, petEnabled: settings.petEnabled });
     tray = new AppTray({

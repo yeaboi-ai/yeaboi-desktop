@@ -59,6 +59,13 @@ interface YeaboiBridge {
   setPetPrefs: (patch: unknown) => Promise<unknown>;
   getRailPrefs: () => Promise<unknown>;
   setRailPrefs: (patch: unknown) => Promise<unknown>;
+  getMusicPrefs: () => Promise<unknown>;
+  setMusicPrefs: (patch: unknown) => Promise<unknown>;
+  onMusicCommand: (callback: (id: string) => void) => void;
+  musicNativeState: (app: string) => Promise<unknown>;
+  musicNativeCommand: (app: string, command: string) => Promise<unknown>;
+  musicNativeOpen: (app: string, url: string) => Promise<unknown>;
+  musicNativeInstalled: (app: string) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;

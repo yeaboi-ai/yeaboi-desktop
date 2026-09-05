@@ -36,6 +36,8 @@ import {
 import { saveSetting } from '@/lib/yeaboi/settings';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
+import { MusicConnectorNote } from '@/components/music/music-connector-note';
+import { catalogueChanged } from '@/lib/music/catalogue-changed';
 import { ChoicePills } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
 import {
@@ -335,8 +337,11 @@ function ConnectorSheetBody({
   // "Get your keys": the vendor docs page plus every create-a-key link the
   // shown fields carry, deduped — one purposeful block instead of a helper
   // line under each input.
+  // A music service holds no credential: its one field is a choice, so the
+  // sheet has no keys to fetch and the field step says what the click does.
+  const keyless = row.family === 'music';
   const keyLinks: { label: string; url: string; scope: string }[] = [];
-  if (!isManaged) {
+  if (!isManaged && !keyless) {
     if (row.docs_url) {
       keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
     }
@@ -396,7 +401,7 @@ function ConnectorSheetBody({
       steps.push({ title: 'Point deliveries here', body: <WebhookPanel row={row} /> });
     } else if (shownFields.length > 0) {
       steps.push({
-        title: 'Paste them here',
+        title: keyless ? 'Switch it on' : 'Paste them here',
         body: (
           <div className="space-y-3.5">
             {shownFields.map((field) => (
@@ -431,6 +436,7 @@ function ConnectorSheetBody({
         setResult({ ok: true, message: 'Saved — this connection has no live probe.' });
       }
       await onChanged();
+      if (row.family === 'music') catalogueChanged();
     } catch (e) {
       setResult({ ok: false, message: (e as Error).message });
     } finally {
@@ -539,6 +545,7 @@ function ConnectorSheetBody({
             </Step>
           ))
         )}
+        {row.family === 'music' && <MusicConnectorNote connectorKey={row.key} />}
       </div>
 
       {showFooter && (

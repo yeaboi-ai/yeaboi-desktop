@@ -10,6 +10,7 @@ import {
   Bird,
   Blocks,
   KeyRound,
+  Music,
   Newspaper,
   Palette,
   Share2,
@@ -28,6 +29,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/settings/news': Newspaper,
   '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
+  '/settings/music': Music,
 };
 
 export function SettingsSectionList({ active, className }: { active: string; className?: string }) {

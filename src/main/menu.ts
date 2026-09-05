@@ -9,11 +9,14 @@ import { AUDIENCES, WORLD_COPY, type Audience } from '../shared/audience';
 import {
   FEEDBACK_PAGES,
   FILE_PAGES,
+  MUSIC_COMMANDS,
+  MUSIC_PAGES,
   PALETTE_COMMAND,
   PRIVACY_PAGES,
   UPDATES_PAGES,
   goPages,
   type MenuPage,
+  type MusicCommandId,
 } from '../shared/menu';
 import { updateLabel, type UpdateState } from '../shared/update';
 
@@ -26,6 +29,7 @@ export interface MenuActions {
   togglePet: (enabled: boolean) => void;
   recenterPet: () => void;
   petSettings: () => void;
+  music: (id: MusicCommandId) => void;
 }
 
 const separator: MenuItemConstructorOptions = { type: 'separator' };
@@ -139,6 +143,19 @@ export class AppMenu {
       ],
     };
 
+    const music: MenuItemConstructorOptions = {
+      label: 'Music',
+      submenu: [
+        ...MUSIC_COMMANDS.map((command) => ({
+          label: command.label,
+          accelerator: command.accelerator,
+          click: () => this.actions.music(command.id),
+        })),
+        separator,
+        ...MUSIC_PAGES.map((page) => this.page(page)),
+      ],
+    };
+
     const updates: MenuItemConstructorOptions = {
       label: 'Updates',
       submenu: [
@@ -185,6 +202,7 @@ export class AppMenu {
       },
       world,
       duck,
+      music,
       updates,
       { label: 'Privacy', submenu: PRIVACY_PAGES.map((page) => this.page(page)) },
       { label: 'Feedback', submenu: FEEDBACK_PAGES.map((page) => this.page(page)) },

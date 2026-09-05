@@ -9,15 +9,32 @@
 
 import { apiGet, apiPost } from './api';
 import type { FeedbackOptions, StoredAttachment } from './feedback';
+import type { MusicService } from '@shared/music-links';
 
 export interface MusicChannel {
   name: string;
   url: string;
 }
 
+/** A streaming service as the catalogue sees it: on once its one "where it
+ *  plays" choice is saved there, and that choice. */
+export interface MusicServiceState {
+  key: MusicService;
+  label: string;
+  connected: boolean;
+  playback: string;
+}
+
 export interface AmbienceState {
   duck: { enabled: boolean; quips: Record<string, string> };
-  music: { channels: MusicChannel[]; channel: number; enabled: boolean };
+  // `services` arrived with the music connectors; an older sidecar omits it,
+  // which reads as no service switched on.
+  music: {
+    channels: MusicChannel[];
+    channel: number;
+    enabled: boolean;
+    services?: MusicServiceState[];
+  };
   // `styles` is a catalogue (key -> display name) and `style` the pick, the
   // same shape music uses. `off` is the one value every surface honours.
   saver: { idle_seconds: number; style: string; styles: Record<string, string> };
