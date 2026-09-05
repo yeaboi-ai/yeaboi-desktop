@@ -249,10 +249,14 @@ function SystemCheckPill() {
 
   return (
     <Link
+      // Part of the bottom row, so it retreats with it: a board staged in the
+      // window is the window, and the app's own chrome gets off it. The
+      // transition comes with the attribute — see globals.css.
+      data-dock
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
-      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center gap-2.5 px-3 font-code text-[11px] text-muted-foreground transition-[color,background-color,right,bottom] duration-300 ease-out hover:bg-secondary/50 hover:text-foreground`}
+      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center gap-2.5 px-3 font-code text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
     >
       {counts.map((tone) => (
         <span key={tone.status} className="flex items-center gap-1.5">
@@ -298,10 +302,11 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           something is not a setting, and he is the one on screen who looks
           like he would pass it on. Clear of his perch, on the row's baseline. */}
       <Link
+        data-dock
         href={feedbackActive ? back : '/feedback'}
         title={feedbackActive ? 'Back' : 'Send feedback'}
         aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
-        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center transition-[color,background-color,right,bottom] duration-300 ease-out ${
+        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center ${
           feedbackActive
             ? 'text-foreground'
             : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'

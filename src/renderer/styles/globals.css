@@ -1557,7 +1557,9 @@ html[data-audience='agents'] {
     opacity 260ms ease,
     bottom 300ms ease-out,
     left 300ms ease-out,
-    right 300ms ease-out;
+    right 300ms ease-out,
+    color 150ms ease,
+    background-color 150ms ease;
 }
 
 /* The rail's own width animation is carried here too. A `transition` shorthand

@@ -11,6 +11,10 @@ declare module '@board/poker/App' {
   export function App(props: { boot: unknown }): JSX.Element;
 }
 
+declare module '@board/retro/App' {
+  export function App(props: { boot: unknown }): JSX.Element;
+}
+
 declare module '@board/design/tokens.css';
 
 declare module '@board/design/tokens.css?inline' {
