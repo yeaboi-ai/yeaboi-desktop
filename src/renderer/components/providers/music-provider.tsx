@@ -84,7 +84,8 @@ export interface MusicPlayer {
   embed: MusicLink | null;
   /** The shelf row's name for it, for the pocket. */
   embedTitle: string;
-  showEmbed(link: SavedLink): void;
+  /** `autoplay` starts it on load — for a link picked inside the player. */
+  showEmbed(link: SavedLink, autoplay?: boolean): void;
   clearEmbed(): void;
   /** The player's last word over its channel; null with no embed up, and
    *  never more than 'unknown' for Apple's frame, which has no channel. */
@@ -136,6 +137,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const viz = useVizFrames();
   const [embed, setEmbed] = useState<MusicLink | null>(null);
   const [embedTitle, setEmbedTitle] = useState('');
+  const [embedAutoplay, setEmbedAutoplay] = useState(false);
   const [embedNote, setEmbedNote] = useState('');
   const [embedSlot, setEmbedSlot] = useState<HTMLElement | null>(null);
   const embedFrameRef = useRef<HTMLIFrameElement | null>(null);
@@ -266,13 +268,14 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   );
 
   const showEmbed = useCallback(
-    (link: SavedLink) => {
+    (link: SavedLink, autoplay = false) => {
       const parsed = parseMusicLink(link.url);
       if (!parsed) return;
       // Two sounds at once is never what anyone meant.
       if (radio.state.status === 'playing' || radio.state.status === 'connecting') stop();
       setEmbedTitle(link.label);
       setEmbedNote('');
+      setEmbedAutoplay(autoplay);
       // The same link again is a no-op: a new frame would start it over.
       setEmbed((current) => (current?.embedUrl === parsed.embedUrl ? current : parsed));
     },
@@ -283,10 +286,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const embedFrame = useMemo(
     () => ({
       ref: embedFrameRef,
-      src: embed ? bridgedEmbedUrl(embed, window.location.origin) : '',
+      src: embed ? bridgedEmbedUrl(embed, window.location.origin, embedAutoplay) : '',
       onLoad: onEmbedLoad,
     }),
-    [embed, onEmbedLoad],
+    [embed, embedAutoplay, onEmbedLoad],
   );
 
   // A hold can pause a player it can talk to (the bridge does that); Apple's
@@ -382,6 +385,31 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   // a second listener would toggle twice.
   const commands = useRef({ toggle, next });
   commands.current = { toggle, next };
+  // A link a frame tried to open — a tile in YouTube's "More videos" tray —
+  // plays here, on that service's tab, as if it had been picked from a shelf.
+  const playLink = useCallback(
+    (url: string) => {
+      const parsed = parseMusicLink(url);
+      if (!parsed) return;
+      logger.info('music: playing a link the player opened');
+      updatePrefs({ source: parsed.service });
+      showEmbed(
+        {
+          id: `link-${parsed.service}-${parsed.id}`,
+          service: parsed.service,
+          kind: parsed.kind,
+          label: parsed.label,
+          url,
+          addedAt: 0,
+        },
+        true,
+      );
+    },
+    [updatePrefs, showEmbed],
+  );
+  const links = useRef(playLink);
+  links.current = playLink;
+
   useEffect(() => {
     if (commandsBound) return;
     commandsBound = true;
@@ -389,6 +417,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (id === 'music:toggle') commands.current.toggle();
       else if (id === 'music:next') commands.current.next();
     });
+    // Optional: a renderer hot-reloaded over an older preload has no bridge
+    // method yet, and a missing tray click is better than a blank window.
+    window.yeaboi.onMusicLink?.((url) => links.current(url));
   }, []);
 
   const value = useMemo<MusicPlayer>(

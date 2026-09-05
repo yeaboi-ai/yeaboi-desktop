@@ -45,6 +45,7 @@ import { normalizeAudience } from '../shared/audience';
 import { loadMachineSecrets, loadSharedEnv } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
+import { routeWindowOpen } from '../shared/window-open';
 import { AppTray } from './tray';
 import { Updater } from './updater';
 import { VoiceAgentSidecar, registerVoicePack, voicePackInstalled } from './voice-pack';
@@ -119,9 +120,12 @@ function createMainWindow(): void {
     if (BrowserWindow.getFocusedWindow() === null) pet.setSuppressed(false);
   });
 
-  // External links open in the OS browser; anything else is denied.
+  // External links open in the OS browser; a music link a frame opens (a
+  // YouTube tray tile, say) goes back to the player; anything else is denied.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://') || url.startsWith('http://')) void shell.openExternal(url);
+    const route = routeWindowOpen(url);
+    if (route.action === 'music') mainWindow?.webContents.send('app:music-link', route.url);
+    else if (route.action === 'external') void shell.openExternal(url);
     return { action: 'deny' };
   });
 

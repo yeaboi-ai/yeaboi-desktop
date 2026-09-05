@@ -103,6 +103,8 @@ export interface YeaboiBridge {
   getMusicPrefs: () => Promise<unknown>;
   setMusicPrefs: (patch: unknown) => Promise<unknown>;
   onMusicCommand: (callback: (id: string) => void) => void;
+  /** A music link a frame tried to open: play it here instead. */
+  onMusicLink: (callback: (url: string) => void) => void;
   musicNativeState: (app: string) => Promise<unknown>;
   musicNativeCommand: (app: string, command: string) => Promise<unknown>;
   musicNativeOpen: (app: string, url: string) => Promise<unknown>;
@@ -185,6 +187,9 @@ const bridge: YeaboiBridge = {
   setMusicPrefs: (patch) => ipcRenderer.invoke('music:set-prefs', patch),
   onMusicCommand: (callback) => {
     ipcRenderer.on('app:music', (_event, id: string) => callback(id));
+  },
+  onMusicLink: (callback) => {
+    ipcRenderer.on('app:music-link', (_event, url: string) => callback(url));
   },
   musicNativeState: (app) => ipcRenderer.invoke('music:native-state', app),
   musicNativeCommand: (app, command) => ipcRenderer.invoke('music:native-command', app, command),

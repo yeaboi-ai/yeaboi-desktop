@@ -69,11 +69,13 @@ export function hasChannel(service: MusicService): boolean {
 
 /** The embed URL the frame loads. YouTube's player only speaks to a parent it
  *  was told about, so its URL names ours; the others are the grammar's own. */
-export function bridgedEmbedUrl(link: MusicLink, origin: string): string {
+export function bridgedEmbedUrl(link: MusicLink, origin: string, autoplay = false): string {
   if (link.service !== 'youtube_music') return link.embedUrl;
   const url = new URL(link.embedUrl);
   url.searchParams.set('enablejsapi', '1');
   url.searchParams.set('origin', origin);
+  // A link picked inside the player was a "play this": start it on load.
+  if (autoplay) url.searchParams.set('autoplay', '1');
   return url.toString();
 }
 

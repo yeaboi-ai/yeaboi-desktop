@@ -39,6 +39,10 @@ describe('the channel', () => {
     expect(url.searchParams.get('enablejsapi')).toBe('1');
     expect(url.searchParams.get('origin')).toBe('app://yeaboi');
     expect(bridgedEmbedUrl(playlist, 'http://localhost:5173')).toContain('enablejsapi=1');
+    expect(bridgedEmbedUrl(youtube, 'app://yeaboi')).not.toContain('autoplay');
+    expect(
+      new URL(bridgedEmbedUrl(youtube, 'app://yeaboi', true)).searchParams.get('autoplay'),
+    ).toBe('1');
     expect(bridgedEmbedUrl(spotify, 'app://yeaboi')).toBe(spotify.embedUrl);
     expect(bridgedEmbedUrl(apple, 'app://yeaboi')).toBe(apple.embedUrl);
   });
