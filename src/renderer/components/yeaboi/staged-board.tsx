@@ -633,20 +633,23 @@ body > [class^='_'] {
   backdrop-filter: blur(12px);
 }
 
+/* The row's own metrics. The board lays this out as 42x32 slots four pixels
+   apart with a lead-in at each end; squeezing that to 28-wide buttons two
+   pixels apart left five icons touching each other in the middle of a capsule
+   with no margin. It keeps its measurements — this only changes what they are
+   wearing. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
-  padding: 4px;
-  gap: 2px;
+  padding: 4px 8px;
+  gap: 4px;
 }
 
 /* The items on it: the rail's rows, at the rail's size and radius. Quiet
    until the cursor is on them. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
-  min-width: 26px;
-  height: 26px;
-  /* The board floors every control at its tap target, which is what kept the
-     row 32 tall however short the buttons were told to be. */
-  min-height: 26px;
-  padding: 0 7px;
+  min-width: 42px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 13px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -662,8 +665,8 @@ body > [class^='_'] {
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 /* The grip went with the drag: a handle on something that cannot be picked
@@ -673,11 +676,12 @@ body > [class^='_'] {
 }
 
 /* The one filled thing on the row. Same height as everything beside it, so
-   the row has one baseline the way the app's own does. */
+   the row has one baseline the way the app's own does — it was six pixels
+   shorter than its neighbours, which is what made it look wedged in. */
 .board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
-  height: 26px;
-  min-height: 26px;
-  padding: 0 11px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
   border: 0;
   /* Round, like the steps it sits beside on the same row. */
   border-radius: 999px;
