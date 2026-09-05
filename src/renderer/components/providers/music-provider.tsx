@@ -19,6 +19,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { usePathname } from 'next/navigation';
 import {
@@ -65,10 +66,18 @@ export interface MusicPlayer {
   removeLink(id: string): void;
   source: MusicSourceId;
   setSource(source: MusicSourceId): void;
-  /** The embed the page is showing, if any. Playing one stops the radio. */
+  /** The embed that is up, if any. Playing one stops the radio. It lives in
+   *  EmbedHost at the window's root, so it outlives the Music page. */
   embed: MusicLink | null;
+  /** The shelf row's name for it, for the pocket. */
+  embedTitle: string;
   showEmbed(link: SavedLink): void;
   clearEmbed(): void;
+  /** What EmbedHost mounts: the frame's ref and source. Nothing else reads it. */
+  embedFrame: { ref: RefObject<HTMLIFrameElement | null>; src: string; onLoad(): void };
+  /** The Music page's slot while the page shows this embed, else null. */
+  embedSlot: HTMLElement | null;
+  registerEmbedSlot(element: HTMLElement | null): void;
   /** Hand a saved link to Spotify or Music. Stops the radio. */
   openInApp(link: SavedLink): Promise<void>;
   /** The app the pocket is watching, and what it reports. */
@@ -104,6 +113,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const radio = useRadio(channels);
   const viz = useVizFrames();
   const [embed, setEmbed] = useState<MusicLink | null>(null);
+  const [embedTitle, setEmbedTitle] = useState('');
+  const [embedSlot, setEmbedSlot] = useState<HTMLElement | null>(null);
+  const embedFrameRef = useRef<HTMLIFrameElement | null>(null);
   const [lastApp, setLastApp] = useState<NativeApp | null>(null);
   const [installed, setInstalled] = useState<Partial<Record<NativeApp, boolean | null>>>({});
   const pathname = usePathname() ?? '';
@@ -229,9 +241,16 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       if (!parsed) return;
       // Two sounds at once is never what anyone meant.
       if (radio.state.status === 'playing' || radio.state.status === 'connecting') stop();
-      setEmbed(parsed);
+      setEmbedTitle(link.label);
+      // The same link again is a no-op: a new frame would start it over.
+      setEmbed((current) => (current?.embedUrl === parsed.embedUrl ? current : parsed));
     },
     [radio.state.status, stop],
+  );
+
+  const embedFrame = useMemo(
+    () => ({ ref: embedFrameRef, src: embed?.embedUrl ?? '', onLoad: () => undefined }),
+    [embed?.embedUrl],
   );
 
   const openInApp = useCallback(
@@ -273,17 +292,23 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     native.nowPlaying?.status === 'playing' || native.nowPlaying?.status === 'paused';
   const nativePlaying = native.nowPlaying?.status === 'playing';
 
+  const embedLive = embed !== null;
+
+  // Transport goes to whichever source is sounding: the radio, else the
+  // embed (which a toggle stops — it has no pause from out here), else the app.
   const toggle = useCallback(() => {
     const radioLive = radio.state.status === 'playing' || radio.state.status === 'connecting';
-    if (!radioLive && nativeLive) void native.send('playpause');
+    if (radioLive) radioApi.toggle();
+    else if (embedLive) setEmbed(null);
+    else if (nativeLive) void native.send('playpause');
     else radioApi.toggle();
-  }, [radio.state.status, nativeLive, native, radioApi]);
+  }, [radio.state.status, embedLive, nativeLive, native, radioApi]);
 
   const next = useCallback(() => {
     const radioLive = radio.state.status === 'playing' || radio.state.status === 'connecting';
-    if (!radioLive && nativeLive) void native.send('next');
-    else radioApi.next();
-  }, [radio.state.status, nativeLive, native, radioApi]);
+    if (!radioLive && !embedLive && nativeLive) void native.send('next');
+    else if (!embedLive) radioApi.next();
+  }, [radio.state.status, embedLive, nativeLive, native, radioApi]);
 
   // The menu's chords. Bound once for the window: StrictMode mounts twice and
   // a second listener would toggle twice.
@@ -315,8 +340,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       source,
       setSource: (next) => updatePrefs({ source: next }),
       embed,
+      embedTitle,
       showEmbed,
       clearEmbed: () => setEmbed(null),
+      embedFrame,
+      embedSlot,
+      registerEmbedSlot: setEmbedSlot,
       openInApp,
       nativeApp,
       native,
@@ -324,8 +353,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       installed,
       toggle,
       next,
-      mood: pocketMood(radio.state, nativePlaying),
-      jamming: radio.state.status === 'playing' || nativePlaying,
+      mood: pocketMood(radio.state, { native: nativePlaying, embed: embedLive }),
+      jamming: radio.state.status === 'playing' || nativePlaying || embedLive,
     }),
     [
       radioApi,
@@ -341,7 +370,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       removeLink,
       source,
       embed,
+      embedTitle,
       showEmbed,
+      embedFrame,
+      embedSlot,
       openInApp,
       nativeApp,
       native,
@@ -350,6 +382,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       next,
       radio.state,
       nativePlaying,
+      embedLive,
     ],
   );
 

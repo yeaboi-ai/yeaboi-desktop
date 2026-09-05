@@ -105,13 +105,24 @@ describe('musicReducer', () => {
 });
 
 describe('pocketMood', () => {
-  it('shows the radio first, then the app, then the radio again', () => {
-    expect(pocketMood(playing, true)).toBe('live');
-    expect(pocketMood(MUSIC_INITIAL, true)).toBe('native');
-    expect(pocketMood(MUSIC_INITIAL, false)).toBe('off');
-    expect(pocketMood({ ...MUSIC_INITIAL, status: 'failed' }, false)).toBe('failed');
-    expect(pocketMood({ ...MUSIC_INITIAL, status: 'paused', held: true }, false)).toBe('held');
-    expect(pocketMood({ ...MUSIC_INITIAL, status: 'paused' }, false)).toBe('paused');
+  const quiet = { native: false, embed: false };
+  it('shows the radio first, then the embed, then the app, then the radio again', () => {
+    expect(pocketMood(playing, { native: true, embed: true })).toBe('live');
+    expect(pocketMood(MUSIC_INITIAL, { native: true, embed: true })).toBe('embed');
+    expect(pocketMood(MUSIC_INITIAL, { native: true, embed: false })).toBe('native');
+    expect(pocketMood(MUSIC_INITIAL, quiet)).toBe('off');
+    expect(pocketMood({ ...MUSIC_INITIAL, status: 'failed' }, quiet)).toBe('failed');
+    expect(pocketMood({ ...MUSIC_INITIAL, status: 'paused', held: true }, quiet)).toBe('held');
+    expect(pocketMood({ ...MUSIC_INITIAL, status: 'paused' }, quiet)).toBe('paused');
+  });
+
+  it('lets an embed outrank a paused or failed radio', () => {
+    expect(pocketMood({ ...MUSIC_INITIAL, status: 'failed' }, { native: false, embed: true })).toBe(
+      'embed',
+    );
+    expect(pocketMood({ ...MUSIC_INITIAL, status: 'paused' }, { native: false, embed: true })).toBe(
+      'embed',
+    );
   });
 });
 

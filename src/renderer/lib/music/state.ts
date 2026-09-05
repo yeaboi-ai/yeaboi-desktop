@@ -113,14 +113,23 @@ export function musicReducer(state: MusicState, action: MusicAction): MusicState
   }
 }
 
-/** What the rail pocket draws. `native` wins over a stopped radio: the sound
- *  is coming from Spotify or Music, and the pocket says where. */
-export type PocketMood = 'off' | 'connecting' | 'live' | 'held' | 'paused' | 'failed' | 'native';
+/** What the rail pocket draws. A stopped radio yields to whatever else is
+ *  sounding: an embed playing here in the window, then Spotify or Music. */
+export type PocketMood =
+  'off' | 'connecting' | 'live' | 'held' | 'paused' | 'failed' | 'native' | 'embed';
 
-export function pocketMood(state: MusicState, nativePlaying: boolean): PocketMood {
+export interface PocketSources {
+  /** Spotify or Music reports it is playing. */
+  native: boolean;
+  /** A vendor's embed is up in the window. */
+  embed: boolean;
+}
+
+export function pocketMood(state: MusicState, sources: PocketSources): PocketMood {
   if (state.status === 'playing') return 'live';
   if (state.status === 'connecting') return 'connecting';
-  if (nativePlaying) return 'native';
+  if (sources.embed) return 'embed';
+  if (sources.native) return 'native';
   if (state.status === 'failed') return 'failed';
   if (state.status === 'paused') return state.held ? 'held' : 'paused';
   return 'off';

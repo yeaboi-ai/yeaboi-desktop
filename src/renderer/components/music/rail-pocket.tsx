@@ -2,7 +2,8 @@
 
 // The music pocket at the foot of the rail — the window's answer to the
 // two-row alcove on the terminal's bottom border. Four glyphs while the radio
-// plays, the vendor's mark while Spotify or Music does, a dim note otherwise.
+// plays, the vendor's mark while an embed or Spotify or Music does, a dim note
+// otherwise.
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
@@ -24,7 +25,8 @@ import { STATUS_WORDS } from '@/lib/music/state';
 import { useRouter } from 'next/navigation';
 
 export function RailPocket({ ring }: { ring: boolean }) {
-  const { radio, channels, mood, native, nativeApp, toggle, next } = useMusicPlayer();
+  const { radio, channels, mood, native, nativeApp, embed, embedTitle, clearEmbed, toggle, next } =
+    useMusicPlayer();
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -32,14 +34,18 @@ export function RailPocket({ ring }: { ring: boolean }) {
   const station = channels[state.channel]?.name ?? 'Radio';
 
   const label =
-    mood === 'native' && native.nowPlaying
-      ? `${native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name} · in ${NATIVE_APPS[native.nowPlaying.app].name}`
-      : mood === 'off'
-        ? 'Music'
-        : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
+    mood === 'embed' && embed
+      ? `${embedTitle || embed.label} · playing here`
+      : mood === 'native' && native.nowPlaying
+        ? `${native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name} · in ${NATIVE_APPS[native.nowPlaying.app].name}`
+        : mood === 'off'
+          ? 'Music'
+          : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
 
   const face =
-    mood === 'native' && nativeApp ? (
+    mood === 'embed' && embed ? (
+      <ServiceMark service={embed.service} size={18} className="text-primary" />
+    ) : mood === 'native' && nativeApp ? (
       <ServiceMark service={nativeApp} size={18} className="text-primary" />
     ) : mood === 'off' ? (
       <span className="font-mono text-[18px] leading-none text-muted-foreground">♪</span>
@@ -69,14 +75,20 @@ export function RailPocket({ ring }: { ring: boolean }) {
         </Popover>
       </ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onClick={toggle}>
-          {state.status === 'playing' ||
-          state.status === 'connecting' ||
-          native.nowPlaying?.status === 'playing'
-            ? 'Pause'
-            : 'Play'}
-        </ContextMenuItem>
-        <ContextMenuItem onClick={next}>Next station or track</ContextMenuItem>
+        {mood === 'embed' ? (
+          <ContextMenuItem onClick={clearEmbed}>Stop</ContextMenuItem>
+        ) : (
+          <>
+            <ContextMenuItem onClick={toggle}>
+              {state.status === 'playing' ||
+              state.status === 'connecting' ||
+              native.nowPlaying?.status === 'playing'
+                ? 'Pause'
+                : 'Play'}
+            </ContextMenuItem>
+            <ContextMenuItem onClick={next}>Next station or track</ContextMenuItem>
+          </>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => router.push('/music')}>Open Music</ContextMenuItem>
       </ContextMenuContent>

@@ -19,6 +19,7 @@ import { AudienceGate } from '@/components/audience/audience-gate';
 import { RailProvider } from '@/components/providers/rail-provider';
 import { PaletteProvider } from '@/components/providers/palette-provider';
 import { MusicProvider } from '@/components/providers/music-provider';
+import { EmbedHost } from '@/components/music/embed-host';
 import { GlobalPalette } from '@/components/palette/global-palette';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
                             <NikoBar />
                             <GlobalPalette />
                             <AmbienceHost />
+                            {/* The embed frame outlives the Music page, so
+                                leaving the page never stops the music. */}
+                            <EmbedHost />
                             <ScreensaverHost />
                           </AudienceGate>
                         </MusicProvider>

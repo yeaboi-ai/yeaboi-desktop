@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { useMusicPlayer } from '@/components/providers/music-provider';
-import { EmbedFrame } from '@/components/music/embed-frame';
+import { EmbedSlot } from '@/components/music/embed-slot';
 import { Library } from '@/components/music/library';
 import { NativeNowPlayingBlock } from '@/components/music/native-now-playing';
 import { ServiceOff } from '@/components/music/service-off';
@@ -180,7 +180,7 @@ function ServicePanel({ service }: { service: MusicService }) {
     <div>
       <div className="mt-8">
         {showEmbed ? (
-          <EmbedFrame link={embed} />
+          <EmbedSlot />
         ) : (
           <div className="flex h-36 items-center justify-center rounded-xl border border-dashed border-border/70">
             <p className="text-[13px] text-muted-foreground">
