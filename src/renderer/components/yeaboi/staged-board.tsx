@@ -633,23 +633,23 @@ body > [class^='_'] {
   backdrop-filter: blur(12px);
 }
 
-/* The row's own metrics. The board lays this out as 42x32 slots four pixels
-   apart with a lead-in at each end; squeezing that to 28-wide buttons two
-   pixels apart left five icons touching each other in the middle of a capsule
-   with no margin. It keeps its measurements — this only changes what they are
-   wearing. */
+/* The row, at the size of the door beside it. Every control on this edge of
+   the window is the same 34px square — the way out, the steps, and Invite —
+   so the row reads as one set of things rather than a strip with a button
+   stuck on the end. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
-  padding: 4px 8px;
+  padding: 3px;
   gap: 4px;
 }
 
 /* The items on it: the rail's rows, at the rail's size and radius. Quiet
    until the cursor is on them. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
-  min-width: 42px;
-  height: 32px;
-  min-height: 32px;
-  padding: 0 13px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -675,13 +675,20 @@ body > [class^='_'] {
   display: none;
 }
 
-/* The one filled thing on the row. Same height as everything beside it, so
-   the row has one baseline the way the app's own does — it was six pixels
-   shorter than its neighbours, which is what made it look wedged in. */
+/* Invite is the one filled thing on the row and reads as itself: the mark,
+   at the size of every other key on it. The word is what the colour already
+   says, and spelling it out made the row a strip of icons with a button
+   stuck on the end. */
+.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] [class*='iconLabel'] {
+  display: none;
+}
+
 .board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
-  height: 32px;
-  min-height: 32px;
-  padding: 0 14px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
   border: 0;
   /* Round, like the steps it sits beside on the same row. */
   border-radius: 999px;
