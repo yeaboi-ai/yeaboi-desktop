@@ -24,6 +24,10 @@ export function useMusicPrefs() {
   const [loading, setLoading] = useState(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<Partial<MusicPrefs>>({});
+  // The shelf as last decided here, so two quick adds see each other and the
+  // duplicate answer is settled before React runs any updater.
+  const libraryRef = useRef<SavedLink[]>(MUSIC_DEFAULTS.library);
+  libraryRef.current = prefs.library;
 
   useEffect(() => {
     window.yeaboi
@@ -54,45 +58,47 @@ export function useMusicPrefs() {
 
   /** Add a pasted link to the shelf. Returns the row, or null for a link the
    *  grammar refuses (the caller shows the error; nothing is saved). */
-  const addLink = useCallback((url: string, label?: string): SavedLink | null => {
-    const link = parseMusicLink(url);
-    if (!link) return null;
-    const row: SavedLink = {
-      id: newSavedLinkId(),
-      service: link.service,
-      kind: link.kind,
-      label: (label ?? '').trim() || link.label,
-      url: url.trim(),
-      addedAt: Date.now(),
-    };
-    let added: SavedLink | null = row;
-    setPrefs((current) => {
-      if (current.library.some((item) => item.url === row.url)) {
-        added = null;
-        return current;
-      }
-      const next = mergeMusicPrefs(current, { library: [...current.library, row] });
+  const addLink = useCallback(
+    (url: string, label?: string): SavedLink | null => {
+      const link = parseMusicLink(url);
+      if (!link) return null;
+      const row: SavedLink = {
+        id: newSavedLinkId(),
+        service: link.service,
+        kind: link.kind,
+        label: (label ?? '').trim() || link.label,
+        url: url.trim(),
+        addedAt: Date.now(),
+      };
+      if (libraryRef.current.some((item) => item.url === row.url)) return null;
+      const next = mergeMusicPrefs(
+        { ...prefs, library: libraryRef.current },
+        {
+          library: [...libraryRef.current, row],
+        },
+      );
+      libraryRef.current = next.library;
       pending.current = { ...pending.current, library: next.library };
-      return next;
-    });
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      const patchToSend = pending.current;
-      pending.current = {};
-      window.yeaboi
-        .setMusicPrefs(patchToSend)
-        .catch(() => logger.warn('Failed to save music preferences'));
-    }, SAVE_DEBOUNCE_MS);
-    return added;
-  }, []);
+      setPrefs((current) => ({ ...current, library: next.library }));
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        const patchToSend = pending.current;
+        pending.current = {};
+        window.yeaboi
+          .setMusicPrefs(patchToSend)
+          .catch(() => logger.warn('Failed to save music preferences'));
+      }, SAVE_DEBOUNCE_MS);
+      return row;
+    },
+    [prefs],
+  );
 
   const removeLink = useCallback(
     (id: string) => {
-      setPrefs((current) => {
-        const library = current.library.filter((item) => item.id !== id);
-        pending.current = { ...pending.current, library };
-        return { ...current, library };
-      });
+      const library = libraryRef.current.filter((item) => item.id !== id);
+      libraryRef.current = library;
+      pending.current = { ...pending.current, library };
+      setPrefs((current) => ({ ...current, library }));
       update({});
     },
     [update],

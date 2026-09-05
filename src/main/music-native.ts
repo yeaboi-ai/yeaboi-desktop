@@ -33,12 +33,38 @@ const TIMEOUT_MS = 1_500;
 const LIBRARY_TIMEOUT_MS = 20_000;
 const darwin = process.platform === 'darwin';
 
+/** macOS refused the Apple event: the person clicked "Don't Allow" once, and
+ *  every script fails the same way until Automation is re-enabled. */
+let automationDenied = false;
+let lastFailure = '';
+
+export function isAutomationDenied(): boolean {
+  return automationDenied;
+}
+
 function osascript(lines: string[], timeout = TIMEOUT_MS): Promise<string | null> {
   return new Promise((resolve) => {
     const args = lines.flatMap((line) => ['-e', line]);
-    execFile('osascript', args, { timeout, maxBuffer: 8 * 1024 * 1024 }, (error, stdout) => {
-      resolve(error ? null : String(stdout));
-    });
+    execFile(
+      'osascript',
+      args,
+      { timeout, maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        if (error) {
+          const message = String(stderr || error.message).trim();
+          automationDenied = /-1743|not authori[sz]ed/i.test(message);
+          // Once per distinct failure: a poll every few seconds must not fill the log.
+          if (message !== lastFailure) {
+            lastFailure = message;
+            console.warn('[music-native] osascript failed:', message.slice(0, 200));
+          }
+          resolve(null);
+          return;
+        }
+        automationDenied = false;
+        resolve(String(stdout));
+      },
+    );
   });
 }
 
@@ -104,16 +130,16 @@ export function registerMusicNative(): void {
   // browse must not launch it either. `{running: false}` is the answer then.
   ipcMain.handle('music:native-library', async (_event, app: unknown, playlistId: unknown) => {
     if (!darwin || !isNativeApp(app)) return { running: false, items: [] };
-    if (!(await isRunning(app))) return { running: false, items: [] };
+    if (!(await isRunning(app))) return { running: false, items: [], denied: automationDenied };
     const script =
       typeof playlistId === 'string' && playlistId
         ? libraryTracksScript(app, playlistId)
         : libraryPlaylistsScript(app);
     if (!script) return { running: true, items: [] };
     const out = await osascript(script, LIBRARY_TIMEOUT_MS);
-    if (out === null) return { running: true, items: [] };
+    if (out === null) return { running: true, items: [], denied: automationDenied };
     const items = playlistId ? parseNativeTracks(out) : parseNativePlaylists(out);
-    return { running: true, items };
+    return { running: true, items, denied: false };
   });
   // A click on a row: may launch the app, which is what the click asked for.
   ipcMain.handle(

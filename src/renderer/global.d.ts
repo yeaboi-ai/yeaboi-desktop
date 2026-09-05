@@ -66,7 +66,8 @@ interface YeaboiBridge {
   musicNativeCommand: (app: string, command: string) => Promise<unknown>;
   musicNativeOpen: (app: string, url: string) => Promise<unknown>;
   musicNativeInstalled: (app: string) => Promise<unknown>;
-  onMusicLink: (callback: (url: string) => void) => void;
+  /** Optional: absent on a preload older than the renderer (a hot reload). */
+  onMusicLink?: (callback: (url: string) => void) => void;
   musicNativeLibrary: (app: string, playlistId?: string) => Promise<unknown>;
   musicNativePlayItem: (app: string, kind: string, id: string) => Promise<unknown>;
   musicNativeLaunch: (app: string) => Promise<unknown>;

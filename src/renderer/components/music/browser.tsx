@@ -102,6 +102,7 @@ export function Browser({ service }: { service: MusicService }) {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [appRunning, setAppRunning] = useState<boolean | null>(null);
+  const [denied, setDenied] = useState(false);
   const [notice, setNotice] = useState('');
   const generation = useRef(0);
 
@@ -116,8 +117,9 @@ export function Browser({ service }: { service: MusicService }) {
           const answer = (await window.yeaboi.musicNativeLibrary(
             'apple_music',
             next.playlist?.id ?? '',
-          )) as { running: boolean; items: NativeLibraryItem[] };
+          )) as { running: boolean; items: NativeLibraryItem[]; denied?: boolean };
           setAppRunning(answer.running);
+          setDenied(answer.denied === true);
           page = { items: answer.items.map(fromNative), next_cursor: '' };
         } else if (next.tab === 'search') {
           page = q ? await searchCatalogue(service, q) : { items: [], next_cursor: '' };
@@ -287,7 +289,16 @@ export function Browser({ service }: { service: MusicService }) {
           </button>
         </form>
       )}
-      {local && appRunning === false && view.tab !== 'search' && (
+      {local && denied && view.tab !== 'search' && (
+        <p
+          role="alert"
+          className="mt-4 max-w-[60ch] text-[13px] leading-relaxed text-muted-foreground"
+        >
+          macOS is not letting yeaboi talk to the Music app. Allow it under System Settings ›
+          Privacy &amp; Security › Automation, then come back here.
+        </p>
+      )}
+      {local && appRunning === false && !denied && view.tab !== 'search' && (
         <p className="mt-4 text-[13px] text-muted-foreground">
           Open the Music app to browse its library.{' '}
           <button
@@ -343,7 +354,7 @@ export function Browser({ service }: { service: MusicService }) {
                 )}
               </span>
               <span className="min-w-0 flex-1">
-                {isFolder && !local ? (
+                {isFolder && (!local || item.kind === 'playlist') ? (
                   <button
                     type="button"
                     onClick={() => open(item)}

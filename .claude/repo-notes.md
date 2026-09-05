@@ -47,9 +47,11 @@ node scripts/gen-routes-manifest.mjs --check
 
 ## Two contracts come from `yeaboi`
 
-`contracts/v1/` holds exactly one file here — `routes_manifest.json`. (`app_http.md` is the other
-half of the wire, but it lives in **yeaboi**; there is no vendored copy in this tree, and no
-`.contracts-rev` or `make contracts-sync` either. Do not go looking for them.)
+`contracts/v1/` holds two files here — `routes_manifest.json`, generated here, and
+`connectors.json`, generated in **yeaboi** by `make web-types` and copied here byte-for-byte when a
+connector's identity changes. (`app_http.md` is the other half of the wire, but it lives in
+**yeaboi**; there is no vendored copy in this tree, and no `.contracts-rev` or `make contracts-sync`
+either. Do not go looking for them.)
 
 `routes_manifest.json` is **generated here and committed in both repos**: `npm run gen-manifest`
 writes it from `src/renderer/lib/yeaboi/routes.json`, and yeaboi's `test_surface_parity.py` and

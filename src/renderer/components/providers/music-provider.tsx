@@ -44,7 +44,7 @@ import {
   type EmbedCommand,
   type EmbedPlayback,
 } from '@/lib/music/embed/bridge';
-import { onMusicHoldChange } from '@/lib/music/hold';
+import { onMusicHoldChange, setMusicHoldEnabled } from '@/lib/music/hold';
 import { nowPlayingFrom, type NowPlaying } from '@/lib/music/now-playing';
 import { pocketMood, type PocketMood } from '@/lib/music/state';
 import { vizModeFor } from '@/lib/music/viz/mode';
@@ -291,6 +291,9 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     }),
     [embed, embedAutoplay, onEmbedLoad],
   );
+
+  // "Pause during calls" is the switch on every hold, radio and embed alike.
+  useEffect(() => setMusicHoldEnabled(prefs.pauseInCalls), [prefs.pauseInCalls]);
 
   // A hold can pause a player it can talk to (the bridge does that); Apple's
   // frame takes no commands, so a call stops it outright and says so.

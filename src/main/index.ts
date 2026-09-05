@@ -122,8 +122,8 @@ function createMainWindow(): void {
 
   // External links open in the OS browser; a music link a frame opens (a
   // YouTube tray tile, say) goes back to the player; anything else is denied.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const route = routeWindowOpen(url);
+  mainWindow.webContents.setWindowOpenHandler(({ url, referrer }) => {
+    const route = routeWindowOpen(url, referrer?.url ?? '');
     if (route.action === 'music') mainWindow?.webContents.send('app:music-link', route.url);
     else if (route.action === 'external') void shell.openExternal(url);
     return { action: 'deny' };

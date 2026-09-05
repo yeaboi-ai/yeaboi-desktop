@@ -227,7 +227,7 @@ export default function MusicPage() {
       <div className="mt-8">
         <SourceTabs />
       </div>
-      {source === 'radio' ? <RadioPanel /> : <ServicePanel service={source} />}
+      {source === 'radio' ? <RadioPanel /> : <ServicePanel key={source} service={source} />}
       <p className="sr-only">{source === 'radio' ? 'Radio' : SERVICE_LABELS[source]}</p>
     </PageShell>
   );

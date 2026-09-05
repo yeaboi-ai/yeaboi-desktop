@@ -7,6 +7,7 @@ import {
   isMusicHeld,
   onMusicHoldChange,
   resetMusicHold,
+  setMusicHoldEnabled,
 } from '../src/renderer/lib/music/hold';
 
 describe('holdMusic', () => {
@@ -41,5 +42,24 @@ describe('holdMusic', () => {
     off();
     holdMusic()();
     expect(calls).toBe(0);
+  });
+});
+
+describe('the "Pause during calls" switch', () => {
+  it('silences a hold while off and resumes at once when flipped back', () => {
+    resetMusicHold();
+    const heard: boolean[] = [];
+    onMusicHoldChange((held) => heard.push(held));
+    setMusicHoldEnabled(false);
+    const release = holdMusic();
+    // The switch announced once; the claim behind it is heard as nothing.
+    expect(heard).toEqual([false, false]);
+    expect(isMusicHeld()).toBe(false);
+    setMusicHoldEnabled(true);
+    expect(heard).toEqual([false, false, true]);
+    expect(isMusicHeld()).toBe(true);
+    release();
+    expect(heard).toEqual([false, false, true, false]);
+    resetMusicHold();
   });
 });
