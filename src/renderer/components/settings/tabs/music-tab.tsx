@@ -5,6 +5,8 @@
 
 import Link from 'next/link';
 import { useMusicPlayer } from '@/components/providers/music-provider';
+import { Visualizer } from '@/components/music/visualizer';
+import { VisualizerControls } from '@/components/music/visualizer-controls';
 import {
   SettingsCard,
   SettingsSectionHeader,
@@ -78,6 +80,17 @@ export function MusicTab() {
       </SettingsCard>
 
       <SettingsCard index={2}>
+        <SettingsSectionHeader
+          title="Visualiser"
+          subtitle="How the radio looks while it plays, here and in the rail"
+        />
+        <div className="space-y-4 px-5 py-5">
+          <Visualizer size="popover" className="block h-11 w-full" />
+          <VisualizerControls />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard index={3}>
         <SettingsSectionHeader
           title="Services"
           subtitle="Switched on in the catalog; the links you keep for each"

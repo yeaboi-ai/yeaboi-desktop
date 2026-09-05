@@ -72,6 +72,113 @@ export interface SavedLink {
 
 export type MusicSourceId = 'radio' | MusicService;
 
+// ── the visualiser ───────────────────────────────────────────────────────────
+
+export const VIZ_STYLES = ['blocks', 'bars', 'wave', 'ink', 'rings', 'pulse'] as const;
+export type VizStyleId = (typeof VIZ_STYLES)[number];
+
+/** Where the colour comes from: the amber lamp, the world's accent, a ramp
+ *  built from two theme tokens, or a hex the person picked. */
+export const VIZ_COLOURS = ['amber', 'accent', 'spectrum', 'custom'] as const;
+export type VizColourId = (typeof VIZ_COLOURS)[number];
+
+export const VIZ_BAND_COUNTS = [16, 32, 64] as const;
+export type VizBandCount = (typeof VIZ_BAND_COUNTS)[number];
+
+export interface VisualizerPrefs {
+  style: VizStyleId;
+  colour: VizColourId;
+  /** '#rrggbb', lowercase. Read only when colour is 'custom'. */
+  customHex: string;
+  /** Columns on the page; the pocket and popover clamp to what fits. */
+  bands: VizBandCount;
+  /** 0.5..2, a multiplier on every level. */
+  gain: number;
+  /** 0..1: how slowly the bars follow the sound. */
+  smoothing: number;
+  peaks: boolean;
+  mirror: boolean;
+  glow: boolean;
+}
+
+export const VISUALIZER_DEFAULTS: VisualizerPrefs = {
+  style: 'blocks',
+  colour: 'amber',
+  customHex: '#e5a630',
+  bands: 64,
+  gain: 1,
+  smoothing: 0.5,
+  peaks: true,
+  mirror: false,
+  glow: true,
+};
+
+export const VIZ_LIMITS = { gain: [0.5, 2], smoothing: [0, 1] } as const;
+
+export function isVizStyle(value: unknown): value is VizStyleId {
+  return typeof value === 'string' && (VIZ_STYLES as readonly string[]).includes(value);
+}
+
+export function isVizColour(value: unknown): value is VizColourId {
+  return typeof value === 'string' && (VIZ_COLOURS as readonly string[]).includes(value);
+}
+
+/** '#rgb' or '#rrggbb' in any case → '#rrggbb' lowercase; anything else → null. */
+export function normalizeHexColour(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim());
+  if (!m) return null;
+  let hex = m[1]!;
+  if (hex.length === 3)
+    hex = hex
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  return `#${hex.toLowerCase()}`;
+}
+
+function clampNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof value === 'number' ? value : Number.NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function nearestBandCount(value: unknown): VizBandCount {
+  const n = typeof value === 'number' && Number.isFinite(value) ? value : Number.NaN;
+  if (Number.isNaN(n)) return VISUALIZER_DEFAULTS.bands;
+  let best: VizBandCount = VIZ_BAND_COUNTS[0];
+  for (const count of VIZ_BAND_COUNTS) {
+    if (Math.abs(count - n) < Math.abs(best - n)) best = count;
+  }
+  return best;
+}
+
+function flag(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+/** Read a stored blob into visualiser preferences that will hold. */
+export function normalizeVisualizerPrefs(raw: unknown): VisualizerPrefs {
+  const data = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const d = VISUALIZER_DEFAULTS;
+  return {
+    style: isVizStyle(data['style']) ? data['style'] : d.style,
+    colour: isVizColour(data['colour']) ? data['colour'] : d.colour,
+    customHex: normalizeHexColour(data['customHex']) ?? d.customHex,
+    bands: nearestBandCount(data['bands']),
+    gain: clampNumber(data['gain'], d.gain, VIZ_LIMITS.gain[0], VIZ_LIMITS.gain[1]),
+    smoothing: clampNumber(
+      data['smoothing'],
+      d.smoothing,
+      VIZ_LIMITS.smoothing[0],
+      VIZ_LIMITS.smoothing[1],
+    ),
+    peaks: flag(data['peaks'], d.peaks),
+    mirror: flag(data['mirror'], d.mirror),
+    glow: flag(data['glow'], d.glow),
+  };
+}
+
 export interface MusicPrefs {
   /** The radio's volume, 0..1. The native apps own their own. */
   volume: number;
@@ -80,6 +187,8 @@ export interface MusicPrefs {
   /** Pause the radio while a call or a voice session is live. */
   pauseInCalls: boolean;
   library: SavedLink[];
+  /** How the radio looks while it plays: window-only, the terminal has none. */
+  visualizer: VisualizerPrefs;
 }
 
 export const MUSIC_DEFAULTS: MusicPrefs = {
@@ -87,6 +196,7 @@ export const MUSIC_DEFAULTS: MusicPrefs = {
   source: 'radio',
   pauseInCalls: true,
   library: [],
+  visualizer: VISUALIZER_DEFAULTS,
 };
 
 export const MUSIC_LIMITS = { library: 50, label: 80, url: 500 } as const;
@@ -139,13 +249,20 @@ export function normalizeMusicPrefs(raw: unknown): MusicPrefs {
     source: source(data['source']),
     pauseInCalls: typeof data['pauseInCalls'] === 'boolean' ? data['pauseInCalls'] : true,
     library,
+    visualizer: normalizeVisualizerPrefs(data['visualizer']),
   };
 }
 
-/** Merge a patch onto the current prefs, re-clamping whatever it touched. */
+/** Merge a patch onto the current prefs, re-clamping whatever it touched. The
+ *  visualiser block merges a level deeper, so a patch of one of its fields
+ *  keeps the rest. */
 export function mergeMusicPrefs(current: MusicPrefs, patch: unknown): MusicPrefs {
   const incoming = (patch && typeof patch === 'object' ? patch : {}) as Record<string, unknown>;
-  return normalizeMusicPrefs({ ...current, ...incoming });
+  const visualizer =
+    incoming['visualizer'] && typeof incoming['visualizer'] === 'object'
+      ? { ...current.visualizer, ...(incoming['visualizer'] as Record<string, unknown>) }
+      : current.visualizer;
+  return normalizeMusicPrefs({ ...current, ...incoming, visualizer });
 }
 
 export function newSavedLinkId(): string {

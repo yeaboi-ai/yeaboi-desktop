@@ -21,7 +21,12 @@ import {
   type ReactNode,
 } from 'react';
 import { usePathname } from 'next/navigation';
-import { type MusicPrefs, type MusicSourceId, type SavedLink } from '@shared/music';
+import {
+  type MusicPrefs,
+  type MusicSourceId,
+  type SavedLink,
+  type VisualizerPrefs,
+} from '@shared/music';
 import { parseMusicLink, type MusicLink, type MusicService } from '@shared/music-links';
 import type { NativeApp, NativeCommand } from '@shared/music-native';
 import { logger } from '@/lib/logger';
@@ -33,6 +38,9 @@ import {
 } from '@/lib/yeaboi/ambience';
 import { onCatalogueChanged } from '@/lib/music/catalogue-changed';
 import { pocketMood, type PocketMood } from '@/lib/music/state';
+import { vizMode } from '@/lib/music/viz/mode';
+import type { VizFrameSource } from '@/lib/music/viz/source';
+import { useVizFrames } from '@/hooks/use-viz-frames';
 import { useMusicPrefs } from '@/hooks/use-music-prefs';
 import { useNativePlayer, type NativePlayerApi } from '@/hooks/use-native-player';
 import { useRadio, type RadioApi } from '@/hooks/use-radio';
@@ -50,6 +58,9 @@ export interface MusicPlayer {
   prefs: MusicPrefs;
   prefsLoading: boolean;
   updatePrefs(patch: Partial<MusicPrefs>): void;
+  updateVisualizer(patch: Partial<VisualizerPrefs>): void;
+  /** The one frame loop every visualiser canvas paints from. */
+  viz: VizFrameSource;
   addLink(url: string, label?: string): SavedLink | null;
   removeLink(id: string): void;
   source: MusicSourceId;
@@ -91,6 +102,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     removeLink,
   } = useMusicPrefs();
   const radio = useRadio(channels);
+  const viz = useVizFrames();
   const [embed, setEmbed] = useState<MusicLink | null>(null);
   const [lastApp, setLastApp] = useState<NativeApp | null>(null);
   const [installed, setInstalled] = useState<Partial<Record<NativeApp, boolean | null>>>({});
@@ -239,6 +251,24 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     [radio.state.status, stop, native],
   );
 
+  // The visualiser follows the radio: its analyser, its status, and the feel
+  // the person chose. One loop, however many canvases are mounted.
+  const { gain, smoothing, peaks } = prefs.visualizer;
+  useEffect(() => {
+    viz.set({
+      analyser: radio.analyser,
+      mode: vizMode(radio.state.status),
+      opts: { gain, smoothing, peaks },
+    });
+  }, [viz, radio.analyser, radio.state.status, gain, smoothing, peaks]);
+
+  // A partial block: the prefs hook and main both merge it a level deep, so two
+  // quick changes (a tile, then a colour) never overwrite each other.
+  const updateVisualizer = useCallback(
+    (patch: Partial<VisualizerPrefs>) => updatePrefs({ visualizer: patch as VisualizerPrefs }),
+    [updatePrefs],
+  );
+
   const nativeLive =
     native.nowPlaying?.status === 'playing' || native.nowPlaying?.status === 'paused';
   const nativePlaying = native.nowPlaying?.status === 'playing';
@@ -278,6 +308,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       prefs,
       prefsLoading,
       updatePrefs,
+      updateVisualizer,
+      viz,
       addLink,
       removeLink,
       source,
@@ -303,6 +335,8 @@ export function MusicProvider({ children }: { children: ReactNode }) {
       prefs,
       prefsLoading,
       updatePrefs,
+      updateVisualizer,
+      viz,
       addLink,
       removeLink,
       source,

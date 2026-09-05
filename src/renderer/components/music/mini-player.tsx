@@ -8,14 +8,14 @@ import Link from 'next/link';
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { NativeNowPlayingBlock } from '@/components/music/native-now-playing';
-import { Spectrum } from '@/components/music/spectrum';
+import { Visualizer } from '@/components/music/visualizer';
 import { Slider } from '@/components/ui/slider';
 import { STATUS_WORDS } from '@/lib/music/state';
 import { cn } from '@/lib/utils';
 
 export function MiniPlayer() {
   const { radio, channels, native, backend } = useMusicPlayer();
-  const { state, analyser } = radio;
+  const { state } = radio;
   const live = state.status === 'playing' || state.status === 'connecting';
   const station = channels[state.channel]?.name ?? 'Radio';
   const nativeOn = native.nowPlaying && native.nowPlaying.status !== 'stopped' && !live;
@@ -82,16 +82,7 @@ export function MiniPlayer() {
               </p>
             </div>
           </div>
-          <Spectrum
-            analyser={analyser}
-            playing={state.status === 'playing'}
-            frozen={state.status === 'paused'}
-            bands={16}
-            className={cn(
-              'mt-3 block text-[18px] tracking-[0.02em]',
-              state.status === 'playing' ? 'text-primary' : 'text-muted-foreground/60',
-            )}
-          />
+          <Visualizer size="popover" className="mt-3 block h-11 w-full" />
           <div className="mt-3 flex items-center gap-3">
             <Slider
               aria-label="Volume"

@@ -6,6 +6,10 @@ import {
   MUSIC_DEFAULTS,
   MUSIC_LIMITS,
   RADIO_MEDIA_ORIGINS,
+  VISUALIZER_DEFAULTS,
+  VIZ_STYLES,
+  normalizeHexColour,
+  normalizeVisualizerPrefs,
   mediaOriginAllowed,
   mergeMusicPrefs,
   newSavedLinkId,
@@ -92,6 +96,56 @@ describe('normalizeMusicPrefs', () => {
       library: [{ id: 'a', url: SPOTIFY, label: 'x'.repeat(200) }],
     });
     expect(prefs.library[0]?.label).toHaveLength(MUSIC_LIMITS.label);
+  });
+});
+
+describe('the visualiser preferences', () => {
+  it('start from the defaults and fill an older blob that has none', () => {
+    expect(MUSIC_DEFAULTS.visualizer).toEqual(VISUALIZER_DEFAULTS);
+    expect(normalizeMusicPrefs({ volume: 0.5 }).visualizer).toEqual(VISUALIZER_DEFAULTS);
+    expect(VISUALIZER_DEFAULTS.style).toBe('blocks');
+  });
+
+  it('refuse an unknown style or colour', () => {
+    expect(normalizeVisualizerPrefs({ style: 'lava', colour: 'neon' })).toMatchObject({
+      style: 'blocks',
+      colour: 'amber',
+    });
+    for (const style of VIZ_STYLES) expect(normalizeVisualizerPrefs({ style }).style).toBe(style);
+  });
+
+  it('take a hex in either length and case, and nothing else', () => {
+    expect(normalizeHexColour('#ABC')).toBe('#aabbcc');
+    expect(normalizeHexColour(' #22D3EE ')).toBe('#22d3ee');
+    expect(normalizeHexColour('red')).toBeNull();
+    expect(normalizeHexColour('#12345')).toBeNull();
+    expect(normalizeVisualizerPrefs({ customHex: 'red' }).customHex).toBe(
+      VISUALIZER_DEFAULTS.customHex,
+    );
+    expect(normalizeVisualizerPrefs({ customHex: '#FFF' }).customHex).toBe('#ffffff');
+  });
+
+  it('snap the columns and clamp the sliders', () => {
+    expect(normalizeVisualizerPrefs({ bands: 40 }).bands).toBe(32);
+    expect(normalizeVisualizerPrefs({ bands: 100 }).bands).toBe(64);
+    expect(normalizeVisualizerPrefs({ bands: 'many' }).bands).toBe(64);
+    expect(normalizeVisualizerPrefs({ gain: 9 }).gain).toBe(2);
+    expect(normalizeVisualizerPrefs({ gain: 0 }).gain).toBe(0.5);
+    expect(normalizeVisualizerPrefs({ smoothing: -1 }).smoothing).toBe(0);
+    expect(normalizeVisualizerPrefs({ smoothing: Number.NaN }).smoothing).toBe(0.5);
+    expect(normalizeVisualizerPrefs({ peaks: 'yes' }).peaks).toBe(true);
+  });
+
+  it('merge a partial patch without forgetting the rest', () => {
+    const current = normalizeMusicPrefs({ visualizer: { style: 'rings', colour: 'spectrum' } });
+    const next = mergeMusicPrefs(current, { visualizer: { glow: false } });
+    expect(next.visualizer).toMatchObject({ style: 'rings', colour: 'spectrum', glow: false });
+    expect(mergeMusicPrefs(current, { volume: 0.2 }).visualizer).toEqual(current.visualizer);
+  });
+
+  it('are a fixed point', () => {
+    const once = normalizeVisualizerPrefs({ style: 'wave', gain: 1.5, customHex: '#ABC' });
+    expect(normalizeVisualizerPrefs(once)).toEqual(once);
   });
 });
 

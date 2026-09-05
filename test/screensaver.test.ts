@@ -338,6 +338,8 @@ describe('the token rule', () => {
     const dirs = [
       join(__dirname, '..', 'src', 'renderer', 'lib', 'screensaver', 'scenes'),
       join(__dirname, '..', 'src', 'renderer', 'lib', 'home'),
+      // The music visualiser's painters draw from the same tokens.
+      join(__dirname, '..', 'src', 'renderer', 'lib', 'music', 'viz', 'styles'),
     ];
     const files = dirs.flatMap((dir) =>
       readdirSync(dir)

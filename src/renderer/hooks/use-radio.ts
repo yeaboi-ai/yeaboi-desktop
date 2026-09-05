@@ -113,9 +113,10 @@ export function useRadio(channels: readonly MusicChannel[]): RadioApi {
       if (ctx.state !== 'running') throw new Error('audio context did not start');
       const source = ctx.createMediaElementSource(audio);
       const node = ctx.createAnalyser();
-      // 128 bins: the lower half is one bin per column of the 64-glyph spectrum.
-      node.fftSize = 256;
-      node.smoothingTimeConstant = 0.75;
+      // 1024 bins, so the visualiser's log-frequency bands have resolution
+      // down at 40 Hz; the engine owns the smoothing, so the node's is light.
+      node.fftSize = 2048;
+      node.smoothingTimeConstant = 0.35;
       source.connect(node);
       node.connect(ctx.destination);
       ctxRef.current = ctx;

@@ -16,6 +16,8 @@ export interface Palette {
   border: string;
   /** chart-1..8, in order — the ramp scenes colour their elements from. */
   chart: string[];
+  /** `--destructive`: what a failed stream is drawn in. */
+  destructive: string;
   /** The world's accent and its bright twin (`--audience-accent*`), which no
    *  theme preset owns: team green, solo gold, agents blue. */
   audienceAccent: string;
@@ -33,6 +35,7 @@ export const FALLBACK_PALETTE: Palette = {
   muted: '#858585',
   border: '#222222',
   chart: ['#e5a630', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#22d3ee', '#facc15'],
+  destructive: '#ef4444',
   audienceAccent: 'rgb(100, 180, 100)',
   audienceAccentBright: 'rgb(80, 220, 120)',
 };
@@ -54,6 +57,7 @@ export function readPalette(el: HTMLElement = document.documentElement): Palette
     muted: token('muted-foreground', FALLBACK_PALETTE.muted),
     border: token('border', FALLBACK_PALETTE.border),
     chart: chart.length ? chart : FALLBACK_PALETTE.chart,
+    destructive: token('destructive', FALLBACK_PALETTE.destructive),
     audienceAccent: token('audience-accent', FALLBACK_PALETTE.audienceAccent),
     audienceAccentBright: token('audience-accent-bright', FALLBACK_PALETTE.audienceAccentBright),
   };

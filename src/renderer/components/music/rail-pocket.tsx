@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { MiniPlayer } from '@/components/music/mini-player';
 import { ServiceMark } from '@/components/music/service-mark';
-import { Spectrum } from '@/components/music/spectrum';
+import { Visualizer } from '@/components/music/visualizer';
 import { RailButton } from '@/components/rail/rail-button';
 import {
   ContextMenu,
@@ -21,7 +21,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NATIVE_APPS } from '@shared/music-native';
 import { STATUS_WORDS } from '@/lib/music/state';
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 export function RailPocket({ ring }: { ring: boolean }) {
@@ -29,7 +28,7 @@ export function RailPocket({ ring }: { ring: boolean }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { state, analyser } = radio;
+  const { state } = radio;
   const station = channels[state.channel]?.name ?? 'Radio';
 
   const label =
@@ -45,19 +44,7 @@ export function RailPocket({ ring }: { ring: boolean }) {
     ) : mood === 'off' ? (
       <span className="font-mono text-[18px] leading-none text-muted-foreground">♪</span>
     ) : (
-      <Spectrum
-        analyser={analyser}
-        playing={state.status === 'playing'}
-        frozen={state.status === 'paused'}
-        bands={4}
-        className={cn(
-          'text-[17px]',
-          mood === 'live' && 'text-primary',
-          mood === 'connecting' && 'text-primary/60',
-          (mood === 'paused' || mood === 'held') && 'text-muted-foreground',
-          mood === 'failed' && 'text-destructive',
-        )}
-      />
+      <Visualizer size="pocket" className="size-12" />
     );
 
   return (

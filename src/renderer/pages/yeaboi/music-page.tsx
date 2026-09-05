@@ -12,7 +12,8 @@ import { Library } from '@/components/music/library';
 import { NativeNowPlayingBlock } from '@/components/music/native-now-playing';
 import { ServiceOff } from '@/components/music/service-off';
 import { SourceTabs } from '@/components/music/source-tabs';
-import { Spectrum } from '@/components/music/spectrum';
+import { Visualizer } from '@/components/music/visualizer';
+import { VisualizerStyleButton } from '@/components/music/visualizer-style-button';
 import { Slider } from '@/components/ui/slider';
 import { SERVICE_APPS, SERVICE_LABELS, type MusicService } from '@shared/music-links';
 import { STATUS_WORDS, formatElapsed } from '@/lib/music/state';
@@ -46,7 +47,7 @@ function useClock(startedAt: number | null): string {
 
 function RadioPanel() {
   const { radio, channels, backend } = useMusicPlayer();
-  const { state, analyser } = radio;
+  const { state } = radio;
   const live = state.status === 'playing' || state.status === 'connecting';
   const channel = channels[state.channel];
   const meta = channel ? STATION_NOTES[channel.name] : undefined;
@@ -55,16 +56,10 @@ function RadioPanel() {
 
   return (
     <div>
-      <Spectrum
-        analyser={analyser}
-        playing={state.status === 'playing'}
-        frozen={state.status === 'paused'}
-        bands={64}
-        className={cn(
-          'mt-10 block overflow-hidden text-[clamp(14px,1.6vw,22px)] tracking-[0.01em] transition-colors duration-300',
-          state.status === 'playing' ? 'text-primary' : 'text-muted-foreground/40',
-        )}
-      />
+      <div className="mt-6 flex items-center justify-end">
+        <VisualizerStyleButton />
+      </div>
+      <Visualizer size="page" className="mt-2 block h-[120px] w-full" />
 
       <div className="mt-8 flex items-start gap-5">
         <button

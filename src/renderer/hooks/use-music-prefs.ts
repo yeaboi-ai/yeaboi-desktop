@@ -35,7 +35,13 @@ export function useMusicPrefs() {
 
   const update = useCallback((patch: Partial<MusicPrefs>) => {
     setPrefs((current) => mergeMusicPrefs(current, patch));
-    pending.current = { ...pending.current, ...patch };
+    // The visualiser block merges a level deep, here and in main, so a partial
+    // patch of it keeps what an earlier one in the same debounce set.
+    const visualizer =
+      patch.visualizer || pending.current.visualizer
+        ? ({ ...pending.current.visualizer, ...patch.visualizer } as MusicPrefs['visualizer'])
+        : undefined;
+    pending.current = { ...pending.current, ...patch, ...(visualizer ? { visualizer } : {}) };
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       const patchToSend = pending.current;
