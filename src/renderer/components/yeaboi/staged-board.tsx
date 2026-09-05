@@ -167,7 +167,7 @@ const INHERIT = `
  * floats over a page here is a capsule around the thing itself and nothing
  * else. So the band goes and its contents become capsules on the board's own
  * ground, the way the dock at the bottom of every other screen is. */
-.board-frame .${HOST} [class*='chromeApp'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] {
   /* Nothing left to draw. The board's name was a capsule saying what the
      window already says, and a strip's worth of height to say it in; the
      board starts at the top of the screen instead. The element stays, at no
@@ -180,12 +180,12 @@ const INHERIT = `
   overflow: visible;
 }
 
-.board-frame .${HOST} [class*='mastheadApp'],
-.board-frame .${HOST} [class*='chromeApp'] [class*='brandMark'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='mastheadApp'],
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='brandMark'] {
   display: none;
 }
 
-.board-frame .${HOST} [class*='appbar'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='appbar'] {
   height: 0;
   min-height: 0;
   padding: 0;
@@ -234,27 +234,27 @@ const INHERIT = `
 
 /* The room opens upward, so its cards come up. The board deals them down from
    under the bar it hangs from — the same distance, the other way. */
-.board-frame .${HOST} [class*='identity'] [class*='roomCard'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='identity'] [class*='roomCard'] {
   transform: translateY(calc(var(--card-h) + var(--room-gap)));
 }
 
-.board-frame .${HOST} [class*='identity'] [class*='room']:hover [class*='roomCard'],
-.board-frame .${HOST} [class*='identity'] [class*='room']:has(:focus-visible) [class*='roomCard'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='identity'] [class*='room']:hover [class*='roomCard'],
+.board-frame .${HOST}[data-mode='poker'] [class*='identity'] [class*='room']:has(:focus-visible) [class*='roomCard'] {
   transform: none;
 }
 
 /* The scope's own name. The app already says which session this is, on the
    surface the table was dealt from. */
-.board-frame .${HOST} [class*='railScope'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='railScope'] {
   display: none;
 }
 
 /* Invite is the one filled thing on the row and reads as itself. */
-.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] [class*='iconLabel'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='btnPrimary'] [class*='iconLabel'] {
   display: none;
 }
 
-.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='btnPrimary'] {
   width: 26px;
   padding: 0;
 }
@@ -263,7 +263,7 @@ const INHERIT = `
    out and the controls — not the top, where two chips at the far end of an
    empty strip were all that kept it a bar. Their list opens upward, since
    there is nothing below it to open into. */
-.board-frame .${HOST} [class*='chromeApp'] [class*='identity'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='identity'] {
   position: fixed;
   right: 16px;
   bottom: 16px;
@@ -277,7 +277,7 @@ const INHERIT = `
 
 /* Anchored to the row, and to its right-hand end — the chips close the bottom
    row, so what comes off them lines up with the edge they sit against. */
-.board-frame .${HOST} [class*='identity'] [class*='roomList'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='identity'] [class*='roomList'] {
   top: auto;
   right: 0;
   left: auto;
@@ -291,13 +291,13 @@ const INHERIT = `
   clip-path: inset(-40px -40px 0);
 }
 
-.board-frame .${HOST} [class*='identity'] [class*='roomCard'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='identity'] [class*='roomCard'] {
   margin-left: auto;
 }
 
 /* Who you are and who else is here: two more of the same capsule. */
-.board-frame .${HOST} [class*='chromeApp'] [class*='meChip'],
-.board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='meChip'],
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='presenceChip'] {
   /* The height of the row's other end: the way out and the controls beside it
      are 34, and a chip half a step shorter reads as a different row. */
   height: 34px;
@@ -314,14 +314,14 @@ const INHERIT = `
   color: var(--app-muted);
 }
 
-.board-frame .${HOST} [class*='chromeApp'] [class*='meChip']:hover,
-.board-frame .${HOST} [class*='chromeApp'] [class*='presenceChip']:hover {
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='meChip']:hover,
+.board-frame .${HOST}[data-mode='poker'] [class*='chromeApp'] [class*='presenceChip']:hover {
   color: var(--app-text);
 }
 
 /* The ticket pager: two round steps either side of the count, the way every
    small icon control in the app is round. */
-.board-frame .${HOST} [class*='tknav'] button {
+.board-frame .${HOST}[data-mode='poker'] [class*='tknav'] button {
   border-radius: 999px;
 }
 
@@ -550,7 +550,7 @@ const INHERIT = `
 /* The ticket pager goes. The rail beside it is the whole list, named, with
    the one under discussion marked — a pair of arrows and a count is a second
    way to do what is already on screen. */
-.board-frame .${HOST} [class*='tknav'] button {
+.board-frame .${HOST}[data-mode='poker'] [class*='tknav'] button {
   display: none;
 }
 
@@ -599,7 +599,7 @@ const INHERIT = `
  * page blurred behind it. The board's own dock is a flat panel with a solid
  * fill and a 1px line, which next to the rest reads as a different surface.
  * These are the same values, written in the board's names. */
-.board-frame .${HOST} [class*='dockApp'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] {
   /* Beside the way out, at the left end of the bottom row. The board parks it
      on the right in its own JS and lets it be dragged along the wall; here the
      row has a fixed shape — out of the table, then the table's controls, then
@@ -618,14 +618,14 @@ const INHERIT = `
   backdrop-filter: blur(12px);
 }
 
-.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='dockRow'] {
   padding: 4px;
   gap: 2px;
 }
 
 /* The items on it: the rail's rows, at the rail's size and radius. Quiet
    until the cursor is on them. */
-.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
   min-width: 26px;
   height: 26px;
   /* The board floors every control at its tap target, which is what kept the
@@ -641,25 +641,25 @@ const INHERIT = `
     color 150ms ease;
 }
 
-.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']):hover {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']):hover {
   background: color-mix(in srgb, var(--app-secondary) 60%, transparent);
   color: var(--app-text);
 }
 
-.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] svg {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='dockRow'] svg {
   width: 14px;
   height: 14px;
 }
 
 /* The grip went with the drag: a handle on something that cannot be picked
    up is an offer the row does not keep. */
-.board-frame .${HOST} [class*='dockGrip'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockGrip'] {
   display: none;
 }
 
 /* The one filled thing on the row. Same height as everything beside it, so
    the row has one baseline the way the app's own does. */
-.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='dockApp'] [class*='btnPrimary'] {
   height: 26px;
   min-height: 26px;
   padding: 0 11px;
@@ -673,11 +673,11 @@ const INHERIT = `
    rule reaches it — and it sits next to a title that already says the same
    word. Inside this app the title is the mark, set in the app's display face;
    the board keeps its own logo for the browsers it is served to. */
-.board-frame .${HOST} svg[class*='wordmark'] {
+.board-frame .${HOST}[data-mode='poker'] svg[class*='wordmark'] {
   display: none;
 }
 
-.board-frame .${HOST} h1[class*='title'] {
+.board-frame .${HOST}[data-mode='poker'] h1[class*='title'] {
   font-family: var(--app-display), Georgia, serif;
   font-size: 14.5px;
   font-weight: 400;
