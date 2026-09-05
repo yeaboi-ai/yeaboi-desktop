@@ -110,7 +110,14 @@ const INHERIT = `
  * The board draws its own buttons — square-ish, flat, its own type scale — and
  * next to the rest of the app they read as another product's. The shapes are
  * matched here rather than in the board's source: it has its own repo, its own
- * browsers to serve and its own reasons, and none of them are this window. */
+ * browsers to serve and its own reasons, and none of them are this window.
+ *
+ * Shape and type only. Nothing here declares a transition or touches the
+ * active state, and both used to: a transition shorthand replaces the property
+ * list rather than adding to it, so naming three colours took transform,
+ * box-shadow and opacity off every control the board animates — the press on a
+ * button, the lift on an avatar, the nudge on the music play. The board's
+ * motion is the board's; this is only what it is wearing. */
 .board-frame .${HOST} button:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']),
 .board-frame .${HOST} [role='button']:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']) {
   border-radius: var(--app-radius);
@@ -118,14 +125,6 @@ const INHERIT = `
   font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0;
-  transition:
-    background-color 150ms ease,
-    color 150ms ease,
-    border-color 150ms ease;
-}
-
-.board-frame .${HOST} button:active {
-  transform: translateY(1px);
 }
 
 .board-frame .${HOST} input,
@@ -367,8 +366,12 @@ const INHERIT = `
   font-size: 12.5px;
 }
 
-/* Same skin, but a box that grows: a textarea's height is its content's. */
-.board-frame .${HOST} textarea {
+/* Same skin, but a box that grows: a textarea's height is its content's.
+ *
+ * Poker's, because poker's are loose fields in a form. Retro writes its cards
+ * into a bare textarea inside a box it rings itself, in the column's own
+ * colour — given a box of its own that came out as a border inside a border. */
+.board-frame .${HOST}[data-mode='poker'] textarea {
   min-height: 32px;
   padding: 6px 10px;
   border: 1px solid var(--app-input);
@@ -386,7 +389,7 @@ const INHERIT = `
 
 .board-frame .${HOST} [class*='ddTrigger']:hover,
 .board-frame .${HOST} [class*='ddTrigger'][aria-expanded='true'],
-.board-frame .${HOST} textarea:focus,
+.board-frame .${HOST}[data-mode='poker'] textarea:focus,
 .board-frame .${HOST} input:focus:not([type='range']) {
   border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-line));
   box-shadow: none;
