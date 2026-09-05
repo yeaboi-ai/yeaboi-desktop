@@ -547,8 +547,13 @@ body > [class^='_'] {
   background: #fff;
 }
 
-/* A panel's own button is the app's secondary: filled, unbordered, quiet. */
-.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']),
+/* A panel's own button is the app's secondary: filled, unbordered, quiet.
+ *
+ * Not the dock's, though the dock is drawn inside one. This rule was giving
+ * every key on that row a filled ground and the app's control radius, which is
+ * what turned a bar of bare icons into a strip of little boxes — and it
+ * outranks the dock's own rules, so nothing below could undo it. */
+.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor'], [class*='dockApp']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger'], [class*='dockApp'] *),
 .board-frame .${HOST}[data-mode='poker'] [class*='panelAction'] {
   height: 32px;
   border: 0;
@@ -557,7 +562,7 @@ body > [class^='_'] {
   color: var(--app-text);
 }
 
-.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
+.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor'], [class*='dockApp']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger'], [class*='dockApp'] *):hover,
 .board-frame .${HOST}[data-mode='poker'] [class*='panelAction']:hover {
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
 }
@@ -637,21 +642,25 @@ body > [class^='_'] {
    the window is the same 34px square — the way out, the steps, and Invite —
    so the row reads as one set of things rather than a strip with a button
    stuck on the end. */
+/* No padding of its own: the capsule is exactly as tall as the keys in it, so
+   it stands the same 34 high as the door beside it and the two share a top
+   and a bottom edge. Padded, it was six pixels taller and sat six pixels
+   higher — two floating objects on one row, neither lining up with the other. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
-  padding: 3px;
+  padding: 0;
   gap: 4px;
+}
+
+/* The door's corner, on every key in the row. They were coming out at the
+   app's control radius while the door beside them wore twice that. */
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button {
+  border-radius: calc(var(--app-radius) * 2);
 }
 
 /* The items on it: the rail's rows, at the rail's size and radius. Quiet
    until the cursor is on them. */
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:not([class*='btnPrimary']) {
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
-  padding: 0;
   border: 0;
-  border-radius: 999px;
   background: transparent;
   color: var(--app-muted);
   transition:
@@ -781,6 +790,57 @@ body > [class^='_'] {
 
 :root[data-full-screen] .board-frame .${HOST} [class*='offline'] {
   left: 16px;
+}
+
+
+/* The dock row, settled. Last in the sheet so nothing above can argue with it.
+ *
+ * A bar of bare keys, not a strip of boxes: no ground under an icon until the
+ * cursor is on it, one icon size throughout, fully round ends, and the bar the
+ * same height as the door beside it so the two share a baseline. */
+.board-frame .${HOST} [class*='dockApp'] {
+  border-radius: 999px;
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
+  padding: 2px;
+  gap: 2px;
+}
+
+/* The row carries slots that render nothing — a grip, a separator. At no width
+   they still took their share of the gap, which is why the keys sat at uneven
+   distances from each other. */
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] > [class*='dockItem']:not(:has(button)) {
+  display: none;
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button,
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] [role='button'] {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--app-muted);
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] button:hover {
+  background: color-mix(in srgb, var(--app-secondary) 70%, transparent);
+  color: var(--app-text);
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] [class*='btnPrimary'] {
+  background: var(--app-accent);
+  color: var(--app-bg);
+}
+
+.board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] svg {
+  width: 15px;
+  height: 15px;
 }
 
 `;
