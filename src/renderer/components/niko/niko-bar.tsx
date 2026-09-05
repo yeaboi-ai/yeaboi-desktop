@@ -496,7 +496,7 @@ export function NikoBar() {
   return (
     <div
       data-niko
-      className="fixed bottom-4 left-1/2 z-50 flex flex-col"
+      className="fixed bottom-[calc(1rem+var(--turn-inset))] left-1/2 z-50 flex flex-col transition-[bottom] duration-300 ease-out"
       style={{
         // Centred by default; docked right while a screen it opened is being
         // read. A transform either way, so the move is one animation rather

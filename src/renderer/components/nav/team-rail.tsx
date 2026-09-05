@@ -260,7 +260,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       onBlurCapture={leave}
       // Centred, and it stays centred as it grows: opening it takes the rail
       // out both ways from the notch rather than dropping a list beneath it.
-      className="fixed top-1/2 left-[var(--turn-inset)] z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width,left] duration-200 ease-out"
+      className="fixed top-1/2 left-0 z-40 -translate-y-1/2 overflow-hidden rounded-r-2xl bg-card/85 p-1.5 shadow-xl ring-1 ring-border/60 backdrop-blur-md transition-[width] duration-200 ease-out"
       style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
