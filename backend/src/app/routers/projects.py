@@ -149,6 +149,7 @@ async def get_project(
         "is_demo": project.is_demo,
         "default_generation_style": project.default_generation_style,
         "default_modifiers": list(project.default_modifiers or []),
+        "yeaboi_project_id": project.yeaboi_project_id,
         "status": project.status,
     }
     return response
