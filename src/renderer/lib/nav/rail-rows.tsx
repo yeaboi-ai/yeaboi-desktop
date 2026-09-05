@@ -12,6 +12,7 @@ import {
   Blocks,
   Bot,
   CalendarClock,
+  CalendarDays,
   Columns3,
   Gauge,
   Home,
@@ -76,6 +77,7 @@ const SETTINGS_ICONS: Record<string, RailIcon> = {
   '/settings/appearance': Palette,
   '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
+  '/ceremonies': CalendarDays,
   '/privacy': Lock,
 };
 

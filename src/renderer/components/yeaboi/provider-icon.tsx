@@ -184,7 +184,10 @@ export function ProviderIcon({
   return (
     <span
       aria-hidden
-      className="flex shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40 text-foreground/85"
+      /* No plate behind the mark: these sit on cards that already have a fill
+         and inside tiles that have a ring, and a third box around the logo was
+         one frame too many. */
+      className="flex shrink-0 items-center justify-center rounded-xl text-foreground/85"
       style={{
         width: size,
         height: size,

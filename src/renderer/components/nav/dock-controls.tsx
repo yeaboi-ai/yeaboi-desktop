@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   CalendarDays,
   Check,
   ChevronsUpDown,
@@ -241,7 +242,26 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
                 : undefined,
             }}
           >
-            <Settings className="h-[14px] w-[14px]" />
+            {/* The gear turns into the way back. Both faces are here and one
+                of them is always leaving: the gear winds a quarter turn out as
+                the arrow swings in, so the button changes job in front of you
+                rather than swapping glyphs between frames. */}
+            <span className="relative flex h-[14px] w-[14px] items-center justify-center">
+              <Settings
+                aria-hidden
+                className={`absolute h-[14px] w-[14px] transition-all duration-200 ease-out ${
+                  settingsActive ? 'rotate-90 scale-75 opacity-0' : 'rotate-0 scale-100 opacity-100'
+                }`}
+              />
+              <ArrowLeft
+                aria-hidden
+                className={`absolute h-[14px] w-[14px] transition-all duration-200 ease-out ${
+                  settingsActive
+                    ? 'rotate-0 scale-100 opacity-100'
+                    : '-rotate-90 scale-75 opacity-0'
+                }`}
+              />
+            </span>
           </Link>
 
           <OpsMenu cmdHeld={cmdHeld} />

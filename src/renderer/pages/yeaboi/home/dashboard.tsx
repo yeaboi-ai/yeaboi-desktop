@@ -17,15 +17,7 @@ import { CalendarClock, Columns3, Gauge, LayoutGrid, Share2, Sparkles } from 'lu
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
-import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { apiGet, callTool } from '@/lib/yeaboi/api';
-
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-}
 
 interface Board {
   id: string;
@@ -38,7 +30,10 @@ interface Board {
 /** What the Usage page totals, summarised on one tile. */
 interface Usage {
   call_count: number;
+  input_tokens: number;
+  output_tokens: number;
   total_tokens: number;
+  note?: string;
 }
 
 interface ChangelogEntry {
@@ -115,8 +110,6 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 export function HomeDashboard() {
   const router = useRouter();
-  const { authFetch, ready, teamVersion } = useAuthFetch();
-  const [projects, setProjects] = useState<Project[]>([]);
   const [boards, setBoards] = useState<Board[]>([]);
   const [shares, setShares] = useState<unknown[]>([]);
   const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
@@ -131,14 +124,6 @@ export function HomeDashboard() {
   // with the week — mounted through their own exit, or there is nothing to
   // animate.
   const [monthView, setMonthView] = useState(false);
-
-  useEffect(() => {
-    if (!ready) return;
-    authFetch('/api/projects')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows: Project[]) => setProjects(rows.slice(0, 5)))
-      .catch(() => setProjects([]));
-  }, [ready, authFetch, teamVersion]);
 
   useEffect(() => {
     apiGet<{ boards?: Board[] }>('/api/boards').then(
@@ -181,26 +166,6 @@ export function HomeDashboard() {
 
         <Displaced away={monthView}>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Tile title="Projects" icon={LayoutGrid}>
-              {projects.length === 0 ? (
-                <Empty>Nothing yet — a project is where ceremonies share memory.</Empty>
-              ) : (
-                <ul className="flex flex-col gap-1.5">
-                  {projects.map((project) => (
-                    <li key={project.id}>
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/projects/${project.id}`)}
-                        className="w-full truncate rounded-lg px-2 py-1 text-left font-body text-[12px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-                      >
-                        {project.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Tile>
-
             <Tile title="Recent boards" icon={Columns3}>
               {boards.length === 0 ? (
                 <Empty>No boards run yet.</Empty>
@@ -249,26 +214,37 @@ export function HomeDashboard() {
               )}
             </Tile>
 
-            <Tile title="Usage" icon={Gauge} href="/usage">
+            {/* All four figures, which is the whole of what the Usage page
+                was. A screen to say four numbers is a screen you have to go to
+                and come back from. */}
+            <Tile title="Usage" icon={Gauge}>
               {usage ? (
-                <dl className="grid grid-cols-2 gap-2">
-                  <div>
-                    <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
-                      LLM calls
-                    </dt>
-                    <dd className="font-code text-[13px] text-foreground">
-                      {usage.call_count.toLocaleString('en-US')}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
-                      Tokens
-                    </dt>
-                    <dd className="font-code text-[13px] text-foreground">
-                      {usage.total_tokens.toLocaleString('en-US')}
-                    </dd>
-                  </div>
-                </dl>
+                <>
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+                    {(
+                      [
+                        ['LLM calls', usage.call_count],
+                        ['Total tokens', usage.total_tokens],
+                        ['In', usage.input_tokens],
+                        ['Out', usage.output_tokens],
+                      ] as const
+                    ).map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
+                          {label}
+                        </dt>
+                        <dd className="font-code text-[13px] text-foreground">
+                          {value.toLocaleString('en-US')}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {usage.note && (
+                    <p className="mt-3 font-body text-[11px] leading-relaxed text-muted-foreground/70">
+                      {usage.note}
+                    </p>
+                  )}
+                </>
               ) : (
                 <Empty>Nothing counted yet.</Empty>
               )}

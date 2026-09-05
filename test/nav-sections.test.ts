@@ -169,19 +169,27 @@ describe('navSections', () => {
     it('never hides a page that has no other door', () => {
       // Every one of these is reachable from somewhere the window draws: two
       // dashboard tiles and a settings section.
-      expect([...OPS_ELSEWHERE].sort()).toEqual(['/privacy', '/usage', '/whats-new']);
+      expect([...OPS_ELSEWHERE].sort()).toEqual([
+        '/ceremonies',
+        '/privacy',
+        '/usage',
+        '/whats-new',
+      ]);
       const dashboard = readFileSync(
         new URL('../src/renderer/pages/yeaboi/home/dashboard.tsx', import.meta.url),
         'utf8',
       );
-      for (const href of ['/whats-new', '/usage']) {
-        expect(dashboard.includes(`href="${href}"`), `no tile opens ${href}`).toBe(true);
-      }
+      // What's New opens from its tile; Usage has no page left, so its tile
+      // carries the figures the page used to draw.
+      expect(dashboard.includes('href="/whats-new"'), 'no tile opens /whats-new').toBe(true);
+      expect(dashboard.includes('usage_get'), 'no tile reads the usage figures').toBe(true);
       const tabs = readFileSync(
         new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),
         'utf8',
       );
-      expect(tabs.includes("'/privacy'"), '/privacy is not a settings tab').toBe(true);
+      for (const route of ['/ceremonies', '/privacy']) {
+        expect(tabs.includes(`'${route}'`), `${route} is not a settings tab`).toBe(true);
+      }
     });
 
     it('is empty only where the rail already carries everything', () => {

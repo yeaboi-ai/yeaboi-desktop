@@ -42,7 +42,6 @@ import YeaboiSettingsPage from '@/pages/yeaboi/settings/yeaboi-settings-page';
 import ShipPage from '@/pages/yeaboi/ship/ship-page';
 import ShipRunPage from '@/pages/yeaboi/ship/ship-run-page';
 import SystemCheckPage from '@/pages/yeaboi/system-check-page';
-import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
 import BlueprintPage from '@/pages/projects/blueprint-page';
 import BoardSettingsPage from '@/pages/projects/board-settings-page';
@@ -112,7 +111,6 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/feedback': <FeedbackPage />,
   '/privacy': <PrivacyPage />,
   '/system-check': <SystemCheckPage />,
-  '/usage': <UsagePage />,
   '/team/ship': <ShipPage />,
   '/team/ship/run': <ShipRunPage />,
   '/solo/review': <ReviewPage />,
@@ -141,6 +139,10 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/ceremonies': <CeremoniesPage />,
   '/ceremonies/slack': <CeremoniesSlackPage />,
   '/provenance': <ProvenancePage />,
+  // The four figures it drew are a tile on the dashboard. The route stays —
+  // the manifest declares it and the terminal has its own Usage page — and
+  // lands where the numbers are.
+  '/usage': <Navigate to="/home" replace />,
   '/settings/credentials': <YeaboiSettingsPage />,
   '/settings/connections': <YeaboiSettingsPage />,
   // Folded into System. The contract still declares the tab and the terminal

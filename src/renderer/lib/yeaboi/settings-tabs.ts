@@ -26,10 +26,13 @@ export const CHROME_TABS: readonly { route: string; title: string }[] = [
   { route: '/settings/appearance', title: 'Appearance' },
   { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
-  // Privacy is a settings page that happens to live at the top level: what is
-  // sent where, and the switches that decide it. It keeps its route — the
-  // manifest and the terminal both name it — and reads as a settings section
-  // here, which is where anyone would look for it.
+  // Two settings pages that happen to live at the top level. Ceremonies is
+  // what runs on a schedule and where it is sent, which is the same question
+  // as the calendar and chat integrations that will sit beside it. Privacy is
+  // what leaves the machine and the switches that decide it. Both keep their
+  // routes — the manifest and the terminal name them — and read as settings
+  // sections here, which is where anyone would look.
+  { route: '/ceremonies', title: 'Ceremonies' },
   { route: '/privacy', title: 'Privacy' },
 ];
 

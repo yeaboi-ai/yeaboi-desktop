@@ -42,6 +42,7 @@ import {
   type SettingsSnapshot,
 } from '@/lib/yeaboi/settings';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
 import { Badge } from '@/components/ui/badge';
@@ -426,66 +427,75 @@ function PrivacyBody() {
         </p>
       </div>
 
-      <div className="mt-5 space-y-4">
-        {groups.map((group, index) => {
-          const rows = rowsFor(group);
-          if (rows.length === 0) return null;
-          // A group whose toggleable rows all share one switch carries it on
-          // the header — state lives once (the tunnel family).
-          const entries = rows
-            .map((row) => switchByKey.get(row.key))
-            .filter((entry): entry is EgressSwitch => entry !== undefined);
-          const sharedEntry =
-            rows.length > 1 &&
-            entries.length === rows.length &&
-            new Set(entries.map((entry) => entry.env)).size === 1
-              ? entries[0]
-              : undefined;
-          const sharedField = sharedEntry ? fieldByEnv.get(sharedEntry.env) : undefined;
-          // The header switch is live only with its field; without settings the
-          // group degrades to per-row passive chips like everything else.
-          const sharedLive = sharedEntry && sharedField ? sharedEntry : undefined;
+      {/* Two columns, the way the other tabs use the width. Not a grid: a row
+          is as tall as its tallest cell, and these cards are all different
+          heights, so one column of them would sit beside a column of holes. */}
+      <div className="mt-5 grid items-start gap-4 xl:grid-cols-2">
+        {[0, 1].map((column) => (
+          <div key={column} className="space-y-4">
+            {groups
+              .filter((_, at) => at % 2 === column)
+              .map((group, index) => {
+                const rows = rowsFor(group);
+                if (rows.length === 0) return null;
+                // A group whose toggleable rows all share one switch carries it on
+                // the header — state lives once (the tunnel family).
+                const entries = rows
+                  .map((row) => switchByKey.get(row.key))
+                  .filter((entry): entry is EgressSwitch => entry !== undefined);
+                const sharedEntry =
+                  rows.length > 1 &&
+                  entries.length === rows.length &&
+                  new Set(entries.map((entry) => entry.env)).size === 1
+                    ? entries[0]
+                    : undefined;
+                const sharedField = sharedEntry ? fieldByEnv.get(sharedEntry.env) : undefined;
+                // The header switch is live only with its field; without settings the
+                // group degrades to per-row passive chips like everything else.
+                const sharedLive = sharedEntry && sharedField ? sharedEntry : undefined;
 
-          return (
-            <SettingsCard key={group.key} index={index}>
-              <SettingsSectionHeader
-                title={group.title}
-                subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
-                icon={<GroupIcon group={group.key} />}
-                action={
-                  sharedEntry && sharedField ? (
-                    <PathSwitch
-                      field={sharedField}
-                      onValue={sharedEntry.on_value}
-                      busy={busyEnv === sharedEntry.env}
-                      onFlip={(value) => void flip(sharedEntry.env, value)}
-                    />
-                  ) : undefined
-                }
-              />
-              {sharedLive && notice?.env === sharedLive.env && (
-                <div className="border-b border-border/50 px-4 pb-2.5">
-                  <NoticeLine notice={notice} />
-                </div>
-              )}
-              <div className="divide-y divide-border/40">
-                {rows.map((row) => {
-                  const entry = switchByKey.get(row.key);
-                  return (
-                    <DisclosureRow
-                      key={row.key}
-                      row={row}
-                      control={sharedLive ? null : controlFor(row)}
-                      notice={
-                        !sharedLive && entry && notice?.env === entry.env ? notice : undefined
+                return (
+                  <SettingsCard key={group.key} index={index}>
+                    <SettingsSectionHeader
+                      title={group.title}
+                      subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
+                      icon={<GroupIcon group={group.key} />}
+                      action={
+                        sharedEntry && sharedField ? (
+                          <PathSwitch
+                            field={sharedField}
+                            onValue={sharedEntry.on_value}
+                            busy={busyEnv === sharedEntry.env}
+                            onFlip={(value) => void flip(sharedEntry.env, value)}
+                          />
+                        ) : undefined
                       }
                     />
-                  );
-                })}
-              </div>
-            </SettingsCard>
-          );
-        })}
+                    {sharedLive && notice?.env === sharedLive.env && (
+                      <div className="border-b border-border/50 px-4 pb-2.5">
+                        <NoticeLine notice={notice} />
+                      </div>
+                    )}
+                    <div className="divide-y divide-border/40">
+                      {rows.map((row) => {
+                        const entry = switchByKey.get(row.key);
+                        return (
+                          <DisclosureRow
+                            key={row.key}
+                            row={row}
+                            control={sharedLive ? null : controlFor(row)}
+                            notice={
+                              !sharedLive && entry && notice?.env === entry.env ? notice : undefined
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </SettingsCard>
+                );
+              })}
+          </div>
+        ))}
       </div>
     </>
   );
@@ -531,30 +541,14 @@ function AboutFooter() {
 }
 
 export default function PrivacyPage() {
+  // A settings section rather than a page of its own — same frame, same
+  // heading, same width as the tabs it sits with in the rail.
   return (
-    <BackendGate>
-      <div className="relative mx-auto max-w-3xl px-6 pt-10 pb-28">
-        {/* The onboarding hero's pool of light, scaled to a page header —
-            color-mix over --primary so it follows both themes. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-72"
-          style={{
-            background:
-              'radial-gradient(480px 320px at 18% 0%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 70%)',
-          }}
-        />
-        <header className="relative mb-6">
-          <p className="text-[10px] font-body font-medium tracking-[0.14em] text-muted-foreground uppercase">
-            What leaves this machine
-          </p>
-          <h1 className="font-display mt-0.5 text-4xl text-foreground">Privacy</h1>
-        </header>
-        <div className="relative">
-          <PrivacyBody />
-          <AboutFooter />
-        </div>
-      </div>
-    </BackendGate>
+    <SettingsPageShell active="/privacy">
+      <BackendGate>
+        <PrivacyBody />
+        <AboutFooter />
+      </BackendGate>
+    </SettingsPageShell>
   );
 }
