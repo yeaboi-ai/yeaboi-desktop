@@ -2,19 +2,24 @@ name: release
 
 # Build, sign, notarize and publish the Electron app.
 #
+# It runs on every push to main and decides for itself whether there is anything
+# to release: auto-version.yml has already moved package.json and the shell
+# ledger on the PR, so a merged version that yeaboi-desktop-releases does not
+# hold yet is built and published, and any other merge is a twenty-second no-op.
+# A dispatch does the same by hand, and may name an older wheel.
+#
 # This lane does NOT ride the Python release. The yeaboi repo puts a wheel on
 # PyPI; this workflow takes a wheel that is ALREADY there and wraps it in an
-# application. The wheel version is therefore an input, never derived from the
-# tree: a desktop build has to be reproducible from a released artifact, and a
-# rebuild of yesterday's app must bundle yesterday's yeaboi.
+# application. A push bundles the newest final on PyPI; a dispatch may pin one,
+# so a rebuild of last month's app still bundles last month's yeaboi.
 #
-# The app's own version is package.json's — bumped by hand, together with the
-# matching head entry in src/renderer/lib/yeaboi/shell-changelog.json, in the
-# PR that warrants a release. The two versions are independent; electron-updater
-# compares the app's, so it must only ever go up (the last shared-version
-# release was 3.32.0 — the independent line starts at 4.0.0).
+# The app's own version is package.json's, bumped by auto-version.yml together
+# with the matching head entry in src/renderer/lib/yeaboi/shell-changelog.json.
+# The two versions are independent; electron-updater compares the app's, so it
+# must only ever go up (the last shared-version release was 3.32.0 — the
+# independent line starts at 4.0.0).
 #
-# The pinned version must be a final. An rc reaches PyPI on every version-moving
+# The bundled wheel must be a final. An rc reaches PyPI on every version-moving
 # push to main, and shipping one inside a signed installer would put unreviewed
 # code on someone's machine with a notarized ticket vouching for it.
 #
@@ -26,7 +31,9 @@ name: release
 #
 # A missing signing secret does NOT fail electron-builder: it logs "skipped macOS
 # notarization" and carries on. The `Assess the signed app` step below is the only
-# thing that catches it, which is also why the release stays a draft until it passes.
+# thing that catches it, which is why the release is built as a draft and is
+# published by the last job only when a certificate existed — a credential-free
+# rehearsal leaves the draft for a human.
 #
 # The installers go to yeaboi-ai/yeaboi-desktop-releases. That repo's releases are the
 # URLs yeaboi.ai links and the packaged app-update.yml polls, so they stay there now that
@@ -35,11 +42,14 @@ name: release
 # PAT scoped to it.
 
 on:
+  push:
+    branches: [main] # a merged PR; resolve decides whether main's version is still unreleased
   workflow_dispatch:
     inputs:
       yeaboi_version:
-        description: 'the released yeaboi X.Y.Z to bundle (must exist on PyPI)'
-        required: true
+        description: 'the released yeaboi X.Y.Z to bundle (blank = the newest final on PyPI)'
+        required: false
+        default: ''
       platforms:
         description: 'which OS legs to build'
         required: false
@@ -52,7 +62,8 @@ permissions:
 
 concurrency:
   # A fixed group: the app version comes from the tree, not an input, and one
-  # desktop release at a time is correct anyway.
+  # desktop release at a time is correct anyway — two publishing at once would
+  # race on which one is "latest". Queued runs collapse to the newest.
   group: desktop-release
   cancel-in-progress: false
 
@@ -60,37 +71,25 @@ jobs:
   resolve:
     name: Resolve the release
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     outputs:
+      should_release: ${{ steps.pick.outputs.should_release }}
       version: ${{ steps.pick.outputs.version }}
-      wheel: ${{ steps.pick.outputs.wheel }}
+      wheel: ${{ steps.wheel.outputs.wheel }}
       matrix: ${{ steps.legs.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
-      # release-notes.mjs runs in this job; pin its Node like the build legs do
-      # rather than riding whatever the runner image ships.
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
+
       - id: pick
-        # The wheel is checked against PyPI before two runners spend forty
-        # minutes discovering it does not exist; the app version is checked
-        # against the shell ledger so a release can never ship without its notes.
+        # The app version is checked against the shell ledger so a release can
+        # never ship without its notes, then against the releases repo. A merge
+        # that moved no version line is a no-op here; one whose release failed
+        # halfway is retried by the next push, whatever that push changed.
         env:
-          WHEEL: ${{ inputs.yeaboi_version }}
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          wheel="$WHEEL"
-          if ! printf '%s' "$wheel" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::'$wheel' is not a final X.Y.Z — the desktop never ships a pre-release"
-            exit 1
-          fi
-          code=$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/yeaboi/$wheel/json")
-          if [ "$code" != "200" ]; then
-            echo "::error::yeaboi $wheel is not on PyPI (HTTP $code) — release it first"
-            exit 1
-          fi
-
           version=$(jq -r .version package.json)
           if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::package.json version '$version' is not a final X.Y.Z"
@@ -101,15 +100,78 @@ jobs:
             echo "::error::shell-changelog head is $head but package.json says $version — every release ships its notes"
             exit 1
           fi
-
           echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # Re-releasing over a published version would silently rewrite what the
+          # website already links to.
+          repo=yeaboi-ai/yeaboi-desktop-releases
+          # --paginate prints one array per page; flatten so a release on an
+          # earlier page is still seen.
+          releases=$(gh api "repos/$repo/releases" --paginate --jq '.[]' | jq -s .)
+          if printf '%s' "$releases" | jq -e --arg t "v$version" \
+               'any(.[]; .tag_name == $t and .draft == false)' >/dev/null; then
+            if [ "$EVENT" = "push" ]; then
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::v$version is already published — this merge moved no version line, nothing to release."
+              exit 0
+            fi
+            echo "::error::v$version is already published — bump the version"
+            exit 1
+          fi
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "app $version is unreleased"
+
+      # The tree that ships is tested here, once, rather than on both mac legs.
+      # release-notes.mjs runs in this job too; pin its Node like the build legs do
+      # rather than riding whatever the runner image ships.
+      - uses: actions/setup-node@v7
+        if: steps.pick.outputs.should_release == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Test the tree that ships
+        if: steps.pick.outputs.should_release == 'true'
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
+
+      - id: wheel
+        if: steps.pick.outputs.should_release == 'true'
+        # Checked against PyPI before two runners spend forty minutes discovering
+        # it does not exist.
+        env:
+          WHEEL: ${{ inputs.yeaboi_version }}
+        run: |
+          set -euo pipefail
+          wheel="$WHEEL"
+          if [ -z "$wheel" ]; then
+            wheel=$(curl -sf https://pypi.org/pypi/yeaboi/json \
+              | jq -r '.releases | to_entries[] | select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | select(.value | length > 0 and all(.[]; .yanked == false)) | .key' \
+              | sort -V | tail -1)
+            echo "::notice::no wheel named — bundling the newest final on PyPI, yeaboi $wheel"
+          fi
+          if ! printf '%s' "$wheel" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$wheel' is not a final X.Y.Z — the desktop never ships a pre-release"
+            exit 1
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/yeaboi/$wheel/json")
+          if [ "$code" != "200" ]; then
+            echo "::error::yeaboi $wheel is not on PyPI (HTTP $code) — release it first"
+            exit 1
+          fi
           echo "wheel=$wheel" >> "$GITHUB_OUTPUT"
-          echo "building app $version, bundling yeaboi $wheel"
+          echo "building app ${{ steps.pick.outputs.version }}, bundling yeaboi $wheel"
 
       - id: legs
         # All four legs live here, always: a macOS-first launch must not delete the
         # lanes it is not shipping yet. The matrix is built here because a job-level
         # `if:` cannot see the matrix context — it is evaluated before expansion.
+        # Unconditional, and never empty: a skipped build job still has its
+        # strategy evaluated, and an empty include vector is an error there.
         env:
           PLATFORMS: ${{ inputs.platforms }}
         run: |
@@ -137,26 +199,18 @@ jobs:
       # the race is inside one leg. Creating the draft once, here, is what makes it
       # impossible: every publisher then finds this one.
       - name: Create the one draft the legs publish into
+        if: steps.pick.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
           VERSION: ${{ steps.pick.outputs.version }}
-          WHEEL: ${{ steps.pick.outputs.wheel }}
+          WHEEL: ${{ steps.wheel.outputs.wheel }}
         run: |
           set -euo pipefail
           repo=yeaboi-ai/yeaboi-desktop-releases
-          releases=$(gh api "repos/$repo/releases" --paginate)
-
-          # Re-releasing over a published version would silently rewrite what the
-          # website already links to.
-          if printf '%s' "$releases" | jq -e --arg t "v$VERSION" \
-               'any(.[]; .tag_name == $t and .draft == false)' >/dev/null; then
-            echo "::error::v$VERSION is already published — bump the version"
-            exit 1
-          fi
 
           # Drafts left by an earlier attempt, including any duplicate pair.
-          for id in $(printf '%s' "$releases" | jq -r --arg t "v$VERSION" \
-                        '.[] | select(.tag_name == $t) | .id'); do
+          for id in $(gh api "repos/$repo/releases" --paginate --jq '.[]' | jq -r --arg t "v$VERSION" \
+                        'select(.tag_name == $t and .draft) | .id'); do
             echo "removing stale draft $id"
             gh api -X DELETE "repos/$repo/releases/$id"
           done
@@ -171,6 +225,7 @@ jobs:
   build:
     name: ${{ matrix.name }}
     needs: resolve
+    if: needs.resolve.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
@@ -375,6 +430,7 @@ jobs:
   update-metadata:
     name: Merge the update metadata
     needs: [resolve, build]
+    if: needs.resolve.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -410,8 +466,8 @@ jobs:
 
           # `gh release view` resolves a tag to one release and duplicates are
           # legal for drafts, so it would happily report on whichever it picked.
-          n=$(gh api "repos/$repo/releases" --paginate \
-                | jq --arg t "v$VERSION" '[.[] | select(.tag_name == $t)] | length')
+          n=$(gh api "repos/$repo/releases" --paginate --jq '.[]' \
+                | jq -s --arg t "v$VERSION" '[.[] | select(.tag_name == $t)] | length')
           [ "$n" = "1" ] || { echo "::error::$n releases tagged v$VERSION, expected 1"; exit 1; }
 
           gh release view "v$VERSION" --repo "$repo" \
@@ -419,4 +475,21 @@ jobs:
           for want in yeaboi.ai-arm64.dmg yeaboi.ai-x64.dmg latest-mac.yml; do
             grep -qx "$want" assets.txt || { echo "::error::$want is missing"; exit 1; }
           done
-          echo "publish it with: gh release edit v$VERSION --repo yeaboi-ai/yeaboi-desktop-releases --draft=false"
+
+      # Publishing is what moves the website's /releases/latest links and what
+      # the in-app updater sees, so it is the last thing that happens and only
+      # for a build Gatekeeper was actually asked about. The unsigned rehearsal
+      # keeps its draft.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          SIGNED: ${{ secrets.CSC_LINK != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$SIGNED" != "true" ]; then
+            echo "::warning::unsigned rehearsal — v$VERSION stays a draft. Publish it by hand with: gh release edit v$VERSION --repo yeaboi-ai/yeaboi-desktop-releases --draft=false"
+            exit 0
+          fi
+          gh release edit "v$VERSION" --repo yeaboi-ai/yeaboi-desktop-releases --draft=false --latest
+          echo "::notice::v$VERSION is live — the website's /releases/latest links and the in-app updater now serve it"
