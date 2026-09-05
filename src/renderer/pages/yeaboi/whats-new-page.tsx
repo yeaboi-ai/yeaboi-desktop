@@ -163,8 +163,19 @@ const keyOf = (entry: MergedEntry) => `${entry.channel}-${entry.version}`;
 /** A pane that scrolls inside itself, and says so: a scrollbar while there is
  *  somewhere to go, and the content fading at whichever edge it runs past.
  *  Cut off square, a column that carries on reads as one that has ended. */
-function ScrollPane({ className, children }: { className?: string; children: ReactNode }) {
-  const box = useRef<HTMLDivElement>(null);
+function ScrollPane({
+  className,
+  boxRef,
+  children,
+}: {
+  className?: string;
+  /** For a caller that needs the pane's own height — how much it can hold is
+   *  a question only the box can answer. */
+  boxRef?: React.RefObject<HTMLDivElement | null>;
+  children: ReactNode;
+}) {
+  const own = useRef<HTMLDivElement>(null);
+  const box = boxRef ?? own;
   const inner = useRef<HTMLDivElement>(null);
   const [edge, setEdge] = useState({ top: false, bottom: false });
 
@@ -262,6 +273,7 @@ function ReleaseRow({
   return (
     <button
       type="button"
+      data-release-row
       onClick={onPick}
       aria-pressed={picked}
       className={cn(
@@ -382,24 +394,26 @@ function MonthGroup({
   month,
   rows,
   accents,
-  defaultOpen,
+  open,
+  onToggle,
   picked,
   onPick,
 }: {
   month: string;
   rows: MergedEntry[];
   accents: Map<string, string>;
-  defaultOpen: boolean;
+  open: boolean;
+  onToggle: () => void;
   picked: string;
   onPick: (key: string) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="mb-3">
       <button
         type="button"
+        data-month-head
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left font-body text-[11px] tracking-wide text-muted-foreground/60 uppercase transition-colors hover:text-foreground"
       >
         <ChevronRight
@@ -445,6 +459,11 @@ function WhatsNewBody() {
   // leaves — a filter just applied should not leave the panel reading a
   // release that no longer matches it.
   const [picked, setPicked] = useState('');
+  // Months you have opened or closed yourself, over the top of the run the
+  // column opens on its own.
+  const [byHand, setByHand] = useState<Record<string, boolean>>({});
+  const [autoOpen, setAutoOpen] = useState(1);
+  const listPane = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     apiGet<{ entries: Entry[]; areas?: AreaAccent[] }>('/api/meta/changelog').then(
@@ -475,6 +494,41 @@ function WhatsNewBody() {
     () => [...new Set((entries ?? []).flatMap((e) => e.highlights.flatMap((h) => h.areas)))].sort(),
     [entries],
   );
+
+  // How many months the column opens on its own: enough to reach the foot of
+  // the pane and no further. One month is rarely a column's worth — the
+  // newest is four releases and the rest of the space was floor — and every
+  // month is a wall. Measured rather than guessed, from the rows already on
+  // screen: a closed month still lays its rows out behind the clip.
+  useLayoutEffect(() => {
+    const el = listPane.current;
+    if (!el) return;
+    const decide = () => {
+      const months = [...el.querySelectorAll('section')];
+      const pane = el.clientHeight;
+      if (months.length === 0 || pane === 0) return;
+      const head = months[0]!.querySelector('[data-month-head]')?.getBoundingClientRect().height;
+      const row = el.querySelector('[data-release-row]')?.getBoundingClientRect().height;
+      let used = months.length * ((head ?? 30) + 12);
+      let open = 0;
+      for (const month of months) {
+        open += 1;
+        used += month.querySelectorAll('[data-release-row]').length * ((row ?? 39) + 2);
+        if (used >= pane) break;
+      }
+      setAutoOpen(open);
+    };
+    decide();
+    // The pane's height is the window's; what it holds does not change it, so
+    // this cannot chase its own tail.
+    const watch = new ResizeObserver(decide);
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [entries, area, shown]);
+
+  // A filter is a different ledger; the months you opened in the last one
+  // mean nothing in it.
+  useEffect(() => setByHand({}), [area]);
 
   if (error)
     return (
@@ -543,14 +597,20 @@ function WhatsNewBody() {
           chips and the release you are on stay put while you go back through
           the months. */}
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] items-stretch gap-x-8 xl:grid-cols-2">
-        <ScrollPane className="pr-2">
+        <ScrollPane className="pr-2" boxRef={listPane}>
           {groups.map((group, at) => (
             <MonthGroup
               key={group.month}
               month={group.month}
               rows={group.rows}
               accents={accents}
-              defaultOpen={at === 0}
+              open={byHand[group.month] ?? at < autoOpen}
+              onToggle={() =>
+                setByHand((was) => ({
+                  ...was,
+                  [group.month]: !(was[group.month] ?? at < autoOpen),
+                }))
+              }
               picked={reading ? keyOf(reading) : ''}
               onPick={setPicked}
             />
@@ -592,7 +652,7 @@ export default function WhatsNewPage() {
   // them.
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-10">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-2">
         <header className="mb-7 shrink-0">
           <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
             Releases and updates

@@ -534,7 +534,7 @@ export default function FeedbackPage() {
   // comparison, a long filing slip — scroll inside themselves.
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-10">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-2">
         <BackendGate>
           <FeedbackBody />
         </BackendGate>
