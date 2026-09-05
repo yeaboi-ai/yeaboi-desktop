@@ -127,7 +127,9 @@ function settingsRows(back: string): RailRow[] {
  *  detour, and a list of modes beside one is an invitation to forget you were
  *  in the middle of something. */
 function asideRows(back: string): RailRow[] {
-  return [HOME_ROW, { href: back, label: 'Back', Icon: ArrowLeft, opensGroup: true }];
+  // No hairline between them: two rows are not two groups, and a rule across a
+  // pair reads as something missing from between them.
+  return [HOME_ROW, { href: back, label: 'Back', Icon: ArrowLeft }];
 }
 
 /** The rail's list: a world's modes, the settings sections, or the way out of

@@ -305,7 +305,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
       style={{ width: wide ? WIDE : NARROW }}
     >
       <div ref={listRef} className="relative">
-        {markerTop !== null && (
+        {/* Nothing is lit where nothing is active. The marker holds its place
+            through a swap so it does not blink on the way, but a page you
+            stepped aside to has no row of its own — and leaving the mark on
+            Home said you were on Home. */}
+        {markerTop !== null && (Boolean(activeHref) || Boolean(leaving)) && (
           <span
             aria-hidden
             className="pointer-events-none absolute left-0 right-0 rounded-xl bg-secondary"
