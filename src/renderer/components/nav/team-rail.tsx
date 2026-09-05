@@ -15,7 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useAudience } from '@/components/providers/audience-provider';
-import { isSettingsPath, railGroups } from '@/lib/nav/rail-rows';
+import { isSettingsPath, railRows } from '@/lib/nav/rail-rows';
 import { useActiveHref } from './use-nav-shortcuts';
 
 /** Collapsed and expanded widths. The icon column is the same in both. */
@@ -29,12 +29,16 @@ const HOME_HREF = '/home';
 /** How long the cursor has to stay on the rail before the list opens. Long
  *  enough that passing over a row on the way to another one does not. */
 const OPEN_DWELL_MS = 180;
-/** The list changing hands: every row leaves, top to bottom, and the new one
- *  arrives the same way. Staggered rather than crossfaded, because what is
- *  being shown is one list turning into another and not two lists overlapping. */
-const OUT_STAGGER_MS = 18;
-const OUT_MS = 110;
-const IN_STAGGER_MS = 24;
+/** The list changing hands, one row at a time: a row empties, fills with its
+ *  replacement, and only then does the row below it start. Two waves — every
+ *  row leaving, then every row arriving — reads as the list being cleared and
+ *  another one written, which is not what is happening. */
+const SWAP_STAGGER_MS = 42;
+const OUT_MS = 120;
+/** How long a row takes to grow into or out of the rail — the same transition
+ *  the rows carry, and the beat the rail's own height needs before the slots a
+ *  shorter list left empty can be taken away from under it. */
+const ROW_MS = 220;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -48,35 +52,57 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // a dwell timer firing after something had already closed the rail left a
   // two-row notch wearing full-width labels, and every row in it was then a
   // click that landed on the page behind.
-  const wide = open && labelled;
-
-  // Settings borrows the rail for its own sections. The swap is a state of the
-  // rail rather than a route of its own: the rows leave in the order they are
-  // drawn and the new ones arrive behind them, so it reads as this list
-  // becoming that one.
+  //
+  // Settings borrows the rail for its own sections, and takes it open: those
+  // rows are named things rather than a map you already know, so hiding their
+  // labels behind a hover would be worse than the strip of tabs they replace.
   const pathname = usePathname();
   const mode = isSettingsPath(pathname) ? 'settings' : audience;
-  const [shownMode, setShownMode] = useState<typeof mode>(mode);
-  const [leaving, setLeaving] = useState(false);
-  const groups = useMemo(() => railGroups(shownMode), [shownMode]);
-  const rowCount = groups.reduce((total, group) => total + group.rows.length, 0);
+  const settings = mode === 'settings';
+  const wide = (open && labelled) || settings;
+
+  // One list becoming another, a row at a time.
+  //
+  // `swapping` is the list on its way out; `revealed` is how far down the rail
+  // the new one has got. A slot below that line still holds the old row, which
+  // is what makes this a cascade of single rows changing rather than the whole
+  // rail blinking.
+  const rows = useMemo(() => railRows(mode), [mode]);
+  const [leaving, setLeaving] = useState<typeof rows | null>(null);
+  const [revealed, setRevealed] = useState(Number.POSITIVE_INFINITY);
+  const lastMode = useRef<typeof mode>(mode);
 
   useEffect(() => {
-    if (mode === shownMode) return;
-    setLeaving(true);
-    const out = setTimeout(
-      () => {
-        setShownMode(mode);
-        setLeaving(false);
-      },
-      (rowCount - 1) * OUT_STAGGER_MS + OUT_MS,
-    );
-    return () => clearTimeout(out);
-  }, [mode, shownMode, rowCount]);
+    if (lastMode.current === mode) return;
+    setLeaving(railRows(lastMode.current));
+    setRevealed(0);
+    lastMode.current = mode;
+  }, [mode]);
 
-  const items = groups.flatMap((group) => group.rows);
-  const order = new Map(items.map((item, index) => [item.href, index]));
-  const activeHref = useActiveHref(items.map((item) => item.href));
+  const slots = Math.max(rows.length, leaving?.length ?? 0);
+
+  useEffect(() => {
+    if (!leaving) return;
+    if (revealed >= slots) {
+      // A shorter list leaves empty slots at the foot, and they collapse
+      // rather than vanish — unmounting them the moment the last row landed
+      // took the rail's height off in one step.
+      const settle = setTimeout(() => {
+        setLeaving(null);
+        setRevealed(Number.POSITIVE_INFINITY);
+      }, ROW_MS);
+      return () => clearTimeout(settle);
+    }
+    // The first row waits out its own exit; every row after it waits for the
+    // one above to have finished changing.
+    const next = setTimeout(
+      () => setRevealed((far) => far + 1),
+      revealed === 0 ? OUT_MS : SWAP_STAGGER_MS,
+    );
+    return () => clearTimeout(next);
+  }, [revealed, slots, leaving]);
+
+  const activeHref = useActiveHref(rows.map((item) => item.href));
 
   // A marker that slides to wherever you are, rather than a highlight that
   // simply appears there. Scrolling the deck moves through the rail, and the
@@ -152,8 +178,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // whole list of icons. The labels still wait for a hover, everywhere.
   // Settings is the exception: its sections are the only nav that page has, so
   // collapsing them to a notch would leave it with none.
-  const notch =
-    shownMode !== 'settings' && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+  const notch = !settings && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
 
   // The marker travels on a page turn and only then. Hovering changes the rows'
   // heights, and a marker that animates to catch up reads as a second thing
@@ -165,9 +190,12 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     // Only where the row is, never how tall: the active row is always ROW high,
     // and a measurement taken while the others are collapsing catches it
     // mid-transition and leaves a sliver.
+    // Mid-swap the active row has not been dealt yet, and a marker that
+    // vanishes for it and comes back is a third thing moving. It holds where it
+    // was until there is somewhere to be.
     const measure = () => {
       const row = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
-      setMarkerTop(row ? row.offsetTop : null);
+      if (row) setMarkerTop(row.offsetTop);
     };
 
     const navigated = lastHref.current !== activeHref;
@@ -189,13 +217,13 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     };
     frame = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(frame);
-  }, [activeHref, open, wide, shownMode, notch, leaving]);
+  }, [activeHref, open, wide, notch, revealed, slots]);
 
   return (
     <nav
       ref={navRef}
       data-rail
-      aria-label={shownMode === 'settings' ? 'Settings sections' : 'Modes'}
+      aria-label={settings ? 'Settings sections' : 'Modes'}
       // Any movement on the rail is asking for it — including from inside its
       // own notch, which is the only way to open it once you have arrived here
       // through it. Except over Home, which is a destination and not a
@@ -238,72 +266,83 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
             }}
           />
         )}
-        {groups.map((group, index) => (
-          <div key={group.key}>
-            {/* A hairline instead of a heading: at 48px wide there is nowhere to
-              put the word, and the group still needs to read as a group. */}
-            {index > 0 && (
+        {Array.from({ length: slots }, (_, slot) => {
+          // The slot is the frame; the row is what is in it. Below the line the
+          // new list has reached, that is still the old row — which is what
+          // makes a swap a row changing rather than a rail blinking.
+          const arrived = slot < revealed;
+          // Not yet arrived means the old list still owns the slot — including
+          // when the old list was shorter and owns nothing there. Falling back
+          // to the new row would deal the tail of a longer list all at once.
+          const row = arrived || !leaving ? rows[slot] : leaving[slot];
+          const empty = !row;
+          const active = Boolean(row) && activeHref === row!.href;
+          // Home is always in the notch: the way back to the map should never
+          // be a hover away.
+          const kept = active || row?.href === HOME_HREF;
+          const hidden = empty || (notch && !kept);
+          const Icon = row?.Icon;
+          return (
+            <div key={slot}>
+              {/* A hairline instead of a heading: at 48px wide there is nowhere
+                to put the word, and the group still needs to read as a group.
+                It belongs to the row that opens the group, so it travels with
+                it through a swap. */}
               <div
+                aria-hidden
                 className="mx-2 bg-border/50 transition-all duration-200 ease-out"
                 style={{
-                  height: notch ? 0 : 1,
-                  opacity: notch ? 0 : 1,
-                  marginTop: notch ? 0 : 6,
-                  marginBottom: notch ? 0 : 6,
+                  height: row?.opensGroup && !notch ? 1 : 0,
+                  opacity: row?.opensGroup && !notch ? 1 : 0,
+                  marginTop: row?.opensGroup && !notch ? 6 : 0,
+                  marginBottom: row?.opensGroup && !notch ? 6 : 0,
                 }}
               />
-            )}
-            {group.rows.map(({ href, label, Icon }) => {
-              const active = activeHref === href;
-              // Where this row sits in the whole list, so a swap runs top to
-              // bottom across the rail rather than restarting in each group.
-              const position = order.get(href) ?? 0;
-              // Home is always in the notch: the way back to the map should
-              // never be a hover away.
-              const kept = active || href === HOME_HREF;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  title={label}
-                  data-active={active}
-                  data-home={href === HOME_HREF || undefined}
-                  // Reaching for Home from somewhere else is a click, not a
-                  // request for the list — but on Home it is the only row
-                  // there, so it has to be the way the rail opens.
-                  onMouseEnter={href === HOME_HREF && activeHref !== HOME_HREF ? undefined : enter}
-                  onPointerDown={press(href)}
-                  // The press has already navigated; the click that follows it
-                  // would only push the same route a second time. A keyboard
-                  // Enter never presses, so it still travels this way.
-                  onClick={(event) => {
-                    if (!pressed.current) return;
-                    event.preventDefault();
-                  }}
-                  aria-hidden={notch && !kept}
-                  tabIndex={notch && !kept ? -1 : undefined}
-                  className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
-                    active
-                      ? 'text-foreground'
-                      : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                  }`}
-                  style={{
-                    height: notch && !kept ? 0 : ROW,
-                    opacity: notch && !kept ? 0 : 1,
-                    pointerEvents: notch && !kept ? 'none' : undefined,
-                    boxShadow: active && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
-                  }}
-                >
-                  {/* The row's frame stays; what it holds is what changes
-                    hands. Keyed on the list it belongs to, so arriving is a
-                    mount and the animation has something to run on. */}
+              <Link
+                href={row?.href ?? HOME_HREF}
+                title={row?.label}
+                data-active={active}
+                data-home={row?.href === HOME_HREF || undefined}
+                // Reaching for Home from somewhere else is a click, not a
+                // request for the list — but on Home it is the only row
+                // there, so it has to be the way the rail opens.
+                onMouseEnter={
+                  row?.href === HOME_HREF && activeHref !== HOME_HREF ? undefined : enter
+                }
+                onPointerDown={press(row?.href ?? HOME_HREF)}
+                // The press has already navigated; the click that follows it
+                // would only push the same route a second time. A keyboard
+                // Enter never presses, so it still travels this way.
+                onClick={(event) => {
+                  if (!pressed.current) return;
+                  event.preventDefault();
+                }}
+                aria-hidden={hidden}
+                tabIndex={hidden ? -1 : undefined}
+                className={`relative flex items-center gap-3 overflow-hidden rounded-xl px-[11px] text-xs font-body font-medium transition-all duration-200 ease-out ${
+                  active
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                }`}
+                style={{
+                  height: hidden ? 0 : ROW,
+                  opacity: hidden ? 0 : 1,
+                  pointerEvents: hidden ? 'none' : undefined,
+                  boxShadow: active && cmdHeld ? 'inset 0 0 0 1px var(--primary)' : 'none',
+                }}
+              >
+                {/* Keyed on the row, so a slot changing hands mounts what
+                  arrives and the animation has something to run on. The one
+                  on its way out is the row still sitting above the line. */}
+                {Icon && row && (
                   <span
-                    key={shownMode}
+                    key={row.href}
                     className={`flex min-w-0 flex-1 items-center gap-3 ${
-                      leaving ? 'rail-row-out' : 'rail-row-in'
+                      leaving && !arrived ? 'rail-row-out' : 'rail-row-in'
                     }`}
                     style={{
-                      animationDelay: `${position * (leaving ? OUT_STAGGER_MS : IN_STAGGER_MS)}ms`,
+                      animationDelay:
+                        leaving && !arrived ? `${slot * SWAP_STAGGER_MS}ms` : undefined,
                     }}
                   >
                     <Icon className="h-[15px] w-[15px] shrink-0" />
@@ -314,14 +353,14 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                       style={{ opacity: wide ? 1 : 0 }}
                       aria-hidden={!wide}
                     >
-                      {label}
+                      {row.label}
                     </span>
                   </span>
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+                )}
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </nav>
   );

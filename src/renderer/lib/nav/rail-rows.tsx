@@ -42,12 +42,10 @@ export interface RailRow {
   href: string;
   label: string;
   Icon: RailIcon;
-}
-
-/** One hairline's worth of rows. */
-export interface RailGroup {
-  key: string;
-  rows: RailRow[];
+  /** A hairline goes above this row: the group it opens. Carried on the row
+   *  rather than on a wrapper because a list swap is row-by-row, and a slot
+   *  mid-swap can be holding a row from either list. */
+  opensGroup?: boolean;
 }
 
 const MODE_ICONS: Partial<Record<IconKey, RailIcon>> = {
@@ -86,34 +84,32 @@ export function isSettingsPath(pathname: string | null | undefined): boolean {
   return Boolean(pathname && (pathname === '/settings' || pathname.startsWith('/settings/')));
 }
 
-function modeGroups(audience: Audience): RailGroup[] {
-  return railSections(audience).map((section, index) => ({
-    key: section.label ?? `top-${index}`,
-    rows: section.items.map((item) => ({
+function modeRows(audience: Audience): RailRow[] {
+  return railSections(audience).flatMap((section, index) =>
+    section.items.map((item, position) => ({
       href: item.href,
       label: item.label,
       Icon: MODE_ICONS[item.icon] ?? Bot,
+      opensGroup: index > 0 && position === 0,
     })),
-  }));
+  );
 }
 
-/** Home, then the sections — the same two-group shape the worlds have, so the
- *  hairline lands in the same place and only the icons below it change. */
-function settingsGroups(): RailGroup[] {
+/** Home, then the sections — the same shape the worlds have, so the hairline
+ *  lands in the same place and only the icons below it change. */
+function settingsRows(): RailRow[] {
   return [
-    { key: 'home', rows: [HOME_ROW] },
-    {
-      key: 'settings',
-      rows: ALL_SETTINGS_TABS.map((tab) => ({
-        href: tab.route,
-        label: tab.title,
-        Icon: SETTINGS_ICONS[tab.route] ?? SlidersHorizontal,
-      })),
-    },
+    HOME_ROW,
+    ...ALL_SETTINGS_TABS.map((tab, index) => ({
+      href: tab.route,
+      label: tab.title,
+      Icon: SETTINGS_ICONS[tab.route] ?? SlidersHorizontal,
+      opensGroup: index === 0,
+    })),
   ];
 }
 
 /** The rail's list for a mode: an audience, or settings. */
-export function railGroups(mode: Audience | 'settings'): RailGroup[] {
-  return mode === 'settings' ? settingsGroups() : modeGroups(mode);
+export function railRows(mode: Audience | 'settings'): RailRow[] {
+  return mode === 'settings' ? settingsRows() : modeRows(mode);
 }
