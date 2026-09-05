@@ -76,6 +76,30 @@ describe('accountFeatures', () => {
     expect(on).toMatchObject({ signIn: false, signedIn: true, account: 'dinho', browse: true });
   });
 
+  it('asks for a client before offering a sign-in it cannot start', () => {
+    const row = { ...base, key: 'youtube_music' as const, can_sign_in: true, account: '' };
+    expect(
+      accountFeatures('youtube_music', { ...row, signed_in: false, client: 'none' }),
+    ).toMatchObject({
+      signIn: true,
+      needsClient: true,
+      ownClient: false,
+    });
+    expect(
+      accountFeatures('youtube_music', { ...row, signed_in: false, client: 'own' }),
+    ).toMatchObject({
+      signIn: true,
+      needsClient: false,
+      ownClient: true,
+    });
+    // A backend that knows sign-ins but not clients reads as configured.
+    expect(accountFeatures('youtube_music', { ...row, signed_in: false }).needsClient).toBe(false);
+    // Signed in, the client no longer matters.
+    expect(
+      accountFeatures('youtube_music', { ...row, signed_in: true, client: 'none' }).needsClient,
+    ).toBe(false);
+  });
+
   it('browses Apple without any sign-in', () => {
     const apple = accountFeatures('apple_music', {
       ...base,

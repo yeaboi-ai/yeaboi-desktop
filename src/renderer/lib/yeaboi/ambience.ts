@@ -27,6 +27,8 @@ export interface MusicServiceState {
   can_sign_in?: boolean;
   signed_in?: boolean;
   account?: string;
+  /** Which OAuth app a sign-in would use: the user's own, yeaboi's, or none yet. */
+  client?: 'own' | 'builtin' | 'none';
 }
 
 export interface AmbienceState {
