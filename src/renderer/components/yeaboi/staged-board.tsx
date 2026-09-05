@@ -273,15 +273,9 @@ body > [class^='_'] {
   display: none;
 }
 
-/* Invite is the one filled thing on the row and reads as itself. */
-.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] [class*='iconLabel'] {
-  display: none;
-}
-
-.board-frame .${HOST} [class*='dockApp'] [class*='btnPrimary'] {
-  width: 26px;
-  padding: 0;
-}
+/* Invite keeps its name. It was stripped to its envelope and squeezed into a
+   26px square to match the icons beside it, which made the one thing on the
+   row anybody needs to find look like the least of them. */
 
 /* Who you are and who else is here closes the bottom row, opposite the way
    out and the controls — not the top, where two chips at the far end of an
@@ -722,6 +716,29 @@ body > [class^='_'] {
    the box that carries it. */
 .board-frame .${HOST} [class*='composeBox']:focus-visible {
   outline: none;
+}
+
+
+/* The board's own toast, off the panel it was speaking from.
+ *
+ * It sits in the invite panel's flow — the board's reasoning is that it is
+ * about that panel. In the flow, though, it is a banner wedged between the
+ * instructions and the link, pushing both apart to say something that has
+ * already finished happening. It sits above the panel instead: still attached
+ * to it, no longer inside it. */
+.board-frame .${HOST} [class*='popover']:not([class*='Anchor']):has([class*='toast']) {
+  position: relative;
+}
+
+.board-frame .${HOST} [class*='toast'] {
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  width: auto;
+  padding: 9px 12px;
+  border-radius: var(--app-radius);
 }
 
 `;
