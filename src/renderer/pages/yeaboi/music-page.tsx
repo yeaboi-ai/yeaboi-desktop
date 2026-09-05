@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
+import { PageShell } from '@/components/page-shell';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { Browser } from '@/components/music/browser';
 import { EmbedSlot } from '@/components/music/embed-slot';
@@ -218,7 +219,7 @@ function ServicePanel({ service }: { service: MusicService }) {
 export default function MusicPage() {
   const { source } = useMusicPlayer();
   return (
-    <div className="mx-auto max-w-[880px] px-8 pb-32 pt-10">
+    <PageShell className="pb-32">
       <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
       <p className="mt-2 text-[14px] text-muted-foreground">
         Something to work to. Nothing plays until you press play.
@@ -228,6 +229,6 @@ export default function MusicPage() {
       </div>
       {source === 'radio' ? <RadioPanel /> : <ServicePanel service={source} />}
       <p className="sr-only">{source === 'radio' ? 'Radio' : SERVICE_LABELS[source]}</p>
-    </div>
+    </PageShell>
   );
 }
