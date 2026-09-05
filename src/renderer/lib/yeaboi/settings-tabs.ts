@@ -28,8 +28,24 @@ export const CHROME_TABS: readonly { route: string; title: string }[] = [
   { route: '/settings/duck', title: 'Duck' },
 ];
 
-/** Every tab on the settings page, in bar order. */
+/** Every tab the contract and this window declare between them. */
 export const ALL_SETTINGS_TABS: readonly { route: string; title: string }[] = [
   ...SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })),
   ...CHROME_TABS,
 ];
+
+/** Tabs whose sections render inside another tab rather than on a page of
+ *  their own.
+ *
+ *  Sharing is one switch and a timeout — a whole surface for a card and a half,
+ *  which read as a page that had lost something. It sits in System, which is
+ *  already where this machine's own behaviour is configured. The contract still
+ *  declares the tab, because the terminal draws its sections its own way; only
+ *  this window folds it. */
+export const FOLDED_TABS: Readonly<Record<string, string>> = {
+  '/settings/sharing': '/settings/system',
+};
+
+/** The tabs this window offers as places to go. */
+export const OFFERED_SETTINGS_TABS: readonly { route: string; title: string }[] =
+  ALL_SETTINGS_TABS.filter((tab) => !(tab.route in FOLDED_TABS));

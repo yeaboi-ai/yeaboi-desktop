@@ -32,7 +32,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-import { ALL_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
+import { OFFERED_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { railSections, type IconKey } from '@/lib/nav/sections';
 import type { Audience } from '@shared/audience';
 
@@ -100,7 +100,7 @@ function modeRows(audience: Audience): RailRow[] {
 function settingsRows(): RailRow[] {
   return [
     HOME_ROW,
-    ...ALL_SETTINGS_TABS.map((tab, index) => ({
+    ...OFFERED_SETTINGS_TABS.map((tab, index) => ({
       href: tab.route,
       label: tab.title,
       Icon: SETTINGS_ICONS[tab.route] ?? SlidersHorizontal,

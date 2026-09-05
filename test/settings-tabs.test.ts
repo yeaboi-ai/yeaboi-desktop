@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_SETTINGS_TABS,
   CHROME_TABS,
+  FOLDED_TABS,
+  OFFERED_SETTINGS_TABS,
   SETTINGS_TABS,
 } from '../src/renderer/lib/yeaboi/settings-tabs';
 import registry from '../src/renderer/lib/yeaboi/routes.json';
@@ -54,5 +56,24 @@ describe('settings tabs', () => {
     for (const tab of CHROME_TABS) {
       expect(engineRoutes.has(tab.route)).toBe(false);
     }
+  });
+
+  describe('folded tabs', () => {
+    it('folds each one into a tab that is still offered', () => {
+      const offered = new Set(OFFERED_SETTINGS_TABS.map((t) => t.route));
+      for (const [from, into] of Object.entries(FOLDED_TABS)) {
+        expect(offered.has(from), `${from} is folded and still offered`).toBe(false);
+        expect(offered.has(into), `${from} folds into ${into}, which is not offered`).toBe(true);
+      }
+    });
+
+    // The contract declares the tab and the terminal draws it, so the route
+    // stays registered — it just lands where the sections went.
+    it('keeps the folded route reachable', () => {
+      for (const from of Object.keys(FOLDED_TABS)) {
+        expect(PATHS.has(from), `${from} is not in routes.json`).toBe(true);
+        expect(ROUTES_TSX.includes(`'${from}'`), `${from} is not served in routes.tsx`).toBe(true);
+      }
+    });
   });
 });

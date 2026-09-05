@@ -32,7 +32,12 @@ export function SettingsPageShell({
   return (
     // The Niko bar is fixed to the bottom of the window; the extra bottom
     // padding is what keeps the last row of a tab reachable under it.
-    <div className={cn('mx-auto px-6 pt-10 pb-28', maxWidth)}>
+    // `w-full` is load-bearing: the deck lays its pages out as a column of
+    // flex items, and `margin: auto` on one of those sizes it to its content
+    // instead of stretching it. Without this the page was as wide as whatever
+    // happened to be on it — Credentials sat narrower than every other tab,
+    // and opening a card widened the whole surface under the cursor.
+    <div className={cn('mx-auto w-full px-6 pt-10 pb-28', maxWidth)}>
       <header className="mb-7">
         <p className="text-[10px] font-body font-medium tracking-[0.14em] text-muted-foreground uppercase">
           Settings

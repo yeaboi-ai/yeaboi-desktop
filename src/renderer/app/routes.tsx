@@ -143,7 +143,12 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/provenance': <ProvenancePage />,
   '/settings/credentials': <YeaboiSettingsPage />,
   '/settings/connections': <YeaboiSettingsPage />,
-  '/settings/sharing': <YeaboiSettingsPage />,
+  // Folded into System. The contract still declares the tab and the terminal
+  // still draws it, so the route stays — a link written before the fold, or a
+  // deep link from the manifest, lands where the sections went. It has to live
+  // in this table rather than beside the redirects below: the registry's routes
+  // are matched first, and an entry missing from here renders a placeholder.
+  '/settings/sharing': <Navigate to="/settings/system" replace />,
   '/settings/system': <YeaboiSettingsPage />,
   '/settings/appearance': <YeaboiSettingsPage />,
   '/settings/duck': <YeaboiSettingsPage />,

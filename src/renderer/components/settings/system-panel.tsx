@@ -75,6 +75,7 @@ export function SystemPanel({
   fields,
   renderRow,
   dictationRow,
+  sharing,
   openCard,
   onToggle,
   onSaved,
@@ -86,6 +87,9 @@ export function SystemPanel({
   renderRow: (field: SettingField) => ReactNode;
   /** The /api/voice status row, which is not a settings field. */
   dictationRow: ReactNode;
+  /** The Sharing tab's cards, folded in here: it was one switch and a timeout
+   *  on a surface of its own. */
+  sharing?: ReactNode;
   openCard: string;
   onToggle: (key: string) => void;
   onSaved: (title: string) => void;
@@ -155,6 +159,8 @@ export function SystemPanel({
 
   const connections = (
     <div className="space-y-4">
+      {sharing}
+
       {standup.length > 0 && (
         <ConnectionCard
           card={STANDUP_CARD}

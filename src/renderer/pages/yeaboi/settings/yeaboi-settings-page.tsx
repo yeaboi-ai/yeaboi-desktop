@@ -429,48 +429,45 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     );
   }
 
-  if (tab.title === 'Sharing') {
+  // Sharing is one switch and a timeout, so it renders inside System rather
+  // than on a surface of its own.
+  const sharing = (() => {
     const shareMode = snapshot.fields.find((f) => f.env === 'YEABOI_SHARE_MODE');
     const timeout = snapshot.fields.find((f) => f.env === 'TUNNEL_TIMEOUT_MINUTES');
     const accessFields = sectionFields('sharing').filter((f) => f.env.startsWith('CLOUDFLARE_'));
+    if (!shareMode && !timeout) return null;
 
     return (
-      <div>
-        {banners}
-        <div className="grid items-start gap-4 xl:grid-cols-2">
-          <SettingsCard index={0}>
-            <SettingsSectionHeader
-              title="Sharing"
-              subtitle="Who can open a board you share"
-              icon={<SectionIcon section="sharing" />}
-            />
-            <div className="px-5 py-4">
-              {shareMode && (
-                <ShareModeChoice
-                  active={shareMode.active_choice}
-                  onPick={(value) => void save(shareMode.env, value)}
-                />
-              )}
-            </div>
-            {timeout && (
-              <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>
+      <>
+        <SettingsCard index={4}>
+          <SettingsSectionHeader
+            title="Sharing"
+            subtitle="Who can open a board you share"
+            icon={<SectionIcon section="sharing" />}
+          />
+          <div className="px-5 py-4">
+            {shareMode && (
+              <ShareModeChoice
+                active={shareMode.active_choice}
+                onPick={(value) => void save(shareMode.env, value)}
+              />
             )}
-          </SettingsCard>
-          {/* The five keys mean nothing on the default path, so they appear with
-            the tier — the same rule the terminal's Sharing section follows. */}
-          {shareAccess && accessFields.length > 0 && (
-            <AccessCard
-              fields={accessFields}
-              open={openCard === 'cloudflare'}
-              onToggle={() => setOpenCard((s) => (s === 'cloudflare' ? '' : 'cloudflare'))}
-              onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
-            />
-          )}
-        </div>
-        {footer}
-      </div>
+          </div>
+          {timeout && <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>}
+        </SettingsCard>
+        {/* The five keys mean nothing on the default path, so they appear with
+          the tier — the same rule the terminal's Sharing section follows. */}
+        {shareAccess && accessFields.length > 0 && (
+          <AccessCard
+            fields={accessFields}
+            open={openCard === 'cloudflare'}
+            onToggle={() => setOpenCard((s) => (s === 'cloudflare' ? '' : 'cloudflare'))}
+            onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+          />
+        )}
+      </>
     );
-  }
+  })();
 
   if (tab.title === 'System') {
     return (
@@ -480,6 +477,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           fields={snapshot.fields}
           renderRow={renderRow}
           dictationRow={<DictationRow />}
+          sharing={sharing}
           openCard={openCard}
           onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
           onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
