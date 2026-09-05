@@ -7,6 +7,11 @@
       "title": "Home"
     },
     {
+      "path": "/sessions",
+      "capability": "sessions",
+      "title": "Sessions"
+    },
+    {
       "path": "/whats-new",
       "capability": null,
       "title": "What's New"
@@ -157,6 +162,16 @@
       "title": "Agent Security"
     },
     {
+      "path": "/agents/projects",
+      "capability": "projects",
+      "title": "Agent projects"
+    },
+    {
+      "path": "/agents/projects/:id",
+      "capability": "projects",
+      "title": "Agent project"
+    },
+    {
       "path": "/ceremonies",
       "capability": "ceremonies",
       "title": "Ceremonies"
@@ -295,6 +310,11 @@
       "path": "/settings/duck",
       "capability": null,
       "title": "Settings · Duck"
+    },
+    {
+      "path": "/settings/news",
+      "capability": null,
+      "title": "Settings · Front page"
     },
     {
       "path": "/settings/themes",

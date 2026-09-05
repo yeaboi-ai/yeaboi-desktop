@@ -6,7 +6,7 @@
 // says instead of a cadence, whether the Slack lane can read back and how
 // fresh a saved agent report is are all backend answers.
 
-import { type Envelope, apiGet, apiPost, apiStream, callTool } from './api';
+import { type Envelope, apiGet, apiGetOptional, apiPost, apiStream, callTool } from './api';
 
 // ── Ceremonies ─────────────────────────────────────────────────────────────
 
@@ -153,7 +153,26 @@ export interface AgentLatest {
   label: string;
   report: Record<string, unknown> | null;
   as_of: string;
+  /** Present only when the read was scoped to a project's repo: saved reports
+   *  carry no project, so `report` is null and the surface runs fresh. */
+  scoped_to?: string;
 }
+
+/** Whether a sidecar honoured a project scope: `scoped` when it answered with
+ *  the repo it scoped to, `unscoped` when it ignored the param or the kind is
+ *  machine-wide (the key is always sent, empty when unscoped), `unsupported`
+ *  when it has no such route at all (404). Unscoped wants are always `unscoped`. */
+export type AgentScopeState = 'scoped' | 'unscoped' | 'unsupported';
+
+export function agentScopeState(latest: AgentLatest | null, wanted: string): AgentScopeState {
+  if (!wanted) return latest ? 'unscoped' : 'unsupported';
+  if (!latest) return 'unsupported';
+  return latest.scoped_to ? 'scoped' : 'unscoped';
+}
+
+/** The kinds that read the whole machine whatever project they are opened
+ *  from — a secret in one repo's session log is a secret. */
+export const MACHINE_WIDE_KINDS: ReadonlySet<string> = new Set(['security']);
 
 export interface AgentComponent {
   component_id: string;
@@ -210,11 +229,33 @@ export function reduceAgentRun(state: AgentRunState, line: unknown): AgentRunSta
 
 export const loadAgentModes = (): Promise<AgentModes> => apiGet('/api/agents/modes');
 
-export const loadAgentLatest = (kind: string): Promise<AgentLatest> =>
-  apiGet(`/api/agents/${encodeURIComponent(kind)}/latest`);
+/** `agent-usage` the card, `usage` the API kind. */
+export const kindOf = (key: string): string => key.replace(/^agent-/, '');
 
-export const runAgentMode = (kind: string, onLine: (line: unknown) => void): Promise<void> =>
-  apiStream(`/api/agents/${encodeURIComponent(kind)}/run`, {}, onLine);
+export interface AgentScopeOpts {
+  /** An engine project id (`proj-<8hex>`); its repo path scopes the read. */
+  projectId?: string;
+}
+
+/** The latest saved report; null when the sidecar has no such route. */
+export const loadAgentLatest = (
+  kind: string,
+  opts: AgentScopeOpts = {},
+): Promise<AgentLatest | null> => {
+  const query = opts.projectId ? `?project_id=${encodeURIComponent(opts.projectId)}` : '';
+  return apiGetOptional(`/api/agents/${encodeURIComponent(kind)}/latest${query}`);
+};
+
+export const runAgentMode = (
+  kind: string,
+  onLine: (line: unknown) => void,
+  opts: AgentScopeOpts = {},
+): Promise<void> =>
+  apiStream(
+    `/api/agents/${encodeURIComponent(kind)}/run`,
+    opts.projectId ? { project_id: opts.projectId } : {},
+    onLine,
+  );
 
 export const exportAgentReport = (
   kind: string,

@@ -170,15 +170,9 @@ function SystemCheckBody() {
 
   const header = (
     <header className="mb-7 flex items-start justify-between gap-4">
-      <div>
-        <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-          What&rsquo;s ready on this machine
-        </p>
-        <h1 className="font-display mt-0.5 text-3xl text-foreground">System Check</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {report?.summary ?? 'Every row is optional — the app itself needs none of them.'}
-        </p>
-      </div>
+      <p className="text-[13px] text-muted-foreground">
+        {report?.summary ?? 'Every row is optional. The app itself needs none of them.'}
+      </p>
       <button
         type="button"
         onClick={run}
@@ -279,10 +273,14 @@ function SystemCheckBody() {
 
 export default function SystemCheckPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 pt-10 pb-28">
+    <div className="mx-auto max-w-3xl px-6 pt-10 pb-28">
+      <header className="mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">System check</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">What is ready on this machine.</p>
+      </header>
+      <BackendGate>
         <SystemCheckBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </div>
   );
 }

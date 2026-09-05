@@ -51,9 +51,16 @@ describe('audiencesForRoute', () => {
       '/agents/advisor',
       '/agents/standup',
       '/agents/security',
+      '/agents/projects',
+      '/agents/projects/p1',
     ]) {
       expect(audiencesForRoute(path)).toEqual(['agents']);
     }
+  });
+
+  it('leaves the sessions door in no world — every world has one', () => {
+    expect(audiencesForRoute('/sessions')).toEqual([]);
+    for (const world of AUDIENCES) expect(resolveAudience('/sessions', world)).toBeNull();
   });
 
   it('claims the review of your own week for solo alone', () => {

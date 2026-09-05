@@ -1,0 +1,324 @@
+{
+  "enabled": true,
+  "refreshing": false,
+  "schema": 1,
+  "generated_at": "2026-09-04T11:52:00+00:00",
+  "stale": false,
+  "lead": {
+    "id": "lead1",
+    "title": "Hello from the pond",
+    "url": "https://yeaboi.ai/blog/hello",
+    "source_id": "yeaboi-site",
+    "source_name": "yeaboi.ai",
+    "published": "2026-09-02T10:00:00+00:00",
+    "summary": "The first post.",
+    "image_url": "https://yeaboi.ai/assets/og-card.png",
+    "kind": "post",
+    "topic": "general",
+    "persona": "engineer",
+    "column": "yeaboi"
+  },
+  "sections": [
+    {
+      "column": "yeaboi",
+      "title": "yeaboi",
+      "items": [
+        {
+          "id": "rel410",
+          "title": "yeaboi 4.1.0: A front page",
+          "url": "https://pypi.org/project/yeaboi/4.1.0/",
+          "source_id": "yeaboi-changelog",
+          "source_name": "yeaboi",
+          "published": "2026-09-04T00:00:00+00:00",
+          "summary": "The home opens as a newspaper.",
+          "image_url": null,
+          "kind": "release",
+          "topic": "models",
+          "persona": "wizard",
+          "column": "yeaboi"
+        }
+      ]
+    },
+    {
+      "column": "ai",
+      "title": "AI",
+      "items": [
+        {
+          "id": "ai1",
+          "title": "A prompt injection attack on browsing agents",
+          "url": "https://weblog.example/2026/Sep/4/prompt-injection/",
+          "source_id": "simonwillison",
+          "source_name": "Simon Willison",
+          "published": "2026-09-04T07:15:00+00:00",
+          "summary": "A short note on an attack.",
+          "image_url": null,
+          "kind": "article",
+          "topic": "security",
+          "persona": "detective",
+          "column": "ai"
+        },
+        {
+          "id": "ai2",
+          "title": "A story with a persona the roster lacks",
+          "url": "https://outlet.example/pirate",
+          "source_id": "techmeme",
+          "source_name": "Techmeme",
+          "published": "2026-09-04T06:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "policy",
+          "persona": "pirate",
+          "column": "ai"
+        },
+        {
+          "id": "ai3",
+          "title": "A story with no persona and no topic",
+          "url": "https://outlet.example/nothing",
+          "source_id": "techmeme",
+          "source_name": "Techmeme",
+          "published": "2026-09-03T18:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "general",
+          "persona": null,
+          "column": "ai"
+        },
+        {
+          "id": "lead1",
+          "title": "Hello from the pond",
+          "url": "https://yeaboi.ai/blog/hello",
+          "source_id": "yeaboi-site",
+          "source_name": "yeaboi.ai",
+          "published": "2026-09-02T10:00:00+00:00",
+          "summary": "A stray copy of the lead in a column, which the layout drops.",
+          "image_url": null,
+          "kind": "post",
+          "topic": "general",
+          "persona": "engineer",
+          "column": "ai"
+        }
+      ]
+    },
+    {
+      "column": "engineering",
+      "title": "Engineering",
+      "items": [
+        {
+          "id": "e1",
+          "title": "Engineering 1",
+          "url": "https://e.example/1",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T05:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e2",
+          "title": "Engineering 2",
+          "url": "https://e.example/2",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T04:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e3",
+          "title": "Engineering 3",
+          "url": "https://e.example/3",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T03:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e4",
+          "title": "Engineering 4",
+          "url": "https://e.example/4",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T02:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e5",
+          "title": "Engineering 5",
+          "url": "https://e.example/5",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T01:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e6",
+          "title": "Engineering 6",
+          "url": "https://e.example/6",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-04T00:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e7",
+          "title": "Engineering 7",
+          "url": "https://e.example/7",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-03T23:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e8",
+          "title": "Engineering 8",
+          "url": "https://e.example/8",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-03T22:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e9",
+          "title": "Engineering 9",
+          "url": "https://e.example/9",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-03T21:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        },
+        {
+          "id": "e10",
+          "title": "Engineering 10",
+          "url": "https://e.example/10",
+          "source_id": "infoq",
+          "source_name": "InfoQ",
+          "published": "2026-09-03T20:00:00+00:00",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "tooling",
+          "persona": "engineer",
+          "column": "engineering"
+        }
+      ]
+    },
+    { "column": "research", "title": "Research", "items": [] },
+    {
+      "column": "weather",
+      "title": "Weather",
+      "items": [
+        {
+          "id": "w1",
+          "title": "An unknown column the page ignores",
+          "url": "https://w.example/1",
+          "source_id": "w",
+          "source_name": "W",
+          "published": "",
+          "summary": "",
+          "image_url": null,
+          "kind": "article",
+          "topic": "general",
+          "persona": "chef",
+          "column": "weather"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "yeaboi-site",
+      "name": "yeaboi.ai",
+      "home_url": "https://yeaboi.ai/",
+      "column": "yeaboi",
+      "ok": true,
+      "fetched_at": "2026-09-04T11:52:00+00:00",
+      "error": "",
+      "item_count": 1
+    },
+    {
+      "id": "simonwillison",
+      "name": "Simon Willison",
+      "home_url": "https://simonwillison.net/",
+      "column": "ai",
+      "ok": true,
+      "fetched_at": "2026-09-04T11:52:00+00:00",
+      "error": "",
+      "item_count": 1
+    },
+    {
+      "id": "techmeme",
+      "name": "Techmeme",
+      "home_url": "https://www.techmeme.com/",
+      "column": "ai",
+      "ok": true,
+      "fetched_at": "2026-09-04T11:52:00+00:00",
+      "error": "",
+      "item_count": 2
+    },
+    {
+      "id": "infoq",
+      "name": "InfoQ",
+      "home_url": "https://www.infoq.com/",
+      "column": "engineering",
+      "ok": true,
+      "fetched_at": "2026-09-04T11:52:00+00:00",
+      "error": "",
+      "item_count": 10
+    },
+    {
+      "id": "arxiv-cs-ai",
+      "name": "arXiv cs.AI",
+      "home_url": "https://arxiv.org/",
+      "column": "research",
+      "ok": false,
+      "fetched_at": "2026-09-04T11:52:00+00:00",
+      "error": "timeout",
+      "item_count": 0
+    }
+  ]
+}

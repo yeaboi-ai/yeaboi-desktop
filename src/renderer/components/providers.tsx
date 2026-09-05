@@ -16,6 +16,9 @@ import { CapturePicker } from '@/components/session/capture-picker';
 import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { AudienceProvider } from '@/components/providers/audience-provider';
 import { AudienceGate } from '@/components/audience/audience-gate';
+import { RailProvider } from '@/components/providers/rail-provider';
+import { PaletteProvider } from '@/components/providers/palette-provider';
+import { GlobalPalette } from '@/components/palette/global-palette';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -31,13 +34,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   {/* Once onboarding is done, the audience question gates the
                       window the same way — once, and never again. */}
                   <AudienceProvider>
-                    <AudienceGate>
-                      <ProviderHealthBanner />
-                      <AppShell>{children}</AppShell>
-                      <NikoBar />
-                      <AmbienceHost />
-                      <ScreensaverHost />
-                    </AudienceGate>
+                    {/* The rail's squares are a preference per world; the rail
+                        and the dialog that arranges it read one copy. */}
+                    <RailProvider>
+                      {/* Find anything: one dialog the home's field, the title
+                          bar and the Go menu all open. */}
+                      <PaletteProvider>
+                        <AudienceGate>
+                          <ProviderHealthBanner />
+                          <AppShell>{children}</AppShell>
+                          <NikoBar />
+                          <GlobalPalette />
+                          <AmbienceHost />
+                          <ScreensaverHost />
+                        </AudienceGate>
+                      </PaletteProvider>
+                    </RailProvider>
                   </AudienceProvider>
                 </OnboardingGate>
                 <CapturePicker />

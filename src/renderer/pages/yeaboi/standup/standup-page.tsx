@@ -31,6 +31,8 @@ import {
 } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
+import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Badge } from '@/components/ui/badge';
@@ -108,6 +110,8 @@ const inputClass =
 
 function StandupBody() {
   const { audience } = useAudience();
+  const scope = useProjectScope();
+  const [scopeNote, setScopeNote] = useState('');
   const [data, setData] = useState<StandupDashboard | null>(null);
   const [error, setError] = useState('');
   const [run, setRun] = useState(emptyRun());
@@ -145,6 +149,14 @@ function StandupBody() {
     setError('');
     let state = emptyRun();
     setRun(state);
+    // A project that cannot be scoped still gets its standup, as a one-off.
+    let projectId = '';
+    setScopeNote('');
+    try {
+      projectId = await scope.engineId();
+    } catch (e) {
+      setScopeNote(`${(e as Error).message} This run is a one-off instead.`);
+    }
     try {
       await runStandup(
         data.session_id,
@@ -153,7 +165,7 @@ function StandupBody() {
           state = reduceRun(state, line);
           setRun(state);
         },
-        { solo: audience === 'solo' },
+        { solo: audience === 'solo', projectId },
       );
     } catch (e) {
       setError((e as Error).message);
@@ -178,10 +190,21 @@ function StandupBody() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-foreground">Daily Standup</h1>
+          {scope.scoped && (
+            <div className="mt-1">
+              <ProjectScopeLine
+                name={
+                  scope.project?.name ?? (scope.loading ? 'this project' : 'an unknown project')
+                }
+                onClear={scope.clear}
+              />
+            </div>
+          )}
           <p className="text-[13px] text-muted-foreground mt-1">
             {data.session_name || 'No project yet'}
-            {report ? ` · ${report.date}` : ' · nothing generated yet'}
+            {report ? `, ${report.date}` : ', nothing generated yet'}
           </p>
+          {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <Button
@@ -203,19 +226,19 @@ function StandupBody() {
             {showRuns ? 'Hide past runs' : `Past runs (${data.history.length})`}
           </Button>
           <Link
-            href="/team/standup/setup"
+            href={scope.href('/team/standup/setup')}
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Setup
           </Link>
           <Link
-            href="/team/standup/schedule"
+            href={scope.href('/team/standup/schedule')}
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Schedule
           </Link>
           <Link
-            href="/team/standup/review"
+            href={scope.href('/team/standup/review')}
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Transcript review
@@ -259,7 +282,7 @@ function StandupBody() {
                   className="text-primary hover:underline"
                   onClick={() => setRunId(entry.id)}
                 >
-                  {entry.standup_date} · day {entry.sprint_day} · {entry.confidence_pct}%
+                  {entry.standup_date}, day {entry.sprint_day}, {entry.confidence_pct}%
                 </button>
                 <span className="text-[12px] text-muted-foreground flex items-center gap-2">
                   {entry.status}
@@ -383,7 +406,7 @@ function CardBody({
           {report?.confidence_label && (
             <p className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
               <Badge variant={TONE_VARIANT[CONFIDENCE_TONE[report.confidence_label] ?? 'todo']}>
-                {report.confidence_label} · {report.confidence_pct}%
+                {report.confidence_label} ({report.confidence_pct}%)
               </Badge>{' '}
               {report.confidence_rationale}
             </p>

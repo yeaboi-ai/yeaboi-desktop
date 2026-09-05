@@ -62,6 +62,19 @@ export function tipRoute(tip: Pick<Tip, 'mode_key'>): string | null {
   return (tip.mode_key && MODE_ROUTES[tip.mode_key]) || null;
 }
 
+/** Where starting a session lands, for the modes whose hub is not the start.
+ *  Every other mode starts on its hub. */
+export const MODE_START_ROUTES: Record<string, string> = {
+  reporting: '/team/reporting/new',
+  'team-analysis': '/team/analysis/new',
+  poker: '/team/poker/new',
+};
+
+/** The route that starts a run of a mode, or null for a key with no page. */
+export function startRouteFor(key: string): string | null {
+  return MODE_START_ROUTES[key] ?? MODE_ROUTES[key] ?? null;
+}
+
 /**
  * The tip index to show at `elapsedMs`, shifted by `offset`.
  *

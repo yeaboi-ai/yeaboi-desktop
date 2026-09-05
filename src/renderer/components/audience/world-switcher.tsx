@@ -1,58 +1,83 @@
 'use client';
 
-// The sidebar's brand lockup, which is also the world switcher. The shell
-// lives in one world at a time and the world repaints the chrome, so the top
-// of the sidebar states which world you are in rather than offering all three:
-// the current world's mascot, the wordmark, and the world's name in its accent.
-// Flipping is a menu — a deliberate gesture, matching an act that swaps the
-// whole nav — and the copy comes from WORLD_COPY, the same source the
-// full-screen chooser reads.
+// The menu behind the rail's mascot. The shell lives in one world at a time
+// and the world repaints the chrome, so the mascot states which world you are
+// in; this popover is where it flips — a deliberate gesture, matching an act
+// that swaps the whole nav — and, in the Team world, where the roster is
+// chosen. Its copy comes from WORLD_COPY, the same source the full-screen
+// chooser reads. The update card sits at its foot, under the mascot's dot.
 
-import { useState } from 'react';
+import type { ReactElement } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { BrandName } from '@/components/brand/duck';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
+import { UpdateCard } from '@/components/system/update-card';
 import { WORLD_MASCOT } from '@/lib/audience/worlds';
 import { useAudience } from '@/components/providers/audience-provider';
+import { useRoster } from '@/hooks/use-roster';
 import { AUDIENCES, WORLD_COPY, type Audience } from '@shared/audience';
 
-export function WorldSwitcher({ onSwitch }: { onSwitch: (audience: Audience) => void }) {
+const SELECT =
+  'w-full appearance-none cursor-pointer text-[11px] font-body bg-transparent border border-border/40 rounded-md pl-2 pr-6 py-1 text-muted-foreground hover:border-border focus:outline-none focus:ring-1 focus:ring-ring';
+
+function RosterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { id: string; name: string }[];
+  onChange: (id: string) => void;
+}) {
+  return (
+    <label className="relative block">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={SELECT}
+        aria-label={label}
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+      <ChevronsUpDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
+    </label>
+  );
+}
+
+export function WorldPopover({
+  open,
+  onOpenChange,
+  onSwitch,
+  trigger,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSwitch: (audience: Audience) => void;
+  /** The element the popover hangs off; it receives the trigger's handlers. */
+  trigger: ReactElement;
+}) {
   const { audience } = useAudience();
-  const [open, setOpen] = useState(false);
-  const Mascot = WORLD_MASCOT[audience];
+  const roster = useRoster(audience);
 
   const choose = (next: Audience) => {
-    setOpen(false);
+    onOpenChange(false);
     onSwitch(next);
   };
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            aria-label={`World: ${WORLD_COPY[audience].title}`}
-            className="group flex w-full items-center gap-2.5 rounded-lg px-3 md:px-5 py-2 justify-center md:justify-start hover:bg-secondary/50 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <Mascot size={26} />
-            <span className="hidden md:flex min-w-0 flex-col items-start leading-none">
-              <BrandName className="text-xl leading-none" />
-              <span
-                data-audience-accented
-                className="mt-1 text-[10px] font-body font-semibold uppercase tracking-widest"
-                style={{ color: 'var(--audience-accent)' }}
-              >
-                {WORLD_COPY[audience].title}
-              </span>
-            </span>
-            <ChevronsUpDown className="hidden md:block ml-auto h-3 w-3 shrink-0 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity duration-200" />
-          </button>
-        }
-      />
+  const showOrgs = audience === 'team' && roster.orgs.length > 1;
+  const showTeams = audience === 'team' && roster.teams.length > 0;
 
-      <PopoverContent side="right" align="start" className="w-64 p-1.5">
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger render={trigger} />
+      <PopoverContent side="right" align="start" sideOffset={12} className="w-64 p-1.5">
         <div role="menu" aria-label="World" className="flex flex-col gap-0.5">
           {AUDIENCES.map((key) => {
             const world = WORLD_COPY[key];
@@ -95,12 +120,37 @@ export function WorldSwitcher({ onSwitch }: { onSwitch: (audience: Audience) => 
                     {world.verb}
                   </span>
                   <span className="mt-1 block text-[10px] font-body text-muted-foreground leading-relaxed">
-                    {world.capabilities.join(' · ')}
+                    {world.capabilities.join(', ')}
                   </span>
                 </span>
               </button>
             );
           })}
+        </div>
+
+        {(showOrgs || showTeams) && (
+          <div className="mt-1.5 flex flex-col gap-1.5 border-t border-border/40 px-1 pt-2 pb-1">
+            {showOrgs && (
+              <RosterSelect
+                label="Organisation"
+                value={roster.currentOrgId ?? ''}
+                options={roster.orgs}
+                onChange={(id) => void roster.chooseOrg(id)}
+              />
+            )}
+            {showTeams && (
+              <RosterSelect
+                label="Team"
+                value={roster.currentTeamId ?? ''}
+                options={roster.teams}
+                onChange={roster.chooseTeam}
+              />
+            )}
+          </div>
+        )}
+
+        <div className="px-1 pt-1 empty:hidden">
+          <UpdateCard />
         </div>
       </PopoverContent>
     </Popover>

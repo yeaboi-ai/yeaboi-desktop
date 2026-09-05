@@ -451,8 +451,13 @@ function WhatsNewBody() {
 
 export default function WhatsNewPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="font-display text-2xl text-foreground mb-6">What&apos;s New</h1>
+    <div className="mx-auto max-w-4xl px-6 pt-10 pb-28">
+      <header className="mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">What&apos;s new</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          What changed in this app and in the engine.
+        </p>
+      </header>
       <ShellUpdateSection />
       <BackendGate>
         <WhatsNewBody />

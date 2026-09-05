@@ -33,6 +33,7 @@ import {
 } from '@/lib/yeaboi/ambience';
 import { attachmentPaths, submitLabel, type FeedbackOptions } from '@/lib/yeaboi/feedback';
 import { toast } from '@/components/ui/toast';
+import { useLocation } from 'react-router';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 import { FilingSlip, toneFor } from '@/components/feedback/filing-slip';
@@ -220,7 +221,8 @@ function Skeleton() {
 
 function FeedbackBody() {
   const [options, setOptions] = useState<FeedbackOptions | null>(null);
-  const [kind, setKind] = useState('Bug');
+  const { search } = useLocation();
+  const [kind, setKind] = useState(() => kindFromQuery(search));
   const [area, setArea] = useState('general');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -245,22 +247,9 @@ function FeedbackBody() {
     refuse,
   );
 
-  const header = (
-    <header className="mb-8">
-      <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        Bugs, requests and complaints
-      </p>
-      <h1 className="font-display mt-0.5 text-3xl text-foreground">Feedback</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">
-        Goes to a public issue tracker. Nothing leaves this machine until you send it.
-      </p>
-    </header>
-  );
-
   if (error)
     return (
       <>
-        {header}
         <p className="text-[13px] text-muted-foreground">
           Could not open the feedback form: {error}
         </p>
@@ -270,7 +259,6 @@ function FeedbackBody() {
   if (!options)
     return (
       <>
-        {header}
         <Skeleton />
       </>
     );
@@ -321,7 +309,6 @@ function FeedbackBody() {
   if (result)
     return (
       <>
-        {header}
         <Outcome
           result={result}
           filed={filed}
@@ -370,7 +357,6 @@ function FeedbackBody() {
 
   return (
     <>
-      {header}
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
         {proposal ? (
           <PolishPreview
@@ -484,12 +470,25 @@ function FeedbackBody() {
   );
 }
 
+/** The menu bar's "Report a bug…" and "Request a feature…" arrive as ?type=. */
+function kindFromQuery(search: string): string {
+  const type = new URLSearchParams(search).get('type') ?? '';
+  return type ? type.charAt(0).toUpperCase() + type.slice(1).toLowerCase() : 'Bug';
+}
+
 export default function FeedbackPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 pt-10 pb-28">
+    <div className="mx-auto max-w-5xl px-6 pt-10 pb-28">
+      <header className="mb-7">
+        <h1 className="font-display text-[40px] leading-none text-foreground">Feedback</h1>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          Bugs, requests and complaints. They go to a public issue tracker, and nothing leaves this
+          machine until you send it.
+        </p>
+      </header>
+      <BackendGate>
         <FeedbackBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </div>
   );
 }

@@ -1,146 +1,88 @@
-// The sidebar's nav inventory, per audience world. Pure data — icons are
-// string keys the sidebar maps onto lucide components — so world membership
-// is testable in the node lane (test/nav-sections.test.ts).
+// The rail's fixed parts and its active rule. The rail's items themselves are
+// a preference (@shared/rail, one list per world); what stays here is the
+// Settings foot, the links the Projects and Sessions pages carry, and which
+// item a location lights. Pure, so the rule is testable in the node lane
+// (test/nav-sections.test.ts).
 //
-// The yeaboi hrefs are the manifest's paths verbatim (lib/yeaboi/routes.json)
-// — the sidebar is a view over that registry, not a second list of truths.
+// The hrefs are the manifest's paths verbatim (lib/yeaboi/routes.json) — the
+// rail is a view over that registry, not a second list of truths.
 
-import type { Audience } from '@shared/audience';
+import { projectsHref, type Audience } from '@shared/audience';
 
-export type IconKey =
-  | 'home'
-  | 'projects'
-  | 'board'
-  | 'roadmap'
-  | 'analysis'
-  | 'standup'
-  | 'retro'
-  | 'poker'
-  | 'performance'
-  | 'reporting'
-  | 'ship'
-  | 'review'
-  | 'agent-usage'
-  | 'agent-advisor'
-  | 'agent-standup'
-  | 'agent-security'
-  | 'ceremonies'
-  | 'provenance'
-  | 'usage'
-  | 'whats-new'
-  | 'system-check'
-  | 'privacy'
-  | 'feedback';
+export { projectsHref };
 
-export interface NavItemSpec {
+export interface PageLink {
   href: string;
   label: string;
-  icon: IconKey;
 }
 
-export interface NavSectionSpec {
-  label: string | null;
-  items: NavItemSpec[];
+/** The rail's foot: the one row nobody arranges. */
+export const SETTINGS_ITEM: PageLink = { href: '/settings', label: 'Settings' };
+
+/** Reached from the Projects page header, and lit as Projects on the rail. */
+export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
+  { href: '/projects/new/from-roadmap', label: 'From a roadmap' },
+  { href: '/board', label: 'All tickets' },
+];
+
+/** Reached from the foot of Sessions, and lit as Sessions on the rail. */
+export const SESSIONS_FOOT_LINKS: readonly PageLink[] = [
+  { href: '/ceremonies', label: 'Ceremonies' },
+  { href: '/provenance', label: 'Provenance' },
+  { href: '/usage', label: 'Spend' },
+];
+
+const SETTINGS_PREFIXES = ['/settings', '/setup'];
+const PROJECTS_PREFIXES = ['/projects', '/board', '/tickets', '/agents/projects'];
+const SESSIONS_PREFIXES = [
+  '/sessions',
+  '/team',
+  '/solo',
+  '/agents',
+  '/ceremonies',
+  '/provenance',
+  '/usage',
+  '/recordings',
+  '/recording',
+  '/clip',
+];
+
+function matches(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-const HOME: NavSectionSpec = {
-  label: null,
-  items: [{ href: '/home', label: 'Home', icon: 'home' }],
-};
+function inFamily(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => matches(pathname, prefix));
+}
 
-const WORKSPACE: NavSectionSpec = {
-  label: 'Workspace',
-  items: [
-    { href: '/projects', label: 'Projects', icon: 'projects' },
-    { href: '/board', label: 'Board', icon: 'board' },
-  ],
-};
+/**
+ * The route of the rail item a location lights, `/settings` for the foot, or
+ * null (the home, and a page no item and no family covers). In order: the
+ * settings family; a mode page opened inside a project (`?project=`), which
+ * stays under the projects item; the item whose route is the longest
+ * whole-segment prefix of the location; then the doors' families, so a
+ * default rail still lights Projects on a ticket and Sessions on a standup.
+ */
+export function activeRailRoute(
+  items: readonly { route: string }[],
+  pathname: string,
+  search = '',
+  audience: Audience,
+): string | null {
+  if (inFamily(pathname, SETTINGS_PREFIXES)) return SETTINGS_ITEM.href;
+  const has = (route: string) => items.some((item) => item.route === route);
+  const projects = projectsHref(audience);
+  if (new URLSearchParams(search).get('project') && has(projects)) return projects;
 
-const OPS: NavSectionSpec = {
-  label: 'Ops',
-  items: [
-    { href: '/ceremonies', label: 'Ceremonies', icon: 'ceremonies' },
-    { href: '/provenance', label: 'Provenance', icon: 'provenance' },
-    { href: '/usage', label: 'Usage', icon: 'usage' },
-    { href: '/whats-new', label: "What's New", icon: 'whats-new' },
-    { href: '/system-check', label: 'System Check', icon: 'system-check' },
-    { href: '/privacy', label: 'Privacy', icon: 'privacy' },
-    { href: '/feedback', label: 'Feedback', icon: 'feedback' },
-  ],
-};
-
-const TEAM_SECTIONS: NavSectionSpec[] = [
-  HOME,
-  WORKSPACE,
-  {
-    label: 'Team',
-    items: [
-      // Planning lives in the Workspace: project → blueprint → plan.
-      { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: 'roadmap' },
-      { href: '/team/analysis', label: 'Analysis', icon: 'analysis' },
-      { href: '/team/standup', label: 'Standup', icon: 'standup' },
-      { href: '/team/retro', label: 'Retro', icon: 'retro' },
-      { href: '/team/poker', label: 'Poker', icon: 'poker' },
-      { href: '/team/performance', label: 'Performance', icon: 'performance' },
-      { href: '/team/reporting', label: 'Reporting', icon: 'reporting' },
-      { href: '/team/ship', label: 'Ship', icon: 'ship' },
-    ],
-  },
-  OPS,
-];
-
-// Solo shares the Team world's routes — the pages are the same screens run
-// for one person; the nav simply never offers the modes that need a room —
-// and adds the one mode that is its own: the Weekly Review.
-const SOLO_SECTIONS: NavSectionSpec[] = [
-  HOME,
-  WORKSPACE,
-  {
-    label: 'Solo',
-    items: [
-      { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: 'roadmap' },
-      { href: '/team/analysis', label: 'Analysis', icon: 'analysis' },
-      { href: '/team/standup', label: 'Standup', icon: 'standup' },
-      { href: '/team/reporting', label: 'Reporting', icon: 'reporting' },
-      { href: '/team/ship', label: 'Ship', icon: 'ship' },
-      { href: '/solo/review', label: 'Weekly Review', icon: 'review' },
-    ],
-  },
-  OPS,
-];
-
-const AGENTS_SECTIONS: NavSectionSpec[] = [
-  HOME,
-  {
-    label: 'Agents',
-    items: [
-      { href: '/agents/usage', label: 'Usage', icon: 'agent-usage' },
-      { href: '/agents/advisor', label: 'Advisor', icon: 'agent-advisor' },
-      { href: '/agents/standup', label: 'Standup', icon: 'agent-standup' },
-      { href: '/agents/security', label: 'Security', icon: 'agent-security' },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { href: '/whats-new', label: "What's New", icon: 'whats-new' },
-      { href: '/feedback', label: 'Feedback', icon: 'feedback' },
-    ],
-  },
-];
-
-export function navSections(audience: Audience): NavSectionSpec[] {
-  switch (audience) {
-    case 'agents':
-      return AGENTS_SECTIONS;
-    case 'solo':
-      return SOLO_SECTIONS;
-    default:
-      return TEAM_SECTIONS;
+  let best: string | null = null;
+  for (const item of items) {
+    if (matches(pathname, item.route) && (best === null || item.route.length > best.length)) {
+      best = item.route;
+    }
   }
-}
+  if (best !== null) return best;
 
-/** The world's items flattened, for shortcuts and arrow-key cycling. */
-export function navItems(audience: Audience): NavItemSpec[] {
-  return navSections(audience).flatMap((section) => section.items);
+  if (inFamily(pathname, PROJECTS_PREFIXES) && has(projects)) return projects;
+  if (inFamily(pathname, SESSIONS_PREFIXES) && has('/sessions')) return '/sessions';
+  return null;
 }

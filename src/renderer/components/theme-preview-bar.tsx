@@ -21,8 +21,8 @@ export function ThemePreviewBar() {
   return (
     <div
       className="fixed left-0 right-0 z-[300] pointer-events-none"
-      // Sits below the provider-health banner when one is up.
-      style={{ top: 'var(--banner-h, 0px)' }}
+      // Sits below the title bar, and the provider-health banner when one is up.
+      style={{ top: 'calc(var(--titlebar-h, 0px) + var(--banner-h, 0px))' }}
     >
       <div className="mx-auto max-w-5xl px-4 pt-3 pointer-events-auto">
         <div

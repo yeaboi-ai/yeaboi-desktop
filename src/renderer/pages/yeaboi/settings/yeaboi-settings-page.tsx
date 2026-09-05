@@ -10,8 +10,8 @@
 // Sharing and System stay field lists — they configure this machine, not a
 // remote service — but wear the same card, header and row vocabulary.
 //
-// Appearance and Duck configure this window rather than the engine, so they
-// are declared here rather than in the contract's settings_tabs.
+// Appearance, Front page and Duck configure this window rather than the
+// engine, so they are declared here rather than in the contract's settings_tabs.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -58,6 +58,7 @@ import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { AppearanceSection } from '@/components/settings/tabs/general/appearance-section';
 import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
+import { FrontPageTab } from '@/components/settings/tabs/front-page-tab';
 import { Button } from '@/components/ui/button';
 
 const DOT = ' · ';
@@ -685,6 +686,8 @@ export default function YeaboiSettingsPage() {
     <SettingsPageShell active={pathname}>
       {pathname === '/settings/appearance' ? (
         <AppearanceTab />
+      ) : pathname === '/settings/news' ? (
+        <FrontPageTab />
       ) : pathname === '/settings/duck' ? (
         <>
           <DuckTab />

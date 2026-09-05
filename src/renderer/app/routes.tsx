@@ -5,12 +5,17 @@
 import { useMemo } from 'react';
 import { Navigate, Outlet, createHashRouter, useParams } from 'react-router';
 import { Providers } from '@/components/providers';
+import { TitleBar } from '@/components/title-bar';
+import { WindowTitle } from '@/components/window-title';
 import { APP_ROUTES } from '@/lib/yeaboi/routes';
 import GlobalBoardPage from '@/pages/board-page';
 import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
 import AgentsPage from '@/pages/yeaboi/agents/agents-page';
+import AgentsProjectPage from '@/pages/yeaboi/agents/agents-project-page';
+import AgentsProjectsPage from '@/pages/yeaboi/agents/agents-projects-page';
+import SessionsPage from '@/pages/yeaboi/sessions-page';
 import AnalysisPage from '@/pages/yeaboi/analysis/analysis-page';
 import AnalysisResultsPage from '@/pages/yeaboi/analysis/analysis-results-page';
 import AnalysisSetupPage from '@/pages/yeaboi/analysis/analysis-setup-page';
@@ -99,6 +104,8 @@ function LegacyHumansRedirect() {
 function Root() {
   return (
     <Providers>
+      <WindowTitle />
+      <TitleBar />
       <Outlet />
     </Providers>
   );
@@ -108,6 +115,7 @@ function Root() {
 // not named here mounts the placeholder so nav, palette and manifest agree.
 const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
+  '/sessions': <SessionsPage />,
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
   '/privacy': <PrivacyPage />,
@@ -138,10 +146,13 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/agents/advisor': <AgentsPage />,
   '/agents/standup': <AgentsPage />,
   '/agents/security': <AgentsPage />,
+  '/agents/projects': <AgentsProjectsPage />,
+  '/agents/projects/:id': <AgentsProjectPage />,
   '/ceremonies': <CeremoniesPage />,
   '/ceremonies/slack': <CeremoniesSlackPage />,
   '/provenance': <ProvenancePage />,
   '/settings/credentials': <YeaboiSettingsPage />,
+  '/settings/news': <YeaboiSettingsPage />,
   '/settings/connections': <YeaboiSettingsPage />,
   '/settings/sharing': <YeaboiSettingsPage />,
   '/settings/system': <YeaboiSettingsPage />,
@@ -197,6 +208,8 @@ export const router = createHashRouter([
       { path: '/team/planning', element: <Navigate to="/projects" replace /> },
       { path: '/humans/*', element: <LegacyHumansRedirect /> },
       { path: '/humans', element: <LegacyHumansRedirect /> },
+      // The Agents world's first door: its projects, scoped by linked repo.
+      { path: '/agents', element: <Navigate to="/agents/projects" replace /> },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },

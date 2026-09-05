@@ -253,6 +253,23 @@ describe('DuckYard', () => {
     expect(scene.ducks.map((duck) => [duck.x, duck.y])).toEqual(before);
   });
 
+  it('dresses the crowd from the wardrobe, never the hero', () => {
+    const scene = yard(3);
+    const outfit = { image: {} as HTMLImageElement, headroom: 40, slot: 'top' as const };
+    const wardrobe = [[outfit], [outfit], [outfit]];
+    scene.setWardrobe(wardrobe);
+    const crowd = scene.ducks.filter((duck) => !duck.anchored);
+    for (const duck of crowd) {
+      const worn = scene.wornBy(duck, wardrobe.length);
+      expect(worn).toBeGreaterThanOrEqual(0);
+      expect(worn).toBeLessThan(wardrobe.length);
+    }
+    // A seed decides who wears what, so a tile looks the same every time.
+    expect(yard(3).ducks.map((d) => d.wear)).toEqual(scene.ducks.map((d) => d.wear));
+    expect(scene.ducks.find((duck) => duck.anchored)!.wear).toBe(0);
+    expect(new Set(crowd.map((d) => scene.wornBy(d, wardrobe.length))).size).toBeGreaterThan(1);
+  });
+
   it('rebuilds the yard when the window resizes', () => {
     const scene = yard();
     run(scene, 5);
@@ -318,11 +335,19 @@ describe('the token rule', () => {
     // The whole promise of these screensavers is that they are drawn from the
     // active theme. A hex literal is how that promise gets broken quietly, in
     // one theme, months later — so it is a test rather than a convention.
-    const dir = join(__dirname, '..', 'src', 'renderer', 'lib', 'screensaver', 'scenes');
-    const files = readdirSync(dir).filter((name) => name.endsWith('.ts') && name !== 'index.ts');
+    const dirs = [
+      join(__dirname, '..', 'src', 'renderer', 'lib', 'screensaver', 'scenes'),
+      join(__dirname, '..', 'src', 'renderer', 'lib', 'home'),
+    ];
+    const files = dirs.flatMap((dir) =>
+      readdirSync(dir)
+        .filter((name) => name.endsWith('.ts') && name !== 'index.ts')
+        .map((name) => join(dir, name)),
+    );
     expect(files.length).toBeGreaterThan(0);
-    for (const name of files) {
-      const source = readFileSync(join(dir, name), 'utf8');
+    for (const file of files) {
+      const name = file.slice(file.lastIndexOf('/') + 1);
+      const source = readFileSync(file, 'utf8');
       const code = source
         .split('\n')
         .filter((line) => !line.trimStart().startsWith('//'))

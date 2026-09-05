@@ -27,3 +27,18 @@ export const DEFAULT_ROUTE = '/home';
 export function routeFor(path: string): AppRoute | undefined {
   return APP_ROUTES.find((route) => route.path === path);
 }
+
+function matchesPattern(pattern: string, pathname: string): boolean {
+  const want = pattern.split('/');
+  const have = pathname.split('/');
+  if (want.length !== have.length) return false;
+  return want.every((segment, i) => segment.startsWith(':') || segment === have[i]);
+}
+
+/** The page's name for the window title: the registry title before any
+ *  section suffix ("Settings · Credentials" reads "Settings"); a dynamic
+ *  route matches by segment; anything unregistered is the app. */
+export function pageTitle(pathname: string): string {
+  const route = routeFor(pathname) ?? APP_ROUTES.find((r) => matchesPattern(r.path, pathname));
+  return route?.title.split(' · ')[0] ?? 'yeaboi';
+}

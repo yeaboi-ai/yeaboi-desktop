@@ -22,6 +22,7 @@ interface YeaboiBridge {
   completeOnboarding: () => Promise<void>;
   getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
   setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
   api: (
     path: string,
     init?: { method?: string; body?: unknown },
@@ -42,6 +43,7 @@ interface YeaboiBridge {
   pickCaptureSource: (sourceId: string) => Promise<unknown>;
   onNavigate: (callback: (route: string) => void) => void;
   onAbout: (callback: () => void) => void;
+  onPalette: (callback: () => void) => void;
   appMeta: () => Promise<{
     version: string;
     electron: string;
@@ -55,6 +57,8 @@ interface YeaboiBridge {
   petNotify: (notice: { quip: string; sticky?: boolean; route?: string }) => void;
   getPetPrefs: () => Promise<unknown>;
   setPetPrefs: (patch: unknown) => Promise<unknown>;
+  getRailPrefs: () => Promise<unknown>;
+  setRailPrefs: (patch: unknown) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;
