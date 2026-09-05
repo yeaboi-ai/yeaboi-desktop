@@ -194,62 +194,74 @@ export function ConnectionCard({
           }`}
         />
       </button>
-      {open && (
-        <div className="border-t border-border/40 px-5 py-4">
-          {intro}
-          <div className="space-y-3">
-            {fields.map((field) => (
-              <label key={field.env} className="block">
-                <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
-                  {field.label}
-                </span>
-                <input
-                  type={field.secret ? 'password' : 'text'}
-                  value={shown(field)}
-                  placeholder={
-                    field.is_set && field.secret
-                      ? 'saved — type to replace'
-                      : (card.placeholders?.[field.env] ?? '')
-                  }
-                  onChange={(event) =>
-                    setValues((current) => ({ ...current, [field.env]: event.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
-                />
-                {card.hints?.[field.env] && (
-                  <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/80">
-                    {card.hints[field.env]}
-                  </p>
-                )}
-                {validate?.(field, shown(field)) && (
-                  <p role="alert" className="mt-1 text-[11px] text-destructive">
-                    {validate(field, shown(field))}
-                  </p>
-                )}
-                <GuideLink url={field.help_url} scope={field.help_scope} />
-              </label>
-            ))}
-          </div>
-          {result && (
-            <p
-              role="status"
-              className={`mt-3 text-[12px] ${result.ok ? 'text-success' : 'text-destructive'}`}
-            >
-              {result.message}
-            </p>
-          )}
-          <div className="mt-4">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy || Boolean(invalid) || (!touched && !(canProbe && configured))}
-              onClick={() => void saveAndTest()}
-            >
-              {busy ? 'Testing…' : canProbe ? 'Save & test' : 'Save'}
-            </Button>
+      {/* Opens and closes on a rule rather than appearing and vanishing. The
+          row is `0fr` shut and `1fr` open, which is the one way a box of
+          unknown height animates in CSS alone; `inert` keeps what is folded
+          away out of the tab order without taking it out of the tree, which is
+          what the animation needs to run on. */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+        aria-hidden={!open}
+        inert={!open}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-border/40 px-5 py-4">
+            {intro}
+            <div className="space-y-3">
+              {fields.map((field) => (
+                <label key={field.env} className="block">
+                  <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
+                    {field.label}
+                  </span>
+                  <input
+                    type={field.secret ? 'password' : 'text'}
+                    value={shown(field)}
+                    placeholder={
+                      field.is_set && field.secret
+                        ? 'saved — type to replace'
+                        : (card.placeholders?.[field.env] ?? '')
+                    }
+                    onChange={(event) =>
+                      setValues((current) => ({ ...current, [field.env]: event.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+                  />
+                  {card.hints?.[field.env] && (
+                    <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/80">
+                      {card.hints[field.env]}
+                    </p>
+                  )}
+                  {validate?.(field, shown(field)) && (
+                    <p role="alert" className="mt-1 text-[11px] text-destructive">
+                      {validate(field, shown(field))}
+                    </p>
+                  )}
+                  <GuideLink url={field.help_url} scope={field.help_scope} />
+                </label>
+              ))}
+            </div>
+            {result && (
+              <p
+                role="status"
+                className={`mt-3 text-[12px] ${result.ok ? 'text-success' : 'text-destructive'}`}
+              >
+                {result.message}
+              </p>
+            )}
+            <div className="mt-4">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy || Boolean(invalid) || (!touched && !(canProbe && configured))}
+                onClick={() => void saveAndTest()}
+              >
+                {busy ? 'Testing…' : canProbe ? 'Save & test' : 'Save'}
+              </Button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }

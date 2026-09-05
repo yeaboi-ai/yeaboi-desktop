@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CalendarDays,
   Check,
@@ -188,6 +188,15 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
   const scope = useTeamScope(audience);
   const settingsActive = Boolean(pathname?.startsWith('/settings'));
 
+  // Where settings was reached from. The gear is a way in and back out again:
+  // pressed a second time it returns you to the page you left rather than
+  // leaving you to find it, which on a surface whose whole nav is its own
+  // sections means finding it through Home.
+  const cameFrom = useRef(DEFAULT_ROUTE);
+  useEffect(() => {
+    if (pathname && !pathname.startsWith('/settings')) cameFrom.current = pathname;
+  }, [pathname]);
+
   // Flipping world while standing in the other world's route would leave the
   // page orphaned from the nav — go home instead.
   const flip = (next: Audience) => {
@@ -214,9 +223,9 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           </div>
 
           <Link
-            href="/settings"
-            title="Settings"
-            aria-label="Settings"
+            href={settingsActive ? cameFrom.current : '/settings'}
+            title={settingsActive ? `Back to ${cameFrom.current}` : 'Settings'}
+            aria-label={settingsActive ? 'Leave settings' : 'Settings'}
             className={`${FLOAT} ${CONTROL} flex w-8 items-center justify-center transition-colors ${
               settingsActive
                 ? 'text-foreground'

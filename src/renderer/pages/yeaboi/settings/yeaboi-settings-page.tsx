@@ -114,6 +114,11 @@ function connectionSummary(section: string, value: (env: string) => string): str
 const inputClass =
   'flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-1.5 font-mono text-[12px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none';
 
+/** How many columns the credential groups are dealt into. Matches the grid
+ *  below — the wide breakpoint's count, since that is where a group can end up
+ *  beside another one. */
+const COLUMNS = 3;
+
 function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [catalog, setCatalog] = useState<ProviderCatalog | null>(null);
@@ -374,6 +379,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
     const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
     const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS);
+    const columns: (typeof grouped)[] = Array.from({ length: COLUMNS }, () => []);
+    grouped.forEach((group, at) => columns[at % COLUMNS]!.push(group));
 
     let flat = -1;
     const headerKeyHandler = (index: number) => (event: React.KeyboardEvent) => {
@@ -394,43 +401,55 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
         />
         {/* The groups run across the page rather than down it: each is one or
             two cards, and a column of them left two thirds of the window empty
-            to say so. */}
+            to say so.
+
+            Dealt into columns by hand rather than left to the grid to wrap. A
+            grid row is as tall as its tallest cell, so opening one card grew
+            the row it was in and shoved every group after it down the page —
+            the one thing that must not move when you open something is
+            everything you did not open. A column only moves its own. */}
         <div className="mt-6 grid items-start gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
-          {grouped.map((group, position) => (
-            <div
-              key={group.label}
-              className="animate-slide-up motion-reduce:animate-none"
-              style={{ animationDelay: `${position * 60}ms` }}
-            >
-              <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                {group.label}
-              </h3>
-              <div className="space-y-2">
-                {group.items.map(({ card: spec, fields }) => {
-                  flat += 1;
-                  const index = flat;
-                  return (
-                    <ConnectionCard
-                      key={spec.section}
-                      card={spec}
-                      fields={fields}
-                      /* The heading and its cards arrive together, as the group
+          {columns.map((column, columnIndex) => (
+            <div key={columnIndex} className="space-y-4">
+              {column.map((group, position) => (
+                <div
+                  key={group.label}
+                  className="animate-slide-up motion-reduce:animate-none"
+                  style={{ animationDelay: `${(position * COLUMNS + columnIndex) * 60}ms` }}
+                >
+                  <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                    {group.label}
+                  </h3>
+                  <div className="space-y-2">
+                    {group.items.map(({ card: spec, fields }) => {
+                      flat += 1;
+                      const index = flat;
+                      return (
+                        <ConnectionCard
+                          key={spec.section}
+                          card={spec}
+                          fields={fields}
+                          /* The heading and its cards arrive together, as the group
                          they are — a card rising inside a rising group is two
                          movements for one thing appearing. */
-                      animate={false}
-                      prefillNonSecret
-                      summary={connectionSummary(spec.section, valueOf)}
-                      open={openCard === spec.section}
-                      onToggle={() => setOpenCard((s) => (s === spec.section ? '' : spec.section))}
-                      onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
-                      headerRef={(el) => {
-                        headerRefs.current[index] = el;
-                      }}
-                      onHeaderKeyDown={headerKeyHandler(index)}
-                    />
-                  );
-                })}
-              </div>
+                          animate={false}
+                          prefillNonSecret
+                          summary={connectionSummary(spec.section, valueOf)}
+                          open={openCard === spec.section}
+                          onToggle={() =>
+                            setOpenCard((s) => (s === spec.section ? '' : spec.section))
+                          }
+                          onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+                          headerRef={(el) => {
+                            headerRefs.current[index] = el;
+                          }}
+                          onHeaderKeyDown={headerKeyHandler(index)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>

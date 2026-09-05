@@ -86,6 +86,13 @@ app.setPath(
 // URLs carry content hashes and it is doing its job.
 if (!app.isPackaged) app.commandLine.appendSwitch('disable-http-cache');
 
+// A port to inspect the running window on, for anything that drives the app
+// from outside it. Dev only and opt-in — an open debugging port is a way into
+// the renderer, so it exists when it is asked for and never in a build.
+if (!app.isPackaged && process.env.YEABOI_INSPECT_PORT) {
+  app.commandLine.appendSwitch('remote-debugging-port', process.env.YEABOI_INSPECT_PORT);
+}
+
 registerAppScheme();
 
 /** How long the duck's jump out runs, matching `flyOut` in the pet renderer.

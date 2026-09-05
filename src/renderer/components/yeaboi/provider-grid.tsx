@@ -56,12 +56,14 @@ export function ProviderGrid({
             type="button"
             aria-current={on ? 'true' : undefined}
             onClick={() => onPick(card)}
+            /* No fill: a dozen of these inside a card that already has one was
+               three shades of the same dark stacked on each other. The ring is
+               what says where a tile ends, and the accent is what says which
+               one is chosen. */
             className={cn(
-              'group flex items-center gap-3.5 rounded-2xl bg-card px-5 py-4 text-left ring-1 transition-all',
-              'focus:outline-none focus-visible:bg-secondary/40 focus-visible:ring-primary/60',
-              on
-                ? 'ring-primary/50 bg-secondary/30'
-                : 'ring-border/60 hover:bg-secondary/40 hover:ring-primary/40',
+              'group flex items-center gap-3.5 rounded-2xl px-5 py-4 text-left ring-1 transition-all',
+              'focus:outline-none focus-visible:ring-primary/60',
+              on ? 'ring-primary/50' : 'ring-border/50 hover:ring-primary/40',
             )}
           >
             <ProviderIcon provider={card.provider_val} size={44} />

@@ -1,22 +1,20 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+// Light, dark, or whatever the machine is set to.
+//
+// The menu is the app's popover rather than a panel of its own: it is one of
+// three menus that open off the same row at the bottom left, and the only one
+// that used to appear and vanish where the others grow and fold away.
+
+import { useState } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
+
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTheme } from '@/components/providers/theme-provider';
 
 export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const { preference, setExplicit, setSystemMode } = useTheme();
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, [open]);
 
   const isLight = preference.mode === 'explicit' && preference.theme_id === 'preset:light';
   const isDark = preference.mode === 'explicit' && preference.theme_id === 'preset:dark';
@@ -25,55 +23,52 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
   const ActiveIcon = isSystem ? Monitor : isLight ? Sun : Moon;
   const activeLabel = isSystem ? 'System' : isLight ? 'Light' : 'Dark';
 
+  const pick = (choose: () => void) => () => {
+    setOpen(false);
+    choose();
+  };
+
   return (
-    <div ref={wrapRef} className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-        className="text-muted-foreground/40 hover:text-foreground transition-colors shrink-0 p-1"
-        title={`Theme: ${activeLabel}`}
-        aria-label={`Theme: ${activeLabel}`}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="shrink-0 p-1 text-muted-foreground/40 transition-colors hover:text-foreground"
+            title={`Theme: ${activeLabel}`}
+            aria-label={`Theme: ${activeLabel}`}
+          >
+            <ActiveIcon className="h-3 w-3" />
+          </button>
+        }
+      />
+      <PopoverContent
+        side={compact ? 'right' : 'top'}
+        align={compact ? 'end' : 'center'}
+        className="w-40 p-1"
       >
-        <ActiveIcon className="h-3 w-3" />
-      </button>
-      {open && (
-        <div
-          className={`absolute z-50 ${compact ? 'left-full ml-2 bottom-0' : 'right-0 bottom-full mb-1'} min-w-[140px] rounded-md border border-border bg-popover shadow-lg py-1 text-popover-foreground`}
-        >
+        <div role="menu" aria-label="Theme" className="flex flex-col gap-0.5">
           <ThemeOption
             icon={<Sun className="h-3 w-3" />}
             label="Light"
             active={isLight}
-            onClick={() => {
-              setExplicit('preset:light');
-              setOpen(false);
-            }}
+            onClick={pick(() => setExplicit('preset:light'))}
           />
           <ThemeOption
             icon={<Moon className="h-3 w-3" />}
             label="Dark"
             active={isDark}
-            onClick={() => {
-              setExplicit('preset:dark');
-              setOpen(false);
-            }}
+            onClick={pick(() => setExplicit('preset:dark'))}
           />
           <ThemeOption
             icon={<Monitor className="h-3 w-3" />}
             label="System"
             active={isSystem}
-            onClick={() => {
-              setSystemMode('preset:light', 'preset:dark');
-              setOpen(false);
-            }}
+            onClick={pick(() => setSystemMode('preset:light', 'preset:dark'))}
           />
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -91,14 +86,17 @@ function ThemeOption({
   return (
     <button
       type="button"
+      role="menuitemradio"
+      aria-checked={active}
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-body hover:bg-secondary text-left ${
-        active ? 'text-foreground' : 'text-muted-foreground'
+      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left font-body text-[12px] transition-colors duration-150 ${
+        active
+          ? 'bg-secondary/60 text-foreground'
+          : 'text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
       }`}
     >
-      {icon}
+      <span className="shrink-0 opacity-70">{icon}</span>
       <span className="flex-1">{label}</span>
-      {active && <span className="text-[9px] text-primary">●</span>}
     </button>
   );
 }

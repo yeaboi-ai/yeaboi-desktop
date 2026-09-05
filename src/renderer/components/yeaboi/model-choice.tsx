@@ -35,10 +35,13 @@ export function RadioDot({ selected }: { selected: boolean }) {
   );
 }
 
+// No fill on the ones not chosen: a stack of these inside a card that already
+// has one is three shades of the same dark. A ring marks the row, and the
+// accent is kept for the choice.
 const rowClass = (selected: boolean) =>
   cn(
-    'flex cursor-pointer items-start gap-3 rounded-xl px-3.5 py-3 transition-colors',
-    selected ? 'bg-primary/10 ring-1 ring-primary/40' : 'bg-secondary/40 hover:bg-secondary/70',
+    'flex cursor-pointer items-start gap-3 rounded-xl px-3.5 py-3 ring-1 transition-colors',
+    selected ? 'bg-primary/10 ring-primary/40' : 'ring-border/50 hover:bg-secondary/30',
   );
 
 export function ModelChoice({
