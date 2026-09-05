@@ -16,8 +16,9 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 interface CreateProjectDialogProps {
   /** Open on mount: the menu bar's New project… lands here with ?new. */
   defaultOpen?: boolean;
-  onCreate: (data: { description: string; name?: string }) => Promise<unknown>;
-  onCreated?: () => void;
+  onCreate: (data: { description: string; name?: string }) => Promise<{ id: string }>;
+  /** The created row, so the caller can open it. */
+  onCreated?: (created: { id: string }) => void;
 }
 
 /** A rejected fetch is a TypeError worded for a browser; anything else already
@@ -46,10 +47,10 @@ export function CreateProjectDialog({
     setLoading(true);
     setError(null);
     try {
-      await onCreate({ description: description.trim() });
+      const created = await onCreate({ description: description.trim() });
       setOpen(false);
       setDescription('');
-      onCreated?.();
+      onCreated?.(created);
     } catch (err) {
       setError(createErrorMessage(err));
     } finally {
@@ -84,7 +85,7 @@ export function CreateProjectDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button />}>
         <Plus className="mr-1.5 h-3.5 w-3.5" />
-        New Project
+        New project
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md border-border bg-card animate-scale-in p-0 overflow-hidden">
@@ -126,7 +127,7 @@ export function CreateProjectDialog({
           </div>
 
           {error && (
-            <p className="text-xs font-body text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            <p className="text-xs font-body text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
               {error}
             </p>
           )}

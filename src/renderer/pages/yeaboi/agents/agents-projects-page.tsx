@@ -1,13 +1,15 @@
 'use client';
 
 // The Agents world's Projects: the same platform projects, each a place to
-// scope the three reports to one repo. A row says whether a repo is linked.
+// scope the three reports to one repo. A row says whether a repo is linked;
+// In progress and Completed are the same split the Team list makes.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { repoHost } from '@/lib/yeaboi/project-scope';
+import { splitProjects } from '@/lib/yeaboi/projects';
 import { relativeDay } from '@/lib/yeaboi/sessions';
 import { PageShell } from '@/components/page-shell';
 
@@ -16,7 +18,39 @@ interface Project {
   name: string;
   description: string | null;
   created_at: string;
+  updated_at?: string;
+  status?: string;
   repo_url?: string | null;
+}
+
+function ProjectRows({ projects, now }: { projects: Project[]; now: Date }) {
+  return (
+    <ul className="divide-y divide-border/50">
+      {projects.map((project) => {
+        const host = repoHost(project.repo_url);
+        return (
+          <li key={project.id}>
+            <Link
+              href={`/agents/projects/${project.id}`}
+              className="group flex items-baseline justify-between gap-8 py-4"
+            >
+              <span className="min-w-0">
+                <span className="block text-[15px] font-body font-medium text-foreground transition-colors group-hover:text-primary">
+                  {project.name}
+                </span>
+                <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
+                  {host || 'no linked repo'}
+                </span>
+              </span>
+              <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
+                {relativeDay(project.updated_at ?? project.created_at, now)}
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 export default function AgentsProjectsPage() {
@@ -39,7 +73,7 @@ export default function AgentsProjectsPage() {
   }, [ready, authFetch, teamVersion]);
 
   const now = new Date();
-  const sorted = [...(projects ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const { active, done } = splitProjects(projects ?? []);
 
   return (
     <PageShell>
@@ -58,7 +92,7 @@ export default function AgentsProjectsPage() {
         {error && <p className="mb-4 text-[13px] text-muted-foreground">{error}</p>}
         {projects === null ? (
           <p className="text-[13px] text-muted-foreground">Loading…</p>
-        ) : sorted.length === 0 ? (
+        ) : active.length === 0 && done.length === 0 ? (
           <p className="text-[14px] leading-relaxed text-muted-foreground">
             Nothing here yet.{' '}
             <Link href="/projects" className="text-primary hover:underline">
@@ -67,31 +101,34 @@ export default function AgentsProjectsPage() {
             and it will appear here too.
           </p>
         ) : (
-          <ul className="divide-y divide-border/50">
-            {sorted.map((project) => {
-              const host = repoHost(project.repo_url);
-              return (
-                <li key={project.id}>
-                  <Link
-                    href={`/agents/projects/${project.id}`}
-                    className="group flex items-baseline justify-between gap-8 py-4"
-                  >
-                    <span className="min-w-0">
-                      <span className="block text-[15px] font-body font-medium text-foreground transition-colors group-hover:text-primary">
-                        {project.name}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
-                        {host || 'no linked repo'}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
-                      {relativeDay(project.created_at, now)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="space-y-12">
+            <section aria-labelledby="agents-projects-active">
+              <h2
+                id="agents-projects-active"
+                className="mb-1 text-[16px] font-body font-medium text-foreground"
+              >
+                In progress
+              </h2>
+              {active.length === 0 ? (
+                <p className="py-4 text-[14px] leading-relaxed text-muted-foreground">
+                  Everything here is done.
+                </p>
+              ) : (
+                <ProjectRows projects={active} now={now} />
+              )}
+            </section>
+            {done.length > 0 && (
+              <section aria-labelledby="agents-projects-done">
+                <h2
+                  id="agents-projects-done"
+                  className="mb-1 text-[16px] font-body font-medium text-foreground"
+                >
+                  Completed
+                </h2>
+                <ProjectRows projects={done} now={now} />
+              </section>
+            )}
+          </div>
         )}
       </div>
     </PageShell>
