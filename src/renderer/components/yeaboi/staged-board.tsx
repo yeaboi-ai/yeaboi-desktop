@@ -50,7 +50,11 @@ const HOST = 'board-host';
  * itself.
  */
 const INHERIT = `
-.board-frame {
+/* On the root, not on the frame. The boards portal onto document.body — the
+   card in the air, the reaction tray, a dropdown menu, the announce banner —
+   and anything hung off body is outside the frame. Every name here is
+   prefixed, so nothing on the root collides with the app's own. */
+:root {
   --app-bg: var(--background);
   --app-panel: var(--card);
   --app-card: var(--card);
@@ -66,7 +70,11 @@ const INHERIT = `
   --app-code: var(--font-code);
   --app-radius: var(--radius);
 }
-.board-frame .${HOST} {
+/* The board's own names, wherever the board is. A portal's root carries the
+   board's CSS-module classes, which this bundler always mints with a leading
+   underscore; the app's own body children are Tailwind and never do. */
+.board-frame .${HOST},
+body > [class^='_'] {
   --bg: var(--app-bg);
   --panel: var(--app-panel);
   --card: var(--app-card);
@@ -80,9 +88,6 @@ const INHERIT = `
   --panel-2: var(--app-secondary);
   --hairline: color-mix(in srgb, var(--app-line) 70%, transparent);
   --hairline-strong: var(--app-line);
-  /* The board tracks its small caps at 0.14em; the app tracks the same labels
-     at about half that, and the difference is the loudest thing on a panel. */
-  --track-label: 0.06em;
 
   /* The rest of the house style, not just its colours: the app's faces, its
      radii and its shadows. The board's own are a different design — a pixel
@@ -118,8 +123,16 @@ const INHERIT = `
  * box-shadow and opacity off every control the board animates — the press on a
  * button, the lift on an avatar, the nudge on the music play. The board's
  * motion is the board's; this is only what it is wearing. */
-.board-frame .${HOST} button:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']),
-.board-frame .${HOST} [role='button']:not([class*='avatar'], [class*='icon'], [class*='card'], [class*='pill'], [class*='chip'], [class*='round']) {
+/* The board tracks its small caps at 0.14em; the app tracks the same labels at
+   about half that, and on poker's panels the difference is the loudest thing
+   on them. Retro's mono labels are its column headings — the tracking is the
+   look, and halving it is not a smaller version of it. */
+.board-frame .${HOST}[data-mode='poker'] {
+  --track-label: 0.06em;
+}
+
+.board-frame .${HOST}[data-mode='poker'] button:not([class*='avatar' i], [class*='icon' i], [class*='card' i], [class*='pill' i], [class*='chip' i], [class*='round' i]),
+.board-frame .${HOST}[data-mode='poker'] [role='button']:not([class*='avatar' i], [class*='icon' i], [class*='card' i], [class*='pill' i], [class*='chip' i], [class*='round' i]) {
   border-radius: var(--app-radius);
   font-family: var(--font-sans);
   font-size: 12.5px;
@@ -127,9 +140,9 @@ const INHERIT = `
   letter-spacing: 0;
 }
 
-.board-frame .${HOST} input,
-.board-frame .${HOST} select,
-.board-frame .${HOST} textarea {
+.board-frame .${HOST}[data-mode='poker'] input,
+.board-frame .${HOST}[data-mode='poker'] select,
+.board-frame .${HOST}[data-mode='poker'] textarea {
   border-radius: var(--app-radius);
   font-family: var(--font-sans);
   font-size: 12.5px;
@@ -336,10 +349,10 @@ const INHERIT = `
  * app's are a translucent card at the larger radius, ringed rather than
  * bordered, over a blurred page. Same grammar for the popovers, the dropdown
  * menus and the modals, because in the app they are one object. */
-.board-frame .${HOST} [class*='popover']:not([class*='Anchor']),
-.board-frame .${HOST} [class*='ddMenu'],
-.board-frame .${HOST} [class*='modalCard'],
-.board-frame .${HOST} [class*='sheet'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor']),
+.board-frame .${HOST}[data-mode='poker'] [class*='ddMenu'],
+.board-frame .${HOST}[data-mode='poker'] [class*='modalCard'],
+.board-frame .${HOST}[data-mode='poker'] [class*='sheet'] {
   padding: 12px;
   border: 0;
   border-radius: calc(var(--app-radius) + 4px);
@@ -357,9 +370,9 @@ const INHERIT = `
  * beside three boxed dropdowns, which is two kinds of field in one form and
  * reads as unfinished. They are all the app's input here: a hairline box on a
  * faint fill, at one height. */
-.board-frame .${HOST} [class*='ddTrigger'],
-.board-frame .${HOST} select,
-.board-frame .${HOST} input:not([type='range'], [type='checkbox'], [type='radio']) {
+.board-frame .${HOST}[data-mode='poker'] [class*='ddTrigger'],
+.board-frame .${HOST}[data-mode='poker'] select,
+.board-frame .${HOST}[data-mode='poker'] input:not([type='range'], [type='checkbox'], [type='radio']) {
   height: 32px;
   min-height: 32px;
   padding: 0 10px;
@@ -387,15 +400,15 @@ const INHERIT = `
 }
 
 /* The one being edited is still the ticket's name. */
-.board-frame .${HOST} [class*='editTitle'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='editTitle'] {
   font-size: 15px;
   font-weight: 500;
 }
 
-.board-frame .${HOST} [class*='ddTrigger']:hover,
-.board-frame .${HOST} [class*='ddTrigger'][aria-expanded='true'],
+.board-frame .${HOST}[data-mode='poker'] [class*='ddTrigger']:hover,
+.board-frame .${HOST}[data-mode='poker'] [class*='ddTrigger'][aria-expanded='true'],
 .board-frame .${HOST}[data-mode='poker'] textarea:focus,
-.board-frame .${HOST} input:focus:not([type='range']) {
+.board-frame .${HOST}[data-mode='poker'] input:focus:not([type='range']) {
   border-color: color-mix(in srgb, var(--app-accent) 60%, var(--app-line));
   box-shadow: none;
   outline: none;
@@ -407,7 +420,7 @@ const INHERIT = `
  * emoji at 36px, and a solid gold bar across the foot for a button. The app's
  * dialogs are small, sit on the page's own ground behind a hairline ring, and
  * put their actions at the end of a row rather than across it. */
-.board-frame .${HOST} [class*='_modal_'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='_modal_'] {
   border: 0;
   border-radius: calc(var(--app-radius) + 4px);
   background: var(--app-bg);
@@ -416,17 +429,17 @@ const INHERIT = `
     var(--shadow-2);
 }
 
-.board-frame .${HOST} [class*='_modal_']::backdrop {
+.board-frame .${HOST}[data-mode='poker'] [class*='_modal_']::backdrop {
   background: rgb(0 0 0 / 20%);
   backdrop-filter: blur(2px);
 }
 
-.board-frame .${HOST} [class*='modalBody'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='modalBody'] {
   padding: 16px;
   gap: 12px;
 }
 
-.board-frame .${HOST} [class*='modalTitle'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='modalTitle'] {
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 500;
@@ -437,12 +450,12 @@ const INHERIT = `
 /* The faces, as a tray of tiles rather than a wall of emoji: the app's control
    height, the app's corner, and the one that is chosen wearing the accent as a
    ring instead of a fill. */
-.board-frame .${HOST} [class*='avatarGrid'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='avatarGrid'] {
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 6px;
 }
 
-.board-frame .${HOST} [class*='avatarChoice'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoice'] {
   width: auto;
   height: 34px;
   min-height: 34px;
@@ -455,24 +468,24 @@ const INHERIT = `
     box-shadow 150ms ease;
 }
 
-.board-frame .${HOST} [class*='avatarChoice']:hover {
+.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoice']:hover {
   background: var(--app-secondary);
   transform: none;
 }
 
-.board-frame .${HOST} [class*='avatarChoiceOn'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='avatarChoiceOn'] {
   background: var(--app-secondary);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 55%, transparent);
 }
 
 /* The action goes at the end of its row, at the size of every other button
    here — not a bar the width of the dialog. */
-.board-frame .${HOST} [class*='modalActions'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='modalActions'] {
   justify-content: flex-end;
   margin-top: 0;
 }
 
-.board-frame .${HOST} [class*='modalActions'] > * {
+.board-frame .${HOST}[data-mode='poker'] [class*='modalActions'] > * {
   flex: 0 0 auto;
   width: auto;
   min-width: 84px;
@@ -481,7 +494,7 @@ const INHERIT = `
 
 /* Who you are opens off the chip that says it, the way the room does — the
    name and the face belong to that corner, not to the middle of the table. */
-.board-frame .${HOST} [class*='_modal_']:has([class*='avatarGrid']) {
+.board-frame .${HOST}[data-mode='poker'] [class*='_modal_']:has([class*='avatarGrid']) {
   position: fixed;
   inset: auto 16px 58px auto;
   width: 360px;
@@ -490,7 +503,7 @@ const INHERIT = `
 }
 
 /* The die beside the name field is an icon button, not a filled one. */
-.board-frame .${HOST} [class*='inputAction'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='inputAction'] {
   width: 32px;
   padding: 0;
   border: 1px solid var(--app-input);
@@ -498,38 +511,38 @@ const INHERIT = `
   color: var(--app-muted);
 }
 
-.board-frame .${HOST} [class*='inputAction']:hover {
+.board-frame .${HOST}[data-mode='poker'] [class*='inputAction']:hover {
   background: var(--app-secondary);
   color: var(--app-text);
 }
 
 /* The rows in a menu, from the rail: a soft box under the cursor, and the
    accent kept for the one that is chosen. */
-.board-frame .${HOST} [class*='ddOpt'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='ddOpt'] {
   border-radius: var(--app-radius);
   padding: 6px 9px;
   font-size: 12.5px;
   color: var(--app-muted);
 }
 
-.board-frame .${HOST} [class*='ddOpt']:hover,
-.board-frame .${HOST} [class*='ddOptActive'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='ddOpt']:hover,
+.board-frame .${HOST}[data-mode='poker'] [class*='ddOptActive'] {
   background: var(--app-secondary);
   color: var(--app-text);
 }
 
-.board-frame .${HOST} [class*='ddOpt'][aria-selected='true'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='ddOpt'][aria-selected='true'] {
   color: var(--app-text);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent) 70%, transparent);
 }
 
 /* The slider, at the app's weight: a hairline track with the accent filling
    it, and a small pale thumb rather than a large accent one. */
-.board-frame .${HOST} [class*='range']::-webkit-slider-runnable-track {
+.board-frame .${HOST}[data-mode='poker'] [class*='range']::-webkit-slider-runnable-track {
   height: 4px;
 }
 
-.board-frame .${HOST} [class*='range']::-webkit-slider-thumb {
+.board-frame .${HOST}[data-mode='poker'] [class*='range']::-webkit-slider-thumb {
   width: 12px;
   height: 12px;
   margin-top: -4px;
@@ -538,8 +551,8 @@ const INHERIT = `
 }
 
 /* A panel's own button is the app's secondary: filled, unbordered, quiet. */
-.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']),
-.board-frame .${HOST} [class*='panelAction'] {
+.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']),
+.board-frame .${HOST}[data-mode='poker'] [class*='panelAction'] {
   height: 32px;
   border: 0;
   border-radius: var(--app-radius);
@@ -547,8 +560,8 @@ const INHERIT = `
   color: var(--app-text);
 }
 
-.board-frame .${HOST} [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
-.board-frame .${HOST} [class*='panelAction']:hover {
+.board-frame .${HOST}[data-mode='poker'] [class*='popover']:not([class*='Anchor']) button:not([class*='Primary'], [class*='swatch'], [class*='musicPlay'], [class*='ddOpt'], [class*='ddTrigger']):hover,
+.board-frame .${HOST}[data-mode='poker'] [class*='panelAction']:hover {
   background: color-mix(in srgb, var(--app-secondary) 80%, var(--app-text) 8%);
 }
 
@@ -747,7 +760,10 @@ export function StagedBoard({
     const rest = tokens.replace(/@font-face\s*\{[^}]*\}/g, '');
     style.textContent = [
       ...faces,
-      `@scope (.${HOST}) {\n${rest.replaceAll(':root', ':scope')}\n}`,
+      // Two roots: the board in the window, and whatever it hangs off body.
+      // The card being dragged is a portal, and with no tokens on it, it came
+      // out with no ground, no rule and no text colour — invisible in the air.
+      `@scope (.${HOST}, body > [class^='_']) {\n${rest.replaceAll(':root', ':scope')}\n}`,
       INHERIT,
     ].join('\n');
     document.head.append(style);
