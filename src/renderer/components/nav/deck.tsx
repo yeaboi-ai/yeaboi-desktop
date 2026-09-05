@@ -208,30 +208,20 @@ export function Deck({ children }: { children: React.ReactNode }) {
     // a page that slides under the dock reads as one that was cut off, and a
     // scroll that moves the title is a page pretending to be a document.
     <div data-deck className="h-screen overflow-hidden">
-      {/* The window's own edge, growing in from the sides while it is being
-          turned. A band rather than a line — solid where it meets the edge and
-          gone by its inner side — and under the rail rather than across it:
-          that corner of the window belongs to the nav. */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-[15]">
-        {(
-          [
-            ['top', 'inset-x-0 top-0', 'to bottom'],
-            ['bottom', 'inset-x-0 bottom-0', 'to top'],
-            ['left', 'inset-y-0 left-0', 'to right'],
-            ['right', 'inset-y-0 right-0', 'to left'],
-          ] as const
-        ).map(([edge, place, towards]) => (
-          <div
-            key={edge}
-            className={`absolute ${place} transition-[width,height,opacity] duration-300 ease-out`}
-            style={{
-              [edge === 'top' || edge === 'bottom' ? 'height' : 'width']: 'var(--turn-inset)',
-              opacity: 'var(--turn-frame-opacity, 0)',
-              background: `linear-gradient(${towards}, color-mix(in srgb, var(--foreground) 55%, transparent), transparent)`,
-            }}
-          />
-        ))}
-      </div>
+      {/* The window's own edge, closing in while it is being turned. An inset
+          shadow rather than four strips: it follows the window's corner, which
+          four straight bands meeting at right angles cannot. Solid where it
+          meets the edge and gone by its inner side. Under the rail rather than
+          across it — that corner of the window belongs to the nav. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[15] rounded-[var(--window-radius)] transition-[box-shadow,opacity] duration-300 ease-out"
+        style={{
+          boxShadow: 'inset 0 0 var(--turn-inset) calc(var(--turn-inset) / 4) rgb(0 0 0 / 0.92)',
+          opacity: 'var(--turn-frame-opacity, 0)',
+        }}
+      />
+
       {/* Keyed on the route so the surface remounts and its contents deal
           themselves in again on every turn. */}
       {/* The rail overlays the left edge, so the page is inset by the rail
