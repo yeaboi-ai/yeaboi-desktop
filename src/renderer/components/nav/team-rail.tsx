@@ -74,9 +74,21 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // rail blinking.
   const back = cameFrom();
   const rows = useMemo(() => railRows(mode, back), [mode, back]);
-  const [leaving, setLeaving] = useState<typeof rows | null>(null);
+  // The list on its way out, and the shape it was in: whether it was a notch,
+  // and which of its rows was the one you were on. A leaving row has to look
+  // exactly as it did — judged against where it came from, never against where
+  // you have arrived.
+  const [leaving, setLeaving] = useState<{
+    rows: typeof rows;
+    notch: boolean;
+    active: string | undefined;
+  } | null>(null);
   const [revealed, setRevealed] = useState(Number.POSITIVE_INFINITY);
   const lastMode = useRef<typeof mode>(mode);
+  const was = useRef<{ notch: boolean; active: string | undefined }>({
+    notch: false,
+    active: undefined,
+  });
 
   // Set while rendering, not after it. An effect runs once the frame is on
   // screen, so the first painted frame of a new list was the whole of it with
@@ -85,11 +97,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   if (lastMode.current !== mode) {
     const from = lastMode.current;
     lastMode.current = mode;
-    setLeaving(railRows(from, back));
+    setLeaving({ rows: railRows(from, back), ...was.current });
     setRevealed(0);
   }
 
-  const slots = Math.max(rows.length, leaving?.length ?? 0);
+  const slots = Math.max(rows.length, leaving?.rows.length ?? 0);
   const activeHref = useActiveHref(rows.map((item) => item.href));
 
   // On a panel the rail is a notch: Home and the row you are on. The rest are
@@ -102,7 +114,18 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // row doing it. Cascading through nine slots to swap the second of them left
   // the rail a row short in the middle of it, because the row leaving collapsed
   // three beats before the row arriving grew.
-  const oneStep = notch || (leaving?.length ?? 0) <= 2;
+  // A list where two rows are visible is not a list changing hands: it is one
+  // row doing it. A notch shows two, and so does an aside pair — cascading
+  // through nine slots to swap the second of them left the rail short in the
+  // middle going one way, and briefly showing both the old row and the new one
+  // going the other.
+  const twoish = (list: typeof rows, shape: { notch: boolean; active: string | undefined }) =>
+    list.length <= 2 ||
+    (shape.notch &&
+      list.filter((row) => row.href === HOME_HREF || row.href === shape.active).length <= 2);
+  const oneStep =
+    twoish(rows, { notch, active: activeHref }) && (!leaving || twoish(leaving.rows, leaving));
+  was.current = { notch, active: activeHref };
 
   // The pages keep off the rail by its width, and on settings that width is
   // the open one. Declared on the root so every surface moves together with
@@ -301,17 +324,22 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
           // Not yet arrived means the old list still owns the slot — including
           // when the old list was shorter and owns nothing there. Falling back
           // to the new row would deal the tail of a longer list all at once.
-          const row = arrived || !leaving ? rows[slot] : leaving[slot];
+          const row = arrived || !leaving ? rows[slot] : leaving.rows[slot];
+          // Judged against the list the row belongs to. A mode list is a notch
+          // and an aside list is not, so reading the destination's shape while
+          // still showing the source's rows threw the whole menu open for the
+          // length of the swap and then folded it away again.
+          const shape = arrived || !leaving ? { notch, active: activeHref } : leaving;
           // A row that is in both lists is not changing hands. Home heads every
           // list the rail holds, and fading it out and back in said it had —
           // the point of the swap is that what stays put stays put.
-          const staying = Boolean(leaving && leaving[slot]?.href === rows[slot]?.href);
+          const staying = Boolean(leaving && leaving.rows[slot]?.href === rows[slot]?.href);
           const empty = !row;
-          const active = Boolean(row) && activeHref === row!.href;
+          const active = Boolean(row) && shape.active === row!.href;
           // Home is always in the notch: the way back to the map should never
           // be a hover away.
           const kept = active || row?.href === HOME_HREF;
-          const hidden = empty || (notch && !kept);
+          const hidden = empty || (shape.notch && !kept);
           const Icon = row?.Icon;
           return (
             <div key={slot}>
@@ -323,10 +351,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
                 aria-hidden
                 className="mx-2 bg-border/50 transition-all duration-200 ease-out"
                 style={{
-                  height: row?.opensGroup && !notch ? 1 : 0,
-                  opacity: row?.opensGroup && !notch ? 1 : 0,
-                  marginTop: row?.opensGroup && !notch ? 6 : 0,
-                  marginBottom: row?.opensGroup && !notch ? 6 : 0,
+                  height: row?.opensGroup && !shape.notch ? 1 : 0,
+                  opacity: row?.opensGroup && !shape.notch ? 1 : 0,
+                  marginTop: row?.opensGroup && !shape.notch ? 6 : 0,
+                  marginBottom: row?.opensGroup && !shape.notch ? 6 : 0,
                 }}
               />
               <Link

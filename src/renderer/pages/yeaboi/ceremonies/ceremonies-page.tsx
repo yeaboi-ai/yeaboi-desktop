@@ -386,11 +386,16 @@ function DeclareForm({
 }
 
 export default function CeremoniesPage() {
+  // A settings section, so it takes the width and the frame the others do and
+  // scrolls inside itself rather than down a column in the middle of an empty
+  // window.
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <CeremoniesBody />
+    <div className="quiet-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="mx-auto w-full max-w-[1360px] px-6 pt-10 pb-28">
+        <BackendGate>
+          <CeremoniesBody />
+        </BackendGate>
       </div>
-    </BackendGate>
+    </div>
   );
 }
