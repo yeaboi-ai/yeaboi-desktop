@@ -14,6 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { usePathname } from 'next/navigation';
 import {
   GripHorizontal,
   Loader2,
@@ -160,6 +161,7 @@ export function NikoBar() {
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
 
   const navigate = useNavigate();
+  const pathname = usePathname();
   const backend = useYeaboiBackend();
   const down = backend.kind !== 'ready';
   const width = useOpenWidth();
@@ -351,8 +353,22 @@ export function NikoBar() {
     if (!suggestedRoute) return;
     navigate(suggestedRoute);
     setAside(true);
+    landed.current = suggestedRoute;
     clearSuggestedRoute();
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
+
+  // And leaving that screen closes it. The answer was about the page it took
+  // you to; once you have gone somewhere else it is a panel held open over a
+  // screen it has nothing to say about, and the way to shut it is not obvious
+  // from looking at it.
+  const landed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!landed.current) return;
+    if (pathname === landed.current || pathname?.startsWith(`${landed.current}/`)) return;
+    landed.current = null;
+    setAside(false);
+    setIsOpen(false);
+  }, [pathname, setIsOpen]);
 
   const startFresh = useCallback(() => {
     startNewConversation();

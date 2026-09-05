@@ -127,6 +127,25 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     twoish(rows, { notch, active: activeHref }) && (!leaving || twoish(leaving.rows, leaving));
   was.current = { notch, active: activeHref };
 
+  // Escape leaves. On settings and on a page you stepped aside to there is one
+  // way out and the rail is offering it, so the key that means "not this" takes
+  // it — but not out from under a dialog, a menu or something being typed into,
+  // where Escape already means something nearer to hand.
+  useEffect(() => {
+    if (!settings && !aside) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.documentElement.dataset['overlay']) return;
+      const on = document.activeElement as HTMLElement | null;
+      if (on?.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+      if (on && (on.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(on.tagName)))
+        return;
+      router.push(back);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [settings, aside, back, router]);
+
   // The pages keep off the rail by its width, and on settings that width is
   // the open one. Declared on the root so every surface moves together with
   // it rather than each one knowing where the rail is.
@@ -306,17 +325,22 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     >
       <div ref={listRef} className="relative">
         {/* Nothing is lit where nothing is active. The marker holds its place
-            through a swap so it does not blink on the way, but a page you
-            stepped aside to has no row of its own — and leaving the mark on
-            Home said you were on Home. */}
-        {markerTop !== null && (Boolean(activeHref) || Boolean(leaving)) && (
+            through a swap so it does not blink on the way across, but a page
+            you stepped aside to has no row of its own — and leaving the mark
+            on Home said you were on Home. It fades rather than vanishing:
+            taken away in a frame it reads as a glitch beside the row that is
+            arriving. */}
+        {markerTop !== null && (
           <span
             aria-hidden
-            className="pointer-events-none absolute left-0 right-0 rounded-xl bg-secondary"
+            className="pointer-events-none absolute right-0 left-0 rounded-xl bg-secondary"
             style={{
               top: markerTop,
               height: ROW,
-              transition: travelling ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
+              opacity: activeHref || leaving ? 1 : 0,
+              transition: `${
+                travelling ? 'top 300ms cubic-bezier(0.22, 1, 0.36, 1), ' : ''
+              }opacity 200ms ease-out`,
             }}
           />
         )}
