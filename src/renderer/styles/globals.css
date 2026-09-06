@@ -1480,6 +1480,15 @@ html[data-audience='agents'] {
   }
 }
 
+/* The platform's own clear button in a search field: a blue cross in the
+   system's blue, over a window that is neither. Every search that offers one
+   draws it itself. */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* A scrolling conversation fades where it continues, and only there: a fade at
    the top when nothing is above it says there is more to see when there is
    not. */

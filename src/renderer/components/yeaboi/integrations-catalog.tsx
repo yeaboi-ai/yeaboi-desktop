@@ -3,8 +3,8 @@
 // The integrations catalog — Settings > Integrations.
 //
 // One view: the whole roster from GET /api/connections?all=1, searchable,
-// shelved by family. Create-your-own opens from the toolbar, the empty-search
-// state, or the tile at the end — one sheet, three doors. A connected
+// shelved by family. Create-your-own opens from the empty-search state or the
+// tile at the end — one sheet, two doors. A connected
 // integration wears its badge and accent here; managing what is already set
 // up (masked fields, verify, edit) lives beside the other credentials on
 // Settings > Credentials.
@@ -95,7 +95,6 @@ export function IntegrationsCatalog() {
   }, [refresh]);
 
   const rows = useMemo(() => payload?.connectors ?? [], [payload]);
-  const connected = rows.filter((row) => row.connected);
   const openRow = rows.find((row) => row.key === openKey) ?? null;
 
   const filtered = rows.filter((row) => matches(row, query) && (!family || row.family === family));
@@ -175,18 +174,22 @@ export function IntegrationsCatalog() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search the catalog"
                 aria-label="Search the catalog"
-                className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+                className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-9 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
               />
+              {query && (
+                <button
+                  type="button"
+                  aria-label="Clear the search"
+                  onClick={() => {
+                    setQuery('');
+                    searchRef.current?.focus();
+                  }}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-1 text-muted-foreground/60 transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <X aria-hidden className="size-3" />
+                </button>
+              )}
             </label>
-          </div>
-          <div className="flex items-center gap-3">
-            <p className="text-[12px] font-mono text-muted-foreground">
-              {connected.length} of {rows.length} connected
-            </p>
-            <Button size="xs" variant="secondary" onClick={() => setCreating(true)}>
-              <Plus aria-hidden className="mr-1 size-3" />
-              Create your own
-            </Button>
           </div>
         </div>
 
