@@ -173,6 +173,7 @@ describe('navSections', () => {
         '/ceremonies',
         '/feedback',
         '/privacy',
+        '/provenance',
         '/system-check',
         '/usage',
         '/whats-new',
@@ -189,9 +190,16 @@ describe('navSections', () => {
         new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),
         'utf8',
       );
-      for (const route of ['/ceremonies', '/privacy']) {
+      for (const route of ['/privacy', '/provenance']) {
         expect(tabs.includes(`'${route}'`), `${route} is not a settings tab`).toBe(true);
       }
+      // The schedule is declared and read where the dates are.
+      const calendar = readFileSync(
+        new URL('../src/renderer/components/yeaboi/calendar.tsx', import.meta.url),
+        'utf8',
+      );
+      expect(calendar.includes('DeclareCeremony'), 'the calendar cannot declare one').toBe(true);
+      expect(calendar.includes('"/ceremonies"'), 'nothing opens /ceremonies').toBe(true);
       const dock = readFileSync(
         new URL('../src/renderer/components/nav/dock-controls.tsx', import.meta.url),
         'utf8',
@@ -205,10 +213,8 @@ describe('navSections', () => {
       }
     });
 
-    it('is down to what has nowhere better to be', () => {
-      expect(opsSection('team')?.items.map((i) => i.href)).toEqual(['/provenance']);
-      expect(opsSection('solo')?.items.map((i) => i.href)).toEqual(['/provenance']);
-      expect(opsSection('agents')).toBeNull();
+    it('is empty in every world, so the dock draws no drawer', () => {
+      for (const audience of AUDIENCES) expect(opsSection(audience)).toBeNull();
     });
   });
 });

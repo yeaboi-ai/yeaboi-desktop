@@ -26,14 +26,13 @@ export const CHROME_TABS: readonly { route: string; title: string }[] = [
   { route: '/settings/appearance', title: 'Appearance' },
   { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
-  // Two settings pages that happen to live at the top level. Ceremonies is
-  // what runs on a schedule and where it is sent, which is the same question
-  // as the calendar and chat integrations that will sit beside it. Privacy is
-  // what leaves the machine and the switches that decide it. Both keep their
-  // routes — the manifest and the terminal name them — and read as settings
-  // sections here, which is where anyone would look.
-  { route: '/ceremonies', title: 'Ceremonies' },
+  // Two settings pages that happen to live at the top level. Privacy is what
+  // leaves the machine and the switches that decide it; Provenance is the
+  // record of what the agents did with it. Both keep their routes — the
+  // manifest and the terminal name them — and read as settings sections here,
+  // which is where anyone would look.
   { route: '/privacy', title: 'Privacy' },
+  { route: '/provenance', title: 'Provenance' },
 ];
 
 /** Every tab the contract and this window declare between them. */

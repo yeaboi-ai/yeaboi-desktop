@@ -51,7 +51,7 @@ function pickBanner(summary: HealthSummary): BannerContent | null {
     return {
       variant: 'spend',
       title: 'Monthly AI spend cap reached — calls paused',
-      detail: `Month-to-date spend of $${summary.usage.month_to_date_usd.toFixed(2)} has hit your hard cap. Raise the limit in Settings → Integrations to resume.`,
+      detail: `Month-to-date spend of $${summary.usage.month_to_date_usd.toFixed(2)} has hit your hard cap. Raise the limit in Settings → Set-up to resume.`,
       affectedFeatures: Object.keys(summary.features ?? {}),
     };
   }

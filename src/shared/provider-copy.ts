@@ -1,5 +1,5 @@
 // The words a provider failure is shown in, in one place, because more than
-// one surface says them: the health banner and the Settings → Credentials row.
+// one surface says them: the health banner and the Settings → Set-up row.
 //
 // The backend's own `message` is a diagnostic, not copy — it has carried
 // "Provider anthropic circuit open (consecutive_failures=2); failing fast to
@@ -36,13 +36,13 @@ export function providerFailureDetail(
   const yours = byok ? 'your ' : 'the ';
   switch (code) {
     case 'PROVIDER_INVALID_KEY':
-      return `${name} rejected ${yours}API key. Check it in Settings → Credentials — an unreplaced placeholder and a revoked key both look like this.`;
+      return `${name} rejected ${yours}API key. Check it in Settings → Set-up — an unreplaced placeholder and a revoked key both look like this.`;
     case 'PROVIDER_CREDIT_EXHAUSTED':
-      return `${name} reports no credit left on ${yours}account. Top it up, or switch provider in Settings → Credentials.`;
+      return `${name} reports no credit left on ${yours}account. Top it up, or switch provider in Settings → Set-up.`;
     case 'PROVIDER_RATE_LIMITED':
       return `${name} is rate-limiting requests. This usually clears on its own in a minute or two.`;
     default:
-      return `${name} is not responding. This usually clears on its own; if it persists, check Settings → Credentials.`;
+      return `${name} is not responding. This usually clears on its own; if it persists, check Settings → Set-up.`;
   }
 }
 

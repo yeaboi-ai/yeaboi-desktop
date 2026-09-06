@@ -15,13 +15,13 @@ import {
   // Aliased: the page component itself claims the `CeremoniesPage` name.
   type CeremoniesPage as CeremoniesSnapshot,
   type CeremonyRow,
-  declareCeremony,
   loadCeremonies,
   removeCeremony,
   runCeremony,
   setCeremonyEnabled,
 } from '@/lib/yeaboi/ops';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { DeclareCeremony } from '@/components/yeaboi/declare-ceremony';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -82,9 +82,6 @@ function Tile({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-const inputClass =
-  'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 function CeremoniesBody() {
   const [page, setPage] = useState<CeremoniesSnapshot | null>(null);
@@ -165,15 +162,17 @@ function CeremoniesBody() {
       )}
 
       {adding && (
-        <DeclareForm
-          page={page}
-          onDone={(message) => {
-            setAdding(false);
-            setNotice(message);
-            void refresh();
-          }}
-          onError={setError}
-        />
+        <Section title="Declare a ceremony">
+          <DeclareCeremony
+            page={page}
+            onDone={(message) => {
+              setAdding(false);
+              setNotice(message);
+              void refresh();
+            }}
+            onError={setError}
+          />
+        </Section>
       )}
 
       {page.ceremonies.length === 0 ? (
@@ -247,141 +246,6 @@ function CeremoniesBody() {
         ))
       )}
     </div>
-  );
-}
-
-function DeclareForm({
-  page,
-  onDone,
-  onError,
-}: {
-  page: CeremoniesSnapshot;
-  onDone: (message: string) => void;
-  onError: (message: string) => void;
-}) {
-  const first = page.modes[0];
-  const [mode, setMode] = useState(first?.key ?? '');
-  const [name, setName] = useState('');
-  const [at, setAt] = useState(first?.default_at ?? '09:00');
-  const [weekdays, setWeekdays] = useState(first?.default_weekdays ?? '1-5');
-  // `desktop` and not `terminal`: the backend drops the terminal channel from
-  // every fan-out (stdout is the handshake), so a ceremony delivering only
-  // there would run and reach nobody.
-  const [channels, setChannels] = useState<string[]>(['desktop']);
-  const [busy, setBusy] = useState(false);
-  const picked = page.modes.find((option) => option.key === mode);
-
-  async function submit() {
-    setBusy(true);
-    try {
-      const declared = await declareCeremony({ name, mode, at, weekdays, channels });
-      // The equivalent terminal command comes back with it, so a surface that
-      // installed a recurring job can also say exactly what it installed.
-      onDone(`${declared.ceremony.name} — ${declared.cadence}. ${declared.command}`);
-    } catch (e) {
-      onError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Section title="Declare a ceremony">
-      <div className="space-y-3">
-        <label className="block">
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Mode
-          </span>
-          <select
-            value={mode}
-            onChange={(e) => {
-              const key = e.target.value;
-              setMode(key);
-              const option = page.modes.find((row) => row.key === key);
-              if (option) {
-                setAt(option.default_at);
-                setWeekdays(option.default_weekdays);
-              }
-            }}
-            className={inputClass}
-          >
-            {page.modes.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {picked && (
-          <p className="text-[12px] text-muted-foreground">
-            {picked.blurb} · about ${picked.est_cost_usd.toFixed(2)} a run
-          </p>
-        )}
-        <label className="block">
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Name
-          </span>
-          <input
-            type="text"
-            value={name}
-            placeholder="morning-standup"
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-              At
-            </span>
-            <input
-              type="text"
-              value={at}
-              onChange={(e) => setAt(e.target.value)}
-              className={inputClass}
-            />
-          </label>
-          <label className="block">
-            <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-              Days
-            </span>
-            <input
-              type="text"
-              value={weekdays}
-              onChange={(e) => setWeekdays(e.target.value)}
-              className={inputClass}
-            />
-          </label>
-        </div>
-        <div>
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Deliver to
-          </span>
-          <div className="flex flex-wrap gap-3 mt-1.5">
-            {page.channels.map((channel) => (
-              <label key={channel} className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={channels.includes(channel)}
-                  onChange={() =>
-                    setChannels((chosen) =>
-                      chosen.includes(channel)
-                        ? chosen.filter((c) => c !== channel)
-                        : [...chosen, channel],
-                    )
-                  }
-                  className="accent-[var(--primary)]"
-                />
-                <span className="text-[13px] text-foreground">{channel}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <Button size="sm" disabled={busy || !name || !mode} onClick={() => void submit()}>
-          {busy ? 'Installing…' : 'Declare and install'}
-        </Button>
-      </div>
-    </Section>
   );
 }
 

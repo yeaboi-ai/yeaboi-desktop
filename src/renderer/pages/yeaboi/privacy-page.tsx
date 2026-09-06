@@ -113,7 +113,7 @@ const GROUP_BADGES: Record<string, { label: string; className: string }> = {
 const ENV_TOKEN = /\b(?:YEABOI|LANGSMITH|CLOUDFLARED)_[A-Z_]+(?:=[\w.]+)?/;
 const SETTINGS_PATHS: Record<string, string> = {
   'Settings ▸ System ▸ Privacy': '/settings/system',
-  'Settings ▸ Credentials': '/settings/credentials',
+  'Settings ▸ Set-up': '/settings/credentials',
 };
 
 interface SaveNotice {

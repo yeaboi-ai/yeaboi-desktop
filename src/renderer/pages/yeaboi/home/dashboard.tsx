@@ -161,7 +161,12 @@ export function HomeDashboard() {
             calendar's own order counted for nothing against a sibling that
             came later in the tree. This is the box that has to carry it. */}
         <div className="relative z-10 mb-6 mt-3">
-          <Schedule ceremonies={schedule.ceremonies} onExpand={setMonthView} />
+          <Schedule
+            ceremonies={schedule.ceremonies}
+            page={schedule.page}
+            onExpand={setMonthView}
+            onDeclared={schedule.refresh}
+          />
         </div>
 
         <Displaced away={monthView}>

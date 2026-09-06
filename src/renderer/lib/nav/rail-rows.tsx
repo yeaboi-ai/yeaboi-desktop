@@ -13,7 +13,6 @@ import {
   Blocks,
   Bot,
   CalendarClock,
-  CalendarDays,
   Columns3,
   Gauge,
   Home,
@@ -26,6 +25,7 @@ import {
   Presentation,
   RotateCcw,
   Rocket,
+  ScrollText,
   Share2,
   ShieldCheck,
   SlidersHorizontal,
@@ -76,8 +76,8 @@ const SETTINGS_ICONS: Record<string, RailIcon> = {
   '/settings/system': SlidersHorizontal,
   '/settings/appearance': Palette,
   '/settings/duck': Bird,
-  '/ceremonies': CalendarDays,
   '/privacy': Lock,
+  '/provenance': ScrollText,
 };
 
 /** The way back, kept at the top of every list the rail holds. */

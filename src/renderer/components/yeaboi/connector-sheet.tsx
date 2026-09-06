@@ -521,7 +521,7 @@ function ConnectorSheetBody({
             <div className="rounded-xl bg-secondary/40 px-4 py-3 text-[12px] text-muted-foreground">
               {row.label} is one of the built-in integrations — its credentials live under{' '}
               <Link href="/settings/credentials" className="text-primary hover:underline">
-                Settings · Credentials
+                Settings · Set-up
               </Link>
               {row.section === 'voice' ? ' (System · Voice)' : ''}, or re-run setup.
             </div>

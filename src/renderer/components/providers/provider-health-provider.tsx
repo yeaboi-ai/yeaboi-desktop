@@ -143,5 +143,5 @@ function maybeFireSpendToasts(summary: HealthSummary) {
 function usageDescription(usage: HealthSummary['usage']): string {
   const spend = usage.month_to_date_usd.toFixed(2);
   const soft = usage.soft_limit_usd?.toFixed(2) ?? '—';
-  return `Month-to-date $${spend} of $${soft}. Manage limits in Settings → Integrations.`;
+  return `Month-to-date $${spend} of $${soft}. Manage limits in Settings → Set-up.`;
 }

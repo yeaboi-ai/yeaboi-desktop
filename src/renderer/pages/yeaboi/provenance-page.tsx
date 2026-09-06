@@ -16,6 +16,7 @@ import {
   provenanceTrace,
 } from '@/lib/yeaboi/ops';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { Badge } from '@/components/ui/badge';
 
 const WINDOWS = [7, 30, 90];
@@ -274,11 +275,13 @@ function ProvenanceBody() {
 }
 
 export default function ProvenancePage() {
+  // A settings section rather than a page of its own — same frame, same
+  // heading, same width as the tabs it sits with in the rail.
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-5xl px-6 py-10">
+    <SettingsPageShell active="/provenance" maxWidth="max-w-5xl">
+      <BackendGate>
         <ProvenanceBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </SettingsPageShell>
   );
 }

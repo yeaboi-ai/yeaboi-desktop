@@ -372,7 +372,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     </p>
   );
 
-  if (tab.title === 'Credentials') {
+  if (tab.route === '/settings/credentials') {
     const providerFields = sectionFields('provider');
     const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
     const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
@@ -700,7 +700,7 @@ export default function YeaboiSettingsPage() {
         </>
       ) : (
         <BackendGate>
-          {engineTab?.title === 'Credentials' && (
+          {engineTab?.route === '/settings/credentials' && (
             <div className="mb-3 flex justify-end">
               <Link
                 href="/setup"
@@ -711,7 +711,7 @@ export default function YeaboiSettingsPage() {
               </Link>
             </div>
           )}
-          {engineTab?.title === 'Catalog' ? (
+          {engineTab?.route === '/settings/connections' ? (
             <IntegrationsCatalog />
           ) : (
             /* The tab table is a non-empty literal; index 0 only looks optional

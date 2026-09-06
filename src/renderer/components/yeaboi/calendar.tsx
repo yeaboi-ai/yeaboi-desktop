@@ -10,7 +10,18 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
+import Link from 'next/link';
+
+import { DeclareCeremony } from '@/components/yeaboi/declare-ceremony';
+import { onNavAgain } from '@/lib/nav/nav-again';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { loadCeremonies, type CeremoniesPage, type CeremonyRow } from '@/lib/yeaboi/ops';
 import {
   addDays,
   isoDate,
@@ -36,24 +47,35 @@ function scheduled(rows: CeremonyRow[]): Scheduled[] {
 }
 
 export function useSchedule() {
-  const [rows, setRows] = useState<CeremonyRow[] | null>(null);
+  const [page, setPage] = useState<CeremoniesPage | null>(null);
   const [error, setError] = useState('');
 
   const refresh = useCallback(() => {
-    loadCeremonies().then(
-      (page) => setRows(page.ceremonies ?? []),
-      (e: Error) => {
-        setError(e.message);
-        setRows([]);
-      },
-    );
+    loadCeremonies().then(setPage, (e: Error) => {
+      setError(e.message);
+      setPage(null);
+    });
   }, []);
   useEffect(refresh, [refresh]);
 
-  return { rows, error, refresh, ceremonies: useMemo(() => scheduled(rows ?? []), [rows]) };
+  const rows = page?.ceremonies ?? null;
+  return {
+    rows,
+    // The modes it can run and the channels it can deliver to — what
+    // declaring one is a choice between.
+    page,
+    error,
+    refresh,
+    ceremonies: useMemo(() => scheduled(rows ?? []), [rows]),
+  };
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** Mon=1..Sun=7, which is what the scheduler counts in. */
+function mondayFirst(day: Date): number {
+  return day.getDay() === 0 ? 7 : day.getDay();
+}
 
 /** A ceremony's colour comes from its mode, so the same ceremony reads the same
  *  everywhere it appears — the grid, the upcoming list, a page's own snip. */
@@ -95,6 +117,7 @@ function DayCell({
   showWeekday,
   height,
   limit,
+  onAdd,
 }: {
   day: Date;
   slots: Occurrence[];
@@ -103,17 +126,36 @@ function DayCell({
   showWeekday?: boolean;
   height: number;
   limit: number;
+  /** Given in the month, where a day is a thing you can put something on. */
+  onAdd?: (day: Date) => void;
 }) {
   const date = isoDate(day);
   return (
     <div
       data-day={date}
+      {...(onAdd
+        ? {
+            role: 'button' as const,
+            tabIndex: 0,
+            'aria-label': `Declare a ceremony on ${day.toDateString()}`,
+            onClick: () => onAdd(day),
+            onKeyDown: (event: React.KeyboardEvent) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              onAdd(day);
+            },
+          }
+        : {})}
       // A tint rather than an outlined card. On a light theme a white cell with
       // a grey ring on a near-white page reads as a row of boxes; the day is
       // the shape, and it only needs to be a shade off the page.
       className={`rounded-xl p-1.5 transition-colors ${
         date === today ? 'bg-secondary ring-1 ring-border/60' : 'bg-secondary/40'
-      } ${dim ? 'opacity-40' : ''}`}
+      } ${dim ? 'opacity-40' : ''} ${
+        onAdd
+          ? 'cursor-pointer outline-none hover:bg-secondary focus-visible:ring-1 focus-visible:ring-primary/50'
+          : ''
+      }`}
       style={{ minHeight: height }}
     >
       <p className="flex items-baseline gap-1.5">
@@ -342,15 +384,25 @@ function wrapped(was: DOMRect, is: DOMRect, geo: Rows | null): Keyframe[] {
 
 export function Schedule({
   ceremonies,
+  /** What a ceremony can be declared as, from the same read the rows came
+   *  from. Without it the month shows the schedule but cannot add to it. */
+  page,
   /** Told when the calendar takes the whole surface, so the page can put its
    *  other panels away — a month grid and a row of tiles do not both fit, and
    *  the answer to that is not a scrollbar. */
   onExpand,
+  onDeclared,
 }: {
   ceremonies: Scheduled[];
+  page?: CeremoniesPage | null;
   onExpand?: (expanded: boolean) => void;
+  onDeclared?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  /** Declaring happens in the month, where the dates it is a choice about
+   *  are: a day opens it on that day. Null while it is closed. */
+  const [declaring, setDeclaring] = useState<{ weekday?: number } | null>(null);
+  const [said, setSaid] = useState('');
   /** The back control outlives the month view by its own exit. */
   const [backOnRow, setBackOnRow] = useState(false);
   /** Where every day sat before the calendar changed shape, so the ones that
@@ -464,12 +516,23 @@ export function Schedule({
     if (midSwap.current) return;
     midSwap.current = true;
     const next = !expanded;
+    if (!next) {
+      setDeclaring(null);
+      setSaid('');
+    }
     onExpand?.(next);
     change(next);
     window.setTimeout(() => {
       midSwap.current = false;
     }, MOVE_MS);
   }, [expanded, onExpand, change]);
+
+  // Home, from Home: the nav has nowhere to go, so it closes the month it is
+  // holding instead.
+  useEffect(() => {
+    if (!expanded) return;
+    return onNavAgain(swap);
+  }, [expanded, swap]);
 
   // The ghost outlives the shape it was in by its own fade.
   useEffect(() => {
@@ -588,11 +651,60 @@ export function Schedule({
           </button>
         </div>
         {expanded && (
-          <h2 className="font-body text-[13px] font-medium text-foreground">
-            {month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          </h2>
+          <>
+            <h2 className="font-body text-[13px] font-medium text-foreground">
+              {month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+            </h2>
+            <div className="ml-auto flex items-center gap-1">
+              {page && (
+                <button type="button" onClick={() => setDeclaring({})} className={STEP}>
+                  Declare a ceremony
+                </button>
+              )}
+              <Link href="/ceremonies" className={STEP}>
+                Manage
+              </Link>
+              {/* Google and Teams are connections, and connections are the
+                  catalog's. */}
+              <Link href="/settings/connections" className={STEP}>
+                Sync a calendar
+              </Link>
+            </div>
+          </>
         )}
       </header>
+
+      {page && (
+        <Sheet open={Boolean(declaring)} onOpenChange={(open) => !open && setDeclaring(null)}>
+          <SheetContent side="right" className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Declare a ceremony</SheetTitle>
+              <SheetDescription>
+                {declaring?.weekday
+                  ? `Every ${DAY_LABELS[declaring.weekday - 1]}, until you pause it.`
+                  : 'Your machine fires it, whether or not the app is open.'}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="overflow-y-auto px-5 pb-5">
+              <DeclareCeremony
+                // Remounted per opening, so a day picked on the grid is what
+                // the form starts from rather than what the last one left
+                // behind.
+                key={declaring?.weekday ?? 'any'}
+                page={page}
+                weekday={declaring?.weekday}
+                onDone={(message) => {
+                  setDeclaring(null);
+                  setSaid(message);
+                  onDeclared?.();
+                }}
+                onError={setSaid}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
+      {expanded && said && <p className="mt-2 px-1 text-[12px] text-muted-foreground">{said}</p>}
 
       {/* Where it stood, fading, while the month it opened stands in its
           place. */}
@@ -629,6 +741,9 @@ export function Schedule({
               dim={day.getMonth() !== month.getMonth()}
               height={84}
               limit={3}
+              {...(page
+                ? { onAdd: (picked: Date) => setDeclaring({ weekday: mondayFirst(picked) }) }
+                : {})}
             />
           ))}
         </div>

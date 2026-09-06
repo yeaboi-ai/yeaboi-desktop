@@ -1,14 +1,15 @@
 'use client';
 
 // Home — the active world's welcome screen. The shell lives in one audience
-// at a time (AudienceProvider), so "home" is home of the current world: the
-// Solo and Team landings fork project workspace vs one-off session (sharing
-// one component — the audience trims the mode grid and a little copy), the
-// Agents landing is the agentwatch family.
+// at a time (AudienceProvider), so "home" is home of the current world: Solo
+// and Team land on the dashboard, Agents on the agentwatch family.
+//
+// Nothing is fetched here — each surface reads its own data — so home arrives
+// drawn rather than behind a "Loading…".
 
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { useAudience } from '@/components/providers/audience-provider';
-import { WorkspaceHome } from './home/workspace-home';
+import { HomeDashboard } from './home/dashboard';
 import { AgentsHome } from './home/agents-home';
 
 export default function HomePage() {
@@ -23,7 +24,10 @@ export default function HomePage() {
           <AgentsHome />
         </div>
       ) : (
-        <WorkspaceHome audience={audience} />
+        /* Where the work stands. The modes are one scroll away in the deck, so
+           this surface answers what happened and what is next rather than
+           listing what can be launched. */
+        <HomeDashboard />
       )}
     </BackendGate>
   );

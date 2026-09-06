@@ -152,15 +152,17 @@ export function railSections(audience: Audience): NavSectionSpec[] {
  *
  *  What's New is what a dashboard tile says, so the tile is the door and a nav
  *  row for the same screen is a second one; Usage is not a page at all any
- *  more, only the tile. Ceremonies and Privacy read as settings sections and
- *  are in the settings rail, Feedback is a button beside the duck, and System
- *  Check is a dashboard tile. A drawer of seven icons for the one thing left
- *  is most of why it lost its place to begin with. */
+ *  more, only the tile. Ceremonies is declared and read on the calendar, which
+ *  is where a schedule belongs; Privacy and Provenance read as settings
+ *  sections and are in the settings rail; Feedback is a button beside the
+ *  duck, and System Check is a dashboard tile. Nothing is left over, so the
+ *  drawer — and the spanner that opened it — is gone. */
 export const OPS_ELSEWHERE: ReadonlySet<string> = new Set([
   '/whats-new',
   '/usage',
   '/ceremonies',
   '/privacy',
+  '/provenance',
   '/feedback',
   '/system-check',
 ]);
