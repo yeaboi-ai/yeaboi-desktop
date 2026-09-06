@@ -23,6 +23,7 @@ from .notification import Notification
 from .org_ai_defaults import OrgAIDefaults
 from .organization import Organization, OrgMember, Team, TeamMember
 from .project import Project
+from .project_attachment import ProjectAttachment
 from .project_output import ProjectOutput
 from .recording import Recording
 from .repo_analysis_job import RepoAnalysisJob
@@ -72,6 +73,7 @@ __all__ = [
     "Team",
     "TeamMember",
     "Project",
+    "ProjectAttachment",
     "ProjectOutput",
     "Recording",
     "Session",

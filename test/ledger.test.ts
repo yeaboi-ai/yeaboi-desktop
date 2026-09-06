@@ -6,13 +6,23 @@ import { describe, expect, it } from 'vitest';
 import {
   ALL_DONE_LINE,
   COMPLETED_WORD,
+  DELETE_LABEL,
+  DELETE_PROJECT_MESSAGE,
+  DELETE_PROJECT_TITLE,
+  IN_PROGRESS_WORD,
   LEDGER_ROW,
+  NOT_ALLOWED_LINE,
+  NOT_ALLOWED_TITLE,
   OTHER_WAYS_WORD,
+  RENAME_LABEL,
   START_FROM_LABEL,
+  UNREACHABLE_LINE,
   createErrorMessage,
   leavesSentence,
   ledgerColumns,
   ledgerSections,
+  projectCount,
+  rowActions,
 } from '../src/renderer/lib/yeaboi/ledger';
 import { FLOW } from '../src/renderer/lib/yeaboi/reads';
 
@@ -66,7 +76,22 @@ describe('ledgerSections', () => {
 
 describe('the words on the sheet', () => {
   it('keeps the labels in sentence case with no arrows', () => {
-    for (const text of [COMPLETED_WORD, OTHER_WAYS_WORD, START_FROM_LABEL, ALL_DONE_LINE]) {
+    for (const text of [
+      IN_PROGRESS_WORD,
+      COMPLETED_WORD,
+      OTHER_WAYS_WORD,
+      START_FROM_LABEL,
+      ALL_DONE_LINE,
+      RENAME_LABEL,
+      DELETE_LABEL,
+      DELETE_PROJECT_TITLE,
+      DELETE_PROJECT_MESSAGE,
+      NOT_ALLOWED_TITLE,
+      NOT_ALLOWED_LINE,
+      UNREACHABLE_LINE,
+      projectCount(1),
+      projectCount(3),
+    ]) {
       expect(text).not.toMatch(/[→←·]/);
       expect(text).not.toMatch(/\b[A-Z]{2,}\b/);
     }
@@ -89,5 +114,21 @@ describe('createErrorMessage', () => {
     expect(createErrorMessage(new Error(''))).toBe(
       "Couldn't create the project. Please try again.",
     );
+  });
+});
+
+describe('the rows’ actions', () => {
+  it('are rename, the status move and delete, in that order', () => {
+    expect(rowActions(undefined).map((a) => [a.key, a.label])).toEqual([
+      ['rename', 'Rename'],
+      ['status', 'Mark done'],
+      ['delete', 'Delete'],
+    ]);
+    expect(rowActions('done').map((a) => a.label)).toEqual(['Rename', 'Reopen', 'Delete']);
+  });
+
+  it('count the projects in progress in words', () => {
+    expect(projectCount(1)).toBe('One project');
+    expect(projectCount(3)).toBe('3 projects');
   });
 });

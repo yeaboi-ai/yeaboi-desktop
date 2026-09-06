@@ -14,6 +14,7 @@ from ..models.feedback import Feedback
 from ..models.harness import HarnessConfig
 from ..models.organization import Organization, Team, TeamMember
 from ..models.project import Project
+from ..models.project_attachment import ProjectAttachment
 from ..models.project_output import ProjectOutput
 from ..models.session import ChatMessage, Participant, Session, TranscriptEntry
 from ..models.session_event import SessionContext, SessionEvent
@@ -23,6 +24,7 @@ from ..models.user import User
 from ..models.vocabulary import TranscriptionCorrection
 from ..schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from ..services.ai_provider import get_ai_client
+from ..services.attachment_storage import get_storage
 from ..services.audit_service import get_client_ip, log_audit
 
 logger = logging.getLogger(__name__)
@@ -46,6 +48,42 @@ def _ai_error_detail(e: Exception) -> str:
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+
+def _dedupe_references(rows: list[dict]) -> list[dict]:
+    """The same (source, subject) once, first wins, order kept."""
+    seen: set[tuple[str, str]] = set()
+    out: list[dict] = []
+    for row in rows:
+        key = (str(row.get("source", "")), str(row.get("subject", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+    return out
+
+
+async def project_attachment_rows(project_id: str, db: AsyncSession) -> list[dict]:
+    """The project's attachments, oldest first, with their fetchable URLs."""
+    result = await db.execute(
+        select(ProjectAttachment)
+        .where(ProjectAttachment.project_id == project_id)
+        .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
+    )
+    storage = get_storage()
+    return [
+        {
+            "id": r.id,
+            "filename": r.filename,
+            "mime_type": r.mime_type,
+            "size_bytes": r.size_bytes,
+            "width": r.width,
+            "height": r.height,
+            "url": await storage.get_url(r.storage_key),
+            "created_at": r.created_at,
+        }
+        for r in result.scalars().all()
+    ]
 
 
 @router.post("", status_code=201, response_model=ProjectResponse)
@@ -79,7 +117,14 @@ async def create_project(
     elif not name or not name.strip():
         name = "Untitled Project"
 
-    project = Project(name=name, description=body.description, owner_id=user.id, org_id=org.id, team_id=team.id)
+    project = Project(
+        name=name,
+        description=body.description,
+        owner_id=user.id,
+        org_id=org.id,
+        team_id=team.id,
+        references=_dedupe_references([r.model_dump() for r in body.references or []]),
+    )
     db.add(project)
     await db.flush()
     await log_audit(
@@ -151,6 +196,8 @@ async def get_project(
         "default_modifiers": list(project.default_modifiers or []),
         "yeaboi_project_id": project.yeaboi_project_id,
         "status": project.status,
+        "references": list(project.references or []),
+        "attachments": await project_attachment_rows(project.id, db),
     }
     return response
 
@@ -219,6 +266,8 @@ async def update_project(
 
     if "status" in update_data and update_data["status"] not in ("active", "done"):
         raise HTTPException(status_code=422, detail="status must be 'active' or 'done'")
+    if update_data.get("references") is not None:
+        update_data["references"] = _dedupe_references(update_data["references"])
 
     for key, value in update_data.items():
         setattr(project, key, value)
@@ -327,6 +376,19 @@ async def delete_project(
     await db.execute(
         UsageEvent.__table__.update().where(UsageEvent.project_id == project_id).values(project_id=None)
     )
+
+    # Screenshots: the files first, then the rows.
+    attachment_rows = await db.execute(
+        select(ProjectAttachment).where(ProjectAttachment.project_id == project_id)
+    )
+    attachments = attachment_rows.scalars().all()
+    if attachments:
+        storage = get_storage()
+        for attachment in attachments:
+            await storage.delete(attachment.storage_key)
+        await db.execute(
+            delete(ProjectAttachment).where(ProjectAttachment.project_id == project_id)
+        )
 
     # Finally delete the project
     await log_audit(

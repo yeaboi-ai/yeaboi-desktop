@@ -131,7 +131,7 @@ export const ICON_PATHS: Record<string, string> = {
 /** Marks whose source does not normalise to a 24-square. Anything absent here
  *  is drawn in simple-icons' own 0 0 24 24 box; the browser fits and centres
  *  whatever box is named. */
-const ICON_VIEWBOXES: Record<string, string> = {
+export const ICON_VIEWBOXES: Record<string, string> = {
   incidentio: '0 0 256 346',
 };
 

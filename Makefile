@@ -40,7 +40,7 @@ include $(TOOLING)/mk/node.mk
 # charge of the same file, and contracts-check would go red every time a route
 # moved here before yeaboi.ai caught up.
 
-.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check
+.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check seed-projects
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -62,6 +62,9 @@ dev: ## Run the app with HMR (needs the planning-platform backend on :8000)
 # Rendered from the website's master duck art, committed here, and asserted by
 # test/icons.test.ts without Pillow. `uv run --with` needs only uv — there is
 # no Python environment in this repo and this target must not create one.
+seed-projects: ## Seed a few local projects to look at in the ledger (CLEAN=1 removes them again)
+	CLEAN=$(CLEAN) node scripts/seed-projects.mjs
+
 icons: ## Re-render the committed icon set from the yeaboi-site duck art (needs uv)
 	uv run --with pillow --with matplotlib --no-project python scripts/gen_desktop_icons.py
 

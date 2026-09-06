@@ -18,6 +18,9 @@ import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel'
 import { DemoTour } from '@/components/onboarding/demo-tour';
 import { PageShell } from '@/components/page-shell';
 import { isDone, nextStatus, statusActionLabel, statusWord } from '@/lib/yeaboi/projects';
+import { ReferenceChips } from '@/components/projects/reference-chips';
+import { useApiUrl } from '@/hooks/use-api-url';
+import type { ProjectAttachment, ProjectReference } from '@/lib/yeaboi/references';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -33,6 +36,9 @@ interface Project {
   repo_url?: string | null;
   /** `active` | `done`; the owner marks it done. Absent on a backend that predates it. */
   status?: string;
+  /** What the project points at, and its screenshots; absent on a backend that predates them. */
+  references?: ProjectReference[];
+  attachments?: ProjectAttachment[];
 }
 
 interface SessionRow {
@@ -987,6 +993,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { authFetch, ready } = useAuthFetch();
   const confirm = useConfirm();
+  const apiUrl = useApiUrl();
 
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -1313,6 +1320,71 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id, project, authFetch, confirm]);
 
+  // A chip's ×: references are the whole list PATCHed back; a screenshot is its own DELETE.
+  const removeReference = useCallback(
+    async (index: number) => {
+      if (!project) return;
+      const references = (project.references ?? []).filter((_, i) => i !== index);
+      let detail = 'The reference could not be removed.';
+      try {
+        const resp = await authFetch(`/api/projects/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ references }),
+        });
+        if (resp.ok) {
+          setProject((prev) => (prev ? { ...prev, references } : prev));
+          return;
+        }
+        const body = await resp.json().catch(() => ({}));
+        if (body?.detail) detail = body.detail;
+      } catch {
+        detail = 'Could not reach the server. Check your connection and try again.';
+      }
+      await confirm({
+        title: 'Reference kept',
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+    },
+    [id, project, authFetch, confirm],
+  );
+  const removeAttachment = useCallback(
+    async (attachmentId: string) => {
+      let detail = 'The screenshot could not be removed.';
+      try {
+        const resp = await authFetch(`/api/projects/${id}/attachments/${attachmentId}`, {
+          method: 'DELETE',
+        });
+        if (resp.ok || resp.status === 204) {
+          setProject((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  attachments: (prev.attachments ?? []).filter((a) => a.id !== attachmentId),
+                }
+              : prev,
+          );
+          return;
+        }
+        const body = await resp.json().catch(() => ({}));
+        if (body?.detail) detail = body.detail;
+      } catch {
+        detail = 'Could not reach the server. Check your connection and try again.';
+      }
+      await confirm({
+        title: 'Screenshot kept',
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+    },
+    [id, authFetch, confirm],
+  );
+
   // ── Loading / not found ────────────────────────────────────────────────────
 
   if (notFound) {
@@ -1426,6 +1498,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 {project.description}
               </p>
             )}
+            <ReferenceChips
+              className="mt-3 max-w-xl"
+              references={project.references ?? []}
+              attachments={project.attachments ?? []}
+              apiUrl={apiUrl}
+              readOnly={!(isAdmin && project.is_own_team !== false)}
+              onRemoveReference={removeReference}
+              onRemoveAttachment={removeAttachment}
+            />
           </div>
 
           <div className="shrink-0 text-right hidden md:block">

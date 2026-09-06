@@ -28,6 +28,7 @@ from .routers.blueprints import router as blueprints_router
 from .routers.boards import router as boards_router
 from .routers.brand import router as brand_router
 from .routers.card_attachments import router as card_attachments_router
+from .routers.project_attachments import router as project_attachments_router
 from .routers.card_links import router as card_links_router
 from .routers.card_views import router as card_views_router
 from .routers.character_previews import router as character_previews_router
@@ -246,6 +247,7 @@ def create_app() -> FastAPI:
     app.include_router(character_previews_router)
     app.include_router(boards_router)
     app.include_router(card_attachments_router)
+    app.include_router(project_attachments_router)
     app.include_router(card_links_router)
     app.include_router(card_views_router)
     app.include_router(integration_mappings_router)
