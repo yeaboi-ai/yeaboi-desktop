@@ -14,15 +14,25 @@ export { projectsHref };
 export interface PageLink {
   href: string;
   label: string;
+  /** One line saying what is behind the link, where a page lists it as a row. */
+  fact?: string;
 }
 
 /** The rail's foot: the one row nobody arranges. */
 export const SETTINGS_ITEM: PageLink = { href: '/settings', label: 'Settings' };
 
-/** Reached from the Projects page header, and lit as Projects on the rail. */
+/** The other ways into a project, rows at the foot of the Projects sheet; lit as Projects on the rail. */
 export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
-  { href: '/projects/new/from-roadmap', label: 'From a roadmap' },
-  { href: '/board', label: 'All tickets' },
+  {
+    href: '/projects/new/from-roadmap',
+    label: 'From a roadmap',
+    fact: 'A Confluence or Notion roadmap page becomes a project.',
+  },
+  {
+    href: '/board',
+    label: 'All tickets',
+    fact: 'Every open ticket across your projects, on one board.',
+  },
 ];
 
 /** Reached from the foot of Sessions, and lit as Sessions on the rail. */

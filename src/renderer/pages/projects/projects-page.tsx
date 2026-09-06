@@ -1,26 +1,51 @@
 'use client';
 
 // Projects — the durable way to work. Every run inside one reads what the
-// runs before it left behind, and the flow strip says which reads which. In
-// progress and Completed are two plain lists; the board and the roadmap
-// intake are reached from the header.
+// runs before it left behind. The page is one ledger: the New project
+// composer as its first ruled line, a head row that says what each step
+// leaves, then a line per project carrying its name, a dot per flow step
+// (filled where that mode has run inside) and a date, Completed under them,
+// and the other ways in at the foot. With no projects yet, the sheet is the
+// composer alone and one line offering to suggest projects; pressing it
+// unfolds what this machine's connections suggest starting
+// (components/projects/suggested-projects.tsx), and choosing one fills the
+// composer. The duck in the header band's right half explains projects in
+// three lines, above the sheet and never on it.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocation } from 'react-router';
-import { CreateProjectDialog } from '@/components/create-project-dialog';
-import { ContextFlow } from '@/components/projects/context-flow';
+import { Lightbulb } from 'lucide-react';
+import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
+import { LedgerFlowList, LedgerHead } from '@/components/projects/ledger-head';
+import { ProjectComposer } from '@/components/projects/project-composer';
+import { ProjectGuide } from '@/components/projects/project-guide';
+import { RunTrace } from '@/components/projects/run-trace';
+import { SuggestedProjects } from '@/components/projects/suggested-projects';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useAudience } from '@/components/providers/audience-provider';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
-import { PROJECTS_HEADER_LINKS } from '@/lib/nav/sections';
+import { glideText } from '@/lib/motion/glide';
+import { PROJECTS_HEADER_LINKS, type PageLink } from '@/lib/nav/sections';
 import { allCards, loadCapabilities, menuFor, type Capabilities } from '@/lib/yeaboi/capabilities';
-import { splitProjects } from '@/lib/yeaboi/projects';
-import { fallbackFlowKeys, flowFor } from '@/lib/yeaboi/reads';
-import { relativeDay } from '@/lib/yeaboi/sessions';
+import {
+  ALL_DONE_LINE,
+  COMPLETED_WORD,
+  LEDGER_ROW,
+  OTHER_WAYS_WORD,
+  ledgerColumns,
+  ledgerSections,
+} from '@/lib/yeaboi/ledger';
+import { runsByEngineProject, traceFor, traceSentence } from '@/lib/yeaboi/projects';
+import { fallbackFlowKeys, flowFor, type FlowStep } from '@/lib/yeaboi/reads';
+import { loadRecentSessions, relativeDay } from '@/lib/yeaboi/sessions';
+import { HIDE_SUGGESTIONS_LABEL, SUGGEST_LABEL, SUGGEST_PROMPT } from '@/lib/yeaboi/suggestions';
 import { logger } from '@/lib/logger';
 import { PageShell } from '@/components/page-shell';
+
+/** Enough runs to trace every project on a desktop; the list is read once. */
+const TRACE_LIMIT = 200;
 
 interface Project {
   id: string;
@@ -29,34 +54,104 @@ interface Project {
   created_at: string;
   updated_at?: string;
   status?: string;
+  /** The engine project runs inside this one share context through; minted on the first run. */
+  yeaboi_project_id?: string | null;
 }
 
-function ProjectRows({ projects, now }: { projects: Project[]; now: Date }) {
+function LedgerRow({
+  project,
+  now,
+  steps,
+  colors,
+  ran,
+}: {
+  project: Project;
+  now: Date;
+  steps: FlowStep[];
+  colors: Record<string, string>;
+  ran: Map<string, Set<string>>;
+}) {
+  const trace = traceFor(
+    steps,
+    project.yeaboi_project_id ? ran.get(project.yeaboi_project_id) : undefined,
+  );
   return (
-    <ul className="divide-y divide-border/50">
-      {projects.map((project) => (
-        <li key={project.id}>
-          <Link
-            href={`/projects/${project.id}`}
-            className="group flex items-baseline justify-between gap-8 py-4"
-          >
-            <span className="min-w-0">
-              <span className="block text-[15px] font-body font-medium text-foreground transition-colors group-hover:text-primary">
-                {project.name}
-              </span>
-              {project.description && (
-                <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
-                  {project.description}
-                </span>
-              )}
+    <li>
+      <Link
+        href={`/projects/${project.id}`}
+        className={`group ${LEDGER_ROW}`}
+        aria-label={`${project.name}. ${traceSentence(trace)}`}
+      >
+        <span className="min-w-0">
+          <span className="block truncate font-display text-[18px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
+            {project.name}
+          </span>
+          {project.description && (
+            <span className="mt-0.5 block truncate text-[13px] font-body text-muted-foreground">
+              {project.description}
             </span>
-            <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
-              {relativeDay(project.updated_at ?? project.created_at, now)}
+          )}
+          {trace.length > 0 && (
+            <span className="mt-1.5 block md:hidden">
+              <RunTrace trace={trace} colors={colors} variant="labelled" />
             </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+          )}
+        </span>
+        <span className="hidden md:contents">
+          <RunTrace trace={trace} colors={colors} variant="dots" />
+        </span>
+        <span className="text-[12px] font-body tabular-nums text-muted-foreground md:text-right">
+          {relativeDay(project.updated_at ?? project.created_at, now)}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+/** The one line an empty sheet offers in place of rows; the button unfolds them. */
+function SuggestLine({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-5 pb-3 text-[13px] font-body leading-snug text-muted-foreground">
+      <span>{SUGGEST_PROMPT}</span>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="suggested-projects"
+        className="inline-flex items-center gap-1.5 text-foreground/80 transition-colors hover:text-foreground"
+      >
+        <Lightbulb aria-hidden className="h-3 w-3" />
+        {open ? HIDE_SUGGESTIONS_LABEL : SUGGEST_LABEL}
+      </button>
+    </p>
+  );
+}
+
+function SheetWord({ children }: { children: string }) {
+  return (
+    <p className="pt-5 pb-1 font-display italic text-[18px] leading-none text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+function WayInRow({ link }: { link: PageLink }) {
+  return (
+    <li>
+      <Link
+        href={link.href}
+        className="group grid gap-x-4 gap-y-0.5 py-2.5 md:grid-cols-[10rem_minmax(0,1fr)] md:items-baseline"
+      >
+        <span className="font-display text-[16px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
+          {link.label}
+        </span>
+        {link.fact && (
+          <span className="text-[12px] font-body leading-snug text-muted-foreground">
+            {link.fact}
+          </span>
+        )}
+      </Link>
+    </li>
   );
 }
 
@@ -75,7 +170,7 @@ export default function ProjectsPage() {
         body: JSON.stringify(data),
       });
       if (!resp.ok) {
-        // The dialog renders this verbatim, so prefer the backend's wording.
+        // The composer renders this verbatim, so prefer the backend's wording.
         const body = await resp.json().catch(() => ({}));
         throw new Error(body.detail || `Couldn't create the project (${resp.status}).`);
       }
@@ -85,9 +180,17 @@ export default function ProjectsPage() {
   );
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  // null while the sidecar is being asked, or when it cannot be; the flow
-  // strip never waits on it.
+  const [description, setDescription] = useState('');
+  const field = useRef<HTMLTextAreaElement>(null);
+  // null while the sidecar is being asked, or when it cannot be; the ledger
+  // never waits on it.
   const [caps, setCaps] = useState<Capabilities | null>(null);
+  // Which modes have run inside each engine project; empty until the sidecar
+  // answers, and empty for good on one without the route.
+  const [ran, setRan] = useState<Map<string, Set<string>>>(() => new Map());
+  // The suggested rows stay folded until asked for, so an empty sheet is the
+  // composer and one line, and no connection is read behind the reader's back.
+  const [suggesting, setSuggesting] = useState(false);
   // Render nothing until we know the user has finished onboarding. Otherwise
   // the projects page paints for one frame before the redirect fires, which
   // shows up as a flash of the wrong UI right after first-time sign-in.
@@ -95,6 +198,10 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     loadCapabilities().then(setCaps, () => setCaps(null));
+    loadRecentSessions({ limit: TRACE_LIMIT }).then(
+      (sessions) => setRan(runsByEngineProject(sessions ?? [])),
+      () => setRan(new Map()),
+    );
   }, []);
 
   useEffect(() => {
@@ -139,13 +246,26 @@ export default function ProjectsPage() {
   }
 
   const now = new Date();
-  const { active, done } = splitProjects(projects);
+  const { rows, completed } = ledgerSections(projects);
+  const empty = !loading && rows.length === 0 && completed.length === 0;
   // After Create the app opens the project; the old view is where the work is.
   const openCreated = (created: { id: string }) => router.push(`/projects/${created.id}`);
+  const pickExample = (from: HTMLElement, text: string) => {
+    const target = field.current;
+    if (!target) return;
+    glideText(from, target, () => {
+      setDescription(text);
+      target.focus();
+    });
+  };
+  const rowProps = { now, steps, colors, ran };
+  // The column heads label rows; the unfolded suggestions bring their own.
+  const headed = loading || !empty;
+  const sheetStyle = { '--ledger-cols': ledgerColumns(steps.length) } as CSSProperties;
 
   return (
     <PageShell>
-      <header className="flex flex-wrap items-end justify-between gap-6 animate-slide-up stagger-1">
+      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5 animate-slide-up stagger-1">
         <div>
           <div className="flex items-center gap-4">
             <Mascot size={40} />
@@ -154,77 +274,76 @@ export default function ProjectsPage() {
             </h1>
           </div>
           <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-            Every run inside a project reads what the others left behind: the plan frames the
-            standups, each later run reads what the earlier ones left, and the report is about this
-            project alone.
+            Every run inside a project reads what the runs before it left.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          {PROJECTS_HEADER_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-[13px] font-body text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
-          <CreateProjectDialog
-            onCreate={createProject}
-            onCreated={openCreated}
-            defaultOpen={new URLSearchParams(search).has('new')}
-          />
-        </div>
+        <ProjectGuide steps={steps} />
       </header>
 
-      <div className="mt-10 animate-slide-up stagger-2">
-        <ContextFlow steps={steps} colors={colors} />
-      </div>
+      <section
+        aria-label="Projects"
+        className="mt-10 rounded-lg border border-border bg-card px-8 py-5 animate-slide-up stagger-2"
+        style={sheetStyle}
+      >
+        <ProjectComposer
+          value={description}
+          onChange={setDescription}
+          onCreate={createProject}
+          onCreated={openCreated}
+          autoFocus={empty || new URLSearchParams(search).has('new')}
+          fieldRef={field}
+        />
 
-      <div className="mt-12 animate-slide-up stagger-3">
+        {headed && <LedgerHead steps={steps} colors={colors} />}
+
         {loading ? (
-          <div className="divide-y divide-border/50">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="py-4">
-                <div className="h-4 w-48 rounded bg-secondary/70 animate-pulse" />
+          <GhostSkeleton steps={steps} />
+        ) : empty ? (
+          <>
+            <SuggestLine open={suggesting} onToggle={() => setSuggesting((open) => !open)} />
+            {suggesting && (
+              <div id="suggested-projects">
+                <SuggestedProjects steps={steps} colors={colors} onPick={pickExample} />
               </div>
-            ))}
-          </div>
-        ) : active.length === 0 && done.length === 0 ? (
-          <p className="text-[14px] leading-relaxed text-muted-foreground">
-            Nothing here yet. New project asks what you&rsquo;re building and yeaboi names it.
-          </p>
-        ) : (
-          <div className="space-y-12">
-            <section aria-labelledby="projects-active">
-              <h2
-                id="projects-active"
-                className="mb-1 text-[16px] font-body font-medium text-foreground"
-              >
-                In progress
-              </h2>
-              {active.length === 0 ? (
-                <p className="py-4 text-[14px] leading-relaxed text-muted-foreground">
-                  Everything here is done. Reopen one, or describe the next.
-                </p>
-              ) : (
-                <ProjectRows projects={active} now={now} />
-              )}
-            </section>
-            {done.length > 0 && (
-              <section aria-labelledby="projects-done">
-                <h2
-                  id="projects-done"
-                  className="mb-1 text-[16px] font-body font-medium text-foreground"
-                >
-                  Completed
-                </h2>
-                <ProjectRows projects={done} now={now} />
-              </section>
             )}
-          </div>
+          </>
+        ) : (
+          <>
+            {rows.length === 0 ? (
+              <p className="py-3 text-[13px] font-body leading-relaxed text-muted-foreground">
+                {ALL_DONE_LINE}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/50">
+                {rows.map((project) => (
+                  <LedgerRow key={project.id} project={project} {...rowProps} />
+                ))}
+              </ul>
+            )}
+            {completed.length > 0 && (
+              <>
+                <SheetWord>{COMPLETED_WORD}</SheetWord>
+                <ul className="divide-y divide-border/50">
+                  {completed.map((project) => (
+                    <LedgerRow key={project.id} project={project} {...rowProps} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
         )}
-      </div>
+
+        {headed && <LedgerFlowList steps={steps} colors={colors} />}
+
+        <div className="mt-5 border-t border-border">
+          <SheetWord>{OTHER_WAYS_WORD}</SheetWord>
+          <ul className="divide-y divide-border/50">
+            {PROJECTS_HEADER_LINKS.map((link) => (
+              <WayInRow key={link.href} link={link} />
+            ))}
+          </ul>
+        </div>
+      </section>
     </PageShell>
   );
 }

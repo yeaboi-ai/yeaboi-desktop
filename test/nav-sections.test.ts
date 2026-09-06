@@ -80,6 +80,15 @@ describe('the rail as it starts', () => {
     }
   });
 
+  it('gives every way into a project one short fact for its row', () => {
+    for (const link of PROJECTS_HEADER_LINKS) {
+      expect(link.fact, `${link.label} has no fact`).toBeTruthy();
+      expect(link.fact!.length).toBeLessThan(90);
+      expect(link.fact!.endsWith('.')).toBe(true);
+      expect(link.fact).not.toMatch(/[→←·]/);
+    }
+  });
+
   it('never places a row in the wrong world', () => {
     for (const audience of AUDIENCES) {
       for (const entry of RAIL_DEFAULTS[audience]) {
