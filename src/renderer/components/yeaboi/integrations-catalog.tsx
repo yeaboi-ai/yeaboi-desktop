@@ -42,6 +42,22 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
+/** What the app itself runs on: the repository it reads, the docs it writes to,
+ *  the channel ceremonies deliver through, the voice it speaks in. Everything
+ *  else in the roster is somebody's estate, and useful only to whoever has it.
+ *  Shelved first, in this order. */
+const ESSENTIALS: readonly string[] = [
+  'github',
+  'gitlab',
+  'bitbucket',
+  'confluence',
+  'notion',
+  'slack',
+  'standup',
+  'elevenlabs',
+  'tavus',
+];
+
 function matches(row: ConnectionRow, needle: string): boolean {
   const q = needle.trim().toLowerCase();
   if (!q) return true;
@@ -79,8 +95,17 @@ export function IntegrationsCatalog() {
   const openRow = rows.find((row) => row.key === openKey) ?? null;
 
   const filtered = rows.filter((row) => matches(row, query) && (!family || row.family === family));
+  // The essentials lead, and leave their families: a tile in two shelves is a
+  // second integration as far as anyone reading is concerned. Filtering by
+  // family is asking for that family, so the shelf steps aside for it.
+  const essentials = family
+    ? []
+    : ESSENTIALS.map((key) => filtered.find((row) => row.key === key)).filter(
+        (row): row is ConnectionRow => Boolean(row),
+      );
+  const shelved = filtered.filter((row) => !essentials.includes(row));
   const shelfFamilies = (payload?.families ?? []).filter((f) =>
-    filtered.some((row) => row.family === f.key),
+    shelved.some((row) => row.family === f.key),
   );
 
   if (error) {
@@ -183,7 +208,16 @@ export function IntegrationsCatalog() {
           </Button>
         </div>
       ) : (
-        shelfFamilies.map((f, index) => (
+        [
+          ...(essentials.length > 0
+            ? [{ key: '__essentials__', label: 'Essentials', rows: essentials }]
+            : []),
+          ...shelfFamilies.map((f) => ({
+            key: f.key,
+            label: f.label,
+            rows: shelved.filter((row) => row.family === f.key),
+          })),
+        ].map((f, index) => (
           <section
             key={f.key}
             className="animate-slide-up motion-reduce:animate-none"
@@ -198,11 +232,9 @@ export function IntegrationsCatalog() {
               {f.label}
             </h3>
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              {filtered
-                .filter((row) => row.family === f.key)
-                .map((row) => (
-                  <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
-                ))}
+              {f.rows.map((row) => (
+                <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
+              ))}
             </div>
           </section>
         ))

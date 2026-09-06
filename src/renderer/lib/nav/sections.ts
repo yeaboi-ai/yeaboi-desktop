@@ -77,7 +77,6 @@ const TEAM_SECTIONS: NavSectionSpec[] = [
       { href: '/team/poker', label: 'Poker', icon: 'poker' },
       { href: '/team/performance', label: 'Performance', icon: 'performance' },
       { href: '/team/reporting', label: 'Reporting', icon: 'reporting' },
-      { href: '/team/ship', label: 'Ship', icon: 'ship' },
     ],
   },
   OPS,
