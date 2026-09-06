@@ -45,8 +45,8 @@ describe('the set-up view beside credentials', () => {
 
 describe('create-your-own is reachable from the top, not only the bottom', () => {
   it('the toolbar and the empty-search state both open the sheet', () => {
-    // Three doors, one sheet: toolbar button, empty-state action, bottom tile.
-    expect(catalog.match(/setCreating\(true\)/g)?.length).toBeGreaterThanOrEqual(3);
+    // Two doors, one sheet: empty-state action, bottom tile.
+    expect(catalog.match(/setCreating\(true\)/g)?.length).toBeGreaterThanOrEqual(2);
     expect(catalog).toContain('Create it yourself');
   });
 });

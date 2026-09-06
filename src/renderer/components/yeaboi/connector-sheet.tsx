@@ -98,9 +98,13 @@ export function ConnectorTile({ row, onOpen }: { row: ConnectionRow; onOpen: () 
       data-connector={row.key}
       style={{ '--tile-accent': row.accent } as React.CSSProperties}
       className={cn(
-        'group flex items-center gap-3.5 rounded-2xl bg-card px-4 py-3 text-left ring-1 transition-[box-shadow,ring-color] duration-150',
-        'hover:ring-[var(--tile-accent)] hover:shadow-[0_0_16px_-6px_var(--tile-accent)]',
-        'focus-visible:ring-[var(--tile-accent)] focus-visible:outline-none',
+        // Under the pointer it lifts rather than lights: a vendor's own accent
+        // on hover put a saturated blue ring around LaunchDarkly and nothing at
+        // all around the two that are black. The accent stays for connected,
+        // where it says something.
+        'group flex items-center gap-3.5 rounded-2xl bg-card px-4 py-3 text-left ring-1 transition-[background-color,box-shadow,ring-color] duration-150',
+        !row.connected && 'hover:bg-secondary/40 hover:ring-border',
+        'focus-visible:ring-primary/50 focus-visible:outline-none',
         row.connected
           ? 'ring-[var(--tile-accent)] shadow-[0_0_16px_-8px_var(--tile-accent)]'
           : 'ring-border/60',

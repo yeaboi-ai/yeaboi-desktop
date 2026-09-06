@@ -42,18 +42,21 @@ import {
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-/** What the app itself runs on: the repository it reads, the docs it writes to,
- *  the channel ceremonies deliver through, the voice it speaks in. Everything
- *  else in the roster is somebody's estate, and useful only to whoever has it.
- *  Shelved first, in this order. */
+/** What the app itself runs on: the repository it reads, the tracker the work
+ *  is in, the docs it writes to, the channel ceremonies deliver through, the
+ *  voice it speaks in. Everything else in the roster is somebody's estate, and
+ *  useful only to whoever has it. Shelved first, in this order. */
 const ESSENTIALS: readonly string[] = [
   'github',
   'gitlab',
   'bitbucket',
+  'jira',
+  'linear',
+  'trello',
+  'azdevops',
   'confluence',
   'notion',
   'slack',
-  'standup',
   'elevenlabs',
   'tavus',
 ];
