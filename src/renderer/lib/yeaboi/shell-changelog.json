@@ -2,6 +2,26 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.2.0",
+      "date": "2026-09-05",
+      "headline": "Music now plays: radio, Spotify, Apple Music, YouTube",
+      "summary": "Browse and play music from the built-in radio, Spotify, Apple Music or YouTube Music. The player keeps playing when you leave the music page — pick a track, move to another page, and the pocket shows what's playing.",
+      "highlights": [
+        {
+          "text": "The built-in radio plays through six styles of visualizer",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Sign in to Spotify, Apple Music or YouTube Music to browse your library",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The player keeps playing when you leave the music page",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.1.1",
       "date": "2026-09-05",
       "headline": "Settings stays put as you move between sections",

@@ -32,10 +32,30 @@ export function goPages(audience: Audience): readonly MenuPage[] {
     { label: 'Home', route: '/home' },
     { label: 'Projects', route: projectsHref(audience), accelerator: 'CmdOrCtrl+P' },
     { label: 'Sessions', route: '/sessions' },
+    { label: 'Music', route: '/music' },
     { label: 'Settings', route: '/settings', accelerator: 'CmdOrCtrl+S' },
     { label: 'Board', route: '/board', accelerator: 'CmdOrCtrl+B' },
   ];
 }
+
+export type MusicCommandId = 'music:toggle' | 'music:next';
+
+export interface MusicMenuCommand extends MenuCommand {
+  id: MusicCommandId;
+}
+
+/** The Music menu's transport. The menu owns the chords, the way it owns the
+ *  palette's, so the renderer never binds them a second time. Shift keeps
+ *  them clear of Cmd+M (minimize) and the rail's unshifted Cmd+arrows. */
+export const MUSIC_COMMANDS: readonly MusicMenuCommand[] = [
+  { id: 'music:toggle', label: 'Play or pause music', accelerator: 'CmdOrCtrl+Shift+M' },
+  { id: 'music:next', label: 'Next station or track', accelerator: 'CmdOrCtrl+Shift+.' },
+];
+
+export const MUSIC_PAGES: readonly MenuPage[] = [
+  { label: 'Music…', route: '/music' },
+  { label: 'Player settings…', route: '/settings/music' },
+];
 
 /** The pages about the app, by their own titles: the title bar's buttons. */
 export const ABOUT_PAGES: readonly MenuPage[] = [
@@ -63,6 +83,7 @@ export function menuPathnames(audience: Audience): string[] {
   const pages = [
     ...FILE_PAGES,
     ...goPages(audience),
+    ...MUSIC_PAGES,
     ...UPDATES_PAGES,
     ...PRIVACY_PAGES,
     ...FEEDBACK_PAGES,

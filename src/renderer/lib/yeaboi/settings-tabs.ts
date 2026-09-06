@@ -32,6 +32,7 @@ export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/news', title: 'Front page' },
   { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
+  { route: '/settings/music', title: 'Player' },
 ];
 
 export type SettingsGroupKey = 'engine' | 'window';

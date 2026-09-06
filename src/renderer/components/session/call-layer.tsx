@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScreensaverSuppression } from '@/hooks/use-screensaver-suppression';
+import { useMusicHold } from '@/hooks/use-music-hold';
 import { createPortal } from 'react-dom';
 import {
   LiveKitRoom,
@@ -157,6 +158,8 @@ export function CallLayer({
   // A call is the clearest case of all: the person is here, looking at the
   // window, and touching nothing.
   useScreensaverSuppression(inCall);
+  // And the radio waits, the way the terminal's does while a voice note records.
+  useMusicHold(inCall);
 
   if (!inCall || !lkUrl) return null;
   return (

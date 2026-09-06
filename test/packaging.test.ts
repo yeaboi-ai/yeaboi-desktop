@@ -106,6 +106,17 @@ describe('signing', () => {
     }
   });
 
+  it('says why it asks to control Spotify and Music before macOS asks the user', () => {
+    // The first AppleScript to either app prompts with this string; a
+    // description that names only the Dock would read as a wrong request.
+    const description = String(builder.mac.extendInfo.NSAppleEventsUsageDescription);
+    expect(description).toContain('Spotify');
+    expect(description).toContain('Music');
+    expect(read('build/entitlements.mac.plist')).toContain(
+      'com.apple.security.automation.apple-events',
+    );
+  });
+
   it('the bundled pythons may load the on-demand voice pack', () => {
     // The pack is pip-installed into ~/.yeaboi at runtime and loaded over
     // PYTHONPATH, so its .so files carry a different Team ID than the process.

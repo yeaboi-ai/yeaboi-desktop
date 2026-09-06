@@ -27,6 +27,8 @@ export interface ConnectionField {
   help_url: string;
   help_scope: string;
   auth_method: string;
+  /** "signin" on a field an OAuth sign-in writes — never typed, shown as a status row. */
+  action?: string;
 }
 
 export interface ConnectionRow {
@@ -53,6 +55,8 @@ export interface ConnectionRow {
   accent: string;
   verify_kind: string;
   auth_env: string;
+  /** The sign-in, for a connector that has one; null or absent otherwise. */
+  signin?: { signed_in: boolean; account: string } | null;
   auth_methods: ConnectionAuthMethod[];
   fields: ConnectionField[];
   /** Returned once, on the row a webhook-kind create answers with. */

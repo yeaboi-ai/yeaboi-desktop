@@ -10,9 +10,13 @@ import type { Audience } from '@shared/audience';
 import { currentPair } from '@/lib/home/wardrobe';
 import type { Door } from '@/lib/yeaboi/home';
 
-/** `size` is the mark's rendered width in px, as DuckMark takes it. */
-export const WORLD_MASCOT: Record<Audience, (props: { size: number }) => ReactElement> = {
-  solo: ({ size }) => <DuckMark state="idle" size={size} />,
+/** `size` is the mark's rendered width in px, as DuckMark takes it. `jamming`
+ *  is music playing: only the duck has a dance, the other marks keep still. */
+export const WORLD_MASCOT: Record<
+  Audience,
+  (props: { size: number; jamming?: boolean }) => ReactElement
+> = {
+  solo: ({ size, jamming }) => <DuckMark state="idle" size={size} jamming={jamming} />,
   team: ({ size }) => <TeamMark size={size} />,
   agents: ({ size }) => <RoboMark size={size} />,
 };

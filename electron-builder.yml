@@ -86,7 +86,8 @@ mac:
     # A UIElement app gets no Dock tile and no menu bar. Stated, not inferred.
     LSUIElement: false
     # The duck climbs the Dock by asking the Dock where its icons are.
-    NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it.
+    # The Dock for the duck; Spotify and Music for the rail's now-playing pocket.
+    NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it, and asks Spotify or Music what is playing so the rail can show it.
     NSMicrophoneUsageDescription: yeaboi uses the microphone for voice calls in planning sessions and for on-device dictation.
     NSCameraUsageDescription: yeaboi uses the camera for video tiles in planning-session calls.
 

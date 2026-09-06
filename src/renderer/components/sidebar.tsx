@@ -3,7 +3,7 @@
 // The rail: a column of squares. The world's mascot at the top goes home and
 // holds the world menu; then the squares the reader arranged for this world
 // (Projects and Sessions to start, any page after that — @shared/rail); then
-// the "+" that arranges them; and Settings alone at the foot. Which square is
+// the "+" that arranges them; and at the foot the music pocket and Settings. Which square is
 // lit is lib/nav/sections.ts's activeRailRoute, so a mode page opened inside
 // a project keeps Projects lit.
 
@@ -17,6 +17,8 @@ import { useRail } from '@/components/providers/rail-provider';
 import { RailButton } from '@/components/rail/rail-button';
 import { RailEditorDialog, type RailEditorMode } from '@/components/rail/rail-editor-dialog';
 import { RailItemIcon } from '@/components/rail/rail-item-icon';
+import { RailPocket } from '@/components/music/rail-pocket';
+import { useMusicPlayer } from '@/components/providers/music-provider';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -57,6 +59,7 @@ export function Sidebar() {
   const [worldOpen, setWorldOpen] = useState(false);
   const [editor, setEditor] = useState<RailEditorMode | null>(null);
   const Mascot = WORLD_MASCOT[audience];
+  const { jamming } = useMusicPlayer();
 
   // Flipping the world while standing in the other world's route would leave
   // the page orphaned from the nav — go home instead.
@@ -152,7 +155,7 @@ export function Sidebar() {
               setWorldOpen(true);
             }}
           >
-            <Mascot size={30} />
+            <Mascot size={30} jamming={jamming} />
             {updateDot && (
               <span
                 aria-hidden
@@ -255,7 +258,9 @@ export function Sidebar() {
 
         <Separator className="w-8" />
 
-        <div className="pt-2 pb-3">
+        {/* The music pocket, then Settings: the two fixed squares at the foot. */}
+        <div className="flex flex-col items-center gap-2 pt-2 pb-3">
+          <RailPocket ring={cmdHeld} />
           <RailButton
             href={SETTINGS_ITEM.href}
             label={SETTINGS_ITEM.label}

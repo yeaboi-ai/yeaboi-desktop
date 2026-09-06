@@ -36,6 +36,10 @@ import {
 import { saveSetting } from '@/lib/yeaboi/settings';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
+import { MusicConnectorNote } from '@/components/music/music-connector-note';
+import { ServiceAccount } from '@/components/music/service-account';
+import { isMusicService } from '@shared/music-links';
+import { catalogueChanged } from '@/lib/music/catalogue-changed';
 import { ChoicePills } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
 import {
@@ -326,17 +330,24 @@ function ConnectorSheetBody({
   const isManaged = row.managed_by === 'credentials';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
+  // A sign-in's fields are minted by the flow, never typed: the account row
+  // below the fields stands in for them.
   const shownFields = (row.fields ?? []).filter(
     (f) =>
-      f.env !== row.auth_env && (!methods.length || !f.auth_method || f.auth_method === method),
+      f.env !== row.auth_env &&
+      f.action !== 'signin' &&
+      (!methods.length || !f.auth_method || f.auth_method === method),
   );
   const touched = shownFields.some((f) => (values[f.env] ?? '').trim());
 
   // "Get your keys": the vendor docs page plus every create-a-key link the
   // shown fields carry, deduped — one purposeful block instead of a helper
   // line under each input.
+  // A music service holds no credential: its one field is a choice, so the
+  // sheet has no keys to fetch and the field step says what the click does.
+  const keyless = row.family === 'music';
   const keyLinks: { label: string; url: string; scope: string }[] = [];
-  if (!isManaged) {
+  if (!isManaged && !keyless) {
     if (row.docs_url) {
       keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
     }
@@ -396,7 +407,7 @@ function ConnectorSheetBody({
       steps.push({ title: 'Point deliveries here', body: <WebhookPanel row={row} /> });
     } else if (shownFields.length > 0) {
       steps.push({
-        title: 'Paste them here',
+        title: keyless ? 'Switch it on' : 'Paste them here',
         body: (
           <div className="space-y-3.5">
             {shownFields.map((field) => (
@@ -431,6 +442,7 @@ function ConnectorSheetBody({
         setResult({ ok: true, message: 'Saved — this connection has no live probe.' });
       }
       await onChanged();
+      if (row.family === 'music') catalogueChanged();
     } catch (e) {
       setResult({ ok: false, message: (e as Error).message });
     } finally {
@@ -539,6 +551,12 @@ function ConnectorSheetBody({
             </Step>
           ))
         )}
+        {row.family === 'music' && isMusicService(row.key) && row.signin !== undefined && (
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <ServiceAccount service={row.key} compact />
+          </div>
+        )}
+        {row.family === 'music' && <MusicConnectorNote connectorKey={row.key} />}
       </div>
 
       {showFooter && (

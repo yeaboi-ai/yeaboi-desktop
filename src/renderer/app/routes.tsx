@@ -23,6 +23,7 @@ import CeremoniesPage from '@/pages/yeaboi/ceremonies/ceremonies-page';
 import CeremoniesSlackPage from '@/pages/yeaboi/ceremonies/ceremonies-slack-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/yeaboi/home-page';
+import MusicPage from '@/pages/yeaboi/music-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
 import EngineerPage from '@/pages/yeaboi/performance/engineer-page';
 import PerformancePage from '@/pages/yeaboi/performance/performance-page';
@@ -116,6 +117,7 @@ function Root() {
 const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
   '/sessions': <SessionsPage />,
+  '/music': <MusicPage />,
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
   '/privacy': <PrivacyPage />,
@@ -158,6 +160,7 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/settings/system': <YeaboiSettingsPage />,
   '/settings/appearance': <YeaboiSettingsPage />,
   '/settings/duck': <YeaboiSettingsPage />,
+  '/settings/music': <YeaboiSettingsPage />,
   '/setup': <SetupPage />,
 };
 

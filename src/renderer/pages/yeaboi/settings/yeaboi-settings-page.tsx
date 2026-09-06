@@ -59,6 +59,7 @@ import { AppearanceSection } from '@/components/settings/tabs/general/appearance
 import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
 import { FrontPageTab } from '@/components/settings/tabs/front-page-tab';
+import { MusicTab } from '@/components/settings/tabs/music-tab';
 import { Button } from '@/components/ui/button';
 
 const DOT = ' · ';
@@ -695,6 +696,8 @@ export default function YeaboiSettingsPage() {
             <DuckVoiceCard />
           </div>
         </>
+      ) : pathname === '/settings/music' ? (
+        <MusicTab />
       ) : (
         <BackendGate>
           {engineTab?.title === 'Credentials' && (
