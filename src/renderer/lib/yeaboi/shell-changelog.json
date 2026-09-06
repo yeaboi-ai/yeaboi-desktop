@@ -2,6 +2,30 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.4.0",
+      "date": "2026-09-06",
+      "headline": "Projects have a status and carry references",
+      "summary": "Give projects an explicit status so you can mark them done when finished, and keep them organized in separate In progress and Completed sections. Projects now carry descriptions with links to tickets, repos, pages, and screenshots.",
+      "highlights": [
+        {
+          "text": "Mark projects done when they're finished and reopen them if plans change",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Add references to Jira, GitHub, Azure DevOps and Confluence in the project",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Attach screenshots to projects and see them with the description",
+          "areas": ["shell"]
+        },
+        {
+          "text": "New projects open automatically so you can start working right away",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.3.0",
       "date": "2026-09-06",
       "headline": "Agent security now tells you what to do",
