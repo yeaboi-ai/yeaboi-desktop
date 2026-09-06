@@ -19,6 +19,8 @@ const INPUT =
   'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 const LABEL = 'text-[11px] font-body text-muted-foreground uppercase tracking-wide';
+/** A field inside a section, which the section's own label already frames. */
+const SUB = 'text-[10.5px] font-body text-muted-foreground/70 uppercase tracking-wide';
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 const MINUTES = Array.from({ length: 12 }, (_, step) => String(step * 5).padStart(2, '0'));
@@ -102,6 +104,15 @@ function cadence(days: number[], at: string): string {
   return `${every} at ${at}`;
 }
 
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-border/40 p-3">
+      <p className={LABEL}>{title}</p>
+      <div className="mt-2 space-y-3">{children}</div>
+    </section>
+  );
+}
+
 function Tick({
   on,
   disabled,
@@ -122,7 +133,7 @@ function Tick({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-body text-[12px] transition-colors',
+        'inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-body text-[12px] transition-colors',
         'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
         disabled
           ? 'cursor-not-allowed border-border/30 text-muted-foreground/40'
@@ -225,10 +236,9 @@ export function DeclareCeremony({
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <span className={LABEL}>Mode</span>
-        <div className="mt-1">
+    <div className="space-y-3">
+      <Group title="What runs">
+        <div>
           <Picker
             label="Mode"
             value={mode}
@@ -249,91 +259,97 @@ export function DeclareCeremony({
               ...(option.opensGroup ? { opensGroup: true } : {}),
             }))}
           />
+          {picked && <p className="mt-1.5 text-[12px] text-muted-foreground">{picked.blurb}</p>}
         </div>
-        {picked && <p className="mt-1.5 text-[12px] text-muted-foreground">{picked.blurb}</p>}
-      </div>
 
-      <label className="block">
-        <span className={LABEL}>Name</span>
-        <input
-          type="text"
-          value={name}
-          placeholder="morning-standup"
-          onChange={(e) => setName(e.target.value)}
-          className={INPUT}
-        />
-      </label>
-
-      <div>
-        <span className={LABEL}>Time</span>
-        <div className="mt-1 flex items-center gap-2">
-          <Picker
-            label="Hour"
-            className="w-20"
-            value={hour}
-            onChange={(next) => setAt(`${next}:${minute}`)}
-            options={HOURS.map((one) => ({ value: one, label: one }))}
+        <label className="block">
+          <span className={SUB}>Name</span>
+          <input
+            type="text"
+            value={name}
+            placeholder="morning-standup"
+            onChange={(e) => setName(e.target.value)}
+            className={INPUT}
           />
-          <span className="text-muted-foreground">:</span>
-          <Picker
-            label="Minute"
-            className="w-20"
-            value={minute}
-            onChange={(next) => setAt(`${hour}:${next}`)}
-            options={MINUTES.map((one) => ({ value: one, label: one }))}
-          />
-        </div>
-      </div>
+        </label>
+      </Group>
 
-      <div>
-        <div className="flex items-center justify-between">
-          <span className={LABEL}>Repeats</span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setDays(WEEKDAYS)}
-              className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-            >
-              Weekdays
-            </button>
-            <button
-              type="button"
-              onClick={() => setDays(EVERY_DAY)}
-              className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-            >
-              Every day
-            </button>
+      <Group title="When">
+        <div>
+          <span className={SUB}>Time</span>
+          <div className="mt-1 flex items-center gap-2">
+            <Picker
+              label="Hour"
+              className="w-20"
+              value={hour}
+              onChange={(next) => setAt(`${next}:${minute}`)}
+              options={HOURS.map((one) => ({ value: one, label: one }))}
+            />
+            <span className="text-muted-foreground">:</span>
+            <Picker
+              label="Minute"
+              className="w-20"
+              value={minute}
+              onChange={(next) => setAt(`${hour}:${next}`)}
+              options={MINUTES.map((one) => ({ value: one, label: one }))}
+            />
           </div>
         </div>
-        <div className="mt-1.5 flex gap-1">
-          {DAYS.map((one) => {
-            const on = days.includes(one.day);
-            return (
-              <button
-                key={one.day}
-                type="button"
-                aria-pressed={on}
-                aria-label={one.label}
-                onClick={() => toggleDay(one.day)}
-                className={cn(
-                  'h-8 flex-1 rounded-lg border font-body text-[12px] transition-colors',
-                  'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
-                  on
-                    ? 'border-primary/60 bg-primary/10 text-foreground'
-                    : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground',
-                )}
-              >
-                {one.short}
-              </button>
-            );
-          })}
-        </div>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">{cadence(days, at)}</p>
-      </div>
 
-      <div>
-        <span className={LABEL}>Deliver to</span>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className={SUB}>Repeats</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setDays(WEEKDAYS)}
+                className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+              >
+                Weekdays
+              </button>
+              <button
+                type="button"
+                onClick={() => setDays(EVERY_DAY)}
+                className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+              >
+                Every day
+              </button>
+            </div>
+          </div>
+          <div className="mt-1.5 flex gap-1">
+            {DAYS.map((one) => {
+              const on = days.includes(one.day);
+              return (
+                <button
+                  key={one.day}
+                  type="button"
+                  aria-pressed={on}
+                  aria-label={one.label}
+                  onClick={() => toggleDay(one.day)}
+                  className={cn(
+                    'h-8 flex-1 rounded-lg border font-body text-[12px] transition-colors',
+                    'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
+                    on
+                      ? 'border-primary/60 bg-primary/10 text-foreground'
+                      : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground',
+                  )}
+                >
+                  {one.short}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">{cadence(days, at)}</p>
+        </div>
+      </Group>
+
+      <Group title="Where it lands">
+        <div
+          className="grid gap-1.5"
+          style={{
+            gridTemplateColumns: `repeat(${page.channels.filter((c) => c !== 'slack').length}, minmax(0, 1fr))`,
+          }}
+        >
           {page.channels
             .filter((channel) => channel !== 'slack')
             .map((channel) => (
@@ -345,37 +361,37 @@ export function DeclareCeremony({
               />
             ))}
         </div>
-      </div>
 
-      {page.channels.includes('slack') && (
-        <div className="rounded-xl border border-border/40 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <span className={LABEL}>Slack</span>
-            {!slackReady && (
-              <Link
-                href="/settings/connections"
-                className="inline-flex items-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
-              >
-                Set it up
-                <ArrowUpRight className="h-3 w-3" aria-hidden />
-              </Link>
-            )}
+        {page.channels.includes('slack') && (
+          <div className="rounded-lg border border-border/40 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className={SUB}>Slack</span>
+              {!slackReady && (
+                <Link
+                  href="/settings/connections"
+                  className="inline-flex items-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
+                >
+                  Set it up
+                  <ArrowUpRight className="h-3 w-3" aria-hidden />
+                </Link>
+              )}
+            </div>
+            <div className="mt-1.5">
+              <Tick
+                on={channels.includes('slack')}
+                disabled={!slackReady}
+                label="Post the run to Slack"
+                onClick={() => toggleChannel('slack')}
+              />
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground/80">
+              {slackReady
+                ? 'Where it posts is the channel the workspace is connected to.'
+                : 'Connect a Slack workspace in Integrations and this lane opens.'}
+            </p>
           </div>
-          <div className="mt-1.5">
-            <Tick
-              on={channels.includes('slack')}
-              disabled={!slackReady}
-              label="Post the run to Slack"
-              onClick={() => toggleChannel('slack')}
-            />
-          </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground/80">
-            {slackReady
-              ? 'Where it posts is the channel the workspace is connected to.'
-              : 'Connect a Slack workspace in Integrations and this lane opens.'}
-          </p>
-        </div>
-      )}
+        )}
+      </Group>
 
       <Button
         size="sm"
