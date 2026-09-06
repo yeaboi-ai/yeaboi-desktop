@@ -1579,7 +1579,20 @@ html[data-audience='agents'] {
 
 /* Niko docked right stands where the duck and the two controls beside him do.
    They drop out of his way rather than sit under him, and come back when he
-   returns to the middle. */
+   returns to the middle — quicker than they left, because by then the corner
+   is already empty and they are what you are waiting for. */
+[data-dock='right'],
+[data-duck] {
+  transition:
+    translate 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease,
+    bottom 300ms ease-out,
+    left 300ms ease-out,
+    right 300ms ease-out,
+    color 150ms ease,
+    background-color 150ms ease;
+}
+
 :root[data-niko-aside] [data-dock='right'],
 :root[data-niko-aside] [data-duck] {
   translate: 0 96px;

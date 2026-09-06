@@ -358,15 +358,18 @@ export function NikoBar() {
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
 
   // The corner he steps into is the duck's, so the window is told: see
-  // globals.css, where the three of them drop out of his way.
+  // globals.css, where the three of them drop out of his way. Only while he is
+  // actually standing there — collapsed to his pill he takes none of it, and
+  // the corner comes back the moment the panel closes.
+  const standingAside = aside && state !== 'collapsed' && closingPhase !== 'shrink';
   useEffect(() => {
     const root = document.documentElement;
-    if (aside) root.dataset['nikoAside'] = '';
+    if (standingAside) root.dataset['nikoAside'] = '';
     else delete root.dataset['nikoAside'];
     return () => {
       delete root.dataset['nikoAside'];
     };
-  }, [aside]);
+  }, [standingAside]);
 
   // And leaving that screen closes it. The answer was about the page it took
   // you to; once you have gone somewhere else it is a panel held open over a
@@ -517,10 +520,9 @@ export function NikoBar() {
   // against the window's edge, by the same margin as everything else there.
   // Measured on the shell rather than the composer inside it — the controls
   // ride on the shell's right, so half a composer put them off the window.
-  const asideShift =
-    aside && state !== 'collapsed'
-      ? Math.max(0, window.innerWidth / 2 - shell / 2 - ASIDE_MARGIN)
-      : 0;
+  const asideShift = standingAside
+    ? Math.max(0, window.innerWidth / 2 - shell / 2 - ASIDE_MARGIN)
+    : 0;
 
   return (
     <div
