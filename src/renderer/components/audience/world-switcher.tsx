@@ -104,16 +104,12 @@ export function WorldSwitcher({ onSwitch }: { onSwitch: (audience: Audience) => 
           the popup's edge over the button's. */}
       <PopoverContent side="top" align="start" alignOffset={-8} className="w-64 p-1.5">
         <div role="menu" aria-label="World" className="flex flex-col gap-0.5">
-          {AUDIENCES.map((key) => (
+          {/* The world you are in sits at the foot of the list, nearest the
+              lockup that says the same thing; the ones you could switch to are
+              above it. */}
+          {[...AUDIENCES.filter((key) => key !== audience), audience].map((key) => (
             <WorldRow key={key} world={key} active={key === audience} onChoose={choose} />
           ))}
-
-          {/* The menu opens upward, so the world you are in is repeated at the
-              foot of it: the row nearest the lockup says the same thing the
-              lockup does. */}
-          <div className="mt-1 border-t border-border/50 pt-1">
-            <WorldRow world={audience} active onChoose={choose} />
-          </div>
         </div>
       </PopoverContent>
     </Popover>
