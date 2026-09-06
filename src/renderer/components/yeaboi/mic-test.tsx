@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { type MicDevice, MicSession, listMics, meterCells, pickMic } from '@/lib/yeaboi/voice';
 import { Button } from '@/components/ui/button';
+import { Picker } from '@/components/ui/picker';
 
 export interface MicTestProps {
   /** The saved VOICE_DEVICE name. */
@@ -76,27 +77,22 @@ export function MicTest({ value, onSave }: MicTestProps) {
   const cells = meterCells(level);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-2">
-      <span className="w-32 shrink-0 text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-        Microphone
-      </span>
-      <select
+    <div className="flex flex-wrap items-center gap-2">
+      <Picker
+        label="Microphone"
+        className="w-56"
         value={value}
-        onChange={(event) => onSave(event.target.value)}
-        className="text-[12px] font-body bg-transparent border border-border/40 rounded px-2 py-1 text-foreground"
-      >
-        <option value="">system default</option>
-        {devices
-          .filter((device) => device.label)
-          .map((device) => (
-            <option key={device.deviceId} value={device.label}>
-              {device.label}
-            </option>
-          ))}
-        {value && !devices.some((device) => device.label === value) && (
-          <option value={value}>{value} (saved)</option>
-        )}
-      </select>
+        options={[
+          { value: '', label: 'system default' },
+          ...devices
+            .filter((device) => device.label)
+            .map((device) => ({ value: device.label, label: device.label })),
+          ...(value && !devices.some((device) => device.label === value)
+            ? [{ value, label: `${value} (saved)` }]
+            : []),
+        ]}
+        onChange={onSave}
+      />
       <Button variant="outline" size="sm" onClick={() => (testing ? stop() : void start())}>
         {testing ? 'Stop' : named ? 'Test' : 'Allow microphone'}
       </Button>
