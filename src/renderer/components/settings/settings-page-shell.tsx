@@ -17,11 +17,14 @@ import { PageShell } from '@/components/ui/page-shell';
 
 export function SettingsPageShell({
   active,
+  subtitle,
   maxWidth,
   children,
 }: {
   /** The current pathname, which names the section. */
   active: string;
+  /** What this tab is, in the heading's own line. */
+  subtitle?: string;
   /** Capped where a tab is one column of prose rather than a set of cards. */
   maxWidth?: string;
   children: ReactNode;
@@ -42,7 +45,8 @@ export function SettingsPageShell({
             {tab?.title ?? 'Settings'}
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            One config behind every surface — this window, the terminal, and the agents.
+            {subtitle ??
+              'One config behind every surface — this window, the terminal, and the agents.'}
           </p>
         </>
       }

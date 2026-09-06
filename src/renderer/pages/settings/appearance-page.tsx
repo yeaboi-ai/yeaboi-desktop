@@ -25,8 +25,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
-import { SettingsCard } from '@/components/settings/primitives/settings-card';
-import { SettingsSectionHeader } from '@/components/settings/primitives/settings-section-header';
 import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { BUILTIN_PRESETS } from '@/lib/theme/presets';
 import type { BuiltInPresetId, ColorScheme, ThemeId, TokenMap } from '@/lib/theme/types';
@@ -191,13 +189,11 @@ export default function AppearanceSettingsPage() {
     // and the shell is what scrolls in it, so anything between the two takes
     // the scroll away and the tab runs off the bottom of the window.
     <>
-      <SettingsPageShell active="/settings/appearance" maxWidth="max-w-6xl">
-        <p className="mb-8 max-w-2xl text-sm font-body text-muted-foreground">
-          How the window looks: pick a built-in theme, follow your organization's default, build a
-          custom theme, brand the app from a website, or follow your system's light/dark setting —
-          and choose what it shows while you are away.
-        </p>
-
+      <SettingsPageShell
+        active="/settings/appearance"
+        maxWidth="max-w-6xl"
+        subtitle="How the window looks — a built-in theme, your organization's, one of your own, or your system's light/dark setting — and what it shows while you are away."
+      >
         {deleteError && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-destructive/15 border border-destructive/40 text-[11px] font-body text-destructive flex items-start justify-between gap-3">
             <span className="flex-1">{deleteError}</span>
@@ -304,19 +300,9 @@ export default function AppearanceSettingsPage() {
           />
         </div>
 
-        <SettingsCard className="mt-8" variant="flat">
-          <SettingsSectionHeader
-            title="Screensaver"
-            subtitle="What the window shows when you have been away"
-          />
-          <div className="px-5 py-5">
-            <ScreensaverSection />
-          </div>
-        </SettingsCard>
-
-        <p className="text-[11px] font-body text-muted-foreground/60 mt-12">
-          Active theme: <span className="text-foreground">{themeId}</span>
-        </p>
+        <div className="mt-8">
+          <ScreensaverSection />
+        </div>
       </SettingsPageShell>
 
       {/* Right-side drawers */}

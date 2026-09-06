@@ -19,8 +19,9 @@ import { cn } from '@/lib/utils';
 const SETTLE_MS = 700;
 /** The room the thumb keeps off each end of the track. */
 const PAD = 3;
-/** How much a page has to have below the fold before it is worth a rail. */
-const ENOUGH = 40;
+/** How much a page has to have below the fold before it is worth a rail: if it
+ *  scrolls at all, it says so. */
+const ENOUGH = 8;
 /** A thumb short enough to travel: it says where you are, and a long one says
  *  it by barely moving. */
 const MIN_THUMB = 16;
@@ -39,12 +40,6 @@ const SLIDE_MS = 300;
  *  the thumb reaches the foot of its track exactly as the page does. */
 function scrollable(port: HTMLElement): number {
   return Math.max(1, port.scrollHeight - port.clientHeight);
-}
-
-/** The room a page holds under itself for the dock, which carries no content. */
-function clearanceOf(port: HTMLElement): number {
-  const column = port.firstElementChild;
-  return column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
 }
 
 /** The port a page has marked as the thing that scrolls, if it has one. */
@@ -82,9 +77,7 @@ export function ScrollRail({ className }: { className?: string }) {
       return;
     }
     const travel = scrollable(port);
-    // A page whose only overflow is the clearance it keeps under itself for
-    // the dock has nothing to scroll to: no rail.
-    if (travel - clearanceOf(port) < ENOUGH) {
+    if (travel < ENOUGH) {
       setThumb(null);
       return;
     }

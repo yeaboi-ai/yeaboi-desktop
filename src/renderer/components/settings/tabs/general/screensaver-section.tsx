@@ -90,9 +90,9 @@ export function ScreensaverSection() {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-body font-medium tracking-[0.1em] uppercase text-muted-foreground">
+        <h2 className="font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
           Screensaver
-        </p>
+        </h2>
         <div className="flex items-center gap-2">
           {saving && (
             <Loader2 className="size-3 animate-spin text-muted-foreground" aria-hidden="true" />
