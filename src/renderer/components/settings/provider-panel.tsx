@@ -10,11 +10,11 @@ import { ChevronRight } from 'lucide-react';
 import { useProviderHealthContext } from '@/components/providers/provider-health-provider';
 import { providerFailureLabel } from '@shared/provider-copy';
 import type { ProviderCard, ProviderCatalog, SettingField } from '@/lib/yeaboi/settings';
-import { CUSTOM_MODEL, ModelChoice } from '@/components/yeaboi/model-choice';
+import { CUSTOM_MODEL, modelTrait } from '@/components/yeaboi/model-choice';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { Linkified } from '@/components/yeaboi/linkified';
-import { ProviderGrid } from '@/components/yeaboi/provider-grid';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
+import { Picker } from '@/components/ui/picker';
 import { ChoicePills, SettingsCard } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -86,10 +86,6 @@ export function ProviderPanel({
   onSave: (env: string, value: string) => void;
   onSignIn: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  // Mounted from the first open onwards, so closing animates as well as
-  // opening — and a page of these costs nothing until one is asked for.
-  const [everOpen, setEverOpen] = useState(false);
   const [custom, setCustom] = useState('');
   const { summary } = useProviderHealthContext();
 
@@ -132,24 +128,13 @@ export function ProviderPanel({
     : credentialState();
 
   return (
-    // Open, the card gets out of the way: what is inside is a page of choices,
-    // and a fill behind them made them cards on a card.
-    <SettingsCard
-      index={0}
-      className={cn('transition-colors duration-200', open && 'bg-transparent ring-transparent')}
-    >
-      <button
-        type="button"
-        onClick={() => {
-          setEverOpen(true);
-          setOpen((v) => !v);
-        }}
-        aria-expanded={open}
-        className="group flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
-      >
+    // No card behind it: what is on it is a summary line and two controls that
+    // are cards themselves.
+    <SettingsCard index={0} className="bg-transparent ring-transparent" animate={false}>
+      <div className="flex items-center gap-3.5 border-b border-border/40 px-4 py-3">
         <ProviderIcon provider={card?.provider_val ?? 'anthropic'} size={40} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-body font-medium text-foreground">
+          <span className="block font-body text-[13.5px] font-medium text-foreground">
             {card?.full_name ?? 'LLM provider'}
           </span>
           <span className="block truncate text-[12px]">
@@ -168,117 +153,127 @@ export function ProviderPanel({
             </span>
           </span>
         </span>
-        <ChevronRight
-          aria-hidden
-          className={`h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:text-muted-foreground ${
-            open ? 'rotate-90' : ''
-          }`}
-        />
-      </button>
+      </div>
 
-      {/* The panel opens by growing rather than appearing: a grid row from
-          nothing to its content's height, which is the one way to ease to a
-          height nobody has measured. */}
-      <div
-        className={cn(
-          'grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out',
-          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+      <div className="space-y-5 px-4 py-4">
+        {providerField && catalog && (
+          <div>
+            <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+              Provider
+            </h3>
+            {/* A list, not a wall: there are a dozen of these and only one
+                  is ever in use. The grid is the setup flow's, where picking
+                  one is the whole screen. */}
+            <Picker
+              label="Provider"
+              variant="card"
+              className="max-w-xl"
+              value={providerField.active_choice ?? ''}
+              options={catalog.providers.map((one) => ({
+                value: one.provider_val,
+                label: one.full_name,
+                note: one.tagline,
+                icon: <ProviderIcon provider={one.provider_val} size={28} />,
+              }))}
+              onChange={(picked) => {
+                if (picked !== providerField.active_choice) onSave('LLM_PROVIDER', picked);
+              }}
+            />
+          </div>
         )}
-      >
-        <div className="overflow-hidden">
-          {everOpen && (
-            <div className="space-y-5 border-t border-border/40 px-5 py-4">
-              {providerField && catalog && (
-                <div>
-                  <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                    Provider
-                  </h3>
-                  <ProviderGrid
-                    providers={catalog.providers}
-                    active={providerField.active_choice}
-                    autoFocus={false}
-                    onPick={(picked) => {
-                      if (picked.provider_val !== providerField.active_choice)
-                        onSave('LLM_PROVIDER', picked.provider_val);
-                    }}
-                  />
-                </div>
-              )}
-              {modelField && presets.length > 0 && (
-                <div>
-                  <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                    Model
-                  </h3>
-                  <ModelChoice
-                    models={presets}
-                    recommended={recommended}
-                    hints={card?.model_hints ?? {}}
-                    value={modelValue}
-                    custom={custom || (modelIsPreset ? '' : model)}
-                    onPick={(id) => {
-                      if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
-                      else onSave('LLM_MODEL', id === recommended ? '' : id);
-                    }}
-                    onCustom={setCustom}
-                  />
-                  {modelValue === CUSTOM_MODEL && (
-                    <div className="mt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={!custom.trim() || custom.trim() === model}
-                        onClick={() => onSave('LLM_MODEL', custom.trim())}
-                      >
-                        Use this model
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                  Credential
-                </h3>
-                <div className="space-y-3">
-                  {authField && (
-                    <ChoicePills
-                      options={authField.choices}
-                      active={authField.active_choice}
-                      labels={authField.choice_labels}
-                      onPick={(opt) => onSave(authField.env, opt)}
-                    />
-                  )}
-                  {signInField && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`font-mono text-[12px] ${
-                          signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
-                        }`}
-                      >
-                        {signInField.is_set ? signInField.value : 'not signed in'}
-                      </span>
-                      <Button variant="outline" size="sm" onClick={onSignIn}>
-                        Sign in…
-                      </Button>
-                    </div>
-                  )}
-                  {credentials.map((field) => (
-                    <CredentialField
-                      key={field.env}
-                      field={field}
-                      onSave={(value) => onSave(field.env, value)}
-                    />
-                  ))}
-                  {card?.instructions && !signInField && (
-                    <p className="text-[11px] leading-snug text-muted-foreground/80">
-                      <Linkified text={card.instructions} />
-                    </p>
-                  )}
-                </div>
+        {modelField && presets.length > 0 && (
+          <div>
+            <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+              Model
+            </h3>
+            <Picker
+              label="Model"
+              variant="card"
+              className="max-w-xl"
+              value={modelValue}
+              options={[
+                ...presets.map((id) => ({
+                  value: id,
+                  label: id,
+                  mono: true,
+                  ...(modelTrait(id, card?.model_hints ?? {})
+                    ? { note: modelTrait(id, card?.model_hints ?? {}) }
+                    : {}),
+                  ...(id === recommended ? { badge: 'recommended' } : {}),
+                })),
+                {
+                  value: CUSTOM_MODEL,
+                  label: 'Custom…',
+                  note: 'Paste any model id this credential can reach.',
+                },
+              ]}
+              onChange={(id) => {
+                if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
+                else onSave('LLM_MODEL', id === recommended ? '' : id);
+              }}
+            />
+            {modelValue === CUSTOM_MODEL && (
+              <div className="mt-2 flex max-w-xl items-center gap-2">
+                <input
+                  value={custom}
+                  onChange={(event) => setCustom(event.target.value)}
+                  placeholder="model id"
+                  aria-label="Custom model id"
+                  className="min-w-0 flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:border-border"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!custom.trim() || custom.trim() === model}
+                  onClick={() => onSave('LLM_MODEL', custom.trim())}
+                >
+                  Use this model
+                </Button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
+
+        <div>
+          <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+            Credential
+          </h3>
+          <div className="space-y-3">
+            {authField && (
+              <ChoicePills
+                options={authField.choices}
+                active={authField.active_choice}
+                labels={authField.choice_labels}
+                onPick={(opt) => onSave(authField.env, opt)}
+              />
+            )}
+            {signInField && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`font-mono text-[12px] ${
+                    signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
+                  }`}
+                >
+                  {signInField.is_set ? signInField.value : 'not signed in'}
+                </span>
+                <Button variant="outline" size="sm" onClick={onSignIn}>
+                  Sign in…
+                </Button>
+              </div>
+            )}
+            {credentials.map((field) => (
+              <CredentialField
+                key={field.env}
+                field={field}
+                onSave={(value) => onSave(field.env, value)}
+              />
+            ))}
+            {card?.instructions && !signInField && (
+              <p className="text-[11px] leading-snug text-muted-foreground/80">
+                <Linkified text={card.instructions} />
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </SettingsCard>

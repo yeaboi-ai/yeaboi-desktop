@@ -6,7 +6,7 @@
 // system's type, over a window that is neither. This is the same choice in the
 // app's own popover.
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,6 +19,12 @@ export interface PickerOption {
   note?: string;
   /** The group this option opens, named. A rule comes with it. */
   group?: string;
+  /** A mark for the option — a provider's own, say. */
+  icon?: ReactNode;
+  /** A word about the option itself, worn as a chip: "recommended". */
+  badge?: string;
+  /** The label in the app's mono, for anything that is an id rather than a name. */
+  mono?: boolean;
 }
 
 export function Picker({
@@ -26,6 +32,7 @@ export function Picker({
   options,
   onChange,
   label,
+  variant = 'field',
   className,
 }: {
   value: string;
@@ -33,6 +40,9 @@ export function Picker({
   onChange: (value: string) => void;
   /** What the list is of, for anyone who cannot see it. */
   label: string;
+  /** `card` is the same list behind a row the size of the cards it replaced:
+   *  the mark, the name, and what the option is, on two lines. */
+  variant?: 'field' | 'card';
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -46,12 +56,36 @@ export function Picker({
             type="button"
             aria-label={label}
             className={cn(
-              'flex w-full items-center gap-2 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 text-left text-[13px] text-foreground transition-colors',
-              'hover:border-border focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
+              'flex w-full items-center text-left text-foreground transition-colors',
+              'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
+              variant === 'card'
+                ? 'gap-3.5 rounded-2xl bg-card px-4 py-3 ring-1 ring-border/50 hover:ring-primary/40'
+                : 'gap-2 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 text-[13px] hover:border-border',
               className,
             )}
           >
-            <span className="min-w-0 flex-1 truncate">{picked?.label ?? 'Pick one'}</span>
+            {variant === 'card' && picked?.icon}
+            <span className="min-w-0 flex-1">
+              <span
+                className={cn(
+                  'block truncate',
+                  variant === 'card' ? 'text-[13.5px] font-medium' : 'text-[13px]',
+                  picked?.mono && 'font-mono',
+                )}
+              >
+                {picked?.label ?? 'Pick one'}
+              </span>
+              {variant === 'card' && picked?.note && (
+                <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
+                  {picked.note}
+                </span>
+              )}
+            </span>
+            {variant === 'card' && picked?.badge && (
+              <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 font-body text-[10px] text-primary">
+                {picked.badge}
+              </span>
+            )}
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </button>
         }
@@ -93,8 +127,14 @@ export function Picker({
                       active ? 'text-primary' : 'text-transparent',
                     )}
                   />
+                  {option.icon}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-body text-[13px] text-foreground">
+                    <span
+                      className={cn(
+                        'block truncate text-[13px] text-foreground',
+                        option.mono ? 'font-mono' : 'font-body',
+                      )}
+                    >
                       {option.label}
                     </span>
                     {option.note && (
@@ -103,6 +143,11 @@ export function Picker({
                       </span>
                     )}
                   </span>
+                  {option.badge && (
+                    <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 font-body text-[10px] text-primary">
+                      {option.badge}
+                    </span>
+                  )}
                 </button>
               </div>
             );

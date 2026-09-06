@@ -61,7 +61,7 @@ export function ProviderGrid({
                what says where a tile ends, and the accent is what says which
                one is chosen. */
             className={cn(
-              'group flex items-center gap-3.5 rounded-2xl px-5 py-4 text-left ring-1 transition-all',
+              'group flex items-center gap-3.5 rounded-2xl bg-card px-5 py-4 text-left ring-1 transition-all',
               'focus:outline-none focus-visible:ring-primary/60',
               on ? 'ring-primary/50' : 'ring-border/50 hover:ring-primary/40',
             )}
