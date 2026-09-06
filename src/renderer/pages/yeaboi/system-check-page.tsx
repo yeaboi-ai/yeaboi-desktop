@@ -34,6 +34,7 @@ import {
   type Report,
 } from '@/lib/yeaboi/system-check';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { PageShell } from '@/components/ui/page-shell';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import {
   PostureStrip,
@@ -169,73 +170,76 @@ function SystemCheckBody() {
   );
 
   const header = (
-    <header className="mb-7 flex items-start justify-between gap-4">
-      <div>
-        <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-          What&rsquo;s ready on this machine
-        </p>
-        <h1 className="font-display mt-0.5 text-3xl text-foreground">System Check</h1>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {report?.summary ?? 'Every row is optional — the app itself needs none of them.'}
-        </p>
+    <>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-body text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+            What&rsquo;s ready on this machine
+          </p>
+          <h1 className="font-display mt-0.5 text-3xl text-foreground">System Check</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {report?.summary ?? 'Every row is optional — the app itself needs none of them.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={run}
+          disabled={running}
+          className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-[12px] text-foreground hover:bg-secondary/80 disabled:opacity-50"
+        >
+          <RefreshCw
+            className={cn('h-3.5 w-3.5', running && 'animate-spin motion-reduce:animate-none')}
+          />
+          Re-run
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={run}
-        disabled={running}
-        className="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-[12px] text-foreground hover:bg-secondary/80 disabled:opacity-50"
-      >
-        <RefreshCw
-          className={cn('h-3.5 w-3.5', running && 'animate-spin motion-reduce:animate-none')}
-        />
-        Re-run
-      </button>
-    </header>
+
+      {/* The strip and the filters are what the rows are read against, so they
+          stay with the heading rather than scrolling away from them. */}
+      {report && (
+        <div className="mt-4 space-y-3">
+          <PostureStrip
+            cells={toCells(report.checks)}
+            label={report.summary}
+            className="animate-fade-in motion-reduce:animate-none"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterChip active={!attentionOnly} onClick={() => setAttentionOnly(false)}>
+              All {report.checks.length}
+            </FilterChip>
+            <FilterChip active={attentionOnly} onClick={() => setAttentionOnly(true)}>
+              Needs attention {attention.length}
+            </FilterChip>
+          </div>
+        </div>
+      )}
+    </>
   );
 
   if (error)
     return (
-      <>
-        {header}
+      <PageShell header={header}>
         <p className="text-[13px] text-muted-foreground">
           {/404|not found/i.test(error)
             ? 'Your yeaboi backend predates System Check — update yeaboi to run it.'
             : `Could not run the system check: ${error}`}
         </p>
-      </>
+      </PageShell>
     );
 
   if (!report)
     return (
-      <>
-        {header}
+      <PageShell header={header}>
         <div className="space-y-3" aria-hidden>
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-2xl bg-secondary/50" />
           ))}
         </div>
-      </>
+      </PageShell>
     );
 
   return (
-    <>
-      {header}
-      <div className="mb-6 space-y-3">
-        <PostureStrip
-          cells={toCells(report.checks)}
-          label={report.summary}
-          className="animate-fade-in motion-reduce:animate-none"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <FilterChip active={!attentionOnly} onClick={() => setAttentionOnly(false)}>
-            All {report.checks.length}
-          </FilterChip>
-          <FilterChip active={attentionOnly} onClick={() => setAttentionOnly(true)}>
-            Needs attention {attention.length}
-          </FilterChip>
-        </div>
-      </div>
-
+    <PageShell header={header}>
       {sections.length === 0 ? (
         <p className="text-[13px] text-muted-foreground">
           {attentionOnly
@@ -279,21 +283,14 @@ function SystemCheckBody() {
           ))}
         </div>
       )}
-    </>
+    </PageShell>
   );
 }
 
 export default function SystemCheckPage() {
-  // One surface that fills the window, like the dashboard: the deck clips at
-  // the port, so the page carries its own scroller, and the whole page area is
-  // it rather than the column of content on it.
   return (
-    <div className="quiet-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
-      <div className="mx-auto w-full max-w-[1360px] px-6 pt-10 pb-28">
-        <BackendGate>
-          <SystemCheckBody />
-        </BackendGate>
-      </div>
-    </div>
+    <BackendGate>
+      <SystemCheckBody />
+    </BackendGate>
   );
 }

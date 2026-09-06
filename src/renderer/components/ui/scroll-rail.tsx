@@ -35,6 +35,18 @@ const OFFSCREEN = 40;
  *  kept after the page that gave it has gone. */
 const SLIDE_MS = 300;
 
+/** How far the port can be scrolled: the whole of it, clearance included, so
+ *  the thumb reaches the foot of its track exactly as the page does. */
+function scrollable(port: HTMLElement): number {
+  return Math.max(1, port.scrollHeight - port.clientHeight);
+}
+
+/** The room a page holds under itself for the dock, which carries no content. */
+function clearanceOf(port: HTMLElement): number {
+  const column = port.firstElementChild;
+  return column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
+}
+
 /** The port a page has marked as the thing that scrolls, if it has one. */
 function findPort(): HTMLElement | null {
   return document.querySelector<HTMLElement>('[data-scrollport]');
@@ -69,25 +81,22 @@ export function ScrollRail({ className }: { className?: string }) {
       setThumb(null);
       return;
     }
-    // The clearance a page keeps under itself for the dock is scrollable room
-    // that holds nothing. It is not travel the rail should describe: measured
-    // with it, the thumb bottoms out in empty space and a page with a line or
-    // two too many gets a rail it does not need.
-    const column = port.firstElementChild;
-    const clearance = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
-    const room = Math.max(0, port.scrollHeight - port.clientHeight - clearance);
-    // Nothing much to scroll is nothing to say: the rail leaves rather than
-    // sitting there full-length pretending to be a control.
-    if (room < ENOUGH) {
+    const travel = scrollable(port);
+    // A page whose only overflow is the clearance it keeps under itself for
+    // the dock has nothing to scroll to: no rail.
+    if (travel - clearanceOf(port) < ENOUGH) {
       setThumb(null);
       return;
     }
     const inner = rail.clientHeight - PAD * 2;
     const height = Math.min(
-      Math.max(MIN_THUMB, (port.clientHeight / (port.clientHeight + room)) * inner),
+      Math.max(MIN_THUMB, (port.clientHeight / port.scrollHeight) * inner),
       inner * MAX_THUMB_SHARE,
     );
-    setThumb({ top: PAD + (Math.min(port.scrollTop, room) / room) * (inner - height), height });
+    setThumb({
+      top: PAD + (Math.min(port.scrollTop, travel) / travel) * (inner - height),
+      height,
+    });
   }, [port]);
 
   useEffect(() => {
@@ -136,15 +145,12 @@ export function ScrollRail({ className }: { className?: string }) {
     const rail = track.current;
     const start = grab.current;
     if (!start || !port || !rail || !thumb) return;
-    const column = port.firstElementChild;
-    const clearance = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
-    const room = Math.max(0, port.scrollHeight - port.clientHeight - clearance);
-    const travel = rail.clientHeight - PAD * 2 - thumb.height;
-    if (travel <= 0) return;
+    const reach = rail.clientHeight - PAD * 2 - thumb.height;
+    if (reach <= 0) return;
     // The thumb leads and the page follows it.
-    const top = Math.max(PAD, Math.min(PAD + travel, start.top + (event.clientY - start.y)));
+    const top = Math.max(PAD, Math.min(PAD + reach, start.top + (event.clientY - start.y)));
     setThumb({ ...thumb, top });
-    port.scrollTop = ((top - PAD) / travel) * room;
+    port.scrollTop = ((top - PAD) / reach) * scrollable(port);
   };
 
   const release = (event: React.PointerEvent) => {

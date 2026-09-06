@@ -121,7 +121,7 @@ export function IntegrationsCatalog() {
         // Pulled up against the heading and carrying its own top padding: a
         // gap between two pinned bars is a stripe of moving content.
         className="pin-fade sticky z-[9] -mx-6 -mt-4 space-y-3 bg-background px-6 pt-3 pb-3"
-        style={{ top: 'var(--settings-head, 0px)' }}
+        style={{ top: 'var(--page-head, 0px)' }}
       >
         {/* The shelves below deal themselves in; what sits above them was simply
             already there, which made the page look like it had arrived twice. */}

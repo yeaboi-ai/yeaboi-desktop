@@ -245,7 +245,9 @@ function SystemCheckPill() {
     ...tone,
     count: report.checks.filter((one) => one.status === tone.status).length,
   })).filter((tone) => tone.count > 0);
-  const label = `System check — ${counts.map((one) => `${one.count} ${one.says}`).join(', ')}`;
+  const label = here
+    ? 'Back'
+    : `System check — ${counts.map((one) => `${one.count} ${one.says}`).join(', ')}`;
 
   return (
     <Link
@@ -256,14 +258,30 @@ function SystemCheckPill() {
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
-      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center gap-2.5 px-3 font-code text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
+      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center gap-2.5 font-code text-[11px] text-muted-foreground transition-[width,padding] duration-200 ease-out hover:bg-secondary/50 hover:text-foreground ${here ? 'w-8 px-0' : 'px-3'}`}
     >
-      {counts.map((tone) => (
-        <span key={tone.status} className="flex items-center gap-1.5">
-          <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-          {tone.count}
-        </span>
-      ))}
+      {/* On the page it leads to it is the way back, like the gear and the
+          envelope: the counts wind out as the arrow swings in. */}
+      <span
+        className={`flex items-center gap-2.5 overflow-hidden transition-all duration-200 ease-out ${
+          here
+            ? 'max-w-0 rotate-90 scale-75 opacity-0'
+            : 'max-w-[10rem] rotate-0 scale-100 opacity-100'
+        }`}
+      >
+        {counts.map((tone) => (
+          <span key={tone.status} className="flex items-center gap-1.5">
+            <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+            {tone.count}
+          </span>
+        ))}
+      </span>
+      <ArrowLeft
+        aria-hidden
+        className={`h-[14px] shrink-0 transition-all duration-200 ease-out ${
+          here ? 'w-[14px] rotate-0 scale-100 opacity-100' : 'w-0 -rotate-90 scale-75 opacity-0'
+        }`}
+      />
     </Link>
   );
 }
