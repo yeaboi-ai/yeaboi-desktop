@@ -1,7 +1,7 @@
 'use client';
 
 // The Agents world's Projects: the same platform projects, each a place to
-// scope the four reports to one repo. A row says whether a repo is linked.
+// scope the three reports to one repo. A row says whether a repo is linked.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';

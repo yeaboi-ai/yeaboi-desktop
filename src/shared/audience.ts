@@ -56,7 +56,7 @@ export const WORLD_COPY: Record<Audience, WorldCopy> = {
   agents: {
     title: 'Agents',
     verb: 'Watch your AI agents work',
-    capabilities: ['cost', 'recoverable spend', 'daily digests', 'security posture'],
+    capabilities: ['cost', 'recoverable spend', 'security posture'],
     beta: true,
     accent: 'rgb(90, 160, 210)',
     accentBright: 'rgb(130, 200, 255)',

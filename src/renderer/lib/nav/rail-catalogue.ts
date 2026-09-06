@@ -44,7 +44,6 @@ export const CAPABILITY_ICONS: Record<string, RailLucideName> = {
   'weekly-review': 'CalendarCheck',
   'agent-usage': 'Coins',
   'agent-advisor': 'Compass',
-  'agent-standup': 'Mic',
   'agent-security': 'ShieldCheck',
   ceremonies: 'CalendarDays',
   'slack-inbound': 'Hash',

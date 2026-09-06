@@ -4,7 +4,9 @@
 // they are built from. The machine-wide page (/agents/<kind>) and a project's
 // scoped tabs draw the same report the same way.
 
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { SecurityIssues } from '@/components/agents/security-issues';
+import type { SecurityActions } from '@/components/agents/use-security-actions';
 import type { AgentRunState } from '@/lib/yeaboi/ops';
 
 export type Report = Record<string, unknown>;
@@ -14,21 +16,6 @@ const text = (report: Report, field: string): string => String(report[field] ?? 
 const rows = (report: Report, field: string): Report[] => (report[field] as Report[]) ?? [];
 const lines = (report: Report, field: string): string[] => (report[field] as string[]) ?? [];
 const money = (value: number): string => `$${value.toFixed(2)}`;
-
-type Category = 'todo' | 'inprogress' | 'done' | 'blocked';
-
-function severityCategory(severity: string): Category {
-  if (severity === 'critical' || severity === 'high') return 'blocked';
-  if (severity === 'medium') return 'inprogress';
-  return 'todo';
-}
-
-const CATEGORY_VARIANT: Record<Category, 'outline' | 'secondary' | 'default' | 'destructive'> = {
-  todo: 'outline',
-  inprogress: 'secondary',
-  done: 'default',
-  blocked: 'destructive',
-};
 
 export function Section({
   title,
@@ -162,17 +149,84 @@ export function ScanProgress({ run }: { run: AgentRunState }) {
   );
 }
 
-export function ReportView({ kind, report }: { kind: string; report: Report }) {
+export interface ReportActions {
+  /** Security: the verbs the page acts through (fix, verdict, info toggle). */
+  security?: SecurityActions;
+}
+
+export function ReportView({
+  kind,
+  report,
+  actions = {},
+}: {
+  kind: string;
+  report: Report;
+  actions?: ReportActions;
+}) {
   const warnings = lines(report, 'warnings');
+  if (kind === 'security') {
+    return (
+      <>
+        {warnings.length > 0 && <Notice title="Read this first" items={warnings} />}
+        {actions.security ? (
+          <SecurityIssues report={report} actions={actions.security} />
+        ) : (
+          <SecurityIssues report={report} actions={READ_ONLY} />
+        )}
+      </>
+    );
+  }
   return (
     <>
       {warnings.length > 0 && <Notice title="Read this first" items={warnings} />}
       {kind === 'usage' && <UsageView report={report} />}
       {kind === 'advisor' && <AdvisorView report={report} />}
-      {kind === 'standup' && <StandupView report={report} />}
-      {kind === 'security' && <SecurityView report={report} />}
       <Advice report={report} />
     </>
+  );
+}
+
+// A report drawn with nothing to act through (a saved snapshot): the list
+// still reads, the buttons say so instead of failing.
+const READ_ONLY: SecurityActions = {
+  includeInfo: false,
+  busy: false,
+  fix: async () => 'Open the Security page to act on this.',
+  verdict: async () => 'Open the Security page to act on this.',
+  toggleInfo: async () => 'Open the Security page to act on this.',
+};
+
+export function billingLabel(kind: string): string {
+  if (kind === 'subscription') return 'API-equivalent — included in your subscription, not a bill';
+  if (kind === 'api') return 'estimated at public API rates';
+  return 'estimated from local session logs at public rates';
+}
+
+function TrendBars({ points }: { points: Report[] }) {
+  const tail = points.slice(-30);
+  const peak = Math.max(0, ...tail.map((p) => Number(p['cost_usd'] ?? 0)));
+  if (tail.length === 0) return null;
+  return (
+    <div>
+      <div className="flex items-end gap-[3px] h-14" aria-label="Cost per day">
+        {tail.map((p) => {
+          const cost = Number(p['cost_usd'] ?? 0);
+          const height = peak > 0 ? Math.max(2, Math.round((cost / peak) * 56)) : 2;
+          return (
+            <div
+              key={String(p['date'])}
+              title={`${String(p['date'])} · ${money(cost)} · ${Number(p['sessions'] ?? 0)} session(s)`}
+              className="flex-1 rounded-sm bg-primary/70"
+              style={{ height }}
+            />
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        {String(tail[0]?.['date'] ?? '')} → {String(tail[tail.length - 1]?.['date'] ?? '')} · peak{' '}
+        {money(peak)} / day
+      </p>
+    </div>
   );
 }
 
@@ -191,6 +245,8 @@ function Advice({ report }: { report: Report }) {
 }
 
 function UsageView({ report }: { report: Report }) {
+  const cacheShare = num(report, 'cache_cost_share');
+  const trend = rows(report, 'daily_trend');
   return (
     <>
       <Section title={`${text(report, 'period_start')} to ${text(report, 'period_end')}`}>
@@ -201,8 +257,16 @@ function UsageView({ report }: { report: Report }) {
           <Tile label="Output tokens" value={num(report, 'total_output_tokens').toLocaleString()} />
         </Tiles>
         <p className="text-[12px] text-muted-foreground">
-          Rates as of {text(report, 'pricing_as_of') || 'unknown'}.
+          {billingLabel(text(report, 'billing_kind'))}. Rates as of{' '}
+          {text(report, 'pricing_as_of') || 'unknown'}
+          {cacheShare > 0 && ` · ${Math.round(cacheShare * 100)}% of the estimate is cache traffic`}
+          .
         </p>
+        {trend.length > 1 && (
+          <div className="mt-3">
+            <TrendBars points={trend} />
+          </div>
+        )}
       </Section>
       <Section title="By model">
         <Table
@@ -266,132 +330,6 @@ function AdvisorView({ report }: { report: Report }) {
               Number(row['calls']),
               money(Number(row['est_usd'])),
               String(row['note'] ?? ''),
-            ],
-          }))}
-        />
-      </Section>
-    </>
-  );
-}
-
-function StandupView({ report }: { report: Report }) {
-  const highlights = lines(report, 'highlights');
-  const inFlight = lines(report, 'in_flight');
-  const attention = lines(report, 'attention_items');
-  const coverage = lines(report, 'coverage_notes');
-  return (
-    <>
-      <Section title={text(report, 'digest_date') || 'Digest'}>
-        <Tiles>
-          <Tile label="Sessions worked" value={String(num(report, 'sessions_worked'))} />
-          <Tile label="Estimated spend" value={money(num(report, 'total_cost_usd'))} />
-        </Tiles>
-        {text(report, 'narrative') && (
-          <p className="text-[13px] text-muted-foreground">{text(report, 'narrative')}</p>
-        )}
-        {coverage.length > 0 && (
-          <div className="mt-3">
-            <Notice title="What this could not see" items={coverage} />
-          </div>
-        )}
-      </Section>
-      {highlights.length > 0 && (
-        <Section title="Highlights">
-          <ReviewList items={highlights} />
-        </Section>
-      )}
-      {inFlight.length > 0 && (
-        <Section title="Still in flight">
-          <ReviewList items={inFlight} />
-        </Section>
-      )}
-      {attention.length > 0 && <Notice title="Needs a person" items={attention} />}
-      <Section title="Repo activity">
-        <Table
-          empty="No tracked repository activity in the window."
-          columns={[
-            { header: 'Repo' },
-            { header: 'Kind' },
-            { header: 'What' },
-            { header: 'Status' },
-          ]}
-          rows={rows(report, 'repo_activity').map((row, index) => ({
-            key: `${String(row['repo'])}-${index}`,
-            cells: [
-              String(row['repo']),
-              String(row['kind']),
-              String(row['title']),
-              String(row['status'] ?? ''),
-            ],
-          }))}
-        />
-      </Section>
-    </>
-  );
-}
-
-function SecurityView({ report }: { report: Report }) {
-  const posture = text(report, 'posture');
-  return (
-    <>
-      <Section
-        title={`Posture: ${posture || 'unknown'}`}
-        actions={
-          <Badge variant={posture === 'good' ? 'default' : 'destructive'}>
-            {posture || 'unknown'}
-          </Badge>
-        }
-      >
-        <Tiles>
-          <Tile label="Sessions scanned" value={String(num(report, 'sessions_scanned'))} />
-          <Tile label="Files scanned" value={String(num(report, 'files_scanned'))} />
-          <Tile label="Secrets found" value={String(num(report, 'secrets_found'))} />
-        </Tiles>
-        {text(report, 'summary') && (
-          <p className="text-[13px] text-muted-foreground">{text(report, 'summary')}</p>
-        )}
-      </Section>
-      <Section title="Findings">
-        <Table
-          empty="Nothing flagged."
-          columns={[
-            { header: 'Severity' },
-            { header: 'Finding' },
-            { header: 'Where' },
-            { header: 'Fix' },
-          ]}
-          rows={rows(report, 'findings').map((row, index) => ({
-            key: `${String(row['title'])}-${index}`,
-            cells: [
-              <Badge
-                key="severity"
-                variant={CATEGORY_VARIANT[severityCategory(String(row['severity']))]}
-              >
-                {String(row['severity'])}
-              </Badge>,
-              String(row['title']),
-              String(row['location'] ?? ''),
-              String(row['remediation'] ?? ''),
-            ],
-          }))}
-        />
-      </Section>
-      <Section title="MCP servers">
-        <Table
-          empty="No MCP servers configured."
-          columns={[
-            { header: 'Name' },
-            { header: 'Scope' },
-            { header: 'Transport' },
-            { header: 'Flags' },
-          ]}
-          rows={rows(report, 'mcp_servers').map((row) => ({
-            key: `${String(row['scope'])}/${String(row['name'])}`,
-            cells: [
-              String(row['name']),
-              String(row['scope']),
-              String(row['transport']),
-              ((row['flags'] as string[]) ?? []).join(', '),
             ],
           }))}
         />

@@ -1,7 +1,7 @@
 'use client';
 
 // One project, seen by the agents: the repo path its reports are scoped to,
-// then the four kinds as tabs over that repo's sessions. Security stays
+// then the three kinds as tabs over that repo's sessions. Security stays
 // machine-wide whatever project it is opened from.
 //
 // Opening the page only reads the engine pointer; a project with none is
@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useLocation, useParams } from 'react-router';
 import { DOOR_MASCOT } from '@/lib/audience/worlds';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
+import { useSecurityActions } from '@/components/agents/use-security-actions';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ interface Project {
   repo_url?: string | null;
 }
 
-const KINDS = ['usage', 'advisor', 'standup', 'security'];
+const KINDS = ['usage', 'advisor', 'security'];
 
 function RepoPathField({
   ensureEngineId,
@@ -125,6 +126,11 @@ function ScopedReport({
   const [run, setRun] = useState<AgentRunState>(emptyAgentRun);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState('');
+  const swapReport = useCallback((next: Report) => {
+    setReport(next);
+    setAsOf('');
+  }, []);
+  const security = useSecurityActions({ setReport: swapReport });
 
   const refresh = useCallback(async () => {
     setRunning(true);
@@ -216,7 +222,7 @@ function ScopedReport({
       )}
       {(running || !report) && <ScanProgress run={run} />}
       {report ? (
-        <ReportView kind={kind} report={report} />
+        <ReportView kind={kind} report={report} actions={kind === 'security' ? { security } : {}} />
       ) : (
         state !== 'unsupported' &&
         !running && (
@@ -377,7 +383,7 @@ function AgentsProjectBody({ projectId }: { projectId: string }) {
             </>
           ) : (
             <p className="text-[14px] leading-relaxed text-muted-foreground">
-              Link a repo path and the four reports will read that repo&rsquo;s sessions alone.
+              Link a repo path and the three reports will read that repo&rsquo;s sessions alone.
               Until then,{' '}
               <Link href="/agents/usage" className="text-primary hover:underline">
                 the machine-wide reports

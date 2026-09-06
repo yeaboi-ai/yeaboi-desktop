@@ -138,7 +138,6 @@ const BETA_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ['/solo/review', 'weekly-review'],
   ['/agents/usage', 'agent-usage'],
   ['/agents/advisor', 'agent-advisor'],
-  ['/agents/standup', 'agent-standup'],
   ['/agents/security', 'agent-security'],
 ];
 
