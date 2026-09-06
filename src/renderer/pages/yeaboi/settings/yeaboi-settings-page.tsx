@@ -580,7 +580,15 @@ export default function YeaboiSettingsPage() {
   const engineTab = SETTINGS_TABS.find((t) => t.route === pathname);
 
   return (
-    <SettingsPageShell active={pathname}>
+    <SettingsPageShell
+      active={pathname}
+      {...(pathname === '/settings/duck'
+        ? {
+            subtitle:
+              'The duck on your desktop — what he does, how he looks, and how he tells you a run has finished.',
+          }
+        : {})}
+    >
       {pathname === '/settings/duck' ? (
         <>
           <DuckTab />
