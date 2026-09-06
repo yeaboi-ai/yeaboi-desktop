@@ -277,7 +277,7 @@ export default function ProjectsPage() {
             Every run inside a project reads what the runs before it left.
           </p>
         </div>
-        <ProjectGuide steps={steps} />
+        <ProjectGuide steps={steps} colors={colors} />
       </header>
 
       <section

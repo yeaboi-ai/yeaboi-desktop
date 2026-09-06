@@ -1,4 +1,4 @@
-// The Projects header's duck: the three lines he says, true for each world,
+// The Projects header's duck: the three pages he says, true for each world,
 // the stepping between them, and the guarantee that he stays in the header
 // band above the sheet rather than floating over it.
 
@@ -7,11 +7,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   AGENTS_RELATED_LINE,
-  FIRST_LINE,
+  AGENTS_RELATED_TITLE,
   GUIDE_SEEN_KEY,
-  LAST_LINE,
   RELATED_CLAUSE,
-  guideLines,
+  RELATED_TITLE,
+  guidePages,
+  relatedItems,
   relatedLine,
   stepIndex,
 } from '../src/renderer/lib/yeaboi/project-guide';
@@ -20,46 +21,54 @@ import { FLOW, fallbackFlowKeys, flowFor } from '../src/renderer/lib/yeaboi/read
 const RENDERER = join(import.meta.dirname, '..', 'src', 'renderer');
 const read = (rel: string) => readFileSync(join(RENDERER, rel), 'utf8');
 
-describe('guideLines', () => {
-  it('is three sentences, opening on what a project is and closing on how it grows', () => {
-    const lines = guideLines(FLOW);
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe(FIRST_LINE);
-    expect(lines[2]).toBe(LAST_LINE);
-    for (const line of lines) expect(line.endsWith('.')).toBe(true);
-  });
-
-  it('names every step of the Team flow in flow order in the middle line', () => {
-    const line = relatedLine(FLOW);
-    expect(line.startsWith('Everything inside stays related: ')).toBe(true);
-    let at = -1;
-    for (const step of FLOW) {
-      const clause = RELATED_CLAUSE[step.key];
-      expect(clause, `${step.key} has no clause`).toBeTruthy();
-      const found = line.indexOf(clause!);
-      expect(found, `${step.key} missing`).toBeGreaterThan(at);
-      at = found;
+describe('guidePages', () => {
+  it('is three pages, opening on what a project is and closing on how it grows', () => {
+    const pages = guidePages(FLOW);
+    expect(pages).toHaveLength(3);
+    expect(pages[0]!.title).toBe('One piece of work');
+    expect(pages[2]!.title).toBe('It grows as you go');
+    for (const page of pages) {
+      expect(page.title).not.toMatch(/\.$/);
+      if (page.body) expect(page.body.endsWith('.')).toBe(true);
     }
-    expect(line).toContain(' and reports read all of it.');
   });
 
-  it('leaves poker and retro out of the Solo line', () => {
+  it('lists every step of the Team flow, in flow order, under its label on the related page', () => {
+    const page = guidePages(FLOW)[1]!;
+    expect(page.title).toBe(RELATED_TITLE);
+    expect(page.body).toBe('');
+    expect(page.items!.map((item) => item.key)).toEqual(FLOW.map((step) => step.key));
+    for (const item of page.items!) {
+      expect(item.label).toBe(FLOW.find((step) => step.key === item.key)!.label);
+      expect(item.clause).toBe(RELATED_CLAUSE[item.key]);
+    }
+  });
+
+  it('leaves poker and retro out of the Solo page', () => {
     const solo = flowFor('solo', fallbackFlowKeys('solo'));
-    const line = relatedLine(solo);
-    expect(line).toContain('standups track its blockers');
-    expect(line).not.toContain('poker');
-    expect(line).not.toContain('retro');
+    const keys = relatedItems(solo).map((item) => item.key);
+    expect(keys).toContain('daily-standup');
+    expect(keys).not.toContain('poker');
+    expect(keys).not.toContain('retro');
   });
 
   it('says the Agents world scopes by repository, which has no flow', () => {
-    expect(relatedLine([])).toBe(AGENTS_RELATED_LINE);
-    expect(guideLines(flowFor('agents', fallbackFlowKeys('team')))[1]).toBe(AGENTS_RELATED_LINE);
+    const page = guidePages(flowFor('agents', fallbackFlowKeys('team')))[1]!;
+    expect(page.title).toBe(AGENTS_RELATED_TITLE);
+    expect(page.body).toBe(AGENTS_RELATED_LINE);
+    expect(page.items).toBeUndefined();
   });
+});
 
-  it('reads as one clause when only one step is in the flow', () => {
-    expect(relatedLine(FLOW.filter((s) => s.key === 'daily-standup'))).toBe(
-      'Everything inside stays related: standups track its blockers.',
+describe('relatedLine', () => {
+  it('reads the related page as one sentence', () => {
+    expect(relatedLine(FLOW)).toBe(
+      'Everything inside stays related: plan frames every other run, analysis profiles the team, standup tracks its blockers, poker sizes its tickets, retro carries actions over and report reads all of it.',
     );
+    expect(relatedLine(FLOW.filter((s) => s.key === 'daily-standup'))).toBe(
+      'Everything inside stays related: standup tracks its blockers.',
+    );
+    expect(relatedLine([])).toBe(AGENTS_RELATED_LINE);
   });
 });
 
