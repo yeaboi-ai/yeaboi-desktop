@@ -46,6 +46,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-rail-thumb: var(--rail-thumb);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -158,6 +159,7 @@
   --selection-fg: #171717;
   --scrollbar-thumb: #cccccc;
   --scrollbar-thumb-hover: #999999;
+  --rail-thumb: #8f8f8d;
   --grid-placeholder-bg: rgba(184, 130, 31, 0.12);
   --grid-placeholder-border: rgba(184, 130, 31, 0.3);
   --glow-primary-shadow: 0 0 0 1px rgba(184, 130, 31, 0.3), 0 4px 24px rgba(184, 130, 31, 0.08);
@@ -208,6 +210,7 @@
   --selection-fg: #f0f0f0;
   --scrollbar-thumb: #333333;
   --scrollbar-thumb-hover: #474747;
+  --rail-thumb: #e8e8e8;
   --grid-placeholder-bg: rgba(229, 166, 48, 0.12);
   --grid-placeholder-border: rgba(229, 166, 48, 0.3);
   --glow-primary-shadow: 0 0 0 1px rgba(229, 166, 48, 0.3), 0 4px 24px rgba(229, 166, 48, 0.08);

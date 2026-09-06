@@ -48,6 +48,8 @@ export function ScrollRail({ className }: { className?: string }) {
   const [dragging, setDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Set for the length of a drag, when the pointer owns the thumb's position. */
+  const holding = useRef(false);
 
   // Pages come and go under the chrome; the rail follows whichever one is
   // scrolling now rather than being told.
@@ -61,6 +63,8 @@ export function ScrollRail({ className }: { className?: string }) {
 
   const measure = useCallback(() => {
     const rail = track.current;
+    // The pointer owns the thumb's position during a drag.
+    if (holding.current) return;
     if (!port || !rail) {
       setThumb(null);
       return;
@@ -122,7 +126,8 @@ export function ScrollRail({ className }: { className?: string }) {
     if (!thumb || !port) return;
     event.preventDefault();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    grab.current = { y: event.clientY, top: port.scrollTop };
+    grab.current = { y: event.clientY, top: thumb.top };
+    holding.current = true;
     setDragging(true);
     setMoving(true);
   };
@@ -136,17 +141,19 @@ export function ScrollRail({ className }: { className?: string }) {
     const room = Math.max(0, port.scrollHeight - port.clientHeight - clearance);
     const travel = rail.clientHeight - PAD * 2 - thumb.height;
     if (travel <= 0) return;
-    port.scrollTop = Math.max(
-      0,
-      Math.min(room, start.top + ((event.clientY - start.y) / travel) * room),
-    );
+    // The thumb leads and the page follows it.
+    const top = Math.max(PAD, Math.min(PAD + travel, start.top + (event.clientY - start.y)));
+    setThumb({ ...thumb, top });
+    port.scrollTop = ((top - PAD) / travel) * room;
   };
 
   const release = (event: React.PointerEvent) => {
     if (!grab.current) return;
     (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
     grab.current = null;
+    holding.current = false;
     setDragging(false);
+    measure();
   };
 
   // The thumb outlives the page by the length of the slide: dropped with it,
@@ -164,7 +171,6 @@ export function ScrollRail({ className }: { className?: string }) {
 
   const shown = Boolean(thumb);
   const held = hovered || dragging;
-  const wide = moving || held;
   // Under the hand it breaks out of its own track: a thumb inside a groove is
   // a readout, and one standing proud of it is something to take hold of.
   const thumbWidth = held ? TRACK_W + 6 : moving ? 5 : 3;
@@ -199,9 +205,8 @@ export function ScrollRail({ className }: { className?: string }) {
             // thumb easing into place arrives after the page has stopped.
             // Centred by transform rather than by a margin: a margin that has
             // to be recomputed with the width grows it out of one side.
-            'pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full bg-foreground/30',
-            'transition-[width,background-color] duration-150 ease-out',
-            wide && 'bg-foreground/45',
+            'pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full bg-rail-thumb',
+            'transition-[width] duration-150 ease-out',
           )}
           style={{
             top: carried.top,

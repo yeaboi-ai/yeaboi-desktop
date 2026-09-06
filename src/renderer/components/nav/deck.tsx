@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
+import { scrollerUnder } from '@/lib/scroller';
 import { useAudience } from '@/components/providers/audience-provider';
 import { railSections } from '@/lib/nav/sections';
 import { isSettingsPath } from '@/lib/nav/rail-rows';
@@ -54,15 +55,7 @@ const LOCK_MS = 60;
  * list and the deck has the wheel again.
  */
 function ownsWheel(from: HTMLElement | null): boolean {
-  for (let node = from; node && node !== document.body; node = node.parentElement) {
-    // The port is the deck's own, whatever its overflow says.
-    if (node.hasAttribute('data-deck')) return false;
-    const overflow = getComputedStyle(node).overflowY;
-    if (/auto|scroll|overlay/.test(overflow) && node.scrollHeight > node.clientHeight + 1) {
-      return true;
-    }
-  }
-  return false;
+  return Boolean(scrollerUnder(from));
 }
 
 /** Somewhere Tab means "next field", not "next page". */

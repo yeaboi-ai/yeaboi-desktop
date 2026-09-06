@@ -12,7 +12,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ALL_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
-import { useSmoothScroll } from '@/hooks/use-smooth-scroll';
 import { cn } from '@/lib/utils';
 
 export function SettingsPageShell({
@@ -33,9 +32,6 @@ export function SettingsPageShell({
   // How tall the heading is, published as a variable: a tab with a toolbar of
   // its own sticks it directly under the heading, and the heading's height is
   // the only thing that says where that is.
-  const port = useRef<HTMLDivElement>(null);
-  // A wheel notch glides the page rather than jumping it.
-  useSmoothScroll(port);
   const head = useRef<HTMLElement>(null);
   const [headHeight, setHeadHeight] = useState(0);
   useEffect(() => {
@@ -65,7 +61,6 @@ export function SettingsPageShell({
       {/* `data-scrollport`: the chrome's scroll rail follows whichever port
           the page in front of it has marked. */}
       <div
-        ref={port}
         data-scrollport
         className="quiet-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain"
       >

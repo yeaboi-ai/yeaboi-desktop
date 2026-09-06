@@ -5,11 +5,14 @@ import { useSession } from 'next-auth/react';
 import { AppNav } from './nav/app-nav';
 import { Deck } from './nav/deck';
 import { TipCompanion } from './yeaboi/tip-companion';
+import { useSmoothScroll } from '@/hooks/use-smooth-scroll';
 import { ThemePreviewBar } from './theme-preview-bar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  // A wheel notch glides whatever box it is over, rather than jumping it.
+  useSmoothScroll();
 
   // Full-screen pages — no sidebar
   const isFullScreen = pathname?.includes('/sessions/') && !pathname?.endsWith('/new');

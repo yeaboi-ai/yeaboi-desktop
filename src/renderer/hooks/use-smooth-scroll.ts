@@ -1,6 +1,6 @@
 'use client';
 
-// A wheel that glides rather than steps.
+// A wheel that glides rather than steps, in whatever box the pointer is over.
 //
 // A mouse wheel arrives as a few big jumps a second, and the browser applies
 // each one whole: the page teleports a notch at a time. A trackpad already
@@ -11,8 +11,14 @@
 // The ramp is exponential rather than timed: every notch moves the target and
 // the scroll chases it, so a second notch mid-glide extends the same movement
 // instead of restarting it.
+//
+// One listener on the window rather than a hook per scroller: every list,
+// sheet and panel in the app scrolls the same way, including the ones that
+// only exist while they are open.
 
 import { useEffect } from 'react';
+
+import { scrollerUnder } from '@/lib/scroller';
 
 /** Deltas smaller than this, in pixel mode, are a trackpad streaming. */
 const NOTCH = 20;
@@ -20,52 +26,73 @@ const NOTCH = 20;
 const CHASE = 0.22;
 /** Below this the glide is over — anything less is a sub-pixel crawl. */
 const ARRIVED = 0.5;
+/** Further than this from where the last frame left it, and the box has been
+ *  scrolled by something other than the glide. */
+const TAKEN = 2;
 
-export function useSmoothScroll(port: React.RefObject<HTMLElement | null>): void {
+/** `at` is where the last frame left the box: anything else there is somebody
+ *  else scrolling, and they outrank a glide already in the air. */
+type Glide = { target: number; frame: number; at: number };
+
+export function useSmoothScroll(): void {
   useEffect(() => {
-    const box = port.current;
-    if (!box) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    let target = box.scrollTop;
-    let frame = 0;
+    const glides = new Map<HTMLElement, Glide>();
 
-    const step = () => {
-      const gap = target - box.scrollTop;
+    const step = (box: HTMLElement) => {
+      const glide = glides.get(box);
+      if (!glide) return;
+      if (!box.isConnected || Math.abs(box.scrollTop - glide.at) > TAKEN) {
+        glides.delete(box);
+        return;
+      }
+      const gap = glide.target - box.scrollTop;
       if (Math.abs(gap) < ARRIVED) {
-        box.scrollTop = target;
-        frame = 0;
+        box.scrollTop = glide.target;
+        glides.delete(box);
         return;
       }
       box.scrollTop += gap * CHASE;
-      frame = requestAnimationFrame(step);
+      glide.at = box.scrollTop;
+      glide.frame = requestAnimationFrame(() => step(box));
     };
 
     const onWheel = (event: WheelEvent) => {
       // Pinch-zoom and the horizontal axis are somebody else's.
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      const box = scrollerUnder(event.target as Element | null);
+      if (!box) return;
+      const glide = glides.get(box);
       const notch = event.deltaMode !== 0 || Math.abs(event.deltaY) >= NOTCH;
       if (!notch) {
         // A trackpad moved it; the glide has no say until the next notch.
-        target = box.scrollTop;
+        if (glide) glide.target = box.scrollTop;
         return;
       }
       const room = box.scrollHeight - box.clientHeight;
       // A line-mode wheel reports lines, not pixels.
       const by = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
-      const next = Math.max(0, Math.min(room, (frame ? target : box.scrollTop) + by));
-      // At the end of the page the wheel belongs to whatever is behind this
-      // box — the deck's own paging — so it is not swallowed.
+      const from = glide ? glide.target : box.scrollTop;
+      const next = Math.max(0, Math.min(room, from + by));
+      // At the end of the box the wheel belongs to whatever is behind it, so
+      // it is not swallowed.
       if (next === box.scrollTop) return;
       event.preventDefault();
-      target = next;
-      if (!frame) frame = requestAnimationFrame(step);
+      if (glide) {
+        glide.target = next;
+        return;
+      }
+      const fresh: Glide = { target: next, frame: 0, at: box.scrollTop };
+      glides.set(box, fresh);
+      fresh.frame = requestAnimationFrame(() => step(box));
     };
 
-    box.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('wheel', onWheel, { passive: false, capture: true });
     return () => {
-      box.removeEventListener('wheel', onWheel);
-      cancelAnimationFrame(frame);
+      window.removeEventListener('wheel', onWheel, { capture: true });
+      for (const glide of glides.values()) cancelAnimationFrame(glide.frame);
+      glides.clear();
     };
-  }, [port]);
+  }, []);
 }
