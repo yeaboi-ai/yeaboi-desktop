@@ -19,13 +19,15 @@ import { cn } from '@/lib/utils';
 const SETTLE_MS = 700;
 /** The room the thumb keeps off each end of the track. */
 const PAD = 3;
+/** How much a page has to have below the fold before it is worth a rail. */
+const ENOUGH = 40;
 /** A thumb short enough to travel: it says where you are, and a long one says
  *  it by barely moving. */
-const MIN_THUMB = 20;
-const MAX_THUMB_SHARE = 0.3;
-/** The track at rest, and what it puts on while you are moving. */
-const REST_W = 10;
-const GROWTH = 4;
+const MIN_THUMB = 16;
+const MAX_THUMB_SHARE = 0.18;
+/** The track's width. Fixed: it is the groove, and a groove that breathes is
+ *  a second animation for the one thing the thumb already says. */
+const TRACK_W = 10;
 /** Where it waits: off the window's right edge, so it arrives and leaves by
  *  sliding rather than by fading. */
 const OFFSCREEN = 40;
@@ -41,6 +43,7 @@ export function ScrollRail({ className }: { className?: string }) {
   const [thumb, setThumb] = useState<{ top: number; height: number } | null>(null);
   const [moving, setMoving] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pages come and go under the chrome; the rail follows whichever one is
@@ -59,21 +62,22 @@ export function ScrollRail({ className }: { className?: string }) {
       setThumb(null);
       return;
     }
-    const room = port.scrollHeight - port.clientHeight;
     // The clearance a page keeps under itself for the dock is scrollable room
-    // that holds nothing, and a rail for it says a short page has more to read.
-    // Only what is left over after that counts.
+    // that holds nothing. It is not travel the rail should describe: measured
+    // with it, the thumb bottoms out in empty space and a page with a line or
+    // two too many gets a rail it does not need.
     const column = port.firstElementChild;
     const clearance = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
-    // Nothing to scroll is nothing to say: the rail leaves rather than sitting
-    // there full-length pretending to be a control.
-    if (room - clearance < 4) {
+    const room = Math.max(0, port.scrollHeight - port.clientHeight - clearance);
+    // Nothing much to scroll is nothing to say: the rail leaves rather than
+    // sitting there full-length pretending to be a control.
+    if (room < ENOUGH) {
       setThumb(null);
       return;
     }
     const inner = rail.clientHeight - PAD * 2;
     const height = Math.min(
-      Math.max(MIN_THUMB, (port.clientHeight / port.scrollHeight) * inner),
+      Math.max(MIN_THUMB, (port.clientHeight / (port.clientHeight + room)) * inner),
       inner * MAX_THUMB_SHARE,
     );
     setThumb({ top: PAD + (Math.min(port.scrollTop, room) / room) * (inner - height), height });
@@ -124,7 +128,9 @@ export function ScrollRail({ className }: { className?: string }) {
     const rail = track.current;
     const start = grab.current;
     if (!start || !port || !rail || !thumb) return;
-    const room = port.scrollHeight - port.clientHeight;
+    const column = port.firstElementChild;
+    const clearance = column ? parseFloat(getComputedStyle(column).paddingBottom) || 0 : 0;
+    const room = Math.max(0, port.scrollHeight - port.clientHeight - clearance);
     const travel = rail.clientHeight - PAD * 2 - thumb.height;
     if (travel <= 0) return;
     port.scrollTop = Math.max(
@@ -141,7 +147,11 @@ export function ScrollRail({ className }: { className?: string }) {
   };
 
   const shown = Boolean(thumb);
-  const wide = moving || dragging;
+  const held = hovered || dragging;
+  const wide = moving || held;
+  // Under the hand it breaks out of its own track: a thumb inside a groove is
+  // a readout, and one standing proud of it is something to take hold of.
+  const thumbWidth = held ? TRACK_W + 6 : moving ? 5 : 3;
 
   return (
     <div
@@ -151,20 +161,19 @@ export function ScrollRail({ className }: { className?: string }) {
       onPointerMove={onPointerMove}
       onPointerUp={release}
       onPointerCancel={release}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       className={cn(
         'fixed top-1/2 right-3 z-20 h-[min(18rem,45%)] rounded-full bg-card ring-1 ring-border/60',
-        'transition-[width,transform] duration-300 ease-out',
+        'transition-transform duration-300 ease-out',
         shown ? 'pointer-events-auto cursor-grab' : 'pointer-events-none',
         dragging && 'cursor-grabbing',
         className,
       )}
       style={{
-        width: wide ? REST_W + GROWTH : REST_W,
-        // Two moves in one transform: on and off the page as a page that
-        // scrolls comes and goes, and — while you are moving — out by half of
-        // what it grows, so it widens from its middle rather than into the
-        // page.
-        transform: `translate(${shown ? (wide ? GROWTH / 2 : 0) : OFFSCREEN}px, -50%)`,
+        width: TRACK_W,
+        // On and off the page as a page that scrolls comes and goes.
+        transform: `translate(${shown ? 0 : OFFSCREEN}px, -50%)`,
       }}
     >
       {thumb && (
@@ -172,15 +181,16 @@ export function ScrollRail({ className }: { className?: string }) {
           className={cn(
             // No transition on its position: the thumb is the scroll, and a
             // thumb easing into place arrives after the page has stopped.
-            'pointer-events-none absolute left-1/2 rounded-full bg-foreground/30',
+            // Centred by transform rather than by a margin: a margin that has
+            // to be recomputed with the width grows it out of one side.
+            'pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full bg-foreground/30',
             'transition-[width,background-color] duration-150 ease-out',
             wide && 'bg-foreground/45',
           )}
           style={{
             top: thumb.top,
             height: thumb.height,
-            width: wide ? 5 : 3,
-            marginLeft: wide ? -2.5 : -1.5,
+            width: thumbWidth,
           }}
         />
       )}
