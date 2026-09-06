@@ -48,9 +48,8 @@ MASTER = 1024
 #: Windows and Linux draw the same file unpadded and are happy either way.
 PLATE_MARGIN = 64
 PLATE_RADIUS = 208
-#: How much of the plate the duck fills, and how far above centre it sits.
+#: How much of the plate the duck fills.
 DUCK_SCALE = 0.74
-DUCK_RISE = 0.03
 # The head the terminal draws, pixel for pixel — yeaboi.ai's
 # `ui/shared/_mascot.py: DUCK_HEAD`, which is where it is authored. The app icon
 # is a 16px square more often than it is anything else, and a whole duck at that
@@ -147,6 +146,22 @@ def _duck_head():
     return head.crop(head.getbbox()).transpose(Image.FLIP_LEFT_RIGHT)
 
 
+def _visible_box(head):
+    """The head's bounds ignoring its outline, which is the plate's own colour."""
+    from PIL import Image
+
+    hidden = {HEAD_PALETTE["k"], HEAD_PALETTE["o"]}
+    mask = Image.new("L", head.size, 0)
+    pixels = head.load()
+    paint = mask.load()
+    for y in range(head.height):
+        for x in range(head.width):
+            r, g, b, a = pixels[x, y]
+            if a > 0 and (r, g, b) not in hidden:
+                paint[x, y] = 255
+    return mask.getbbox() or (0, 0, head.width, head.height)
+
+
 def _plate(size: int):
     """The rounded square the duck sits on: a vertical gradient, a green rim."""
     from PIL import Image, ImageDraw
@@ -194,8 +209,12 @@ def master():
     width, height = duck.width * cell, duck.height * cell
     duck = duck.resize((width, height), Image.NEAREST)
 
-    top = (MASTER - height) // 2 - round(MASTER * DUCK_RISE)
-    left = (MASTER - width) // 2
+    # Centred on what can be seen, not on the sprite's box: his outline is the
+    # near-black the plate is, so the drawing reads a dozen pixels up and left
+    # of where the box says it is.
+    seen = _visible_box(duck)
+    left = (MASTER - width) // 2 - ((seen[0] + seen[2]) // 2 - width // 2)
+    top = (MASTER - height) // 2 - ((seen[1] + seen[3]) // 2 - height // 2)
 
     # A soft drop shadow, clipped to the plate so it never spills onto the
     # transparent corners.

@@ -5,7 +5,7 @@ import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { markOverlay } from '@/lib/overlay';
+import { OverlayFlag } from '@/components/ui/overlay-flag';
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
 
@@ -92,9 +92,6 @@ function SheetContent({
   width?: SheetWidth;
   showCloseButton?: boolean;
 }) {
-  // The page underneath stops paging while this is up.
-  React.useEffect(() => markOverlay('sheet'), []);
-
   return (
     <DrawerPrimitive.Portal>
       <SheetOverlay />
@@ -109,6 +106,9 @@ function SheetContent({
         )}
         {...props}
       >
+        {/* Only mounted while the popup is: the page underneath stops paging
+            for exactly as long as this is up. */}
+        <OverlayFlag name="sheet" />
         {children}
         {showCloseButton && (
           <DrawerPrimitive.Close

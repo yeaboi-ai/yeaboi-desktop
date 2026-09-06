@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 
 import { cn } from '@/lib/utils';
-import { markOverlay } from '@/lib/overlay';
+import { OverlayFlag } from '@/components/ui/overlay-flag';
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
 
@@ -47,9 +47,6 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }) {
-  // The page underneath stops paging while this is up.
-  React.useEffect(() => markOverlay('dialog'), []);
-
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -61,6 +58,8 @@ function DialogContent({
         )}
         {...props}
       >
+        {/* Only mounted while the popup is — see the sheet's own flag. */}
+        <OverlayFlag name="dialog" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
