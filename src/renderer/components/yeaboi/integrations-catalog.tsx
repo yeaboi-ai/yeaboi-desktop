@@ -107,6 +107,11 @@ export function IntegrationsCatalog() {
   const shelfFamilies = (payload?.families ?? []).filter((f) =>
     shelved.some((row) => row.family === f.key),
   );
+  // Inside the shelf they keep their families: nine tiles in a row is a list,
+  // and the point of the shelf is that each of these does one of four jobs.
+  const essentialFamilies = (payload?.families ?? [])
+    .map((f) => ({ ...f, rows: essentials.filter((row) => row.family === f.key) }))
+    .filter((f) => f.rows.length > 0);
 
   if (error) {
     // A backend that predates the route answers the router's generic 404 —
@@ -208,36 +213,63 @@ export function IntegrationsCatalog() {
           </Button>
         </div>
       ) : (
-        [
-          ...(essentials.length > 0
-            ? [{ key: '__essentials__', label: 'Essentials', rows: essentials }]
-            : []),
-          ...shelfFamilies.map((f) => ({
-            key: f.key,
-            label: f.label,
-            rows: shelved.filter((row) => row.family === f.key),
-          })),
-        ].map((f, index) => (
-          <section
-            key={f.key}
-            className="animate-slide-up motion-reduce:animate-none"
-            /* Capped: nine shelves at a beat each is half a second of waiting
-               for the last one, and a stagger long enough to count is a wait. */
-            style={{
-              animationDelay: `${120 + Math.min(index, 4) * 60}ms`,
-              animationFillMode: 'backwards',
-            }}
-          >
-            <h3 className="mb-2 text-[10px] font-body tracking-[0.14em] text-muted-foreground uppercase">
-              {f.label}
-            </h3>
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-              {f.rows.map((row) => (
-                <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
-              ))}
-            </div>
-          </section>
-        ))
+        <>
+          {/* What the app itself runs on, on a shelf of its own: everything
+              below is somebody's estate and useful only to whoever has it. */}
+          {essentialFamilies.length > 0 && (
+            <section
+              className="animate-slide-up rounded-2xl bg-secondary/20 p-4 ring-1 ring-primary/20 motion-reduce:animate-none"
+              style={{ animationDelay: '120ms', animationFillMode: 'backwards' }}
+            >
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
+                <h3 className="font-body text-[10px] tracking-[0.14em] text-primary uppercase">
+                  Essentials
+                </h3>
+                <span className="text-[11px] text-muted-foreground/70">
+                  what yeaboi itself reads, writes and speaks through
+                </span>
+              </div>
+              <div className="space-y-4">
+                {essentialFamilies.map((f) => (
+                  <div key={f.key}>
+                    <h4 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                      {f.label}
+                    </h4>
+                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                      {f.rows.map((row) => (
+                        <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {shelfFamilies.map((f, index) => (
+            <section
+              key={f.key}
+              className="animate-slide-up motion-reduce:animate-none"
+              /* Capped: nine shelves at a beat each is half a second of waiting
+                 for the last one, and a stagger long enough to count is a wait. */
+              style={{
+                animationDelay: `${180 + Math.min(index, 4) * 60}ms`,
+                animationFillMode: 'backwards',
+              }}
+            >
+              <h3 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                {f.label}
+              </h3>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {shelved
+                  .filter((row) => row.family === f.key)
+                  .map((row) => (
+                    <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
+                  ))}
+              </div>
+            </section>
+          ))}
+        </>
       )}
 
       {/* Last in, after the shelves it sits under. */}
