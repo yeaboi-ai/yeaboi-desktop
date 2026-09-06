@@ -17,6 +17,7 @@ import { ProviderGrid } from '@/components/yeaboi/provider-grid';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { ChoicePills, SettingsCard } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const DOT = ' · ';
 
@@ -86,6 +87,9 @@ export function ProviderPanel({
   onSignIn: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Mounted from the first open onwards, so closing animates as well as
+  // opening — and a page of these costs nothing until one is asked for.
+  const [everOpen, setEverOpen] = useState(false);
   const [custom, setCustom] = useState('');
   const { summary } = useProviderHealthContext();
 
@@ -128,10 +132,18 @@ export function ProviderPanel({
     : credentialState();
 
   return (
-    <SettingsCard index={0}>
+    // Open, the card gets out of the way: what is inside is a page of choices,
+    // and a fill behind them made them cards on a card.
+    <SettingsCard
+      index={0}
+      className={cn('transition-colors duration-200', open && 'bg-transparent ring-transparent')}
+    >
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setEverOpen(true);
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         className="group flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
       >
@@ -164,99 +176,111 @@ export function ProviderPanel({
         />
       </button>
 
-      {open && (
-        <div className="space-y-5 border-t border-border/40 px-5 py-4">
-          {providerField && catalog && (
-            <div>
-              <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                Provider
-              </h3>
-              <ProviderGrid
-                providers={catalog.providers}
-                active={providerField.active_choice}
-                autoFocus={false}
-                onPick={(picked) => {
-                  if (picked.provider_val !== providerField.active_choice)
-                    onSave('LLM_PROVIDER', picked.provider_val);
-                }}
-              />
-            </div>
-          )}
-          {modelField && presets.length > 0 && (
-            <div>
-              <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                Model
-              </h3>
-              <ModelChoice
-                models={presets}
-                recommended={recommended}
-                hints={card?.model_hints ?? {}}
-                value={modelValue}
-                custom={custom || (modelIsPreset ? '' : model)}
-                onPick={(id) => {
-                  if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
-                  else onSave('LLM_MODEL', id === recommended ? '' : id);
-                }}
-                onCustom={setCustom}
-              />
-              {modelValue === CUSTOM_MODEL && (
-                <div className="mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!custom.trim() || custom.trim() === model}
-                    onClick={() => onSave('LLM_MODEL', custom.trim())}
-                  >
-                    Use this model
-                  </Button>
+      {/* The panel opens by growing rather than appearing: a grid row from
+          nothing to its content's height, which is the one way to ease to a
+          height nobody has measured. */}
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out',
+          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+        )}
+      >
+        <div className="overflow-hidden">
+          {everOpen && (
+            <div className="space-y-5 border-t border-border/40 px-5 py-4">
+              {providerField && catalog && (
+                <div>
+                  <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                    Provider
+                  </h3>
+                  <ProviderGrid
+                    providers={catalog.providers}
+                    active={providerField.active_choice}
+                    autoFocus={false}
+                    onPick={(picked) => {
+                      if (picked.provider_val !== providerField.active_choice)
+                        onSave('LLM_PROVIDER', picked.provider_val);
+                    }}
+                  />
                 </div>
               )}
-            </div>
-          )}
+              {modelField && presets.length > 0 && (
+                <div>
+                  <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                    Model
+                  </h3>
+                  <ModelChoice
+                    models={presets}
+                    recommended={recommended}
+                    hints={card?.model_hints ?? {}}
+                    value={modelValue}
+                    custom={custom || (modelIsPreset ? '' : model)}
+                    onPick={(id) => {
+                      if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
+                      else onSave('LLM_MODEL', id === recommended ? '' : id);
+                    }}
+                    onCustom={setCustom}
+                  />
+                  {modelValue === CUSTOM_MODEL && (
+                    <div className="mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!custom.trim() || custom.trim() === model}
+                        onClick={() => onSave('LLM_MODEL', custom.trim())}
+                      >
+                        Use this model
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          <div>
-            <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-              Credential
-            </h3>
-            <div className="space-y-3">
-              {authField && (
-                <ChoicePills
-                  options={authField.choices}
-                  active={authField.active_choice}
-                  labels={authField.choice_labels}
-                  onPick={(opt) => onSave(authField.env, opt)}
-                />
-              )}
-              {signInField && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`font-mono text-[12px] ${
-                      signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
-                    }`}
-                  >
-                    {signInField.is_set ? signInField.value : 'not signed in'}
-                  </span>
-                  <Button variant="outline" size="sm" onClick={onSignIn}>
-                    Sign in…
-                  </Button>
+              <div>
+                <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                  Credential
+                </h3>
+                <div className="space-y-3">
+                  {authField && (
+                    <ChoicePills
+                      options={authField.choices}
+                      active={authField.active_choice}
+                      labels={authField.choice_labels}
+                      onPick={(opt) => onSave(authField.env, opt)}
+                    />
+                  )}
+                  {signInField && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`font-mono text-[12px] ${
+                          signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
+                        }`}
+                      >
+                        {signInField.is_set ? signInField.value : 'not signed in'}
+                      </span>
+                      <Button variant="outline" size="sm" onClick={onSignIn}>
+                        Sign in…
+                      </Button>
+                    </div>
+                  )}
+                  {credentials.map((field) => (
+                    <CredentialField
+                      key={field.env}
+                      field={field}
+                      onSave={(value) => onSave(field.env, value)}
+                    />
+                  ))}
+                  {card?.instructions && !signInField && (
+                    <p className="text-[11px] leading-snug text-muted-foreground/80">
+                      <Linkified text={card.instructions} />
+                    </p>
+                  )}
                 </div>
-              )}
-              {credentials.map((field) => (
-                <CredentialField
-                  key={field.env}
-                  field={field}
-                  onSave={(value) => onSave(field.env, value)}
-                />
-              ))}
-              {card?.instructions && !signInField && (
-                <p className="text-[11px] leading-snug text-muted-foreground/80">
-                  <Linkified text={card.instructions} />
-                </p>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </SettingsCard>
   );
 }
