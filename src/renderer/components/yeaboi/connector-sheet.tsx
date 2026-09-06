@@ -144,11 +144,7 @@ export function ConnectorSheet({
 }) {
   return (
     <Sheet open={Boolean(row)} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="right"
-        className="sm:max-w-lg"
-        style={{ '--tile-accent': row?.accent } as React.CSSProperties}
-      >
+      <SheetContent side="right" style={{ '--tile-accent': row?.accent } as React.CSSProperties}>
         {row && <ConnectorSheetBody row={row} onChanged={onChanged} onClose={onClose} />}
       </SheetContent>
     </Sheet>

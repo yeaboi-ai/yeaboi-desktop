@@ -317,7 +317,7 @@ export default function AppearanceSettingsPage() {
 
       {/* Right-side drawers */}
       <Sheet open={openSheet === 'org'} onOpenChange={(o) => !o && close()}>
-        <SheetContent side="right" className="sm:max-w-md">
+        <SheetContent side="right">
           <SheetHeader>
             <SheetTitle>Organization default</SheetTitle>
             <SheetDescription>Inherit the theme set by your organization admin.</SheetDescription>
@@ -336,7 +336,7 @@ export default function AppearanceSettingsPage() {
       </Sheet>
 
       <Sheet open={openSheet === 'new-custom'} onOpenChange={(o) => !o && close()}>
-        <SheetContent side="right" className="sm:max-w-xl">
+        <SheetContent side="right" width="wide">
           <SheetHeader>
             <SheetTitle>New custom theme</SheetTitle>
             <SheetDescription>

@@ -216,7 +216,7 @@ export function BlueprintHistoryDrawer({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="sm:max-w-[480px] flex flex-col gap-0 p-0">
+      <SheetContent side="right" className="flex flex-col gap-0 p-0">
         <SheetHeader className="border-b border-border/70 px-4 py-3 space-y-1">
           <SheetTitle className="flex items-center gap-2 text-sm font-medium">
             {headerTitle}

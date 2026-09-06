@@ -81,7 +81,7 @@ export function CreateProjectDialog({ onCreate, onCreated }: CreateProjectDialog
         New Project
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md border-border bg-card animate-scale-in p-0 overflow-hidden">
+      <DialogContent className="border-border bg-card animate-scale-in p-0 overflow-hidden">
         <div className="px-6 pt-5 pb-3">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl italic font-normal text-foreground leading-tight">

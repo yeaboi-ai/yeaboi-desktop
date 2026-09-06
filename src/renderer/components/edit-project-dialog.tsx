@@ -73,7 +73,7 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-border bg-card animate-scale-in p-0 overflow-hidden">
+      <DialogContent className="border-border bg-card animate-scale-in p-0 overflow-hidden">
         {/* Header stripe */}
         <div className="px-6 pt-6 pb-4 border-b border-border">
           <DialogHeader>

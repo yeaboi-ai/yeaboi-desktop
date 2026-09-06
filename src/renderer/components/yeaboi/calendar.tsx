@@ -678,7 +678,7 @@ export function Schedule({
 
       {page && (
         <Sheet open={Boolean(declaring)} onOpenChange={(open) => !open && setDeclaring(null)}>
-          <SheetContent side="right" className="sm:max-w-md">
+          <SheetContent side="right">
             <SheetHeader>
               <SheetTitle>Declare a ceremony</SheetTitle>
               <SheetDescription>

@@ -74,7 +74,7 @@ export function CheatsheetSheet({ open, onOpenChange }: CheatsheetSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-sm">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-warning/90" />

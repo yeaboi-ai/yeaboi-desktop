@@ -50,7 +50,8 @@ export function BoardSettingsDrawer({
           window's own width — `w-full` would put its left edge off screen. */}
       <SheetContent
         side="right"
-        className={expanded ? 'w-[calc(100%-2rem)] sm:max-w-none' : 'sm:max-w-xl'}
+        width="wide"
+        className={expanded ? 'w-[calc(100%-2rem)] sm:max-w-none' : ''}
       >
         <SheetHeader>
           <div className="flex items-start justify-between gap-3">

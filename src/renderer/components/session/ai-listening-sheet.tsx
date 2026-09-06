@@ -128,7 +128,7 @@ export function AIListeningSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent side="right">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Ear className="h-3.5 w-3.5 text-success" />

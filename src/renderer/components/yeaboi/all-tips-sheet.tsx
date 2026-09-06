@@ -46,7 +46,7 @@ export function AllTipsSheet({ open, onOpenChange, tips, titles, colors, onNavig
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-lg">
+      <SheetContent side="right">
         <SheetHeader className="pr-12">
           <SheetTitle>All tips</SheetTitle>
           <SheetDescription>

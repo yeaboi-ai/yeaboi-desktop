@@ -448,7 +448,7 @@ function CreateCustomSheet({
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent side="right" className="sm:max-w-lg">
+      <SheetContent side="right" width="wide">
         <SheetHeader className="pr-12">
           <SheetTitle>Create a connection</SheetTitle>
           <SheetDescription className="text-left">

@@ -16,13 +16,24 @@ type Side = 'left' | 'right' | 'top' | 'bottom';
 // to take that margin with it.
 const INSET = 'inset-4';
 
+/** Two widths, and no third. A panel is a column of fields or rows; wide is
+ *  for the few sheets that hold an editor or two columns of one. Every sheet
+ *  in the app is one of the two, so a drawer never arrives a different size
+ *  from the last one. */
+export type SheetWidth = 'panel' | 'wide';
+
+const WIDTHS: Record<SheetWidth, string> = {
+  panel: 'sm:max-w-md',
+  wide: 'sm:max-w-xl',
+};
+
 const SIDE_STYLES: Record<Side, string> = {
   right:
-    `fixed ${INSET} left-auto w-[calc(100%-2rem)] sm:max-w-md ` +
+    `fixed ${INSET} left-auto w-[calc(100%-2rem)] ` +
     'data-[starting-style]:translate-x-[calc(100%+1rem)] ' +
     'data-[ending-style]:translate-x-[calc(100%+1rem)]',
   left:
-    `fixed ${INSET} right-auto w-[calc(100%-2rem)] sm:max-w-md ` +
+    `fixed ${INSET} right-auto w-[calc(100%-2rem)] ` +
     'data-[starting-style]:-translate-x-[calc(100%+1rem)] ' +
     'data-[ending-style]:-translate-x-[calc(100%+1rem)]',
   bottom:
@@ -73,10 +84,12 @@ function SheetContent({
   className,
   children,
   side = 'right',
+  width = 'panel',
   showCloseButton = true,
   ...props
 }: DrawerPrimitive.Popup.Props & {
   side?: Side;
+  width?: SheetWidth;
   showCloseButton?: boolean;
 }) {
   // The page underneath stops paging while this is up.
@@ -91,6 +104,7 @@ function SheetContent({
           'z-[280] flex flex-col overflow-hidden rounded-2xl bg-card ring-1 ring-border/70 shadow-2xl outline-none',
           'transition-transform duration-200 ease-out',
           SIDE_STYLES[side],
+          side === 'right' || side === 'left' ? WIDTHS[width] : '',
           className,
         )}
         {...props}
