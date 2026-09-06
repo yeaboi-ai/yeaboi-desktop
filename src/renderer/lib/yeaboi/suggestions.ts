@@ -68,6 +68,7 @@ export const HIDE_SUGGESTIONS_LABEL = 'Hide suggestions';
 export const CONNECT_LINE =
   'Connect GitHub, Jira or Linear and yeaboi will suggest projects from what you are working on.';
 export const OLDER_LINE = 'Update yeaboi to see suggested projects here.';
+export const FAILED_LINE = 'Could not read your connections just now.';
 export const SETTINGS_LABEL = 'Settings';
 export const RETRY_LABEL = 'Retry';
 export const CHECK_AGAIN_LABEL = 'Check again';
@@ -89,11 +90,15 @@ export function readingLine(sheet: SuggestionSheet | null | undefined): string {
 export type GhostState = 'loading' | 'rows' | 'note' | 'slow' | 'older';
 
 /** What the empty ledger shows: undefined is not settled, null an older
- *  sidecar, `exhausted` that the polling budget ran out mid-refresh. */
+ *  sidecar, `exhausted` that the polling budget ran out mid-refresh, `failed`
+ *  that the request itself did not answer — which is not the same as a sidecar
+ *  too old to have the route. */
 export function ghostState(
   sheet: SuggestionSheet | null | undefined,
   exhausted = false,
+  failed = false,
 ): GhostState {
+  if (failed) return 'note';
   if (sheet === undefined) return 'loading';
   if (sheet === null) return 'older';
   if (sheet.suggestions.length > 0) return 'rows';
@@ -112,7 +117,12 @@ export interface EmptyNote {
 
 /** The one small line for a sheet with no rows: what is still being read,
  *  what to connect, what failed, or that all is quiet. */
-export function emptyNote(sheet: SuggestionSheet | null, exhausted = false): EmptyNote {
+export function emptyNote(
+  sheet: SuggestionSheet | null,
+  exhausted = false,
+  failed = false,
+): EmptyNote {
+  if (failed) return { text: FAILED_LINE, retry: RETRY_LABEL };
   const state = ghostState(sheet, exhausted);
   if (sheet === null || state === 'older') return { text: OLDER_LINE };
   if (state === 'slow') {
@@ -124,16 +134,17 @@ export function emptyNote(sheet: SuggestionSheet | null, exhausted = false): Emp
   }
   const quiet =
     sheet.sources.length > 0 ? `Nothing open in ${listWords(sheet.sources)} right now.` : '';
-  const failed = sheet.warnings.map((warning) => `${warning}.`).join(' ');
+  const failedSources = sheet.warnings.map((warning) => `${warning}.`).join(' ');
   const credentials = { href: CREDENTIALS_ROUTE, label: SETTINGS_LABEL };
-  if (failed && !quiet) {
+  if (failedSources && !quiet) {
     return {
-      text: `${failed} Check the credentials in Settings.`,
+      text: `${failedSources} Check the credentials in Settings.`,
       link: credentials,
       retry: RETRY_LABEL,
     };
   }
-  if (failed) return { text: quiet, detail: failed, link: credentials, retry: RETRY_LABEL };
+  if (failedSources)
+    return { text: quiet, detail: failedSources, link: credentials, retry: RETRY_LABEL };
   return {
     text: `${quiet || 'Nothing to suggest yet.'} Describe your first project above.`,
     retry: RETRY_LABEL,

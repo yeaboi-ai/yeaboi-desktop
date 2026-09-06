@@ -286,6 +286,6 @@ export const REFERENCE_COPY = {
   useTyped: (typed: string) => `Use “${typed}”`,
   noReader: (label: string) => `Name the ${label} item.`,
   notAttached: (names: readonly string[]) =>
-    `The project was created, but ${names.join(', ')} could not be attached. Add them again from the project page.`,
+    `The project was created, but ${names.join(', ')} could not be attached.`,
   removeLabel: (label: string) => `Remove ${label}`,
 } as const;

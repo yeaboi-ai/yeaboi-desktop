@@ -89,3 +89,14 @@ async def test_malformed_references_are_422(client, auth_headers, bad):
     created = (await client.post("/api/projects", json={"name": "Ok"}, headers=auth_headers)).json()
     resp = await client.patch(f"/api/projects/{created['id']}", json={"references": bad}, headers=auth_headers)
     assert resp.status_code == 422
+
+
+async def test_an_explicit_null_is_422_not_a_500(client, auth_headers):
+    # references is NOT NULL, so writing None straight through would be an
+    # IntegrityError the caller sees as a 500.
+    created = (await client.post("/api/projects", json={"name": "Ok"}, headers=auth_headers)).json()
+    resp = await client.patch(f"/api/projects/{created['id']}", json={"references": None}, headers=auth_headers)
+    assert resp.status_code == 422, resp.text
+
+    got = (await client.get(f"/api/projects/{created['id']}", headers=auth_headers)).json()
+    assert got["references"] == []

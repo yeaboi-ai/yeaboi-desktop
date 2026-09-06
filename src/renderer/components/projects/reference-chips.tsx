@@ -92,8 +92,11 @@ function Thumb({
   onOpen?: () => void;
   onRemove?: () => void;
 }) {
+  // Keyed on src so a corrected URL (the API base resolves a tick late) gets a
+  // fresh element rather than the one a failed load already hid.
   const image = (
     <img
+      key={src}
       src={src}
       alt=""
       onError={(event) => {

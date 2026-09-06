@@ -116,9 +116,13 @@ function LedgerRow({
     steps,
     project.yeaboi_project_id ? ran.get(project.yeaboi_project_id) : undefined,
   );
+  // Escape unmounts the focused input, which still fires blur; the flag is what
+  // keeps that blur from committing the rename Escape just cancelled.
+  const cancelled = useRef(false);
   const actions = rowActions(project.status);
   const run = (key: RowAction['key']) => {
     if (key === 'rename') {
+      cancelled.current = false;
       setDraft(project.name);
       setEditing(true);
     } else if (key === 'status') {
@@ -129,6 +133,7 @@ function LedgerRow({
   };
   const commitRename = () => {
     setEditing(false);
+    if (cancelled.current) return;
     const name = draft.trim();
     if (name && name !== project.name) void onRename(project, name);
   };
@@ -162,6 +167,7 @@ function LedgerRow({
                     commitRename();
                   } else if (e.key === 'Escape') {
                     e.preventDefault();
+                    cancelled.current = true;
                     setDraft(project.name);
                     setEditing(false);
                   }

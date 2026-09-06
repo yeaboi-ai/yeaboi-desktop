@@ -116,8 +116,8 @@ export function SuggestedProjects({
   colors: Record<string, string>;
   onPick: (from: HTMLElement, text: string) => void;
 }) {
-  const { sheet, exhausted, refreshing, retry } = useProjectSuggestions();
-  const ghost = ghostState(sheet, exhausted);
+  const { sheet, exhausted, failed, refreshing, retry } = useProjectSuggestions();
+  const ghost = ghostState(sheet, exhausted, failed);
   // The column heads label rows; a note has none to head.
   const headed = ghost === 'loading' || ghost === 'rows';
   return (
@@ -139,7 +139,7 @@ export function SuggestedProjects({
         </ul>
       ) : (
         <NoteLine
-          note={emptyNote(sheet ?? null, exhausted)}
+          note={emptyNote(sheet ?? null, exhausted, failed)}
           refreshing={refreshing}
           onRetry={retry}
         />

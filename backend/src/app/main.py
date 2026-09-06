@@ -28,7 +28,6 @@ from .routers.blueprints import router as blueprints_router
 from .routers.boards import router as boards_router
 from .routers.brand import router as brand_router
 from .routers.card_attachments import router as card_attachments_router
-from .routers.project_attachments import router as project_attachments_router
 from .routers.card_links import router as card_links_router
 from .routers.card_views import router as card_views_router
 from .routers.character_previews import router as character_previews_router
@@ -52,6 +51,7 @@ from .routers.notifications import router as notifications_router
 from .routers.oauth import router as oauth_router
 from .routers.orchestrator import router as orchestrator_router
 from .routers.organizations import router as organizations_router
+from .routers.project_attachments import router as project_attachments_router
 from .routers.project_outputs import router as project_outputs_router
 from .routers.projects import router as projects_router
 from .routers.public_status import router as public_status_router

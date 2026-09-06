@@ -59,12 +59,12 @@ dev: ## Run the app with HMR (needs the planning-platform backend on :8000)
 	bash scripts/dev-preflight.sh
 	$(NPM) run dev
 
-# Rendered from the website's master duck art, committed here, and asserted by
-# test/icons.test.ts without Pillow. `uv run --with` needs only uv — there is
-# no Python environment in this repo and this target must not create one.
 seed-projects: ## Seed a few local projects to look at in the ledger (CLEAN=1 removes them again)
 	CLEAN=$(CLEAN) node scripts/seed-projects.mjs
 
+# Rendered from the website's master duck art, committed here, and asserted by
+# test/icons.test.ts without Pillow. `uv run --with` needs only uv — there is
+# no Python environment in this repo and this target must not create one.
 icons: ## Re-render the committed icon set from the yeaboi-site duck art (needs uv)
 	uv run --with pillow --with matplotlib --no-project python scripts/gen_desktop_icons.py
 

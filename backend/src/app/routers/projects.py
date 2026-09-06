@@ -266,7 +266,9 @@ async def update_project(
 
     if "status" in update_data and update_data["status"] not in ("active", "done"):
         raise HTTPException(status_code=422, detail="status must be 'active' or 'done'")
-    if update_data.get("references") is not None:
+    if "references" in update_data:
+        if update_data["references"] is None:
+            raise HTTPException(status_code=422, detail="references must be a list")
         update_data["references"] = _dedupe_references(update_data["references"])
 
     for key, value in update_data.items():

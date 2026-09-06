@@ -18,6 +18,7 @@ import {
   SUGGESTIONS_MAX_RETRIES,
   SUGGESTIONS_STALE_RETRY_MS,
   emptyNote,
+  FAILED_LINE,
   factsLine,
   ghostState,
   readingLine,
@@ -150,6 +151,13 @@ describe('emptyNote', () => {
     expect(emptyNote(null)).toEqual({ text: OLDER_LINE });
   });
 
+  it('says the read failed, and offers Retry, when the request did not answer', () => {
+    // A 500 or a restarted sidecar is not an old sidecar: telling the reader to
+    // update a current yeaboi, with nothing to press, is the wrong dead end.
+    expect(emptyNote(null, false, true)).toEqual({ text: FAILED_LINE, retry: RETRY_LABEL });
+    expect(ghostState(undefined, false, true)).toBe('note');
+  });
+
   it('says it is still reading, with Check again, once the budget is spent', () => {
     expect(emptyNote(sheet({ ...refreshingSheet, sources: ['GitHub', 'Jira'] }), true)).toEqual({
       text: 'Still reading GitHub and Jira. This can take a minute.',
@@ -224,7 +232,7 @@ describe('the page', () => {
 
   it('reads the suggestions through the hook once unfolded, and shows them the ledger way', () => {
     expect(unfolded).toContain('useProjectSuggestions');
-    expect(unfolded).toContain('ghostState(sheet, exhausted)');
+    expect(unfolded).toContain('ghostState(sheet, exhausted, failed)');
     expect(unfolded).toContain('emptyNote(');
     expect(unfolded).toContain('GhostSkeleton');
     expect(unfolded).toContain('NoteLine');

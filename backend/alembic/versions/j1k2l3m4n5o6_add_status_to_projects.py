@@ -25,4 +25,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("projects", "status")
+    with op.batch_alter_table("projects") as batch:
+        batch.drop_column("status")
