@@ -437,6 +437,8 @@ export function Schedule({
     [ceremonies, expanded, monthDays, days],
   );
 
+  const openDeclare = (picked: Date) => setDeclaring({ weekday: mondayFirst(picked) });
+
   /** One week of the strip, whatever it is currently wide. */
   const stride = () => strip.current?.clientWidth ?? 0;
 
@@ -741,9 +743,7 @@ export function Schedule({
               dim={day.getMonth() !== month.getMonth()}
               height={84}
               limit={3}
-              {...(page
-                ? { onAdd: (picked: Date) => setDeclaring({ weekday: mondayFirst(picked) }) }
-                : {})}
+              {...(page ? { onAdd: openDeclare } : {})}
             />
           ))}
         </div>
@@ -772,6 +772,7 @@ export function Schedule({
                   showWeekday
                   height={STRIP_H}
                   limit={4}
+                  {...(page ? { onAdd: openDeclare } : {})}
                 />
               </div>
             ))}
