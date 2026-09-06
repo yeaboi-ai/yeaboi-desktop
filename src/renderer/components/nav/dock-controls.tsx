@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { cloneElement, useEffect, useRef, useState } from 'react';
+import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -50,6 +50,10 @@ import { useTeamScope, type Scoped } from './use-team-scope';
 const FLOAT = 'rounded-2xl bg-card/85 shadow-xl ring-1 ring-border/60 backdrop-blur-md';
 /** Every floating control is this tall, so the row has one baseline. */
 const CONTROL = 'h-8';
+/** A dock button, square. What the counts pill narrows to when it is the way
+ *  back, and the padding it wears while it is still a pill. */
+const BUTTON = 32;
+const PILL_PAD = 12;
 
 function ScopeSelect({
   value,
@@ -240,6 +244,23 @@ function SystemCheckPill() {
     );
   }, []);
 
+  // Both faces are laid over each other rather than beside each other, so the
+  // one thing that moves is the box: its width. The counts are measured
+  // because that width has to be a number at both ends — `auto` does not
+  // transition, and a max-width standing in for it sits still until it drops
+  // below the content and then collapses all at once.
+  const face = useRef<HTMLSpanElement>(null);
+  const [full, setFull] = useState(0);
+  useLayoutEffect(() => {
+    const box = face.current;
+    if (!box) return;
+    const take = () => setFull(box.offsetWidth + PILL_PAD * 2);
+    take();
+    const watch = new ResizeObserver(take);
+    watch.observe(box);
+    return () => watch.disconnect();
+  }, [report]);
+
   if (!report || report.checks.length === 0) return null;
   const counts = CHECK_TONES.map((tone) => ({
     ...tone,
@@ -258,15 +279,15 @@ function SystemCheckPill() {
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
-      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center font-code text-[11px] text-muted-foreground transition-[padding] duration-200 ease-out hover:bg-secondary/50 hover:text-foreground ${here ? 'px-0' : 'px-3'}`}
+      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center overflow-hidden font-code text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
+      style={{ width: here ? BUTTON : full || undefined }}
     >
-      {/* On the page it leads to it is the way back: the pill narrows to a
-          button, the counts fading out where they stand as the arrow fades in
-          behind them. Nothing travels — a row of numbers sliding across reads
-          as content moving, not as one control becoming another. */}
+      {/* On the page it leads to, it is the way back: the pill narrows to a
+          button and the two faces cross over in place. */}
       <span
-        className={`flex items-center gap-2.5 overflow-hidden transition-all duration-200 ease-out ${
-          here ? 'max-w-0 opacity-0' : 'max-w-[10rem] opacity-100'
+        ref={face}
+        className={`absolute flex items-center gap-2.5 whitespace-nowrap transition-opacity duration-200 ease-out ${
+          here ? 'opacity-0' : 'opacity-100'
         }`}
       >
         {counts.map((tone) => (
@@ -276,15 +297,12 @@ function SystemCheckPill() {
           </span>
         ))}
       </span>
-      {/* Its width is the button's when it is the way back, so the pill
-          narrows to the same square as its neighbours as the counts leave. */}
-      <span
-        className={`flex justify-center overflow-hidden transition-all duration-200 ease-out ${
-          here ? 'w-8 opacity-100' : 'w-0 opacity-0'
+      <ArrowLeft
+        aria-hidden
+        className={`absolute h-[14px] w-[14px] transition-opacity duration-200 ease-out ${
+          here ? 'opacity-100' : 'opacity-0'
         }`}
-      >
-        <ArrowLeft aria-hidden className="h-[14px] w-[14px] shrink-0" />
-      </span>
+      />
     </Link>
   );
 }

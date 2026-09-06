@@ -475,16 +475,18 @@ export function NikoBar() {
   // conversation has opened underneath it.
   const slashList = slashOpen ? (
     <div className="flex flex-col items-stretch gap-1.5">
-      {slashWindow(matches, slashIndex).map(({ command, index, isPeek }) => {
+      {slashWindow(matches, slashIndex).map(({ command, index, isPeek }, at) => {
         const selected = index === slashIndex;
         return (
           <button
             key={command.cmd}
             onClick={() => !isPeek && runSlash(command)}
-            className={`flex items-center gap-2.5 px-4 rounded-full text-[11px] font-body whitespace-nowrap border ${
+            // The chips above the bar and these are the same object in two
+            // moods: one offers, the other completes what is being typed.
+            className={`flex items-center gap-2.5 rounded-full border px-4 font-body text-[11px] whitespace-nowrap transition-all duration-300 ${
               selected
-                ? 'bg-primary/[0.08] border-primary/25 text-primary/80'
-                : 'bg-foreground/[0.03] border-border/60 text-muted-foreground/70'
+                ? 'border-primary/40 bg-primary/[0.08] text-primary/90 shadow-lg shadow-primary/10'
+                : 'border-border/60 bg-foreground/[0.04] text-muted-foreground hover:border-primary/30 hover:text-foreground/90 hover:shadow-lg hover:shadow-primary/10'
             }`}
             style={{
               height: 32,
@@ -498,7 +500,11 @@ export function NikoBar() {
               pointerEvents: isPeek ? 'none' : 'auto',
               marginBottom: isPeek ? -20 : 0,
               zIndex: isPeek ? 0 : 1,
+              // The peek keeps its own transform; the rest float up as the
+              // chips do, one after the other.
               transform: isPeek ? 'scale(0.95)' : 'none',
+              animationDelay: isPeek ? undefined : `${at * 40}ms`,
+              animation: isPeek ? undefined : 'chipFloat 0.35s ease-out both',
             }}
           >
             <span className="font-mono opacity-70">{command.cmd}</span>
