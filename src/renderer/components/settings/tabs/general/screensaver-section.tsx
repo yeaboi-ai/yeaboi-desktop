@@ -172,9 +172,11 @@ function SaverTile({
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       className={cn(
-        'group flex flex-col overflow-hidden rounded-lg border text-left transition-colors outline-none',
+        // No outline of its own: the picture is the tile, and the one that is
+        // chosen says so in the accent rather than by being boxed.
+        'group flex flex-col overflow-hidden rounded-lg bg-card text-left transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50',
-        active ? 'border-primary' : 'border-border/40 hover:border-border',
+        active ? 'ring-1 ring-primary' : 'hover:bg-secondary/50',
       )}
     >
       <div className="relative h-16 w-full bg-background">
@@ -195,7 +197,7 @@ function SaverTile({
           </div>
         )}
       </div>
-      <div className="border-t border-border/40 px-2 py-1.5">
+      <div className="px-2 py-1.5">
         <p
           className={cn(
             'text-[11px] font-body font-medium',

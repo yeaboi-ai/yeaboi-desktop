@@ -212,6 +212,11 @@ export default function AppearanceSettingsPage() {
           </div>
         )}
 
+        {/* Named, like the screensaver block below it: a grid of colours with
+            no heading is the page's only unlabelled thing. */}
+        <h2 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+          Colour scheme
+        </h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {/* Built-ins */}
           {BUILTIN_ORDER.map((id) => (
