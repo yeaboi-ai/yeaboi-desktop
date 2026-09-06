@@ -3,7 +3,8 @@ import { cn } from '@/lib/utils';
 
 type SettingsCardProps = React.HTMLAttributes<HTMLDivElement> & {
   index?: number;
-  variant?: 'default' | 'subtle';
+  /** `flat` drops the fill: sections on the page rather than cards on it. */
+  variant?: 'default' | 'subtle' | 'flat';
   animate?: boolean;
 };
 
@@ -19,8 +20,11 @@ export function SettingsCard({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden bg-card ring-1',
-        variant === 'default' ? 'ring-border/60' : 'ring-border/30',
+        'rounded-2xl ring-1',
+        variant === 'flat' ? 'overflow-visible' : 'overflow-hidden',
+        variant === 'flat' && 'bg-transparent ring-border/40 [--card-gutter:1rem]',
+        variant === 'default' && 'bg-card ring-border/60',
+        variant === 'subtle' && 'bg-card ring-border/30',
         animate && 'animate-slide-up motion-reduce:animate-none',
         className,
       )}

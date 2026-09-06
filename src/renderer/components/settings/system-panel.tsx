@@ -131,7 +131,7 @@ export function SystemPanel({
   const panels = (
     <div className="space-y-4">
       {storage.length > 0 && (
-        <SettingsCard index={0}>
+        <SettingsCard index={0} variant="flat">
           <SettingsSectionHeader title="Storage" icon={<SectionIcon section="storage" />} />
           {/* Not a collapsed card: the allowed-paths list grants the agent read
               *and* write over each entry, and the editor replaces the list
@@ -141,7 +141,7 @@ export function SystemPanel({
       )}
 
       {(dictation.length > 0 || dictationRow) && (
-        <SettingsCard index={1}>
+        <SettingsCard index={1} variant="flat">
           <SettingsSectionHeader
             title="Dictation"
             subtitle="Speech to text, transcribed on this machine"
@@ -155,7 +155,7 @@ export function SystemPanel({
       )}
 
       {advanced.length > 0 && (
-        <SettingsCard index={3}>
+        <SettingsCard index={3} variant="flat">
           <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
           <div className="py-1.5">{advanced.map(renderRow)}</div>
         </SettingsCard>
@@ -203,7 +203,7 @@ export function SystemPanel({
       )}
 
       {privacy.length > 0 && (
-        <SettingsCard index={5}>
+        <SettingsCard index={5} variant="flat">
           <SettingsSectionHeader
             title="Privacy"
             subtitle="The switches the Privacy page's disclosure table names"

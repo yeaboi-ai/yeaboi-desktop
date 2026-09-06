@@ -19,7 +19,7 @@ export function SettingsSectionHeader({
   className,
 }: SettingsSectionHeaderProps) {
   return (
-    <div className={cn('flex items-center gap-3.5 border-b border-border/50 px-4 py-3', className)}>
+    <div className={cn('flex items-center gap-3.5 border-b border-border/50 px-[var(--card-gutter,1rem)] py-3', className)}>
       {icon}
       <div className="min-w-0 flex-1">
         <h2 className="text-[13.5px] font-body font-medium text-foreground">{title}</h2>

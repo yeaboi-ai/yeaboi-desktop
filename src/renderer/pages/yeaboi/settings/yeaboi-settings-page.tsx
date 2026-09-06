@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocation } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
-import { DuckMark } from '@/components/brand/duck';
+import { toast } from '@/components/ui/toast';
 import {
   type ProviderCatalog,
   type SettingField,
@@ -88,7 +88,12 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [catalog, setCatalog] = useState<ProviderCatalog | null>(null);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
+  // What a save came back with. Said in the corner the duck stands in rather
+  // than at the top of the page: it is an answer to something you just did,
+  // and by the time it renders you are looking somewhere else.
+  const setStatus = (message: string) => {
+    if (message) toast.show({ title: message });
+  };
   const [restartNeeded, setRestartNeeded] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -263,14 +268,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           Quit and reopen yeaboi to finish applying the data directory.
         </div>
       )}
-      {status && (
-        <div
-          role="status"
-          className="mb-4 flex items-center gap-2 text-[12px] text-muted-foreground"
-        >
-          <DuckMark state="idle" size={20} /> {status}
-        </div>
-      )}
       {signingIn && (
         <SignInPanel
           onClose={(saved, message) => {
@@ -348,13 +345,13 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
 
     return (
       <>
-        <SettingsCard index={0}>
+        <SettingsCard index={0} variant="flat">
           <SettingsSectionHeader
             title="Sharing"
             subtitle="Who can open a board you share"
             icon={<SectionIcon section="sharing" />}
           />
-          <div className="px-5 py-4">
+          <div className="px-[var(--card-gutter,1.25rem)] py-4">
             {shareMode && (
               <ShareModeChoice
                 active={shareMode.active_choice}
@@ -391,24 +388,22 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           dictationRow={<DictationRow />}
           sharing={sharing}
           provider={
-            <>
-              <div className="mb-3 flex justify-end">
+            <ProviderPanel
+              card={card}
+              fields={sectionFields('provider')}
+              catalog={catalog}
+              onSave={(env, value) => void save(env, value)}
+              onSignIn={() => setSigningIn(true)}
+              action={
                 <Link
                   href="/setup"
-                  className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
+                  className="inline-flex items-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
                 >
                   Re-run setup
                   <ArrowUpRight className="size-3" aria-hidden="true" />
                 </Link>
-              </div>
-              <ProviderPanel
-                card={card}
-                fields={sectionFields('provider')}
-                catalog={catalog}
-                onSave={(env, value) => void save(env, value)}
-                onSignIn={() => setSigningIn(true)}
-              />
-            </>
+              }
+            />
           }
           openCard={openCard}
           onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
@@ -417,7 +412,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           extras={snapshot.sections
             .filter((section) => !knownSections.has(section))
             .map((section) => (
-              <SettingsCard key={section}>
+              <SettingsCard key={section} variant="flat">
                 <SettingsSectionHeader title={section} />
                 <div className="py-1.5">{sectionFields(section).map(renderRow)}</div>
               </SettingsCard>

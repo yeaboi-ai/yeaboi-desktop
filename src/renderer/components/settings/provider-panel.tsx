@@ -15,7 +15,8 @@ import { GuideLink } from '@/components/onboarding/guide-link';
 import { Linkified } from '@/components/yeaboi/linkified';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { Picker } from '@/components/ui/picker';
-import { ChoicePills, SettingsCard } from '@/components/settings/primitives';
+import { SettingsCard } from '@/components/settings/primitives';
+import { Segmented } from '@/components/ui/segmented';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -37,17 +38,14 @@ function CredentialField({
 
   return (
     <form
-      className="block"
+      className="flex min-w-[22rem] flex-1 flex-col gap-1"
       onSubmit={(event) => {
         event.preventDefault();
         onSave(value.trim());
         setDraft(null);
       }}
     >
-      <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
-        {field.label}
-      </span>
-      <span className="mt-1 flex items-center gap-2">
+      <span className="flex items-center gap-2">
         <input
           type={field.secret ? 'password' : 'text'}
           value={value}
@@ -60,7 +58,7 @@ function CredentialField({
               : field.default || ''
           }
           onChange={(event) => setDraft(event.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-1.5 font-mono text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
         />
         <Button size="sm" variant="outline" type="submit" disabled={!changed}>
           Save
@@ -77,6 +75,7 @@ export function ProviderPanel({
   catalog,
   onSave,
   onSignIn,
+  action,
 }: {
   /** The catalog card for the provider in use, if the catalog has loaded. */
   card: ProviderCard | null;
@@ -85,6 +84,8 @@ export function ProviderPanel({
   catalog: ProviderCatalog | null;
   onSave: (env: string, value: string) => void;
   onSignIn: () => void;
+  /** Anything the page wants on the header's right — the way back to setup. */
+  action?: React.ReactNode;
 }) {
   const [custom, setCustom] = useState('');
   const { summary } = useProviderHealthContext();
@@ -130,14 +131,16 @@ export function ProviderPanel({
   return (
     // No card behind it: what is on it is a summary line and two controls that
     // are cards themselves.
-    <SettingsCard index={0} className="bg-transparent ring-transparent" animate={false}>
-      <div className="flex items-center gap-3.5 border-b border-border/40 px-4 py-3">
+    <SettingsCard index={0} variant="flat" animate={false}>
+      <div className="flex items-center gap-3.5 border-b border-border/40 px-[var(--card-gutter,1rem)] py-3">
         <ProviderIcon provider={card?.provider_val ?? 'anthropic'} size={40} />
         <span className="min-w-0 flex-1">
           <span className="block font-body text-[13.5px] font-medium text-foreground">
-            {card?.full_name ?? 'LLM provider'}
+            AI provider
           </span>
           <span className="block truncate text-[12px]">
+            <span className="text-muted-foreground">{card?.full_name ?? 'LLM provider'}</span>
+            <span className="text-muted-foreground/50">{DOT}</span>
             <span className="text-muted-foreground">{model || `${recommended} (default)`}</span>
             <span className="text-muted-foreground/50">{DOT}</span>
             <span
@@ -153,9 +156,10 @@ export function ProviderPanel({
             </span>
           </span>
         </span>
+        {action}
       </div>
 
-      <div className="space-y-5 px-4 py-4">
+      <div className="space-y-5 px-[var(--card-gutter,1rem)] py-4">
         {/* Read together and changed together, so they sit together. */}
         <div className="grid gap-5 md:grid-cols-2">
           {providerField && catalog && (
@@ -239,36 +243,49 @@ export function ProviderPanel({
           <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
             Credential
           </h3>
-          <div className="space-y-3">
+          {/* The choice and what it needs sit on one line: picking the tier is
+              the question, and the key or the account is the answer to it. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             {authField && (
-              <ChoicePills
+              <Segmented
+                label="Credential"
                 options={authField.choices}
-                active={authField.active_choice}
-                labels={authField.choice_labels}
+                value={authField.active_choice}
+                {...(authField.choice_labels ? { labels: authField.choice_labels } : {})}
                 onPick={(opt) => onSave(authField.env, opt)}
               />
             )}
-            {signInField && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`font-mono text-[12px] ${
-                    signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
-                  }`}
-                >
-                  {signInField.is_set ? signInField.value : 'not signed in'}
-                </span>
-                <Button variant="outline" size="sm" onClick={onSignIn}>
-                  Sign in…
-                </Button>
-              </div>
-            )}
-            {credentials.map((field) => (
-              <CredentialField
-                key={field.env}
-                field={field}
-                onSave={(value) => onSave(field.env, value)}
-              />
-            ))}
+            {/* Keyed on the tier, so switching plays the new row in rather
+                than swapping one for the other between frames. */}
+            <div
+              key={authField?.active_choice ?? 'credential'}
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-2 motion-reduce:animate-none"
+              style={{ animation: 'swap-in 200ms ease-out both' }}
+            >
+              {credentials.map((field) => (
+                <CredentialField
+                  key={field.env}
+                  field={field}
+                  onSave={(value) => onSave(field.env, value)}
+                />
+              ))}
+              {signInField && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`font-mono text-[12px] ${
+                      signInField.is_set ? 'text-foreground' : 'text-muted-foreground/50'
+                    }`}
+                  >
+                    {signInField.is_set ? signInField.value : 'not signed in'}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={onSignIn}>
+                    Sign in…
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="space-y-3">
             {card?.instructions && !signInField && (
               <p className="text-[11px] leading-snug text-muted-foreground/80">
                 <Linkified text={card.instructions} />

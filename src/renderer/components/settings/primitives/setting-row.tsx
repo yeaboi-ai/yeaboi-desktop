@@ -15,7 +15,7 @@ export function SettingRow({
   className?: string;
 }) {
   return (
-    <div className={cn('flex flex-wrap items-start gap-x-4 gap-y-2 px-5 py-2.5', className)}>
+    <div className={cn('flex flex-wrap items-start gap-x-4 gap-y-2 px-[var(--card-gutter,1.25rem)] py-2.5', className)}>
       <div className="w-40 shrink-0 pt-1 text-[12px] font-body leading-tight text-muted-foreground">
         {label}
       </div>

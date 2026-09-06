@@ -58,12 +58,17 @@ const VARIANT_STYLES: Record<ToastVariant, { ring: string; icon: React.ReactNode
   },
 };
 
+/** How many are shown before the rest become a count. Two is a glance; four
+ *  is a wall over the corner of the window. */
+const SHOWN = 2;
+
 function ToastList() {
   const { toasts } = ToastPrimitive.useToastManager<ToastData>();
+  const waiting = toasts.length - SHOWN;
 
   return (
     <>
-      {toasts.map((t) => {
+      {toasts.slice(0, SHOWN).map((t) => {
         const variant = t.data?.variant ?? 'default';
         const v = VARIANT_STYLES[variant];
         return (
@@ -71,19 +76,17 @@ function ToastList() {
             key={t.id}
             toast={t}
             className={cn(
-              // Stack-from-the-top behavior; viewport handles the layout grid.
-              'absolute right-0 bottom-0 left-auto w-80 max-w-[calc(100vw-3rem)]',
-              'rounded-2xl bg-card/95 backdrop-blur-xl shadow-2xl ring-1',
+              // In the flow of the viewport's column rather than stacked on
+              // top of each other: a pile of cards fanned out under the newest
+              // one is four notices where there is one.
+              'w-80 max-w-[calc(100vw-3rem)]',
+              'rounded-2xl bg-card/95 shadow-2xl ring-1 backdrop-blur-xl',
               v.ring,
               // Animations honour reduced-motion via tw-animate-css
-              'data-[starting-style]:opacity-0 data-[starting-style]:translate-y-2',
-              'data-[ending-style]:opacity-0 data-[ending-style]:translate-y-2',
-              'transition-[opacity,transform,scale] duration-200',
-              // Stack offset for older toasts
-              '[transform:translateX(calc(var(--toast-swipe-movement-x)))_translateY(calc(var(--toast-swipe-movement-y)+(var(--toast-index)*-12px)))_scale(calc(1-(var(--toast-index)*0.04)))]',
-              'data-[expanded]:[transform:translateX(calc(var(--toast-swipe-movement-x)))_translateY(calc(var(--toast-swipe-movement-y)+(var(--toast-offset-y)*-1)-(var(--toast-index)*var(--gap))))_scale(1)]',
+              'data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0',
+              'data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0',
+              'transition-[opacity,transform] duration-200',
             )}
-            style={{ ['--gap' as never]: '12px' }}
           >
             <div className="flex items-start gap-3 px-4 py-3.5">
               {v.icon && (
@@ -121,15 +124,23 @@ function ToastList() {
           </ToastPrimitive.Root>
         );
       })}
+      {waiting > 0 && (
+        <div className="self-end rounded-full bg-card/95 px-3 py-1 font-body text-[11px] text-muted-foreground ring-1 ring-border/60 backdrop-blur-xl">
+          +{waiting} more
+        </div>
+      )}
     </>
   );
 }
 
 export function Toaster() {
   return (
-    <ToastPrimitive.Provider toastManager={toastManager} timeout={5000} limit={3}>
+    <ToastPrimitive.Provider toastManager={toastManager} timeout={5000} limit={6}>
       <ToastPrimitive.Portal>
-        <ToastPrimitive.Viewport className="fixed bottom-6 right-6 z-[300] w-80 max-w-[calc(100vw-3rem)]">
+        {/* Above the dock rather than under the duck: the row along the foot of
+            the window is always there, and a notice landing behind it is a
+            notice nobody reads. */}
+        <ToastPrimitive.Viewport className="fixed right-6 bottom-[calc(var(--dock-clear)+0.5rem)] z-[300] flex w-80 max-w-[calc(100vw-3rem)] flex-col-reverse gap-2">
           <ToastList />
         </ToastPrimitive.Viewport>
       </ToastPrimitive.Portal>
