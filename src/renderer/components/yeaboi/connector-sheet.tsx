@@ -1,15 +1,15 @@
 'use client';
 
-// The connector sheet and tile — shared by the Integrations catalog and the
-// Credentials tab's connected-integrations view. The sheet is the whole
-// connect/edit flow, laid out as the sequence it really is: choose an auth
-// method, collect the keys at the vendor, paste them, then one "Save & test"
-// writing through POST /api/settings/set and probing through the connection
-// verify route. Rows managed by Credentials deep-link there; custom rows add
-// delete, and webhook customs a delivery panel.
+// The connector sheet and tile — shared by the Integrations catalog, the
+// set-up view and the ceremony that needs a channel to post to. The sheet is
+// the whole connect/edit flow, laid out as the sequence it really is: choose an
+// auth method, collect the keys at the vendor, paste them, then one "Save &
+// test" writing through POST /api/settings/set and probing through the
+// connection verify route. Built-ins are configured here like everything else —
+// their fields are the same envs a settings card would have written. Custom
+// rows add delete, and webhook customs a delivery panel.
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import {
   AlertCircle,
   ArrowUpRight,
@@ -323,7 +323,6 @@ function ConnectorSheetBody({
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const isCustom = row.key.startsWith('custom_');
   const isWebhook = row.kind === 'webhook';
-  const isManaged = row.managed_by === 'credentials';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
   const shownFields = (row.fields ?? []).filter(
@@ -336,23 +335,21 @@ function ConnectorSheetBody({
   // shown fields carry, deduped — one purposeful block instead of a helper
   // line under each input.
   const keyLinks: { label: string; url: string; scope: string }[] = [];
-  if (!isManaged) {
-    if (row.docs_url) {
-      keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
-    }
-    for (const field of shownFields) {
-      if (field.help_url && !keyLinks.some((k) => k.url === field.help_url)) {
-        keyLinks.push({
-          label: `Create ${field.label}`,
-          url: field.help_url,
-          scope: field.help_scope,
-        });
-      }
+  if (row.docs_url) {
+    keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
+  }
+  for (const field of shownFields) {
+    if (field.help_url && !keyLinks.some((k) => k.url === field.help_url)) {
+      keyLinks.push({
+        label: `Create ${field.label}`,
+        url: field.help_url,
+        scope: field.help_scope,
+      });
     }
   }
 
   const steps: { title: string; body: ReactNode }[] = [];
-  if (!isManaged) {
+  {
     if (methods.length > 0) {
       steps.push({
         title: 'How to connect',
@@ -451,7 +448,7 @@ function ConnectorSheetBody({
     }
   };
 
-  const showFooter = !isManaged && (!isWebhook || isCustom);
+  const showFooter = !isWebhook || isCustom;
 
   return (
     <>
@@ -505,40 +502,17 @@ function ConnectorSheetBody({
       </SheetHeader>
 
       <div className="flex-1 overflow-y-auto px-5 py-5">
-        {isManaged ? (
-          <div className="space-y-4">
-            {row.docs_url && (
-              <a
-                href={row.docs_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
-              >
-                Where the credential comes from
-                <ArrowUpRight className="size-3" aria-hidden />
-              </a>
-            )}
-            <div className="rounded-xl bg-secondary/40 px-4 py-3 text-[12px] text-muted-foreground">
-              {row.label} is one of the built-in integrations — its credentials live under{' '}
-              <Link href="/settings/credentials" className="text-primary hover:underline">
-                Settings · Set-up
-              </Link>
-              {row.section === 'voice' ? ' (System · Voice)' : ''}, or re-run setup.
-            </div>
-          </div>
-        ) : (
-          steps.map((step, index) => (
-            <Step
-              key={step.title}
-              number={index + 1}
-              title={step.title}
-              last={index === steps.length - 1}
-              stagger={index + 1}
-            >
-              {step.body}
-            </Step>
-          ))
-        )}
+        {steps.map((step, index) => (
+          <Step
+            key={step.title}
+            number={index + 1}
+            title={step.title}
+            last={index === steps.length - 1}
+            stagger={index + 1}
+          >
+            {step.body}
+          </Step>
+        ))}
       </div>
 
       {showFooter && (

@@ -5,12 +5,13 @@
 // Installing one installs an OS job, so the backend answers with the cadence
 // it wrote and the terminal command that would have written the same thing.
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Picker } from '@/components/ui/picker';
+import { ConnectorSheet } from '@/components/yeaboi/connector-sheet';
+import { type ConnectionRow, loadConnections } from '@/lib/yeaboi/connections';
 import { type CeremoniesPage, declareCeremony } from '@/lib/yeaboi/ops';
 import { loadSettings } from '@/lib/yeaboi/settings';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,9 @@ const INPUT =
 const LABEL = 'text-[11px] font-body text-muted-foreground uppercase tracking-wide';
 /** A field inside a section, which the section's own label already frames. */
 const SUB = 'text-[10.5px] font-body text-muted-foreground/70 uppercase tracking-wide';
+/** The one-press cadences beside the day keys. */
+const QUICK =
+  'rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground';
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
 const MINUTES = Array.from({ length: 12 }, (_, step) => String(step * 5).padStart(2, '0'));
@@ -39,21 +43,22 @@ const DAYS = [
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const EVERY_DAY = [1, 2, 3, 4, 5, 6, 7];
 
-/** The modes this list offers, in two groups: the rooms the team turns up to,
- *  then the readouts that arrive on their own. The agent reports are the
- *  agents world's own and are not offered here. */
-const ROOMS = ['poker', 'standup', 'retro'];
-const READOUTS = ['report', 'weekly-review'];
+/** The modes this list offers: the rooms a team turns up to, then the readouts
+ *  that arrive on their own. The agent reports are the agents world's own and
+ *  are not offered here. */
+const GROUPS = [
+  { title: 'Ceremonies', keys: ['standup', 'retro', 'poker'] },
+  { title: 'Analyses', keys: ['report', 'weekly-review'] },
+];
 
 function offered(modes: CeremoniesPage['modes']): (CeremoniesPage['modes'][number] & {
-  opensGroup?: boolean;
+  group?: string;
 })[] {
-  const pick = (keys: string[]) => keys.flatMap((key) => modes.filter((mode) => mode.key === key));
-  const rooms = pick(ROOMS);
-  const readouts = pick(READOUTS).map((mode, at) =>
-    at === 0 ? { ...mode, opensGroup: true } : mode,
+  return GROUPS.flatMap(({ title, keys }) =>
+    keys
+      .flatMap((key) => modes.filter((mode) => mode.key === key))
+      .map((mode, at) => (at === 0 ? { ...mode, group: title } : mode)),
   );
-  return [...rooms, ...readouts];
 }
 
 /** "1-5", "1,3,5" → the days it names. */
@@ -104,12 +109,37 @@ function cadence(days: number[], at: string): string {
   return `${every} at ${at}`;
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-border/40 p-3">
+    <section className="border-t border-border/40 pt-3 first:border-0 first:pt-0">
       <p className={LABEL}>{title}</p>
-      <div className="mt-2 space-y-3">{children}</div>
+      <div className="mt-3 space-y-3">{children}</div>
     </section>
+  );
+}
+
+/** One row of the form: what it is on the left, the control filling the rest. */
+function Field({
+  label,
+  children,
+  action,
+  align = 'center',
+}: {
+  label: string;
+  children: React.ReactNode;
+  /** A control that belongs to the label rather than to the field. */
+  action?: React.ReactNode;
+  /** Where the label sits against a control taller than one row. */
+  align?: 'center' | 'start';
+}) {
+  return (
+    <div className={cn('flex gap-3', align === 'center' ? 'items-center' : 'items-start')}>
+      <div className={cn('w-[68px] shrink-0', align === 'start' && 'mt-2')}>
+        <p className={SUB}>{label}</p>
+      </div>
+      <div className="min-w-0 flex-1">{children}</div>
+      {action}
+    </div>
   );
 }
 
@@ -117,11 +147,14 @@ function Tick({
   on,
   disabled,
   label,
+  align = 'center',
   onClick,
 }: {
   on: boolean;
   disabled?: boolean;
   label: string;
+  /** Centred where ticks share a row evenly; left where one stands alone. */
+  align?: 'center' | 'start';
   onClick: () => void;
 }) {
   return (
@@ -133,7 +166,8 @@ function Tick({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-body text-[12px] transition-colors',
+        'inline-flex w-full items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-body text-[12px] transition-colors',
+        align === 'center' ? 'justify-center' : 'justify-start',
         'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
         disabled
           ? 'cursor-not-allowed border-border/30 text-muted-foreground/40'
@@ -190,22 +224,31 @@ export function DeclareCeremony({
   // settings answer, and treated as absent until then — offering a lane that
   // silently drops the report is worse than one more click.
   const [slackReady, setSlackReady] = useState(false);
+  // Setting it up happens here rather than three screens away: the same sheet
+  // the Integrations catalog opens, over the form that asked for it.
+  const [slackRow, setSlackRow] = useState<ConnectionRow | null>(null);
+  const [connecting, setConnecting] = useState(false);
   const picked = modes.find((option) => option.key === mode);
   const [hour = '09', minute = '00'] = at.split(':');
 
-  useEffect(() => {
-    let live = true;
-    loadSettings().then(
-      (settings) => {
-        if (!live) return;
-        setSlackReady(settings.fields.some((f) => f.section === 'slack' && f.is_set));
-      },
-      () => undefined,
-    );
-    return () => {
-      live = false;
-    };
+  const readSlack = useCallback(async () => {
+    try {
+      const settings = await loadSettings();
+      setSlackReady(settings.fields.some((f) => f.section === 'slack' && f.is_set));
+    } catch {
+      /* an unreadable settings answer reads as "not set up yet" */
+    }
+    try {
+      const { connectors } = await loadConnections(true);
+      setSlackRow(connectors.find((one) => one.key === 'slack') ?? null);
+    } catch {
+      /* without the catalog the link falls back to the settings page */
+    }
   }, []);
+
+  useEffect(() => {
+    void readSlack();
+  }, [readSlack]);
 
   const toggleDay = (day: number) =>
     setDays((chosen) =>
@@ -236,170 +279,174 @@ export function DeclareCeremony({
   }
 
   return (
-    <div className="space-y-3">
-      <Group title="What runs">
-        <div>
-          <Picker
-            label="Mode"
-            value={mode}
-            onChange={(key) => {
-              setMode(key);
-              const option = modes.find((row) => row.key === key);
-              if (!option) return;
-              setAt(option.default_at);
-              // A day picked on the grid is the reason the form is open; a
-              // mode's own week does not overrule it.
-              if (!weekday) setDays(daysOf(option.default_weekdays));
-            }}
-            options={modes.map((option) => ({
-              value: option.key,
-              label: option.label,
-              // A room costs nothing to open; the readouts are an LLM call.
-              note: option.est_cost_usd > 0 ? `about $${option.est_cost_usd.toFixed(2)} a run` : '',
-              ...(option.opensGroup ? { opensGroup: true } : {}),
-            }))}
-          />
-          {picked && <p className="mt-1.5 text-[12px] text-muted-foreground">{picked.blurb}</p>}
-        </div>
-
-        <label className="block">
-          <span className={SUB}>Name</span>
-          <input
-            type="text"
-            value={name}
-            placeholder="morning-standup"
-            onChange={(e) => setName(e.target.value)}
-            className={INPUT}
-          />
-        </label>
-      </Group>
-
-      <Group title="When">
-        <div>
-          <span className={SUB}>Time</span>
-          <div className="mt-1 flex items-center gap-2">
+    // The fields scroll; the button that installs the job does not move.
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <Section title="What runs">
+          <Field label="Mode" align="start">
             <Picker
-              label="Hour"
-              className="w-20"
-              value={hour}
-              onChange={(next) => setAt(`${next}:${minute}`)}
-              options={HOURS.map((one) => ({ value: one, label: one }))}
+              label="Mode"
+              value={mode}
+              onChange={(key) => {
+                setMode(key);
+                const option = modes.find((row) => row.key === key);
+                if (!option) return;
+                setAt(option.default_at);
+                // A day picked on the grid is the reason the form is open; a
+                // mode's own week does not overrule it.
+                if (!weekday) setDays(daysOf(option.default_weekdays));
+              }}
+              options={modes.map((option) => ({
+                value: option.key,
+                label: option.label,
+                // A room costs nothing to open; the readouts are an LLM call.
+                note:
+                  option.est_cost_usd > 0 ? `about $${option.est_cost_usd.toFixed(2)} a run` : '',
+                ...(option.group ? { group: option.group } : {}),
+              }))}
             />
-            <span className="text-muted-foreground">:</span>
-            <Picker
-              label="Minute"
-              className="w-20"
-              value={minute}
-              onChange={(next) => setAt(`${hour}:${next}`)}
-              options={MINUTES.map((one) => ({ value: one, label: one }))}
+            {picked && <p className="mt-1.5 text-[12px] text-muted-foreground">{picked.blurb}</p>}
+          </Field>
+
+          <Field label="Name">
+            <input
+              type="text"
+              value={name}
+              placeholder="morning-standup"
+              onChange={(e) => setName(e.target.value)}
+              className={INPUT}
             />
-          </div>
-        </div>
+          </Field>
+        </Section>
 
-        <div>
-          <div className="flex items-center justify-between">
-            <span className={SUB}>Repeats</span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setDays(WEEKDAYS)}
-                className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-              >
-                Weekdays
-              </button>
-              <button
-                type="button"
-                onClick={() => setDays(EVERY_DAY)}
-                className="rounded-md px-1.5 py-0.5 font-body text-[11px] text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
-              >
-                Every day
-              </button>
-            </div>
-          </div>
-          <div className="mt-1.5 flex gap-1">
-            {DAYS.map((one) => {
-              const on = days.includes(one.day);
-              return (
-                <button
-                  key={one.day}
-                  type="button"
-                  aria-pressed={on}
-                  aria-label={one.label}
-                  onClick={() => toggleDay(one.day)}
-                  className={cn(
-                    'h-8 flex-1 rounded-lg border font-body text-[12px] transition-colors',
-                    'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
-                    on
-                      ? 'border-primary/60 bg-primary/10 text-foreground'
-                      : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground',
-                  )}
-                >
-                  {one.short}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">{cadence(days, at)}</p>
-        </div>
-      </Group>
-
-      <Group title="Where it lands">
-        <div
-          className="grid gap-1.5"
-          style={{
-            gridTemplateColumns: `repeat(${page.channels.filter((c) => c !== 'slack').length}, minmax(0, 1fr))`,
-          }}
-        >
-          {page.channels
-            .filter((channel) => channel !== 'slack')
-            .map((channel) => (
-              <Tick
-                key={channel}
-                on={channels.includes(channel)}
-                label={channel}
-                onClick={() => toggleChannel(channel)}
+        <Section title="When">
+          <Field label="Time">
+            <div className="flex items-center gap-2">
+              <Picker
+                label="Hour"
+                className="flex-1"
+                value={hour}
+                onChange={(next) => setAt(`${next}:${minute}`)}
+                options={HOURS.map((one) => ({ value: one, label: one }))}
               />
-            ))}
-        </div>
-
-        {page.channels.includes('slack') && (
-          <div className="rounded-lg border border-border/40 p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className={SUB}>Slack</span>
-              {!slackReady && (
-                <Link
-                  href="/settings/connections"
-                  className="inline-flex items-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
-                >
-                  Set it up
-                  <ArrowUpRight className="h-3 w-3" aria-hidden />
-                </Link>
-              )}
+              <span className="text-muted-foreground">:</span>
+              <Picker
+                label="Minute"
+                className="flex-1"
+                value={minute}
+                onChange={(next) => setAt(`${hour}:${next}`)}
+                options={MINUTES.map((one) => ({ value: one, label: one }))}
+              />
             </div>
-            <div className="mt-1.5">
+          </Field>
+
+          <Field label="Repeats" align="start">
+            <div className="flex gap-1">
+              {DAYS.map((one) => {
+                const on = days.includes(one.day);
+                return (
+                  <button
+                    key={one.day}
+                    type="button"
+                    aria-pressed={on}
+                    aria-label={one.label}
+                    onClick={() => toggleDay(one.day)}
+                    className={cn(
+                      'h-8 flex-1 rounded-lg border font-body text-[12px] transition-colors',
+                      'focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:outline-none',
+                      on
+                        ? 'border-primary/60 bg-primary/10 text-foreground'
+                        : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground',
+                    )}
+                  >
+                    {one.short}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-1.5 flex items-baseline justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">{cadence(days, at)}</p>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => setDays(WEEKDAYS)} className={QUICK}>
+                  Weekdays
+                </button>
+                <button type="button" onClick={() => setDays(EVERY_DAY)} className={QUICK}>
+                  Every day
+                </button>
+              </div>
+            </div>
+          </Field>
+        </Section>
+
+        <Section title="Where it lands">
+          <Field label="Deliver to">
+            <div
+              className="grid gap-1.5"
+              style={{
+                gridTemplateColumns: `repeat(${page.channels.filter((c) => c !== 'slack').length}, minmax(0, 1fr))`,
+              }}
+            >
+              {page.channels
+                .filter((channel) => channel !== 'slack')
+                .map((channel) => (
+                  <Tick
+                    key={channel}
+                    on={channels.includes(channel)}
+                    label={channel}
+                    onClick={() => toggleChannel(channel)}
+                  />
+                ))}
+            </div>
+          </Field>
+
+          {page.channels.includes('slack') && (
+            <Field
+              label="Slack"
+              align="start"
+              action={
+                slackRow && (
+                  <button
+                    type="button"
+                    onClick={() => setConnecting(true)}
+                    className="mt-2 inline-flex shrink-0 items-center gap-1 font-body text-[11px] text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {slackReady ? 'Edit' : 'Set it up'}
+                    <ArrowUpRight className="h-3 w-3" aria-hidden />
+                  </button>
+                )
+              }
+            >
               <Tick
                 on={channels.includes('slack')}
                 disabled={!slackReady}
                 label="Post the run to Slack"
+                align="start"
                 onClick={() => toggleChannel('slack')}
               />
-            </div>
-            <p className="mt-1.5 text-[11px] text-muted-foreground/80">
-              {slackReady
-                ? 'Where it posts is the channel the workspace is connected to.'
-                : 'Connect a Slack workspace in Integrations and this lane opens.'}
-            </p>
-          </div>
-        )}
-      </Group>
+              <p className="mt-1.5 text-[11px] text-muted-foreground/80">
+                {slackReady
+                  ? 'Where it posts is the channel the workspace is connected to.'
+                  : 'Add a webhook or a bot token and this lane opens.'}
+              </p>
+            </Field>
+          )}
+        </Section>
+      </div>
 
-      <Button
-        size="sm"
-        disabled={busy || !name || !mode || days.length === 0}
-        onClick={() => void submit()}
-      >
-        {busy ? 'Installing…' : 'Declare and install'}
-      </Button>
+      {slackRow && connecting && (
+        <ConnectorSheet row={slackRow} onClose={() => setConnecting(false)} onChanged={readSlack} />
+      )}
+
+      <div className="border-t border-border/60 px-5 py-3">
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={busy || !name || !mode || days.length === 0}
+          onClick={() => void submit()}
+        >
+          {busy ? 'Installing…' : 'Declare and install'}
+        </Button>
+      </div>
     </div>
   );
 }

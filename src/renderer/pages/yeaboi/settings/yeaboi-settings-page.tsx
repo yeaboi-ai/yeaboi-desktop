@@ -376,7 +376,14 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     const providerFields = sectionFields('provider');
     const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
     const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
-    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS);
+    // Slack is configured in Integrations, in the same sheet every other
+    // connector uses — a second card writing the same envs is a second place to
+    // look. The onboarding step still offers it, which is a first run's job.
+    const grouped = groupConnections(
+      snapshot,
+      CONNECTION_CARDS.filter((one) => one.section !== 'slack'),
+      GROUPS,
+    );
     const columns: (typeof grouped)[] = Array.from({ length: COLUMNS }, () => []);
     grouped.forEach((group, at) => columns[at % COLUMNS]!.push(group));
 

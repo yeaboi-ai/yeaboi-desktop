@@ -17,8 +17,8 @@ export interface PickerOption {
   label: string;
   /** One line under the label, where an option needs saying more about. */
   note?: string;
-  /** A rule above this option: the group it opens. */
-  opensGroup?: boolean;
+  /** The group this option opens, named. A rule comes with it. */
+  group?: string;
 }
 
 export function Picker({
@@ -66,8 +66,13 @@ export function Picker({
             const active = option.value === value;
             return (
               <div key={option.value}>
-                {option.opensGroup && index > 0 && (
-                  <div aria-hidden className="my-1 border-t border-border/50" />
+                {option.group && (
+                  <>
+                    {index > 0 && <div aria-hidden className="my-1 border-t border-border/50" />}
+                    <p className="px-2.5 pt-1 pb-1 font-body text-[10px] tracking-wide text-muted-foreground/70 uppercase">
+                      {option.group}
+                    </p>
+                  </>
                 )}
                 <button
                   type="button"

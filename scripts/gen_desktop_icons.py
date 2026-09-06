@@ -51,10 +51,38 @@ PLATE_RADIUS = 208
 #: How much of the plate the duck fills, and how far above centre it sits.
 DUCK_SCALE = 0.74
 DUCK_RISE = 0.03
-#: The head, cropped out of the composed bird: everything above the chest. The
-#: app icon is a 16px square more often than it is anything else, and a whole
-#: duck at that size is a smudge with a beak.
-HEAD_BOX = (0, 0, 300, 230)
+# The head the terminal draws, pixel for pixel — yeaboi.ai's
+# `ui/shared/_mascot.py: DUCK_HEAD`, which is where it is authored. The app icon
+# is a 16px square more often than it is anything else, and a whole duck at that
+# size is a smudge with a beak; this is a mark drawn to be small.
+#
+# He faces right in the terminal, where he walks that way. Flipped here: an icon
+# in a dock looks into the screen.
+HEAD_PALETTE = {
+    "k": (9, 14, 18),
+    "o": (26, 32, 40),
+    "G": (34, 158, 122),
+    "g": (22, 110, 92),
+    "W": (232, 240, 238),
+    "b": (250, 176, 44),
+    "r": (228, 104, 22),
+}
+HEAD_ROWS = (
+    "......kkkk......",
+    ".....GGGGGG.....",
+    "....oGGGGGGG....",
+    "...oGGGGGGGGo...",
+    "...kkkkkWkkkWkk.",
+    "...gggkWkkkWkkk.",
+    "...gGGkkkkkkkkk.",
+    "...gGGGkkkbbkk..",
+    "...ggGGGGbbbbbkk",
+    "...kggGGrrrbbbbk",
+    "....kggggkkkkk..",
+    ".....ggggg......",
+    ".....GGGGGG.....",
+    "....ggGGGGG.....",
+)
 
 # Black, with the mascot's green kept for the rim. A tinted plate competes with
 # the duck's own head at 16px, where the icon is mostly just a coloured square;
@@ -108,9 +136,15 @@ def _duck():
 
 
 def _duck_head():
-    """Just the head — the mark the app icon wears."""
-    head = _duck_layers().crop(HEAD_BOX)
-    return head.crop(head.getbbox())
+    """The terminal's head sprite as an image, cropped to himself and flipped."""
+    from PIL import Image
+
+    head = Image.new("RGBA", (len(HEAD_ROWS[0]), len(HEAD_ROWS)), (0, 0, 0, 0))
+    for y, row in enumerate(HEAD_ROWS):
+        for x, letter in enumerate(row):
+            if letter != ".":
+                head.putpixel((x, y), HEAD_PALETTE[letter] + (255,))
+    return head.crop(head.getbbox()).transpose(Image.FLIP_LEFT_RIGHT)
 
 
 def _plate(size: int):
@@ -154,10 +188,10 @@ def master():
     icon = _plate(MASTER)
     duck = _duck_head()
     inner = MASTER - 2 * PLATE_MARGIN
-    width = round(inner * DUCK_SCALE)
-    height = round(duck.height * width / duck.width)
-    # NEAREST: the mark is pixel art, and interpolating it up to 1024 turns
-    # hard edges into a blur that every smaller size then resamples again.
+    # A whole number of icon pixels per sprite pixel, so his own grid stays
+    # square and hard — a fractional cell puts a seam down one column of him.
+    cell = int(inner * DUCK_SCALE) // max(duck.size)
+    width, height = duck.width * cell, duck.height * cell
     duck = duck.resize((width, height), Image.NEAREST)
 
     top = (MASTER - height) // 2 - round(MASTER * DUCK_RISE)

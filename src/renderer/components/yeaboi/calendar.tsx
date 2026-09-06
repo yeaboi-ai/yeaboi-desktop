@@ -687,22 +687,20 @@ export function Schedule({
                   : 'Your machine fires it, whether or not the app is open.'}
               </SheetDescription>
             </SheetHeader>
-            <div className="overflow-y-auto px-5 pb-5">
-              <DeclareCeremony
-                // Remounted per opening, so a day picked on the grid is what
-                // the form starts from rather than what the last one left
-                // behind.
-                key={declaring?.weekday ?? 'any'}
-                page={page}
-                weekday={declaring?.weekday}
-                onDone={(message) => {
-                  setDeclaring(null);
-                  setSaid(message);
-                  onDeclared?.();
-                }}
-                onError={setSaid}
-              />
-            </div>
+            <DeclareCeremony
+              // Remounted per opening, so a day picked on the grid is what
+              // the form starts from rather than what the last one left
+              // behind.
+              key={declaring?.weekday ?? 'any'}
+              page={page}
+              weekday={declaring?.weekday}
+              onDone={(message) => {
+                setDeclaring(null);
+                setSaid(message);
+                onDeclared?.();
+              }}
+              onError={setSaid}
+            />
           </SheetContent>
         </Sheet>
       )}
