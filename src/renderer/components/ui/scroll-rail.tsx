@@ -31,6 +31,9 @@ const TRACK_W = 10;
 /** Where it waits: off the window's right edge, so it arrives and leaves by
  *  sliding rather than by fading. */
 const OFFSCREEN = 40;
+/** How long the slide takes, and so how long the thumb it carries has to be
+ *  kept after the page that gave it has gone. */
+const SLIDE_MS = 300;
 
 /** The port a page has marked as the thing that scrolls, if it has one. */
 function findPort(): HTMLElement | null {
@@ -146,6 +149,19 @@ export function ScrollRail({ className }: { className?: string }) {
     setDragging(false);
   };
 
+  // The thumb outlives the page by the length of the slide: dropped with it,
+  // the track would leave empty and the thumb would look like it vanished
+  // rather than went with it.
+  const [carried, setCarried] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    if (thumb) {
+      setCarried(thumb);
+      return;
+    }
+    const drop = setTimeout(() => setCarried(null), SLIDE_MS);
+    return () => clearTimeout(drop);
+  }, [thumb]);
+
   const shown = Boolean(thumb);
   const held = hovered || dragging;
   const wide = moving || held;
@@ -176,7 +192,7 @@ export function ScrollRail({ className }: { className?: string }) {
         transform: `translate(${shown ? 0 : OFFSCREEN}px, -50%)`,
       }}
     >
-      {thumb && (
+      {carried && (
         <div
           className={cn(
             // No transition on its position: the thumb is the scroll, and a
@@ -188,8 +204,8 @@ export function ScrollRail({ className }: { className?: string }) {
             wide && 'bg-foreground/45',
           )}
           style={{
-            top: thumb.top,
-            height: thumb.height,
+            top: carried.top,
+            height: carried.height,
             width: thumbWidth,
           }}
         />
