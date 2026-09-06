@@ -64,7 +64,25 @@ try {
 } catch {
   /* an Electron without the key is still worth stamping */
 }
-if (current === name) process.exit(0);
+/** The bundle's icon is the committed one, byte for byte. */
+const dressed = () => {
+  try {
+    return readFileSync(ICON).equals(readFileSync(SOURCE_ICON));
+  } catch {
+    return false;
+  }
+};
+
+// Re-registering is what the Dock reads: it caches the bundle's identity, and
+// a stamped plist with a stale record still comes up as "Electron".
+function reregister() {
+  if (existsSync(LSREGISTER)) execFileSync(LSREGISTER, ['-f', APP], { stdio: 'ignore' });
+}
+
+if (current === name && dressed()) {
+  reregister();
+  process.exit(0);
+}
 
 // The download is linker-signed ad-hoc: only the Mach-O is covered, the
 // Info.plist is not bound and the resources are not sealed — so as it ships it
@@ -87,10 +105,7 @@ try {
     if (!verifies()) throw new Error('re-signing did not restore the signature');
   }
 
-  // LaunchServices caches the bundle's identity and hands it to the Dock; a
-  // touch alone leaves the stale record, and the app comes up as "Electron"
-  // with the plist already saying otherwise.
-  if (existsSync(LSREGISTER)) execFileSync(LSREGISTER, ['-f', APP], { stdio: 'ignore' });
+  reregister();
   console.log(`[dev-bundle-name] the dev Electron is "${name}" with the duck`);
 } catch (error) {
   copyFileSync(plistBackup, PLIST);

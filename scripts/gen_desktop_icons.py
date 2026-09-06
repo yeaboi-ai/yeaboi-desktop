@@ -52,11 +52,11 @@ PLATE_RADIUS = 208
 DUCK_SCALE = 0.74
 DUCK_RISE = 0.03
 
-# The plate is the one place the brand's dark palette meets the mascot's green.
-# A green plate would swallow the duck's own head; midnight with a green wash
-# keeps him legible at 16px, where the icon is mostly just a coloured square.
-PLATE_TOP = (18, 43, 34)
-PLATE_BOTTOM = (8, 16, 14)
+# Black, with the mascot's green kept for the rim. A tinted plate competes with
+# the duck's own head at 16px, where the icon is mostly just a coloured square;
+# the rim is what gives it an edge on a dark dock.
+PLATE_TOP = (0, 0, 0)
+PLATE_BOTTOM = (0, 0, 0)
 DUCK_GREEN = (42, 170, 105)  # --duck, the canonical value in palette.css
 
 #: PNG sizes in the Linux icon directory and behind the .ico.
