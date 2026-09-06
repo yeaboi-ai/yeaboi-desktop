@@ -164,7 +164,7 @@
     {
       "path": "/ceremonies/slack",
       "capability": "slack-inbound",
-      "title": "Ceremonies · Slack"
+      "title": "Ceremonies · Slack replies"
     },
     {
       "path": "/provenance",
@@ -299,7 +299,7 @@
     {
       "path": "/settings/themes",
       "capability": null,
-      "title": "Themes"
+      "title": "Settings · Appearance"
     },
     {
       "path": "/settings/themes/edit",

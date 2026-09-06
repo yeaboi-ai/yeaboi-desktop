@@ -357,6 +357,17 @@ export function NikoBar() {
     clearSuggestedRoute();
   }, [suggestedRoute, navigate, clearSuggestedRoute]);
 
+  // The corner he steps into is the duck's, so the window is told: see
+  // globals.css, where the three of them drop out of his way.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (aside) root.dataset['nikoAside'] = '';
+    else delete root.dataset['nikoAside'];
+    return () => {
+      delete root.dataset['nikoAside'];
+    };
+  }, [aside]);
+
   // And leaving that screen closes it. The answer was about the page it took
   // you to; once you have gone somewhere else it is a panel held open over a
   // screen it has nothing to say about, and the way to shut it is not obvious
@@ -504,9 +515,11 @@ export function NikoBar() {
 
   // How far right of centre the panel sits when it has stepped aside: hard
   // against the window's edge, by the same margin as everything else there.
+  // Measured on the shell rather than the composer inside it — the controls
+  // ride on the shell's right, so half a composer put them off the window.
   const asideShift =
     aside && state !== 'collapsed'
-      ? Math.max(0, window.innerWidth / 2 - width / 2 - ASIDE_MARGIN)
+      ? Math.max(0, window.innerWidth / 2 - shell / 2 - ASIDE_MARGIN)
       : 0;
 
   return (

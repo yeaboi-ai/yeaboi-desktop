@@ -252,7 +252,7 @@ function SystemCheckPill() {
       // Part of the bottom row, so it retreats with it: a board staged in the
       // window is the window, and the app's own chrome gets off it. The
       // transition comes with the attribute — see globals.css.
-      data-dock
+      data-dock="right"
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
@@ -302,7 +302,7 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
           something is not a setting, and he is the one on screen who looks
           like he would pass it on. Clear of his perch, on the row's baseline. */}
       <Link
-        data-dock
+        data-dock="right"
         href={feedbackActive ? back : '/feedback'}
         title={feedbackActive ? 'Back' : 'Send feedback'}
         aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}

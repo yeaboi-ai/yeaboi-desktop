@@ -1577,6 +1577,16 @@ html[data-audience='agents'] {
     width 200ms ease-out;
 }
 
+/* Niko docked right stands where the duck and the two controls beside him do.
+   They drop out of his way rather than sit under him, and come back when he
+   returns to the middle. */
+:root[data-niko-aside] [data-dock='right'],
+:root[data-niko-aside] [data-duck] {
+  translate: 0 96px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 :root[data-board-staged] [data-dock],
 :root[data-board-staged] [data-niko],
 :root[data-board-staged] [data-duck] {
