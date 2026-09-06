@@ -8,7 +8,7 @@
 // not a scheduled fire — the guards that answer "is this too late to be
 // useful" belong to an unattended run, not to somebody pressing a button.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import {
@@ -21,8 +21,6 @@ import {
   setCeremonyEnabled,
 } from '@/lib/yeaboi/ops';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { ConnectionCard, type ConnectionCardSpec } from '@/components/yeaboi/connection-card';
-import { loadSettings, type SettingField } from '@/lib/yeaboi/settings';
 import { DeclareCeremony } from '@/components/yeaboi/declare-ceremony';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,8 +161,6 @@ function CeremoniesBody() {
         <Notice title="Your machine and this list disagree" items={page.drift} />
       )}
 
-      <DeliveryCard />
-
       {adding && (
         <Section title="Declare a ceremony">
           <DeclareCeremony
@@ -250,53 +246,6 @@ function CeremoniesBody() {
         ))
       )}
     </div>
-  );
-}
-
-const DELIVERY_CARD: ConnectionCardSpec = {
-  section: 'standup',
-  icon: 'standup',
-  title: 'Where standups read from, and how mail goes out',
-  blurb: 'The repository standups scan, and the mailbox every ceremony sends through.',
-  hints: {
-    STANDUP_GITHUB_REPO: 'owner/repo — the estate standups scan for code activity.',
-    STANDUP_SMTP_PASSWORD: 'Only needed if your SMTP server asks for a login.',
-    STANDUP_EMAIL_RECIPIENTS: 'Comma-separated. Email delivery is skipped entirely when empty.',
-  },
-  placeholders: {
-    STANDUP_GITHUB_REPO: 'acme/platform',
-    STANDUP_SMTP_HOST: 'smtp.example.com',
-    STANDUP_EMAIL_RECIPIENTS: 'team@example.com',
-  },
-};
-
-/** The standup's own settings, on the page the standup is declared from. */
-function DeliveryCard() {
-  const [fields, setFields] = useState<SettingField[]>([]);
-  const [open, setOpen] = useState(false);
-
-  const refresh = useCallback(() => {
-    loadSettings().then(
-      (snapshot) => setFields(snapshot.fields.filter((field) => field.section === 'standup')),
-      () => setFields([]),
-    );
-  }, []);
-  useEffect(refresh, [refresh]);
-
-  if (fields.length === 0) return null;
-  const repo = fields.find((field) => field.env === 'STANDUP_GITHUB_REPO')?.value ?? '';
-
-  return (
-    <ConnectionCard
-      card={DELIVERY_CARD}
-      fields={fields}
-      open={open}
-      onToggle={() => setOpen((was) => !was)}
-      prefillNonSecret
-      configured={Boolean(repo)}
-      summary={repo}
-      onSaved={refresh}
-    />
   );
 }
 

@@ -9,6 +9,7 @@ import { Surface } from '@/components/yeaboi/surface';
 // yeaboi sidecar (lib/yeaboi/modes.ts), which is why the BackendGate wraps
 // a page that lives under /projects.
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DuckMark } from '@/components/brand/duck';
@@ -169,7 +170,23 @@ function RoadmapBody() {
                 <strong className="block text-[13px] font-body font-medium text-foreground">
                   {source.label}
                 </strong>
-                <span className="block text-[11px] text-muted-foreground">{source.hint}</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  {source.hint}
+                  {/* Connecting it is the catalog's job, and so is changing it
+                      later — this is the way in from the page that needs it. */}
+                  {!source.configured && (
+                    <>
+                      {' · '}
+                      <Link
+                        href="/settings/connections"
+                        className="text-primary hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Connect it
+                      </Link>
+                    </>
+                  )}
+                </span>
               </span>
             </label>
           ))}

@@ -16,7 +16,7 @@
 // glyph: the mark stays monochrome and inside the design system, and a vendor
 // we ship no logo for still reads as itself in a list of several.
 
-import { Activity, Bug, Cloud, Siren, Sunrise, Video } from 'lucide-react';
+import { Activity, Bug, Cloud, Mail, Siren, Sunrise, Video } from 'lucide-react';
 import {
   siAtlassian,
   siBitbucket,
@@ -135,6 +135,7 @@ export const FALLBACK_GLYPHS: Record<
   bedrock: Cloud,
   tavus: Video,
   standup: Sunrise,
+  smtp: Mail,
 };
 
 /** The neutral mark a connector family wears when we ship no logo for the

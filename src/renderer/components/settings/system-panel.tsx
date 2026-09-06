@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { SectionIcon } from '@/components/settings/section-icon';
 
-
 export const HIDDEN_ON_SYSTEM = new Set([
   'SAVER_STYLE',
   'TIPS_ENABLED',
@@ -77,10 +76,11 @@ export function SystemPanel({
     onSaved,
   });
 
-  // Two columns where there is room, and each one packed by hand rather than
-  // left to the grid: a row of cells is as tall as its tallest, so panels that
-  // stand open beside rows that collapse leave holes down the short side.
-  // Left is what this machine does; right is what it talks to.
+  // Two columns where there is room, each packed by hand rather than left to
+  // the grid: a row of cells is as tall as its tallest, so panels that stand
+  // open beside rows that collapse leave holes down the short side. Left is
+  // what this machine does, right is what it talks to — and Advanced sits on
+  // the right because four cards down one side is not a column, it is a list.
   const panels = (
     <div className="space-y-4">
       {storage.length > 0 && (
@@ -106,19 +106,18 @@ export function SystemPanel({
           </div>
         </SettingsCard>
       )}
-
-      {advanced.length > 0 && (
-        <SettingsCard index={3} variant="flat">
-          <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
-          <div className="py-1.5">{advanced.map(renderRow)}</div>
-        </SettingsCard>
-      )}
     </div>
   );
 
   const connections = (
     <div className="space-y-4">
       {sharing}
+      {advanced.length > 0 && (
+        <SettingsCard index={3} variant="flat">
+          <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
+          <div className="py-1.5">{advanced.map(renderRow)}</div>
+        </SettingsCard>
+      )}
 
       {extras}
     </div>
