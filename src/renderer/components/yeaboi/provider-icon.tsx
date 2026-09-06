@@ -16,7 +16,7 @@
 // glyph: the mark stays monochrome and inside the design system, and a vendor
 // we ship no logo for still reads as itself in a list of several.
 
-import { Activity, Bug, Cloud, Mail, Siren, Sunrise, Video } from 'lucide-react';
+import { Activity, Bug, CalendarDays, Cloud, Mail, Siren, Sunrise, Video } from 'lucide-react';
 import {
   siAtlassian,
   siBitbucket,
@@ -24,6 +24,7 @@ import {
   siClaude,
   siCloudflare,
   siConfluence,
+  siGooglecalendar,
   siDatadog,
   siDeepseek,
   siElevenlabs,
@@ -99,6 +100,7 @@ export const ICON_PATHS: Record<string, string> = {
   cloudflare: siCloudflare.path,
   elevenlabs: siElevenlabs.path,
   confluence: siConfluence.path,
+  google_calendar: siGooglecalendar.path,
   // The connector layer (contracts/v1/connectors.json keys).
   datadog: siDatadog.path,
   grafana: siGrafana.path,
@@ -136,6 +138,8 @@ export const FALLBACK_GLYPHS: Record<
   tavus: Video,
   standup: Sunrise,
   smtp: Mail,
+  // No mark ships for Teams; the calendar family's own is the honest stand-in.
+  ms_teams: CalendarDays,
 };
 
 /** The neutral mark a connector family wears when we ship no logo for the
@@ -149,6 +153,7 @@ const FAMILY_GLYPHS: Record<
   incidents: Siren,
   errors: Bug,
   cloud: Cloud,
+  calendar: CalendarDays,
 };
 
 /** `rgb(r,g,b)` from the connector catalog → the same colour at `alpha`. */

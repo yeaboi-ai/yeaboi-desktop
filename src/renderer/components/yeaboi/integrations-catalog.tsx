@@ -58,6 +58,8 @@ const ESSENTIALS: readonly string[] = [
   'notion',
   'slack',
   'smtp',
+  'google_calendar',
+  'ms_teams',
   'elevenlabs',
   'tavus',
 ];
