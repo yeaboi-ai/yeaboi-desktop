@@ -16,7 +16,6 @@ import {
   Columns3,
   Gauge,
   Home,
-  KeyRound,
   LayoutGrid,
   Lock,
   Map,
@@ -70,7 +69,6 @@ const MODE_ICONS: Partial<Record<IconKey, RailIcon>> = {
 };
 
 const SETTINGS_ICONS: Record<string, RailIcon> = {
-  '/settings/credentials': KeyRound,
   '/settings/connections': Blocks,
   '/settings/sharing': Share2,
   '/settings/system': SlidersHorizontal,

@@ -51,12 +51,32 @@ export const ALL_SETTINGS_TABS: readonly { route: string; title: string }[] = [
  *  this window folds it. */
 export const FOLDED_TABS: Readonly<Record<string, string>> = {
   '/settings/sharing': '/settings/system',
+  // Credentials was a provider panel and a card per tracker. The trackers are
+  // connectors, configured in the catalog that lists them; the provider is
+  // this machine's own, and sits in System with the rest of what it does.
+  '/settings/credentials': '/settings/system',
   // Themes and Appearance were the same question asked twice — one tab to
   // pick light or dark, another holding the themes that decide it. They are
   // one tab now, and it is the one named after what it does.
   '/settings/themes': '/settings/appearance',
 };
 
+/** The order the rail lists them in. System leads: it is this machine, and
+ *  everything after it is something the machine talks to or how it looks. */
+const ORDER = [
+  '/settings/system',
+  '/settings/connections',
+  '/settings/appearance',
+  '/settings/duck',
+  '/privacy',
+  '/provenance',
+];
+
 /** The tabs this window offers as places to go. */
 export const OFFERED_SETTINGS_TABS: readonly { route: string; title: string }[] =
-  ALL_SETTINGS_TABS.filter((tab) => !(tab.route in FOLDED_TABS));
+  ALL_SETTINGS_TABS.filter((tab) => !(tab.route in FOLDED_TABS)).sort((a, b) => {
+    // Anything the contract grows that this window has no opinion about lands
+    // after the ordered ones rather than nowhere.
+    const at = (route: string) => (ORDER.includes(route) ? ORDER.indexOf(route) : ORDER.length);
+    return at(a.route) - at(b.route);
+  });

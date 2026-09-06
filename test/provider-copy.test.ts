@@ -51,7 +51,7 @@ describe('providerFailureDetail', () => {
 
   it('points an invalid key at the placeholder case, which is the common one', () => {
     const detail = providerFailureDetail('PROVIDER_INVALID_KEY', 'anthropic');
-    expect(detail).toContain('Settings → Set-up');
+    expect(detail).toContain('Settings → System');
     expect(detail).toContain('placeholder');
   });
 

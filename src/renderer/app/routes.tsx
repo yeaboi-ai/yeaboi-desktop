@@ -143,7 +143,9 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   // the manifest declares it and the terminal has its own Usage page — and
   // lands where the numbers are.
   '/usage': <Navigate to="/home" replace />,
-  '/settings/credentials': <YeaboiSettingsPage />,
+  // Folded into System: the provider went with it, the trackers are connectors
+  // now. The route stays — the manifest declares it and links predate the fold.
+  '/settings/credentials': <Navigate to="/settings/system" replace />,
   '/settings/connections': <YeaboiSettingsPage />,
   // Folded into System. The contract still declares the tab and the terminal
   // still draws it, so the route stays — a link written before the fold, or a
@@ -216,7 +218,7 @@ export const router = createHashRouter([
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
-      { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },
+      { path: '/settings', element: <Navigate to="/settings/system" replace /> },
       // Folded into Appearance, which holds the themes now. The route stays:
       // the manifest declares it and links written before the fold still land.
       { path: '/settings/themes', element: <Navigate to="/settings/appearance" replace /> },

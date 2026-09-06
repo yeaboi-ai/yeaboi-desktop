@@ -174,7 +174,7 @@
     {
       "path": "/settings/credentials",
       "capability": "settings",
-      "title": "Settings · Set-up"
+      "title": "Settings · System"
     },
     {
       "path": "/settings/connections",
@@ -325,7 +325,7 @@
   "settings_tabs": [
     {
       "route": "/settings/credentials",
-      "title": "Set-up",
+      "title": "Credentials",
       "sections": [
         "provider",
         "jira",

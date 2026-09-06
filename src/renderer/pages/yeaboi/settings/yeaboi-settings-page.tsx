@@ -2,18 +2,18 @@
 
 // Settings — the config every yeaboi surface reads.
 //
-// Credentials answers "who does yeaboi talk to": the provider it thinks with,
-// then one collapsed card per integration, each showing what it is pointed at.
-// The cards and the provider grid are the same components the onboarding
-// wizard and /setup use, so the three surfaces cannot drift.
+// System is this machine: the provider it thinks with, what it may spend, what
+// it stores, what it shares. Every service it talks *to* is a connector in the
+// Integrations catalog, which is why there is no Credentials tab any more — a
+// tracker's keys are entered in the same sheet that lists it.
 //
-// Sharing and System stay field lists — they configure this machine, not a
-// remote service — but wear the same card, header and row vocabulary.
+// The provider grid is the same component the onboarding wizard and /setup
+// use, so the three surfaces cannot drift.
 //
 // Appearance and Duck configure this window rather than the engine, so they
 // are declared here rather than in the contract's settings_tabs.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocation } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
@@ -31,17 +31,10 @@ import {
 import { SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { type VoiceStatus, getVoice, setVoiceOffer } from '@/lib/yeaboi/voice';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import {
-  CONNECTION_CARDS,
-  ConnectionCard,
-  GROUPS,
-  groupConnections,
-} from '@/components/yeaboi/connection-card';
 import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
-import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
 import { SystemPanel } from '@/components/settings/system-panel';
@@ -57,8 +50,6 @@ import {
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
 import { Button } from '@/components/ui/button';
-
-const DOT = ' · ';
 
 function activeChoice(fields: SettingField[], env: string): string {
   return fields.find((f) => f.env === env)?.active_choice ?? '';
@@ -90,32 +81,8 @@ function visibleProviderEnvs(fields: SettingField[], catalog: ProviderCatalog | 
   return visible;
 }
 
-/** What an integration is pointed at, once it is connected — the host, the
- *  project, the channel. One line of fact in place of the blurb. */
-function connectionSummary(section: string, value: (env: string) => string): string {
-  const parts: Record<string, string[]> = {
-    github: [value('TEAM_ANALYSIS_GITHUB_OWNERS')],
-    jira: [value('JIRA_BASE_URL').replace(/^https?:\/\//, ''), value('JIRA_PROJECT_KEY')],
-    azure: [
-      value('AZURE_DEVOPS_ORG_URL').replace(/^https?:\/\//, ''),
-      value('AZURE_DEVOPS_PROJECT'),
-    ],
-    notion: [value('NOTION_ROOT_PAGE_ID')],
-    slack: [
-      value('SLACK_CHANNEL_ID'),
-      value('SLACK_BOT_TOKEN') && value('SLACK_CHANNEL_ID') ? 'reads back' : '',
-    ],
-  };
-  return (parts[section] ?? []).filter(Boolean).join(DOT);
-}
-
 const inputClass =
   'flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-1.5 font-mono text-[12px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none';
-
-/** How many columns the credential groups are dealt into. Matches the grid
- *  below — the wide breakpoint's count, since that is where a group can end up
- *  beside another one. */
-const COLUMNS = 3;
 
 function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
@@ -128,7 +95,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [signingIn, setSigningIn] = useState(false);
   const [moveAsk, setMoveAsk] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState('');
-  const headerRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const refresh = () => loadSettings().then(setSnapshot, (e: Error) => setError(e.message));
   useEffect(() => {
@@ -372,98 +338,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     </p>
   );
 
-  if (tab.route === '/settings/credentials') {
-    const providerFields = sectionFields('provider');
-    const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
-    const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
-    // Slack is configured in Integrations, in the same sheet every other
-    // connector uses — a second card writing the same envs is a second place to
-    // look. The onboarding step still offers it, which is a first run's job.
-    const grouped = groupConnections(
-      snapshot,
-      CONNECTION_CARDS.filter((one) => one.section !== 'slack'),
-      GROUPS,
-    );
-    const columns: (typeof grouped)[] = Array.from({ length: COLUMNS }, () => []);
-    grouped.forEach((group, at) => columns[at % COLUMNS]!.push(group));
-
-    let flat = -1;
-    const headerKeyHandler = (index: number) => (event: React.KeyboardEvent) => {
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-      event.preventDefault();
-      headerRefs.current[index + (event.key === 'ArrowDown' ? 1 : -1)]?.focus();
-    };
-
-    return (
-      <div>
-        {banners}
-        <ProviderPanel
-          card={card}
-          fields={providerFields}
-          catalog={catalog}
-          onSave={(env, value) => void save(env, value)}
-          onSignIn={() => setSigningIn(true)}
-        />
-        {/* The groups run across the page rather than down it: each is one or
-            two cards, and a column of them left two thirds of the window empty
-            to say so.
-
-            Dealt into columns by hand rather than left to the grid to wrap. A
-            grid row is as tall as its tallest cell, so opening one card grew
-            the row it was in and shoved every group after it down the page —
-            the one thing that must not move when you open something is
-            everything you did not open. A column only moves its own. */}
-        <div className="mt-6 grid items-start gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
-          {columns.map((column, columnIndex) => (
-            <div key={columnIndex} className="space-y-4">
-              {column.map((group, position) => (
-                <div
-                  key={group.label}
-                  className="animate-slide-up motion-reduce:animate-none"
-                  style={{ animationDelay: `${(position * COLUMNS + columnIndex) * 60}ms` }}
-                >
-                  <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-                    {group.label}
-                  </h3>
-                  <div className="space-y-2">
-                    {group.items.map(({ card: spec, fields }) => {
-                      flat += 1;
-                      const index = flat;
-                      return (
-                        <ConnectionCard
-                          key={spec.section}
-                          card={spec}
-                          fields={fields}
-                          /* The heading and its cards arrive together, as the group
-                         they are — a card rising inside a rising group is two
-                         movements for one thing appearing. */
-                          animate={false}
-                          prefillNonSecret
-                          summary={connectionSummary(spec.section, valueOf)}
-                          open={openCard === spec.section}
-                          onToggle={() =>
-                            setOpenCard((s) => (s === spec.section ? '' : spec.section))
-                          }
-                          onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
-                          headerRef={(el) => {
-                            headerRefs.current[index] = el;
-                          }}
-                          onHeaderKeyDown={headerKeyHandler(index)}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-        <ConnectedIntegrations />
-        {footer}
-      </div>
-    );
-  }
-
   // Sharing is one switch and a timeout, so it renders inside System rather
   // than on a surface of its own.
   const sharing = (() => {
@@ -506,6 +380,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   })();
 
   if (tab.title === 'System') {
+    const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
+    const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
     return (
       <div>
         {banners}
@@ -514,6 +390,26 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           renderRow={renderRow}
           dictationRow={<DictationRow />}
           sharing={sharing}
+          provider={
+            <>
+              <div className="mb-3 flex justify-end">
+                <Link
+                  href="/setup"
+                  className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
+                >
+                  Re-run setup
+                  <ArrowUpRight className="size-3" aria-hidden="true" />
+                </Link>
+              </div>
+              <ProviderPanel
+                card={card}
+                fields={sectionFields('provider')}
+                catalog={catalog}
+                onSave={(env, value) => void save(env, value)}
+                onSignIn={() => setSigningIn(true)}
+              />
+            </>
+          }
           openCard={openCard}
           onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
           onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
@@ -707,17 +603,6 @@ export default function YeaboiSettingsPage() {
         </>
       ) : (
         <BackendGate>
-          {engineTab?.route === '/settings/credentials' && (
-            <div className="mb-3 flex justify-end">
-              <Link
-                href="/setup"
-                className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
-              >
-                Re-run setup
-                <ArrowUpRight className="size-3" aria-hidden="true" />
-              </Link>
-            </div>
-          )}
           {engineTab?.route === '/settings/connections' ? (
             <IntegrationsCatalog />
           ) : (

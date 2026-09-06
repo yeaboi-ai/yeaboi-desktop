@@ -16,6 +16,7 @@
 import type { ReactNode } from 'react';
 import type { SettingField } from '@/lib/yeaboi/settings';
 import { ConnectionCard, type ConnectionCardSpec } from '@/components/yeaboi/connection-card';
+import { cn } from '@/lib/utils';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { SectionIcon } from '@/components/settings/section-icon';
 
@@ -76,6 +77,7 @@ export function SystemPanel({
   renderRow,
   dictationRow,
   sharing,
+  provider,
   openCard,
   onToggle,
   onSaved,
@@ -90,6 +92,10 @@ export function SystemPanel({
   /** The Sharing tab's cards, folded in here: it was one switch and a timeout
    *  on a surface of its own. */
   sharing?: ReactNode;
+  /** Which model this machine thinks with, and what it may spend doing it.
+   *  Full width above the columns: it is the one thing on this page that is
+   *  not a card among cards. */
+  provider?: ReactNode;
   openCard: string;
   onToggle: (key: string) => void;
   onSaved: (title: string) => void;
@@ -212,9 +218,12 @@ export function SystemPanel({
   );
 
   return (
-    <div className="grid items-start gap-4 xl:grid-cols-2">
-      {panels}
-      {connections}
+    <div>
+      {provider}
+      <div className={cn('grid items-start gap-4 xl:grid-cols-2', provider && 'mt-6')}>
+        {panels}
+        {connections}
+      </div>
     </div>
   );
 }
