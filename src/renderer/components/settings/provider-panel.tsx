@@ -156,83 +156,84 @@ export function ProviderPanel({
       </div>
 
       <div className="space-y-5 px-4 py-4">
-        {providerField && catalog && (
-          <div>
-            <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-              Provider
-            </h3>
-            {/* A list, not a wall: there are a dozen of these and only one
-                  is ever in use. The grid is the setup flow's, where picking
-                  one is the whole screen. */}
-            <Picker
-              label="Provider"
-              variant="card"
-              className="max-w-xl"
-              value={providerField.active_choice ?? ''}
-              options={catalog.providers.map((one) => ({
-                value: one.provider_val,
-                label: one.full_name,
-                note: one.tagline,
-                icon: <ProviderIcon provider={one.provider_val} size={28} />,
-              }))}
-              onChange={(picked) => {
-                if (picked !== providerField.active_choice) onSave('LLM_PROVIDER', picked);
-              }}
-            />
-          </div>
-        )}
-        {modelField && presets.length > 0 && (
-          <div>
-            <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
-              Model
-            </h3>
-            <Picker
-              label="Model"
-              variant="card"
-              className="max-w-xl"
-              value={modelValue}
-              options={[
-                ...presets.map((id) => ({
-                  value: id,
-                  label: id,
-                  mono: true,
-                  ...(modelTrait(id, card?.model_hints ?? {})
-                    ? { note: modelTrait(id, card?.model_hints ?? {}) }
-                    : {}),
-                  ...(id === recommended ? { badge: 'recommended' } : {}),
-                })),
-                {
-                  value: CUSTOM_MODEL,
-                  label: 'Custom…',
-                  note: 'Paste any model id this credential can reach.',
-                },
-              ]}
-              onChange={(id) => {
-                if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
-                else onSave('LLM_MODEL', id === recommended ? '' : id);
-              }}
-            />
-            {modelValue === CUSTOM_MODEL && (
-              <div className="mt-2 flex max-w-xl items-center gap-2">
-                <input
-                  value={custom}
-                  onChange={(event) => setCustom(event.target.value)}
-                  placeholder="model id"
-                  aria-label="Custom model id"
-                  className="min-w-0 flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:border-border"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!custom.trim() || custom.trim() === model}
-                  onClick={() => onSave('LLM_MODEL', custom.trim())}
-                >
-                  Use this model
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Read together and changed together, so they sit together. */}
+        <div className="grid gap-5 md:grid-cols-2">
+          {providerField && catalog && (
+            <div>
+              <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                Provider
+              </h3>
+              {/* A list, not a wall: there are a dozen of these and only one
+                    is ever in use. The grid is the setup flow's, where picking
+                    one is the whole screen. */}
+              <Picker
+                label="Provider"
+                variant="card"
+                value={providerField.active_choice ?? ''}
+                options={catalog.providers.map((one) => ({
+                  value: one.provider_val,
+                  label: one.full_name,
+                  note: one.tagline,
+                  icon: <ProviderIcon provider={one.provider_val} size={28} />,
+                }))}
+                onChange={(picked) => {
+                  if (picked !== providerField.active_choice) onSave('LLM_PROVIDER', picked);
+                }}
+              />
+            </div>
+          )}
+          {modelField && presets.length > 0 && (
+            <div>
+              <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
+                Model
+              </h3>
+              <Picker
+                label="Model"
+                variant="card"
+                value={modelValue}
+                options={[
+                  ...presets.map((id) => ({
+                    value: id,
+                    label: id,
+                    mono: true,
+                    ...(modelTrait(id, card?.model_hints ?? {})
+                      ? { note: modelTrait(id, card?.model_hints ?? {}) }
+                      : {}),
+                    ...(id === recommended ? { badge: 'recommended' } : {}),
+                  })),
+                  {
+                    value: CUSTOM_MODEL,
+                    label: 'Custom…',
+                    note: 'Paste any model id this credential can reach.',
+                  },
+                ]}
+                onChange={(id) => {
+                  if (id === CUSTOM_MODEL) setCustom(modelIsPreset ? '' : model);
+                  else onSave('LLM_MODEL', id === recommended ? '' : id);
+                }}
+              />
+              {modelValue === CUSTOM_MODEL && (
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    value={custom}
+                    onChange={(event) => setCustom(event.target.value)}
+                    placeholder="model id"
+                    aria-label="Custom model id"
+                    className="min-w-0 flex-1 rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/50 focus-visible:border-border"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!custom.trim() || custom.trim() === model}
+                    onClick={() => onSave('LLM_MODEL', custom.trim())}
+                  >
+                    Use this model
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div>
           <h3 className="mb-2 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
