@@ -15,12 +15,10 @@
 
 import type { ReactNode } from 'react';
 import type { SettingField } from '@/lib/yeaboi/settings';
-import { ConnectionCard, type ConnectionCardSpec } from '@/components/yeaboi/connection-card';
 import { cn } from '@/lib/utils';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { SectionIcon } from '@/components/settings/section-icon';
 
-const DOT = ' · ';
 
 export const HIDDEN_ON_SYSTEM = new Set([
   'SAVER_STYLE',
@@ -31,46 +29,6 @@ export const HIDDEN_ON_SYSTEM = new Set([
 
 /** Local dictation lives on this machine; the two cloud keys below do not. */
 const DICTATION_ENVS = ['VOICE_DEVICE', 'VOICE_MODEL'];
-const ELEVENLABS_ENVS = ['ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID', 'ELEVENLABS_MODEL_ID'];
-const TAVUS_ENVS = ['TAVUS_API_KEY'];
-
-const STANDUP_CARD: ConnectionCardSpec = {
-  section: 'standup',
-  icon: 'standup',
-  title: 'Daily Standup',
-  blurb: 'Where standups read code from, and the mailbox every ceremony sends through.',
-  hints: {
-    STANDUP_GITHUB_REPO: 'owner/repo — the estate standups scan for code activity.',
-    STANDUP_SMTP_PASSWORD: 'Only needed if your SMTP server asks for a login.',
-    STANDUP_EMAIL_RECIPIENTS: 'Comma-separated. Email delivery is skipped entirely when empty.',
-  },
-  placeholders: {
-    STANDUP_GITHUB_REPO: 'acme/platform',
-    STANDUP_SMTP_HOST: 'smtp.example.com',
-    STANDUP_EMAIL_RECIPIENTS: 'team@example.com',
-  },
-};
-
-const ELEVENLABS_CARD: ConnectionCardSpec = {
-  section: 'voice',
-  icon: 'elevenlabs',
-  title: 'ElevenLabs',
-  blurb: "The duck's spoken voice.",
-  hints: {
-    ELEVENLABS_VOICE_ID: 'A voice from your ElevenLabs library. Empty uses the default.',
-    ELEVENLABS_MODEL_ID: 'Leave empty for eleven_turbo_v2_5.',
-  },
-  placeholders: { ELEVENLABS_MODEL_ID: 'eleven_turbo_v2_5' },
-  verify: 'elevenlabs',
-};
-
-const TAVUS_CARD: ConnectionCardSpec = {
-  section: 'voice',
-  icon: 'tavus',
-  title: 'Tavus',
-  blurb: 'Avatar video in desktop calls.',
-  verify: 'tavus',
-};
 
 export function SystemPanel({
   fields,
@@ -108,14 +66,9 @@ export function SystemPanel({
       .filter((f): f is SettingField => Boolean(f));
   const bySection = (section: string) =>
     fields.filter((f) => f.section === section && !HIDDEN_ON_SYSTEM.has(f.env));
-  const valueOf = (env: string) => fields.find((f) => f.env === env)?.value ?? '';
 
   const storage = bySection('storage');
-  const standup = bySection('standup');
   const dictation = pick(DICTATION_ENVS);
-  const elevenlabs = pick(ELEVENLABS_ENVS);
-  const tavus = pick(TAVUS_ENVS);
-  const privacy = bySection('privacy');
   const advanced = bySection('advanced');
 
   const card = (key: string) => ({
@@ -166,52 +119,6 @@ export function SystemPanel({
   const connections = (
     <div className="space-y-4">
       {sharing}
-
-      {standup.length > 0 && (
-        <ConnectionCard
-          card={STANDUP_CARD}
-          fields={standup}
-          prefillNonSecret
-          configured={Boolean(valueOf('STANDUP_GITHUB_REPO') || valueOf('STANDUP_SMTP_HOST'))}
-          summary={[valueOf('STANDUP_GITHUB_REPO'), valueOf('STANDUP_SMTP_HOST')]
-            .filter(Boolean)
-            .join(DOT)}
-          index={2}
-          {...card('standup')}
-        />
-      )}
-
-      {elevenlabs.length > 0 && (
-        <ConnectionCard
-          card={ELEVENLABS_CARD}
-          fields={elevenlabs}
-          prefillNonSecret
-          summary={valueOf('ELEVENLABS_MODEL_ID') || 'eleven_turbo_v2_5'}
-          index={3}
-          {...card('elevenlabs')}
-        />
-      )}
-
-      {tavus.length > 0 && (
-        <ConnectionCard
-          card={TAVUS_CARD}
-          fields={tavus}
-          prefillNonSecret
-          index={4}
-          {...card('tavus')}
-        />
-      )}
-
-      {privacy.length > 0 && (
-        <SettingsCard index={5} variant="flat">
-          <SettingsSectionHeader
-            title="Privacy"
-            subtitle="The switches the Privacy page's disclosure table names"
-            icon={<SectionIcon section="privacy" />}
-          />
-          <div className="py-1.5">{privacy.map(renderRow)}</div>
-        </SettingsCard>
-      )}
 
       {extras}
     </div>
