@@ -258,15 +258,15 @@ function SystemCheckPill() {
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
-      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center gap-2.5 font-code text-[11px] text-muted-foreground transition-[width,padding] duration-200 ease-out hover:bg-secondary/50 hover:text-foreground ${here ? 'w-8 px-0' : 'px-3'}`}
+      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center font-code text-[11px] text-muted-foreground transition-[padding] duration-200 ease-out hover:bg-secondary/50 hover:text-foreground ${here ? 'px-0' : 'px-3'}`}
     >
-      {/* On the page it leads to it is the way back, like the gear and the
-          envelope: the counts wind out as the arrow swings in. */}
+      {/* On the page it leads to it is the way back: the pill narrows to a
+          button, the counts fading out where they stand as the arrow fades in
+          behind them. Nothing travels — a row of numbers sliding across reads
+          as content moving, not as one control becoming another. */}
       <span
         className={`flex items-center gap-2.5 overflow-hidden transition-all duration-200 ease-out ${
-          here
-            ? 'max-w-0 rotate-90 scale-75 opacity-0'
-            : 'max-w-[10rem] rotate-0 scale-100 opacity-100'
+          here ? 'max-w-0 opacity-0' : 'max-w-[10rem] opacity-100'
         }`}
       >
         {counts.map((tone) => (
@@ -276,12 +276,15 @@ function SystemCheckPill() {
           </span>
         ))}
       </span>
-      <ArrowLeft
-        aria-hidden
-        className={`h-[14px] shrink-0 transition-all duration-200 ease-out ${
-          here ? 'w-[14px] rotate-0 scale-100 opacity-100' : 'w-0 -rotate-90 scale-75 opacity-0'
+      {/* Its width is the button's when it is the way back, so the pill
+          narrows to the same square as its neighbours as the counts leave. */}
+      <span
+        className={`flex justify-center overflow-hidden transition-all duration-200 ease-out ${
+          here ? 'w-8 opacity-100' : 'w-0 opacity-0'
         }`}
-      />
+      >
+        <ArrowLeft aria-hidden className="h-[14px] w-[14px] shrink-0" />
+      </span>
     </Link>
   );
 }
