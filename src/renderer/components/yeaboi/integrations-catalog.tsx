@@ -81,6 +81,9 @@ export function IntegrationsCatalog() {
   // and you either have one or you do not. A search or a family chip is asking
   // for it, so it opens itself.
   const [restOpen, setRestOpen] = useState(false);
+  // `overflow-hidden` is what makes the fold a fold, and what clips a tile's
+  // ring once it is open. It lasts as long as the movement does.
+  const [folding, setFolding] = useState(true);
   const [creating, setCreating] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -262,7 +265,10 @@ export function IntegrationsCatalog() {
             <div>
               <button
                 type="button"
-                onClick={() => setRestOpen((open) => !open)}
+                onClick={() => {
+                  setFolding(true);
+                  setRestOpen((open) => !open);
+                }}
                 aria-expanded={showRest}
                 className="flex w-full items-center gap-2 border-t border-border/40 pt-4 font-body text-[11px] text-muted-foreground transition-colors hover:text-foreground"
               >
@@ -277,12 +283,13 @@ export function IntegrationsCatalog() {
               </button>
 
               <div
+                onTransitionEnd={() => setFolding(!showRest)}
                 className={cn(
                   'grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out',
                   showRest ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
                 )}
               >
-                <div className="overflow-hidden">
+                <div className={showRest && !folding ? 'overflow-visible' : 'overflow-hidden'}>
                   <div className="space-y-6 pt-4">
                     {shelfFamilies.map((f) => (
                       <section key={f.key}>
