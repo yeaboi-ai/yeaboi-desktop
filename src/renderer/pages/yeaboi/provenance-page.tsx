@@ -145,13 +145,12 @@ function ProvenanceBody() {
 
   return (
     <div className="space-y-4">
+      {/* The page's own name is the settings heading above it; what belongs
+          here is what this record is and how far back it is being read. */}
       <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-foreground">Provenance</h1>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            The tamper-evident record of what was decided, by whom, and on what.
-          </p>
-        </div>
+        <p className="text-[13px] text-muted-foreground">
+          The tamper-evident record of what was decided, by whom, and on what.
+        </p>
         <div className="flex shrink-0 items-center gap-1.5">
           {WINDOWS.map((days) => (
             <button

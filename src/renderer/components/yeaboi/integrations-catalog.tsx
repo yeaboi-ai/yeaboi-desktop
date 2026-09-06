@@ -111,52 +111,65 @@ export function IntegrationsCatalog() {
 
   return (
     <div className="space-y-4">
-      {/* The shelves below deal themselves in; what sits above them was simply
-          already there, which made the page look like it had arrived twice. */}
-      <div className="flex animate-slide-up flex-wrap items-center justify-between gap-3 motion-reduce:animate-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="relative min-w-56 flex-1">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground/60"
-            />
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search the catalog"
-              aria-label="Search the catalog"
-              className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
-            />
-          </label>
-        </div>
-        <div className="flex items-center gap-3">
-          <p className="text-[12px] font-mono text-muted-foreground">
-            {connected.length} of {rows.length} connected
-          </p>
-          <Button size="xs" variant="secondary" onClick={() => setCreating(true)}>
-            <Plus aria-hidden className="mr-1 size-3" />
-            Create your own
-          </Button>
-        </div>
-      </div>
+      {/* Searching and filtering stay put while the shelves scroll under them:
+          they are how you get to a row, and scrolling them away leaves the
+          catalog with no way to narrow it but back to the top.
 
+          Sticky under the page's heading — the shell measures that and says how
+          tall it is. Widened past the column so the shelves pass behind it. */}
       <div
-        role="group"
-        aria-label="Family filter"
-        className="flex animate-slide-up flex-wrap gap-1.5 motion-reduce:animate-none"
-        style={{ animationDelay: '60ms' }}
+        // Pulled up against the heading and carrying its own top padding: a
+        // gap between two pinned bars is a stripe of moving content.
+        className="pin-fade sticky z-[9] -mx-6 -mt-4 space-y-3 bg-background px-6 pt-3 pb-3"
+        style={{ top: 'var(--settings-head, 0px)' }}
       >
-        <FamilyChip label="All" active={!family} onPick={() => setFamily('')} />
-        {(payload?.families ?? []).map((f) => (
-          <FamilyChip
-            key={f.key}
-            label={f.label}
-            active={family === f.key}
-            onPick={() => setFamily(family === f.key ? '' : f.key)}
-          />
-        ))}
+        {/* The shelves below deal themselves in; what sits above them was simply
+            already there, which made the page look like it had arrived twice. */}
+        <div className="flex animate-slide-up flex-wrap items-center justify-between gap-3 motion-reduce:animate-none">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative min-w-56 flex-1">
+              <Search
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground/60"
+              />
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search the catalog"
+                aria-label="Search the catalog"
+                className="w-full rounded-lg border border-border/40 bg-secondary/40 py-2 pr-3 pl-9 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+              />
+            </label>
+          </div>
+          <div className="flex items-center gap-3">
+            <p className="text-[12px] font-mono text-muted-foreground">
+              {connected.length} of {rows.length} connected
+            </p>
+            <Button size="xs" variant="secondary" onClick={() => setCreating(true)}>
+              <Plus aria-hidden className="mr-1 size-3" />
+              Create your own
+            </Button>
+          </div>
+        </div>
+
+        <div
+          role="group"
+          aria-label="Family filter"
+          className="flex animate-slide-up flex-wrap gap-1.5 motion-reduce:animate-none"
+          style={{ animationDelay: '60ms' }}
+        >
+          <FamilyChip label="All" active={!family} onPick={() => setFamily('')} />
+          {(payload?.families ?? []).map((f) => (
+            <FamilyChip
+              key={f.key}
+              label={f.label}
+              active={family === f.key}
+              onPick={() => setFamily(family === f.key ? '' : f.key)}
+            />
+          ))}
+        </div>
       </div>
 
       {filtered.length === 0 ? (

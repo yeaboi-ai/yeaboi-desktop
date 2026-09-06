@@ -1577,6 +1577,52 @@ html[data-audience='agents'] {
     width 200ms ease-out;
 }
 
+/* What is pinned over a scrolling page — a heading, a toolbar — hands off to
+   the content passing under it rather than cutting it on a straight edge. The
+   fall hangs below the pinned block, so nothing has to know how tall it is. */
+.pin-fade::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 24px;
+  pointer-events: none;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  mask-image: linear-gradient(to bottom, #000 10%, transparent 90%);
+  background: linear-gradient(to bottom, var(--background), transparent 85%);
+}
+
+/* The foot of a scrolling page: a blur that thickens on the way down, with the
+   page's own colour arriving under it. Two layers rather than one — a single
+   masked blur fades its strength linearly and still reads as a band with an
+   edge; stacked, the light one carries the top of the fall and the heavy one
+   the bottom. */
+.scroll-fade::before,
+.scroll-fade::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.scroll-fade::before {
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  mask-image: linear-gradient(to bottom, transparent, #000 55%);
+}
+
+.scroll-fade::after {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  mask-image: linear-gradient(to bottom, transparent 40%, #000 92%);
+  background: linear-gradient(
+    to bottom,
+    transparent 20%,
+    color-mix(in srgb, var(--background) 70%, transparent) 65%,
+    var(--background) 96%
+  );
+}
+
 /* Niko docked right stands where the duck and the two controls beside him do.
    They drop out of his way rather than sit under him, and come back when he
    returns to the middle — quicker than they left, because by then the corner
