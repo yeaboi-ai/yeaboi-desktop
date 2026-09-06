@@ -68,7 +68,7 @@ export function FilingSlip({
     <aside
       aria-label="What will be filed"
       className={cn(
-        'relative overflow-hidden rounded-2xl bg-secondary/40 ring-1 ring-border/60',
+        'relative flex flex-col overflow-hidden rounded-2xl bg-secondary/40 ring-1 ring-border/60',
         className,
       )}
     >
@@ -79,7 +79,7 @@ export function FilingSlip({
         style={{ background: tone }}
       />
 
-      <div className="space-y-5 py-5 pr-5 pl-6">
+      <div className="flex min-h-0 flex-1 flex-col space-y-5 py-5 pr-5 pl-6">
         <p className="font-mono text-[9.5px] tracking-[0.18em] text-muted-foreground uppercase">
           Will be filed as
         </p>
@@ -131,7 +131,9 @@ export function FilingSlip({
           </Line>
         )}
 
-        <div className="border-t border-border/50 pt-4">
+        {/* What it does and the button that does it sit at the foot, so a slip
+            stretched beside a taller composer keeps them there. */}
+        <div className="mt-auto border-t border-border/50 pt-4">
           <p className="font-body text-[12px] leading-relaxed text-muted-foreground">
             {routeSentence(options)}
           </p>

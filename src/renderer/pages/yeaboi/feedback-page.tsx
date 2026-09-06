@@ -380,7 +380,7 @@ function FeedbackBody() {
       area={area}
       title={title}
       attachments={attachments}
-      className="animate-slide-up max-w-sm self-start lg:max-w-none motion-reduce:animate-none"
+      className="animate-slide-up max-w-sm self-start lg:max-w-none lg:h-full motion-reduce:animate-none"
       actions={
         proposal ? null : (
           <>
@@ -412,9 +412,18 @@ function FeedbackBody() {
       {/* One explicit row, not an implicit one: a grid's auto row is as tall
           as its content, so `flex-1` on the grid box alone gave the composer a
           taller box to sit at the top of rather than a taller composer. */}
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      {/* Two rows: the pickers sit above the composer in the first, and the
+          slip starts level with the composer in the second rather than level
+          with the pickers. */}
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] items-stretch gap-x-8 gap-y-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        {!proposal && (
+          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 lg:col-start-1 lg:row-start-1">
+            <TypePicker types={options.types} active={kind} onPick={setKind} disabled={working} />
+            <AreaPicker options={options} area={area} onPick={setArea} disabled={working} />
+          </div>
+        )}
         {proposal ? (
-          <div className="quiet-scroll min-h-0 overflow-y-auto">
+          <div className="quiet-scroll min-h-0 overflow-y-auto lg:col-start-1 lg:row-start-2">
             <PolishPreview
               mine={{ title, description }}
               polished={proposal}
@@ -428,7 +437,7 @@ function FeedbackBody() {
           </div>
         ) : (
           <div
-            className="animate-slide-up relative flex min-h-0 flex-col gap-5 motion-reduce:animate-none"
+            className="animate-slide-up relative flex min-h-0 flex-col gap-5 motion-reduce:animate-none lg:col-start-1 lg:row-start-2"
             onDragEnter={(event) => {
               event.preventDefault();
               dragDepth.current += 1;
@@ -458,11 +467,6 @@ function FeedbackBody() {
             }}
           >
             {dragging && <DropVeil label="Drop to attach a screenshot or a log" />}
-
-            <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2">
-              <TypePicker types={options.types} active={kind} onPick={setKind} disabled={working} />
-              <AreaPicker options={options} area={area} onPick={setArea} disabled={working} />
-            </div>
 
             {/* The sheet the issue is written on. The fields keep no chrome of
                 their own — the rules between them are what separates one from
@@ -509,20 +513,20 @@ function FeedbackBody() {
                 />
               </div>
             </div>
-
-            <p aria-live="polite" className="min-h-[1rem] shrink-0 text-[12px]">
-              {notice && (
-                <span
-                  className={notice.tone === 'error' ? 'text-destructive' : 'text-muted-foreground'}
-                >
-                  {notice.text}
-                </span>
-              )}
-            </p>
           </div>
         )}
-        <div className="quiet-scroll min-h-0 overflow-y-auto">{slip}</div>
+        <div className="quiet-scroll min-h-0 overflow-y-auto lg:col-start-2 lg:row-start-2">
+          {slip}
+        </div>
       </div>
+
+      <p aria-live="polite" className="mt-2 min-h-[1rem] shrink-0 text-[12px]">
+        {notice && (
+          <span className={notice.tone === 'error' ? 'text-destructive' : 'text-muted-foreground'}>
+            {notice.text}
+          </span>
+        )}
+      </p>
     </>
   );
 }

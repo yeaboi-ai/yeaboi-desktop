@@ -16,12 +16,16 @@ function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
 function PopoverContent({
   className,
   sideOffset = 8,
+  alignOffset,
   align = 'center',
   side,
   children,
   ...props
 }: PopoverPrimitive.Popup.Props & {
   sideOffset?: number;
+  /** Nudge along the aligned edge — how a menu lines its rows up with what
+   *  opened it, rather than its box with the trigger's box. */
+  alignOffset?: number;
   align?: 'start' | 'center' | 'end';
   /** Preferred placement relative to the trigger. Base UI flips automatically
    *  when there's no room, so this is a hint rather than a hard pin. Omit to
@@ -43,6 +47,7 @@ function PopoverContent({
           just guarantees the popover beats every drawer.). */}
       <PopoverPrimitive.Positioner
         sideOffset={sideOffset}
+        alignOffset={alignOffset}
         align={align}
         side={side}
         style={{ zIndex: 9000 }}
