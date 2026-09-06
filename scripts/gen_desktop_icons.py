@@ -66,6 +66,11 @@ HEAD_PALETTE = {
     "b": (250, 176, 44),
     "r": (228, 104, 22),
 }
+#: The rows of the sprite that are the head. Everything under them is the neck,
+#: which hangs below him the way the bill hangs in front: part of the drawing,
+#: not part of what the eye centres on.
+HEAD_CROWN_ROWS = 11
+
 HEAD_ROWS = (
     "......kkkk......",
     ".....GGGGGG.....",
@@ -146,20 +151,21 @@ def _duck_head():
     return head.crop(head.getbbox()).transpose(Image.FLIP_LEFT_RIGHT)
 
 
-def _head_box(head):
-    """The head itself: his own colours, without the outline or the bill.
+def _head_box(head, scale: int = 1):
+    """The head itself, without the outline, the bill or the neck.
 
-    The outline is the near-black the plate is, so it is not part of what can
-    be seen; the bill sticks out past the head and pulls it off centre. What is
-    centred is the head somebody looks at.
+    The outline is the near-black the plate is, so it is not part of what can be
+    seen; the bill hangs in front of him and the neck below him, and centring
+    the drawing on either puts his face off the middle of the icon.
     """
     from PIL import Image
 
     counted = {HEAD_PALETTE[letter] for letter in ("G", "g", "W")}
+    crown = HEAD_CROWN_ROWS * scale
     mask = Image.new("L", head.size, 0)
     pixels = head.load()
     paint = mask.load()
-    for y in range(head.height):
+    for y in range(min(crown, head.height)):
         for x in range(head.width):
             r, g, b, a = pixels[x, y]
             if a > 0 and (r, g, b) in counted:
@@ -217,7 +223,7 @@ def master():
     # Centred on the head, not on the sprite's box: the outline is the plate's
     # own near-black and the bill hangs out past him, so the box is a dozen
     # pixels off what anybody looking at it would call the middle.
-    seen = _head_box(duck)
+    seen = _head_box(duck, cell)
     left = (MASTER - width) // 2 - ((seen[0] + seen[2]) // 2 - width // 2)
     top = (MASTER - height) // 2 - ((seen[1] + seen[3]) // 2 - height // 2)
 
