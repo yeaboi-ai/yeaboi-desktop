@@ -147,7 +147,7 @@ export default function ThemeEditorPage() {
       if (apply && savedId) {
         setExplicit(`custom:${savedId}` as `custom:${string}`);
       }
-      setTimeout(() => router.push('/settings/themes'), 600);
+      setTimeout(() => router.push('/settings/appearance'), 600);
     } catch (err) {
       logger.warn('theme-editor save', err);
       setError('Network error');
@@ -172,7 +172,7 @@ export default function ThemeEditorPage() {
         }
         return;
       }
-      router.push('/settings/themes');
+      router.push('/settings/appearance');
     } finally {
       setSaving(false);
     }
@@ -190,11 +190,11 @@ export default function ThemeEditorPage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-6 py-10">
         <Link
-          href="/settings/themes"
+          href="/settings/appearance"
           className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="h-3 w-3" />
-          Themes
+          Appearance
         </Link>
 
         <header className="mb-8 flex flex-wrap items-end justify-between gap-4">

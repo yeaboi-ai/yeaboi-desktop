@@ -1,5 +1,9 @@
 'use client';
 
+// The one tab for how the window looks: the themes, and what it shows when you
+// have been away. Themes used to be a tab of its own beside an Appearance tab
+// that held a light/dark switch — the same choice, asked twice.
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,6 +25,9 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
+import { SettingsCard } from '@/components/settings/primitives/settings-card';
+import { SettingsSectionHeader } from '@/components/settings/primitives/settings-section-header';
+import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { BUILTIN_PRESETS } from '@/lib/theme/presets';
 import type { BuiltInPresetId, ColorScheme, ThemeId, TokenMap } from '@/lib/theme/types';
 import { useAuthFetch, getStoredOrgId } from '@/hooks/use-auth-fetch';
@@ -72,7 +79,7 @@ interface BrandSuggestionPayload {
   };
 }
 
-export default function ThemesSettingsPage() {
+export default function AppearanceSettingsPage() {
   const router = useRouter();
   const {
     themeId,
@@ -181,11 +188,15 @@ export default function ThemesSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <SettingsPageShell active="/settings/themes" maxWidth="max-w-6xl">
+    // No wrapper around the shell: the deck lays a page out as a flex column
+    // and the shell is what scrolls in it, so anything between the two takes
+    // the scroll away and the tab runs off the bottom of the window.
+    <>
+      <SettingsPageShell active="/settings/appearance" maxWidth="max-w-6xl">
         <p className="mb-8 max-w-2xl text-sm font-body text-muted-foreground">
-          Pick a built-in theme, follow your organization's default, build a custom theme, brand the
-          app from a website, or follow your system's light/dark setting — all in one place.
+          How the window looks: pick a built-in theme, follow your organization's default, build a
+          custom theme, brand the app from a website, or follow your system's light/dark setting —
+          and choose what it shows while you are away.
         </p>
 
         {deleteError && (
@@ -202,7 +213,7 @@ export default function ThemesSettingsPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {/* Built-ins */}
           {BUILTIN_ORDER.map((id) => (
             <BuiltInCard
@@ -289,6 +300,16 @@ export default function ThemesSettingsPage() {
           />
         </div>
 
+        <SettingsCard className="mt-8">
+          <SettingsSectionHeader
+            title="Screensaver"
+            subtitle="What the window shows when you have been away"
+          />
+          <div className="px-5 py-5">
+            <ScreensaverSection />
+          </div>
+        </SettingsCard>
+
         <p className="text-[11px] font-body text-muted-foreground/60 mt-12">
           Active theme: <span className="text-foreground">{themeId}</span>
         </p>
@@ -340,7 +361,7 @@ export default function ThemesSettingsPage() {
           />
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
 
@@ -377,42 +398,47 @@ function BuiltInCard({
     >
       <button type="button" onClick={onApply} className="w-full text-left">
         <div
-          className="p-5 flex flex-col gap-3"
+          className="flex flex-col gap-2 p-3"
           style={{ background: tokens['background'], color: tokens['foreground'] }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-body font-medium" style={{ color: tokens['foreground'] }}>
+          <div className="flex items-center gap-2">
+            <span
+              className="min-w-0 flex-1 truncate text-[12px] font-body font-medium"
+              style={{ color: tokens['foreground'] }}
+            >
               {name}
             </span>
             {colorScheme === 'dark' ? (
-              <Moon className="h-3 w-3" style={{ color: tokens['muted-foreground'] }} />
+              <Moon className="h-3 w-3 shrink-0" style={{ color: tokens['muted-foreground'] }} />
             ) : (
-              <Sun className="h-3 w-3" style={{ color: tokens['muted-foreground'] }} />
+              <Sun className="h-3 w-3 shrink-0" style={{ color: tokens['muted-foreground'] }} />
             )}
           </div>
-          <div className="flex gap-1.5">
-            <Swatch color={tokens['primary']} />
-            <Swatch color={tokens['accent-foreground']} />
-            <Swatch color={tokens['destructive']} />
-            <Swatch color={tokens['chart-2']} />
-            <Swatch color={tokens['chart-3']} />
+          <div className="flex items-center gap-1.5">
+            <span
+              className="font-display text-base leading-none italic"
+              style={{ color: tokens['primary'] }}
+            >
+              Aa
+            </span>
+            <span className="flex flex-1 justify-end gap-1">
+              <Swatch color={tokens['primary']} />
+              <Swatch color={tokens['accent-foreground']} />
+              <Swatch color={tokens['destructive']} />
+              <Swatch color={tokens['chart-2']} />
+              <Swatch color={tokens['chart-3']} />
+            </span>
           </div>
-          <span
-            className="font-display italic text-2xl leading-none"
-            style={{ color: tokens['primary'] }}
-          >
-            Aa
-          </span>
         </div>
       </button>
       {previewing && (
-        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
+        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
           Previewing
         </div>
       )}
       {!previewing && active && (
-        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center pointer-events-none">
-          <Check className="h-3 w-3" />
+        <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">
+          <Check className="h-2.5 w-2.5" />
         </div>
       )}
       {onClone && (
@@ -422,7 +448,7 @@ function BuiltInCard({
             e.stopPropagation();
             onClone();
           }}
-          className="absolute bottom-2 right-2 px-2 py-1 rounded-md text-[10px] font-body bg-card/95 border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 backdrop-blur shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity inline-flex items-center gap-1"
+          className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-body bg-card/95 border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 backdrop-blur shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity inline-flex items-center gap-1"
           title="Clone as a custom theme"
           aria-label={`Clone ${name} as a custom theme`}
         >
@@ -451,7 +477,7 @@ function CustomThemeCard({
 }) {
   return (
     <div
-      className={`relative border rounded-lg p-5 transition-colors ${
+      className={`relative border rounded-lg p-3 transition-colors ${
         previewing
           ? 'border-warning ring-2 ring-warning/60'
           : active
@@ -460,15 +486,15 @@ function CustomThemeCard({
       }`}
     >
       <button type="button" onClick={onApply} className="w-full text-left">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-body font-medium text-foreground truncate">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-[12px] font-body font-medium text-foreground">
             {preset.name}
           </span>
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 shrink-0">
+          <span className="shrink-0 text-[9px] uppercase tracking-wider text-muted-foreground/70">
             {preset.scope === 'org' ? 'Shared' : 'Personal'}
           </span>
         </div>
-        <p className="text-[10px] font-body text-muted-foreground/70 mb-3">
+        <p className="mt-0.5 mb-2 text-[10px] font-body text-muted-foreground/70">
           Custom · {preset.color_scheme}
         </p>
       </button>
@@ -508,13 +534,13 @@ function CustomThemeCard({
         </div>
       </div>
       {previewing && (
-        <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
+        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
           Previewing
         </div>
       )}
       {!previewing && active && (
-        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-          <Check className="h-3 w-3" />
+        <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
+          <Check className="h-2.5 w-2.5" />
         </div>
       )}
     </div>
@@ -543,24 +569,26 @@ function CompactCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`relative rounded-lg border bg-card p-5 text-left flex items-start gap-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`relative rounded-lg border bg-card p-3 text-left flex items-start gap-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
         active ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/40'
       }`}
     >
       <div
-        className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+        className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center ${
           variant === 'plus' ? 'border border-dashed border-border bg-background' : 'bg-secondary'
         }`}
       >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-body font-medium text-foreground">{title}</h3>
-        <p className="text-[11px] font-body text-muted-foreground/80 mt-0.5">{subtitle}</p>
+        <h3 className="truncate text-[12px] font-body font-medium text-foreground">{title}</h3>
+        <p className="mt-0.5 text-[10.5px] font-body leading-snug text-muted-foreground/80">
+          {subtitle}
+        </p>
       </div>
       {active && (
-        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center pointer-events-none">
-          <Check className="h-3 w-3" />
+        <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">
+          <Check className="h-2.5 w-2.5" />
         </div>
       )}
     </button>
@@ -581,16 +609,16 @@ function SystemCard({
     <button
       type="button"
       onClick={onToggle}
-      className={`relative rounded-lg border bg-card p-5 text-left flex items-start gap-3 transition-colors ${
+      className={`relative rounded-lg border bg-card p-3 text-left flex items-start gap-2.5 transition-colors ${
         isActive ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/40'
       }`}
     >
-      <div className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-secondary">
-        <Monitor className="h-4 w-4 text-muted-foreground" />
+      <div className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center bg-secondary">
+        <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-body font-medium text-foreground">Match my system</h3>
+          <h3 className="text-[12px] font-body font-medium text-foreground">Match my system</h3>
           {isActive && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
               <ResolvedIcon className="h-2.5 w-2.5" />
@@ -598,15 +626,15 @@ function SystemCard({
             </span>
           )}
         </div>
-        <p className="text-[11px] font-body text-muted-foreground/80 mt-0.5">
+        <p className="mt-0.5 text-[10.5px] font-body leading-snug text-muted-foreground/80">
           {isActive
             ? `Following your OS — currently ${activeScheme}. Click to stop.`
             : 'Auto-switch between Light & Dark with your OS'}
         </p>
       </div>
       {isActive && (
-        <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-          <Check className="h-3 w-3" />
+        <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
+          <Check className="h-2.5 w-2.5" />
         </div>
       )}
     </button>
@@ -1142,7 +1170,10 @@ function NewCustomPanel({
 
 function Swatch({ color }: { color: string }) {
   return (
-    <span className="w-5 h-5 rounded-full border border-black/10" style={{ background: color }} />
+    <span
+      className="h-3.5 w-3.5 rounded-full border border-black/10"
+      style={{ background: color }}
+    />
   );
 }
 

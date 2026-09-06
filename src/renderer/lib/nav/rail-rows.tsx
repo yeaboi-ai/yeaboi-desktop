@@ -31,7 +31,6 @@ import {
   SlidersHorizontal,
   Spade,
   Sunrise,
-  SwatchBook,
   TrendingUp,
 } from 'lucide-react';
 
@@ -76,7 +75,6 @@ const SETTINGS_ICONS: Record<string, RailIcon> = {
   '/settings/sharing': Share2,
   '/settings/system': SlidersHorizontal,
   '/settings/appearance': Palette,
-  '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
   '/ceremonies': CalendarDays,
   '/privacy': Lock,

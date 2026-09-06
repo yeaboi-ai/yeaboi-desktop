@@ -53,7 +53,7 @@ import SessionCompletedPage from '@/pages/session/session-completed-page';
 import NewSessionPage from '@/pages/session/session-new-page';
 import SessionPage from '@/pages/session/session-page';
 import ThemeEditorPage from '@/pages/settings/theme-edit-page';
-import ThemesSettingsPage from '@/pages/settings/themes-page';
+import AppearanceSettingsPage from '@/pages/settings/appearance-page';
 import TicketPage from '@/pages/ticket-page';
 
 /** Next pages written for the App Router take `params` as a promise and
@@ -152,7 +152,7 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   // are matched first, and an entry missing from here renders a placeholder.
   '/settings/sharing': <Navigate to="/settings/system" replace />,
   '/settings/system': <YeaboiSettingsPage />,
-  '/settings/appearance': <YeaboiSettingsPage />,
+  '/settings/appearance': <AppearanceSettingsPage />,
   '/settings/duck': <YeaboiSettingsPage />,
   '/setup': <SetupPage />,
 };
@@ -217,7 +217,9 @@ export const router = createHashRouter([
       { path: '/board', element: <GlobalBoardPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
       { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },
-      { path: '/settings/themes', element: <ThemesSettingsPage /> },
+      // Folded into Appearance, which holds the themes now. The route stays:
+      // the manifest declares it and links written before the fold still land.
+      { path: '/settings/themes', element: <Navigate to="/settings/appearance" replace /> },
       { path: '/settings/themes/edit', element: <ThemeEditorPage /> },
       { path: '/recordings/:id', element: <RecordingPage /> },
       { path: '/recording/:token', element: <SharedRecordingPage /> },

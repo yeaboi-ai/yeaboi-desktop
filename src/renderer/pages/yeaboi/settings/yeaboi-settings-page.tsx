@@ -55,8 +55,6 @@ import {
   SettingsSectionHeader,
 } from '@/components/settings/primitives';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
-import { AppearanceSection } from '@/components/settings/tabs/general/appearance-section';
-import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
 import { Button } from '@/components/ui/button';
 
@@ -687,39 +685,13 @@ function DictationRow() {
   );
 }
 
-/** Appearance and Duck talk to this window, not the engine, so they render
- *  outside the backend gate — the theme still switches with the sidecar down. */
-function AppearanceTab() {
-  return (
-    <div className="grid items-start gap-4 xl:grid-cols-2">
-      <SettingsCard index={0}>
-        <SettingsSectionHeader title="Appearance" subtitle="Colour scheme, for this window" />
-        <div className="px-5 py-5">
-          <AppearanceSection />
-        </div>
-      </SettingsCard>
-      <SettingsCard index={1}>
-        <SettingsSectionHeader
-          title="Screensaver"
-          subtitle="What the window shows when you have been away"
-        />
-        <div className="px-5 py-5">
-          <ScreensaverSection />
-        </div>
-      </SettingsCard>
-    </div>
-  );
-}
-
 export default function YeaboiSettingsPage() {
   const { pathname } = useLocation();
   const engineTab = SETTINGS_TABS.find((t) => t.route === pathname);
 
   return (
     <SettingsPageShell active={pathname}>
-      {pathname === '/settings/appearance' ? (
-        <AppearanceTab />
-      ) : pathname === '/settings/duck' ? (
+      {pathname === '/settings/duck' ? (
         <>
           <DuckTab />
           <div className="mt-4">

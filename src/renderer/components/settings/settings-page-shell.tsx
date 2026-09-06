@@ -45,8 +45,12 @@ export function SettingsPageShell({
           as whatever happened to be on it — Credentials sat narrower than
           every other tab, and opening a card widened the surface under the
           cursor. */}
-      <div className={cn('mx-auto w-full px-6 pt-10 pb-28', maxWidth)}>
-        <header className="mb-7">
+      <div className={cn('mx-auto w-full px-6 pb-28', maxWidth)}>
+        {/* The heading stays while the tab scrolls under it: it is the only
+            thing on the page that says which section this is, and a long tab
+            scrolled it away. Widened past the column and given the page's own
+            background so nothing shows through beside it. */}
+        <header className="sticky top-0 z-10 -mx-6 mb-7 bg-background px-6 pt-10 pb-4">
           <p className="text-[10px] font-body font-medium tracking-[0.14em] text-muted-foreground uppercase">
             Settings
           </p>

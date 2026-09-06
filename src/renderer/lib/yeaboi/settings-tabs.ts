@@ -52,6 +52,10 @@ export const ALL_SETTINGS_TABS: readonly { route: string; title: string }[] = [
  *  this window folds it. */
 export const FOLDED_TABS: Readonly<Record<string, string>> = {
   '/settings/sharing': '/settings/system',
+  // Themes and Appearance were the same question asked twice — one tab to
+  // pick light or dark, another holding the themes that decide it. They are
+  // one tab now, and it is the one named after what it does.
+  '/settings/themes': '/settings/appearance',
 };
 
 /** The tabs this window offers as places to go. */

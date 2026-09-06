@@ -16,7 +16,9 @@ export function ThemePreviewBar() {
 
   if (!preview) return null;
 
-  const onThemesPage = pathname?.startsWith('/settings/themes') ?? false;
+  const onThemesPage =
+    (pathname?.startsWith('/settings/appearance') || pathname?.startsWith('/settings/themes')) ??
+    false;
 
   return (
     <div
@@ -56,10 +58,10 @@ export function ThemePreviewBar() {
             <div className="flex items-center gap-2 shrink-0">
               {!onThemesPage && (
                 <Link
-                  href="/settings/themes"
+                  href="/settings/appearance"
                   className="px-3 py-1.5 rounded-md text-[11px] font-body border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
                 >
-                  Back to themes
+                  Back to appearance
                 </Link>
               )}
               <button
