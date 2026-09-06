@@ -233,7 +233,7 @@ export function Deck({ children }: { children: React.ReactNode }) {
         aria-hidden
         className="pointer-events-none fixed inset-0 z-[15] rounded-[var(--window-radius)] transition-[box-shadow,opacity] duration-300 ease-out"
         style={{
-          boxShadow: 'inset 0 0 var(--turn-inset) calc(var(--turn-inset) / 4) rgb(0 0 0 / 0.92)',
+          boxShadow: 'inset 0 0 var(--turn-inset) calc(var(--turn-inset) / 4) var(--turn-frame)',
           opacity: 'var(--turn-frame-opacity, 0)',
         }}
       />

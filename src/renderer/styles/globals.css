@@ -110,6 +110,10 @@
      rather than a page that happens to be changing. */
   --turn-inset: 0px;
   --turn-frame-opacity: 0;
+  /* What the frame is made of. A vignette has to be darker than the page it
+     closes in on, and a light page needs far less of it than a dark one before
+     it reads as a smudge. */
+  --turn-frame: rgb(0 0 0 / 0.18);
 
   --background: #fafaf9;
   --foreground: #171717;
@@ -160,6 +164,7 @@
 }
 
 [data-color-scheme='dark'] {
+  --turn-frame: rgb(0 0 0 / 0.92);
   --background: #0a0a0a;
   --foreground: #f0f0f0;
   --card: #121212;

@@ -146,18 +146,23 @@ def _duck_head():
     return head.crop(head.getbbox()).transpose(Image.FLIP_LEFT_RIGHT)
 
 
-def _visible_box(head):
-    """The head's bounds ignoring its outline, which is the plate's own colour."""
+def _head_box(head):
+    """The head itself: his own colours, without the outline or the bill.
+
+    The outline is the near-black the plate is, so it is not part of what can
+    be seen; the bill sticks out past the head and pulls it off centre. What is
+    centred is the head somebody looks at.
+    """
     from PIL import Image
 
-    hidden = {HEAD_PALETTE["k"], HEAD_PALETTE["o"]}
+    counted = {HEAD_PALETTE[letter] for letter in ("G", "g", "W")}
     mask = Image.new("L", head.size, 0)
     pixels = head.load()
     paint = mask.load()
     for y in range(head.height):
         for x in range(head.width):
             r, g, b, a = pixels[x, y]
-            if a > 0 and (r, g, b) not in hidden:
+            if a > 0 and (r, g, b) in counted:
                 paint[x, y] = 255
     return mask.getbbox() or (0, 0, head.width, head.height)
 
@@ -209,10 +214,10 @@ def master():
     width, height = duck.width * cell, duck.height * cell
     duck = duck.resize((width, height), Image.NEAREST)
 
-    # Centred on what can be seen, not on the sprite's box: his outline is the
-    # near-black the plate is, so the drawing reads a dozen pixels up and left
-    # of where the box says it is.
-    seen = _visible_box(duck)
+    # Centred on the head, not on the sprite's box: the outline is the plate's
+    # own near-black and the bill hangs out past him, so the box is a dozen
+    # pixels off what anybody looking at it would call the middle.
+    seen = _head_box(duck)
     left = (MASTER - width) // 2 - ((seen[0] + seen[2]) // 2 - width // 2)
     top = (MASTER - height) // 2 - ((seen[1] + seen[3]) // 2 - height // 2)
 
