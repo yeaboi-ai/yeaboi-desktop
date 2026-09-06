@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useLocation } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { AboutFooter } from '@/components/settings/about-footer';
 import {
   type ProviderCatalog,
   type SettingField,
@@ -419,6 +420,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
             ))}
         />
         {footer}
+        {/* What is running, on the page about what is running. */}
+        <AboutFooter />
       </div>
     );
   }

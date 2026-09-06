@@ -74,6 +74,10 @@ export function IntegrationsCatalog() {
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState('');
   const [openKey, setOpenKey] = useState('');
+  // Everything that is not an essential stays folded: it is a list of estates,
+  // and you either have one or you do not. A search or a family chip is asking
+  // for it, so it opens itself.
+  const [restOpen, setRestOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -109,6 +113,8 @@ export function IntegrationsCatalog() {
   );
   // Inside the shelf they keep their families: nine tiles in a row is a list,
   // and the point of the shelf is that each of these does one of four jobs.
+  // A search or a family chip is a request for what is folded away.
+  const showRest = restOpen || Boolean(query.trim()) || Boolean(family);
   const essentialFamilies = (payload?.families ?? [])
     .map((f) => ({ ...f, rows: essentials.filter((row) => row.family === f.key) }))
     .filter((f) => f.rows.length > 0);
@@ -218,10 +224,10 @@ export function IntegrationsCatalog() {
               below is somebody's estate and useful only to whoever has it. */}
           {essentialFamilies.length > 0 && (
             <section
-              className="animate-slide-up rounded-2xl bg-secondary/20 p-4 ring-1 ring-primary/20 motion-reduce:animate-none"
+              className="animate-slide-up motion-reduce:animate-none"
               style={{ animationDelay: '120ms', animationFillMode: 'backwards' }}
             >
-              <div className="mb-3 flex flex-wrap items-baseline gap-x-2">
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-2 border-b border-primary/20 pb-2">
                 <h3 className="font-body text-[10px] tracking-[0.14em] text-primary uppercase">
                   Essentials
                 </h3>
@@ -246,29 +252,55 @@ export function IntegrationsCatalog() {
             </section>
           )}
 
-          {shelfFamilies.map((f, index) => (
-            <section
-              key={f.key}
-              className="animate-slide-up motion-reduce:animate-none"
-              /* Capped: nine shelves at a beat each is half a second of waiting
-                 for the last one, and a stagger long enough to count is a wait. */
-              style={{
-                animationDelay: `${180 + Math.min(index, 4) * 60}ms`,
-                animationFillMode: 'backwards',
-              }}
-            >
-              <h3 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
-                {f.label}
-              </h3>
-              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {shelved
-                  .filter((row) => row.family === f.key)
-                  .map((row) => (
-                    <ConnectorTile key={row.key} row={row} onOpen={() => setOpenKey(row.key)} />
-                  ))}
+          {shelfFamilies.length > 0 && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setRestOpen((open) => !open)}
+                aria-expanded={showRest}
+                className="flex w-full items-center gap-2 border-t border-border/40 pt-4 font-body text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ChevronDown
+                  aria-hidden
+                  className={cn(
+                    'size-3.5 transition-transform duration-200',
+                    showRest && 'rotate-180',
+                  )}
+                />
+                {showRest ? 'Hide the rest' : `Everything else — ${shelved.length} more`}
+              </button>
+
+              <div
+                className={cn(
+                  'grid transition-[grid-template-rows,opacity] duration-[240ms] ease-out',
+                  showRest ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                )}
+              >
+                <div className="overflow-hidden">
+                  <div className="space-y-6 pt-4">
+                    {shelfFamilies.map((f) => (
+                      <section key={f.key}>
+                        <h3 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                          {f.label}
+                        </h3>
+                        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                          {shelved
+                            .filter((row) => row.family === f.key)
+                            .map((row) => (
+                              <ConnectorTile
+                                key={row.key}
+                                row={row}
+                                onOpen={() => setOpenKey(row.key)}
+                              />
+                            ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </section>
-          ))}
+            </div>
+          )}
         </>
       )}
 

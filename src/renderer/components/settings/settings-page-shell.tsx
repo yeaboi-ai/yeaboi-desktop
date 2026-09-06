@@ -14,7 +14,6 @@ import type { ReactNode } from 'react';
 
 import { ALL_SETTINGS_TABS } from '@/lib/yeaboi/settings-tabs';
 import { PageShell } from '@/components/ui/page-shell';
-import { AboutFooter } from '@/components/settings/about-footer';
 
 export function SettingsPageShell({
   active,
@@ -49,7 +48,6 @@ export function SettingsPageShell({
       }
     >
       {children}
-      <AboutFooter />
     </PageShell>
   );
 }
