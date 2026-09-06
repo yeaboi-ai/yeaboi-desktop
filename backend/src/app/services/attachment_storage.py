@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class AttachmentStorage(Protocol):
-    async def put(self, content: bytes, *, mime_type: str, suffix: str) -> str:
-        """Persist bytes and return an opaque ``storage_key``."""
+    async def put(self, content: bytes, *, mime_type: str, suffix: str, prefix: str = "cards") -> str:
+        """Persist bytes under ``prefix/`` and return an opaque ``storage_key``."""
         ...
 
     async def get_url(self, key: str, *, ttl: int = 3600) -> str:
@@ -55,11 +55,11 @@ class LocalDiskStorage:
         self.base_dir = base_dir
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    async def put(self, content: bytes, *, mime_type: str, suffix: str) -> str:
+    async def put(self, content: bytes, *, mime_type: str, suffix: str, prefix: str = "cards") -> str:
         # mime_type is unused on disk; included to match the Protocol so callers
         # can be backend-agnostic. Keeping it parametric keeps S3 honest.
         del mime_type
-        key = f"cards/{uuid.uuid4().hex}{suffix}"
+        key = f"{prefix}/{uuid.uuid4().hex}{suffix}"
         path = self.base_dir / key
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
@@ -105,8 +105,8 @@ class S3Storage:
             kwargs["endpoint_url"] = endpoint_url
         self._client = boto3.client("s3", **kwargs)
 
-    async def put(self, content: bytes, *, mime_type: str, suffix: str) -> str:
-        key = f"cards/{uuid.uuid4().hex}{suffix}"
+    async def put(self, content: bytes, *, mime_type: str, suffix: str, prefix: str = "cards") -> str:
+        key = f"{prefix}/{uuid.uuid4().hex}{suffix}"
         # boto3 is sync — we accept the (small) tradeoff of running it inline.
         # Worker-loop blocking only matters for very large uploads and we already
         # cap at 20MB. Switch to aioboto3 if this ever becomes a hotspot.

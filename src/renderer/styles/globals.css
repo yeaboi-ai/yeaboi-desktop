@@ -479,6 +479,25 @@ span[data-duck-mark] [data-state] > span {
   }
 }
 
+/* The Projects guide's duck, floating beside his bubble. */
+@keyframes guide-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+[data-guide-float] {
+  animation: guide-float 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-guide-float] {
+    animation: none;
+  }
+}
+
 @keyframes chipFloat {
   0% {
     opacity: 0;
@@ -980,6 +999,7 @@ html[data-audience='agents'] {
   transition:
     color 250ms ease,
     background-color 250ms ease,
+    border-color 250ms ease,
     box-shadow 250ms ease;
 }
 @media (prefers-reduced-motion: reduce) {

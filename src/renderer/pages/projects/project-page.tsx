@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthFetch, getStoredTeamId } from '@/hooks/use-auth-fetch';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { stampLastViewedProject } from '@/lib/api/teams';
-import { X, Trash2, Pencil, ClipboardList, FileText } from 'lucide-react';
+import { X, Trash2, Pencil, ClipboardList, FileText, Check, RotateCcw } from 'lucide-react';
 import { EditProjectDialog } from '@/components/edit-project-dialog';
 import { DashboardGrid } from '@/components/project-layout-grid';
 import { RunInsidePanel } from '@/components/projects/run-inside-panel';
@@ -17,6 +17,10 @@ import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
 import { DemoTour } from '@/components/onboarding/demo-tour';
 import { PageShell } from '@/components/page-shell';
+import { isDone, nextStatus, statusActionLabel, statusWord } from '@/lib/yeaboi/projects';
+import { ReferenceChips } from '@/components/projects/reference-chips';
+import { useApiUrl } from '@/hooks/use-api-url';
+import type { ProjectAttachment, ProjectReference } from '@/lib/yeaboi/references';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -30,6 +34,11 @@ interface Project {
   /** The engine project (`proj-<8hex>`) runs inside this one share context through. */
   yeaboi_project_id?: string | null;
   repo_url?: string | null;
+  /** `active` | `done`; the owner marks it done. Absent on a backend that predates it. */
+  status?: string;
+  /** What the project points at, and its screenshots; absent on a backend that predates them. */
+  references?: ProjectReference[];
+  attachments?: ProjectAttachment[];
 }
 
 interface SessionRow {
@@ -984,6 +993,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { authFetch, ready } = useAuthFetch();
   const confirm = useConfirm();
+  const apiUrl = useApiUrl();
 
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -1281,6 +1291,100 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     });
   }, [id, authFetch, router, confirm]);
 
+  // Mark done / Reopen: one PATCH, and the page keeps its state on a refusal.
+  const handleToggleStatus = useCallback(async () => {
+    if (!project) return;
+    const status = nextStatus(project.status);
+    let detail = 'The status could not be changed.';
+    try {
+      const resp = await authFetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (resp.ok) {
+        setProject((prev) => (prev ? { ...prev, status } : prev));
+        return;
+      }
+      const body = await resp.json().catch(() => ({}));
+      if (body?.detail) detail = body.detail;
+    } catch {
+      detail = 'Could not reach the server. Check your connection and try again.';
+    }
+    await confirm({
+      title: 'Status unchanged',
+      message: detail,
+      variant: 'warning',
+      confirmLabel: 'OK',
+      cancelLabel: 'Close',
+    });
+  }, [id, project, authFetch, confirm]);
+
+  // A chip's ×: references are the whole list PATCHed back; a screenshot is its own DELETE.
+  const removeReference = useCallback(
+    async (index: number) => {
+      if (!project) return;
+      const references = (project.references ?? []).filter((_, i) => i !== index);
+      let detail = 'The reference could not be removed.';
+      try {
+        const resp = await authFetch(`/api/projects/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ references }),
+        });
+        if (resp.ok) {
+          setProject((prev) => (prev ? { ...prev, references } : prev));
+          return;
+        }
+        const body = await resp.json().catch(() => ({}));
+        if (body?.detail) detail = body.detail;
+      } catch {
+        detail = 'Could not reach the server. Check your connection and try again.';
+      }
+      await confirm({
+        title: 'Reference kept',
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+    },
+    [id, project, authFetch, confirm],
+  );
+  const removeAttachment = useCallback(
+    async (attachmentId: string) => {
+      let detail = 'The screenshot could not be removed.';
+      try {
+        const resp = await authFetch(`/api/projects/${id}/attachments/${attachmentId}`, {
+          method: 'DELETE',
+        });
+        if (resp.ok || resp.status === 204) {
+          setProject((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  attachments: (prev.attachments ?? []).filter((a) => a.id !== attachmentId),
+                }
+              : prev,
+          );
+          return;
+        }
+        const body = await resp.json().catch(() => ({}));
+        if (body?.detail) detail = body.detail;
+      } catch {
+        detail = 'Could not reach the server. Check your connection and try again.';
+      }
+      await confirm({
+        title: 'Screenshot kept',
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+    },
+    [id, authFetch, confirm],
+  );
+
   // ── Loading / not found ────────────────────────────────────────────────────
 
   if (notFound) {
@@ -1352,7 +1456,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-[10px] font-body font-medium tracking-[0.18em] uppercase text-muted-foreground mb-3">
               Project
             </p>
-            <div className="flex items-baseline gap-3 mb-4">
+            <div className="flex items-baseline gap-3 mb-1">
               <h1 className="font-display text-5xl italic leading-[1.08] text-foreground">
                 {project.name}
               </h1>
@@ -1371,12 +1475,38 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   Edit
                 </button>
               )}
+              {isAdmin && project.is_own_team !== false && (
+                <button
+                  onClick={handleToggleStatus}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-body text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
+                  title={isDone(project) ? 'Reopen this project' : 'Mark this project done'}
+                >
+                  {isDone(project) ? (
+                    <RotateCcw className="w-3 h-3" />
+                  ) : (
+                    <Check className="w-3 h-3" />
+                  )}
+                  {statusActionLabel(project.status)}
+                </button>
+              )}
             </div>
+            <p className="mb-4 text-[13px] font-body text-muted-foreground">
+              {statusWord(project.status)}
+            </p>
             {project.description && (
               <p className="text-sm text-muted-foreground font-body leading-relaxed max-w-xl">
                 {project.description}
               </p>
             )}
+            <ReferenceChips
+              className="mt-3 max-w-xl"
+              references={project.references ?? []}
+              attachments={project.attachments ?? []}
+              apiUrl={apiUrl}
+              readOnly={!(isAdmin && project.is_own_team !== false)}
+              onRemoveReference={removeReference}
+              onRemoveAttachment={removeAttachment}
+            />
           </div>
 
           <div className="shrink-0 text-right hidden md:block">

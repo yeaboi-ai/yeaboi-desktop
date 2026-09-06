@@ -441,3 +441,31 @@ async def test_yeaboi_project_link_round_trips(client, auth_headers):
         headers=auth_headers,
     )
     assert resp.json()["yeaboi_project_id"] == "proj-aabbccdd"
+
+
+async def test_status_round_trips(client, auth_headers):
+    create_resp = await client.post("/api/projects", json={"name": "Finishable"}, headers=auth_headers)
+    project = create_resp.json()
+    assert project["status"] == "active"
+
+    resp = await client.patch(f"/api/projects/{project['id']}", json={"status": "done"}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "done"
+
+    resp = await client.get(f"/api/projects/{project['id']}", headers=auth_headers)
+    assert resp.json()["status"] == "done"
+
+    resp = await client.patch(f"/api/projects/{project['id']}", json={"status": "active"}, headers=auth_headers)
+    assert resp.json()["status"] == "active"
+
+
+async def test_status_rejects_unknown_word(client, auth_headers):
+    create_resp = await client.post("/api/projects", json={"name": "Strict"}, headers=auth_headers)
+    project_id = create_resp.json()["id"]
+
+    resp = await client.patch(f"/api/projects/{project_id}", json={"status": "archived"}, headers=auth_headers)
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "status must be 'active' or 'done'"
+
+    resp = await client.get(f"/api/projects/{project_id}", headers=auth_headers)
+    assert resp.json()["status"] == "active"
