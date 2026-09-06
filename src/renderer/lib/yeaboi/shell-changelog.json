@@ -2,6 +2,30 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.3.0",
+      "date": "2026-09-06",
+      "headline": "Agent security now tells you what to do",
+      "summary": "The security page opens with what needs a decision, replays the session behind each finding, and fixes it with a click or a pull request. Agent standup is gone and the agents pages stop re-scanning on every open.",
+      "highlights": [
+        {
+          "text": "Each finding says whether the command ran or was only written into a test file",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Replay the transcript around a finding without leaving the page",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Block a risky command family or fix a setting with one click, or open a PR",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Cost pages count every token and say when a figure is included in your plan",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.2.0",
       "date": "2026-09-05",
       "headline": "Music now plays: radio, Spotify, Apple Music, YouTube",
