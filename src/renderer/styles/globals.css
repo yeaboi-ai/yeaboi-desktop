@@ -1659,6 +1659,14 @@ html[data-audience='agents'] {
     background-color 150ms ease;
 }
 
+/* The duck is twice the size with tips on, and he stands at the end of the
+   bottom row. The controls beside him step left rather than let him sit on
+   them; the slide is the transition already on the row. Before the aside rule,
+   which takes the row off the window altogether. */
+:root[data-duck-wide] [data-dock='right'] {
+  translate: -2rem 0;
+}
+
 :root[data-niko-aside] [data-dock='right'],
 :root[data-niko-aside] [data-duck] {
   translate: 0 96px;

@@ -123,7 +123,7 @@ export function CommandDialog({
             'rounded-2xl bg-card ring-1 ring-border/70 shadow-2xl outline-none overflow-hidden',
             'data-[starting-style]:opacity-0 data-[starting-style]:scale-95',
             'data-[ending-style]:opacity-0 data-[ending-style]:scale-95',
-            'transition-[opacity,transform] duration-150',
+            'transition-[opacity,transform,scale] duration-150',
           )}
           aria-label={label}
         >

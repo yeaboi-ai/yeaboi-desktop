@@ -186,29 +186,22 @@ export function TipCompanion() {
     if (!reduced) pulse('card');
   }, [index, pulse, reduced]);
 
+  // The controls beside him move over when he is at full size; the root
+  // carries it, since they are nowhere near him in the tree.
+  const quiet = mode === 'quiet';
+  useEffect(() => {
+    const root = document.documentElement;
+    if (mode === 'off' || quiet) root.removeAttribute('data-duck-wide');
+    else root.setAttribute('data-duck-wide', '');
+    return () => root.removeAttribute('data-duck-wide');
+  }, [mode, quiet]);
+
   const setEnabledSetting = (value: boolean) => {
     setEnabled(value);
     void saveSetting('TIPS_ENABLED', value ? 'true' : 'false');
   };
 
   if (mode === 'off') return null;
-
-  // Never a blank corner: tips off leaves a quiet duck that turns them back on.
-  if (mode === 'quiet') {
-    return (
-      <button
-        type="button"
-        data-duck-dock
-        onClick={() => setEnabledSetting(true)}
-        title="Show tips"
-        aria-label="Show tips"
-        data-duck
-        className="fixed right-[calc(1rem+var(--turn-inset))] bottom-[calc(0.5rem+var(--turn-inset))] z-30 cursor-pointer border-0 bg-transparent p-0 opacity-40 transition-[opacity,right,bottom] duration-300 ease-out hover:opacity-100"
-      >
-        <DuckMark size={QUIET_DUCK_SIZE} facing="left" />
-      </button>
-    );
-  }
 
   const route = tip ? tipRoute(tip) : null;
   const card = tip?.mode_key ? cards.find((c) => c.key === tip.mode_key) : undefined;
@@ -380,27 +373,35 @@ export function TipCompanion() {
             data-leaving={offer.where === 'away'}
             data-returning={returning && offer.where !== 'away'}
           >
-            {mode === 'duck' ? (
-              <button
-                type="button"
-                onClick={() => setGalleryOpen(true)}
-                title="See all tips"
-                aria-label="See all tips"
-                className="block cursor-pointer rounded-full border-0 bg-transparent p-0"
-              >
-                <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                aria-hidden
-                tabIndex={-1}
-                onClick={() => pulse('startled')}
-                className="block cursor-pointer border-0 bg-transparent p-0"
-              >
-                <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
-              </button>
-            )}
+            {/* Never a blank corner: tips off leaves a quiet duck that turns
+                them back on. He is the same duck at a smaller scale, not a
+                second one — a swap between two elements cannot animate, and
+                scale is a transform, so the growth costs no layout. */}
+            <button
+              type="button"
+              {...(quiet
+                ? {
+                    onClick: () => setEnabledSetting(true),
+                    title: 'Show tips',
+                    'aria-label': 'Show tips',
+                  }
+                : mode === 'duck'
+                  ? {
+                      onClick: () => setGalleryOpen(true),
+                      title: 'See all tips',
+                      'aria-label': 'See all tips',
+                    }
+                  : { onClick: () => pulse('startled'), 'aria-hidden': true, tabIndex: -1 })}
+              className={`block cursor-pointer rounded-full border-0 bg-transparent p-0 transition-[scale,opacity] duration-300 ease-out ${
+                quiet ? 'opacity-40 hover:opacity-100' : 'opacity-100'
+              }`}
+              style={{
+                scale: quiet ? QUIET_DUCK_SIZE / DUCK_SIZE : 1,
+                transformOrigin: 'bottom right',
+              }}
+            >
+              <DuckMark state={duckState} size={DUCK_SIZE} facing="left" />
+            </button>
           </div>
         )}
       </div>
