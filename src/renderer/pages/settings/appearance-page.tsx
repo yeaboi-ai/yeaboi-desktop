@@ -49,7 +49,6 @@ const BUILTIN_ORDER: BuiltInPresetId[] = [
   'preset:ocean',
   'preset:rose',
   'preset:sunshine',
-  'preset:ember',
   'preset:forest',
 ];
 
@@ -300,7 +299,7 @@ export default function AppearanceSettingsPage() {
           />
         </div>
 
-        <SettingsCard className="mt-8">
+        <SettingsCard className="mt-8" variant="flat">
           <SettingsSectionHeader
             title="Screensaver"
             subtitle="What the window shows when you have been away"
@@ -388,7 +387,7 @@ function BuiltInCard({
 }) {
   return (
     <div
-      className={`relative rounded-lg overflow-hidden border transition-colors group ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-lg border transition-colors ${
         previewing
           ? 'border-warning ring-2 ring-warning/60'
           : active
@@ -396,9 +395,11 @@ function BuiltInCard({
             : 'border-border hover:border-primary/40'
       }`}
     >
-      <button type="button" onClick={onApply} className="w-full text-left">
+      {/* The colour is the tile: filling the row's height is what keeps a
+          short one from ending in the page's own background. */}
+      <button type="button" onClick={onApply} className="flex flex-1 text-left">
         <div
-          className="flex flex-col gap-2 p-3"
+          className="flex flex-1 flex-col gap-2 p-3"
           style={{ background: tokens['background'], color: tokens['foreground'] }}
         >
           <div className="flex items-center gap-2">

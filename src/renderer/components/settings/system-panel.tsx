@@ -76,59 +76,48 @@ export function SystemPanel({
     onSaved,
   });
 
-  // Two columns where there is room, each packed by hand rather than left to
-  // the grid: a row of cells is as tall as its tallest, so panels that stand
-  // open beside rows that collapse leave holes down the short side. Left is
-  // what this machine does, right is what it talks to — and Advanced sits on
-  // the right because four cards down one side is not a column, it is a list.
-  const panels = (
-    <div className="space-y-4">
-      {storage.length > 0 && (
-        <SettingsCard index={0} variant="flat">
-          <SettingsSectionHeader title="Storage" icon={<SectionIcon section="storage" />} />
-          {/* Not a collapsed card: the allowed-paths list grants the agent read
-              *and* write over each entry, and the editor replaces the list
-              wholesale. That is worth keeping in plain sight. */}
-          <div className="py-1.5">{storage.map(renderRow)}</div>
-        </SettingsCard>
-      )}
-
-      {(dictation.length > 0 || dictationRow) && (
-        <SettingsCard index={1} variant="flat">
-          <SettingsSectionHeader
-            title="Dictation"
-            subtitle="Speech to text, transcribed on this machine"
-            icon={<SectionIcon section="voice" />}
-          />
-          <div className="py-1.5">
-            {dictationRow}
-            {dictation.map(renderRow)}
-          </div>
-        </SettingsCard>
-      )}
-    </div>
-  );
-
-  const connections = (
-    <div className="space-y-4">
-      {sharing}
-      {advanced.length > 0 && (
-        <SettingsCard index={3} variant="flat">
-          <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
-          <div className="py-1.5">{advanced.map(renderRow)}</div>
-        </SettingsCard>
-      )}
-
-      {extras}
-    </div>
-  );
-
+  // One grid, laid out in rows rather than two columns packed by hand: four
+  // sections down two hand-packed stacks ended at different heights and their
+  // second rows began at different places. A row of cells is as tall as its
+  // tallest, and with four of them that is even rather than holed.
   return (
     <div>
       {provider}
-      <div className={cn('grid items-start gap-4 xl:grid-cols-2', provider && 'mt-6')}>
-        {panels}
-        {connections}
+      <div className={cn('grid items-stretch gap-4 xl:grid-cols-2', provider && 'mt-6')}>
+        {storage.length > 0 && (
+          <SettingsCard index={0} variant="flat">
+            <SettingsSectionHeader title="Storage" icon={<SectionIcon section="storage" />} />
+            {/* Not a collapsed card: the allowed-paths list grants the agent read
+                *and* write over each entry, and the editor replaces the list
+                wholesale. That is worth keeping in plain sight. */}
+            <div className="py-1.5">{storage.map(renderRow)}</div>
+          </SettingsCard>
+        )}
+
+        {sharing}
+
+        {(dictation.length > 0 || dictationRow) && (
+          <SettingsCard index={1} variant="flat">
+            <SettingsSectionHeader
+              title="Dictation"
+              subtitle="Speech to text, transcribed on this machine"
+              icon={<SectionIcon section="voice" />}
+            />
+            <div className="py-1.5">
+              {dictationRow}
+              {dictation.map(renderRow)}
+            </div>
+          </SettingsCard>
+        )}
+
+        {advanced.length > 0 && (
+          <SettingsCard index={3} variant="flat">
+            <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
+            <div className="py-1.5">{advanced.map(renderRow)}</div>
+          </SettingsCard>
+        )}
+
+        {extras}
       </div>
     </div>
   );

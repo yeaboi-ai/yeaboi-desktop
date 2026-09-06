@@ -326,16 +326,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     </>
   );
 
-  const footer = (
-    <p
-      className="mt-6 animate-slide-up text-[11px] text-muted-foreground/70 motion-reduce:animate-none"
-      style={{ animationDelay: '240ms' }}
-    >
-      Written to <span className="font-mono text-muted-foreground">{snapshot.config_path}</span> —
-      the same file the terminal reads.
-    </p>
-  );
-
   // Sharing is one switch and a timeout, so it renders inside System rather
   // than on a surface of its own.
   const sharing = (() => {
@@ -419,7 +409,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
               </SettingsCard>
             ))}
         />
-        {footer}
         {/* What is running, on the page about what is running. */}
         <AboutFooter />
       </div>

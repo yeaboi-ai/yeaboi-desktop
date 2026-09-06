@@ -73,7 +73,9 @@ export function Segmented({
             role="radio"
             aria-checked={on}
             disabled={disabled}
-            onClick={() => onPick(option)}
+            // Picking what is already picked is not a change: it used to save
+            // the same value again and say so.
+            onClick={() => !on && onPick(option)}
             className={cn(
               'relative z-10 rounded-full px-3.5 py-1 font-body text-[11px] whitespace-nowrap transition-colors duration-200 outline-none',
               'focus-visible:ring-2 focus-visible:ring-ring/50',

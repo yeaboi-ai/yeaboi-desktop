@@ -38,7 +38,7 @@ function CredentialField({
 
   return (
     <form
-      className="flex min-w-[22rem] flex-1 flex-col gap-1"
+      className="flex min-w-[22rem] flex-1 items-center gap-2"
       onSubmit={(event) => {
         event.preventDefault();
         onSave(value.trim());
@@ -63,8 +63,12 @@ function CredentialField({
         <Button size="sm" variant="outline" type="submit" disabled={!changed}>
           Save
         </Button>
+        {field.help_url && (
+          <span className="shrink-0">
+            <GuideLink url={field.help_url} scope={field.help_scope} />
+          </span>
+        )}
       </span>
-      {field.help_url && <GuideLink url={field.help_url} scope={field.help_scope} />}
     </form>
   );
 }
