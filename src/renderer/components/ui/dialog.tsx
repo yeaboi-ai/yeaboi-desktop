@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 
 import { cn } from '@/lib/utils';
+import { markOverlay } from '@/lib/overlay';
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
 
@@ -44,6 +45,9 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }) {
+  // The page underneath stops paging while this is up.
+  React.useEffect(() => markOverlay('dialog'), []);
+
   return (
     <DialogPortal>
       <DialogOverlay />

@@ -5,6 +5,7 @@ import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { markOverlay } from '@/lib/overlay';
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
 
@@ -78,6 +79,9 @@ function SheetContent({
   side?: Side;
   showCloseButton?: boolean;
 }) {
+  // The page underneath stops paging while this is up.
+  React.useEffect(() => markOverlay('sheet'), []);
+
   return (
     <DrawerPrimitive.Portal>
       <SheetOverlay />

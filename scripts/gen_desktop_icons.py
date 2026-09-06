@@ -51,6 +51,10 @@ PLATE_RADIUS = 208
 #: How much of the plate the duck fills, and how far above centre it sits.
 DUCK_SCALE = 0.74
 DUCK_RISE = 0.03
+#: The head, cropped out of the composed bird: everything above the chest. The
+#: app icon is a 16px square more often than it is anything else, and a whole
+#: duck at that size is a smudge with a beak.
+HEAD_BOX = (0, 0, 300, 230)
 
 # Black, with the mascot's green kept for the rim. A tinted plate competes with
 # the duck's own head at 16px, where the icon is mostly just a coloured square;
@@ -86,15 +90,27 @@ DMG_ICON_Y = 190
 TRAY_SIZE = 32
 
 
-def _duck():
-    """The three website layers composited and cropped to the bird itself."""
+def _duck_layers():
+    """The three website layers composited, on the art's own canvas."""
     from PIL import Image
 
     art = site_assets()
     duck = Image.open(art / "duck-base.png").convert("RGBA")
     for layer in ("duck-wing.png", "duck-glasses.png"):
         duck = Image.alpha_composite(duck, Image.open(art / layer).convert("RGBA"))
+    return duck
+
+
+def _duck():
+    """The whole bird, cropped to himself."""
+    duck = _duck_layers()
     return duck.crop(duck.getbbox())
+
+
+def _duck_head():
+    """Just the head — the mark the app icon wears."""
+    head = _duck_layers().crop(HEAD_BOX)
+    return head.crop(head.getbbox())
 
 
 def _plate(size: int):
@@ -136,11 +152,13 @@ def master():
     from PIL import Image, ImageChops, ImageFilter
 
     icon = _plate(MASTER)
-    duck = _duck()
+    duck = _duck_head()
     inner = MASTER - 2 * PLATE_MARGIN
     width = round(inner * DUCK_SCALE)
     height = round(duck.height * width / duck.width)
-    duck = duck.resize((width, height), Image.LANCZOS)
+    # NEAREST: the mark is pixel art, and interpolating it up to 1024 turns
+    # hard edges into a blur that every smaller size then resamples again.
+    duck = duck.resize((width, height), Image.NEAREST)
 
     top = (MASTER - height) // 2 - round(MASTER * DUCK_RISE)
     left = (MASTER - width) // 2

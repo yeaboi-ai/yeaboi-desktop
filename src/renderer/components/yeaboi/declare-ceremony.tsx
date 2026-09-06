@@ -37,6 +37,23 @@ const DAYS = [
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const EVERY_DAY = [1, 2, 3, 4, 5, 6, 7];
 
+/** The modes this list offers, in two groups: the rooms the team turns up to,
+ *  then the readouts that arrive on their own. The agent reports are the
+ *  agents world's own and are not offered here. */
+const ROOMS = ['poker', 'standup', 'retro'];
+const READOUTS = ['report', 'weekly-review'];
+
+function offered(modes: CeremoniesPage['modes']): (CeremoniesPage['modes'][number] & {
+  opensGroup?: boolean;
+})[] {
+  const pick = (keys: string[]) => keys.flatMap((key) => modes.filter((mode) => mode.key === key));
+  const rooms = pick(ROOMS);
+  const readouts = pick(READOUTS).map((mode, at) =>
+    at === 0 ? { ...mode, opensGroup: true } : mode,
+  );
+  return [...rooms, ...readouts];
+}
+
 /** "1-5", "1,3,5" → the days it names. */
 function daysOf(spec: string): number[] {
   const days: number[] = [];
@@ -142,7 +159,11 @@ export function DeclareCeremony({
   onDone: (message: string) => void;
   onError: (message: string) => void;
 }) {
-  const first = page.modes[0];
+  const modes = offered(page.modes);
+  // The standup rather than whatever heads the list: it is the one most
+  // schedules are, and the rooms lead the list because that is the order they
+  // are read in, not because one of them is the likely answer.
+  const first = modes.find((mode) => mode.key === 'standup') ?? modes[0];
   const [mode, setMode] = useState(first?.key ?? '');
   const [name, setName] = useState('');
   const [at, setAt] = useState(first?.default_at ?? '09:00');
@@ -158,7 +179,7 @@ export function DeclareCeremony({
   // settings answer, and treated as absent until then — offering a lane that
   // silently drops the report is worse than one more click.
   const [slackReady, setSlackReady] = useState(false);
-  const picked = page.modes.find((option) => option.key === mode);
+  const picked = modes.find((option) => option.key === mode);
   const [hour = '09', minute = '00'] = at.split(':');
 
   useEffect(() => {
@@ -213,17 +234,19 @@ export function DeclareCeremony({
             value={mode}
             onChange={(key) => {
               setMode(key);
-              const option = page.modes.find((row) => row.key === key);
+              const option = modes.find((row) => row.key === key);
               if (!option) return;
               setAt(option.default_at);
               // A day picked on the grid is the reason the form is open; a
               // mode's own week does not overrule it.
               if (!weekday) setDays(daysOf(option.default_weekdays));
             }}
-            options={page.modes.map((option) => ({
+            options={modes.map((option) => ({
               value: option.key,
               label: option.label,
-              note: `about $${option.est_cost_usd.toFixed(2)} a run`,
+              // A room costs nothing to open; the readouts are an LLM call.
+              note: option.est_cost_usd > 0 ? `about $${option.est_cost_usd.toFixed(2)} a run` : '',
+              ...(option.opensGroup ? { opensGroup: true } : {}),
             }))}
           />
         </div>

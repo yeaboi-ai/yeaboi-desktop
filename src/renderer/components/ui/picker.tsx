@@ -17,6 +17,8 @@ export interface PickerOption {
   label: string;
   /** One line under the label, where an option needs saying more about. */
   note?: string;
+  /** A rule above this option: the group it opens. */
+  opensGroup?: boolean;
 }
 
 export function Picker({
@@ -60,40 +62,44 @@ export function Picker({
           aria-label={label}
           className="flex max-h-72 flex-col gap-0.5 overflow-y-auto"
         >
-          {options.map((option) => {
+          {options.map((option, index) => {
             const active = option.value === value;
             return (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => {
-                  onChange(option.value);
-                  setOpen(false);
-                }}
-                className={cn(
-                  'flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors duration-150',
-                  active ? 'bg-secondary/60' : 'hover:bg-secondary/40',
+              <div key={option.value}>
+                {option.opensGroup && index > 0 && (
+                  <div aria-hidden className="my-1 border-t border-border/50" />
                 )}
-              >
-                <Check
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
                   className={cn(
-                    'mt-0.5 h-3 w-3 shrink-0',
-                    active ? 'text-primary' : 'text-transparent',
+                    'flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors duration-150',
+                    active ? 'bg-secondary/60' : 'hover:bg-secondary/40',
                   )}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-body text-[13px] text-foreground">
-                    {option.label}
-                  </span>
-                  {option.note && (
-                    <span className="block truncate font-body text-[11px] text-muted-foreground">
-                      {option.note}
+                >
+                  <Check
+                    className={cn(
+                      'mt-0.5 h-3 w-3 shrink-0',
+                      active ? 'text-primary' : 'text-transparent',
+                    )}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-body text-[13px] text-foreground">
+                      {option.label}
                     </span>
-                  )}
-                </span>
-              </button>
+                    {option.note && (
+                      <span className="block truncate font-body text-[11px] text-muted-foreground">
+                        {option.note}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </div>
             );
           })}
         </div>
