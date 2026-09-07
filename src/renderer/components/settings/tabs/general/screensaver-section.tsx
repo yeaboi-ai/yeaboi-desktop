@@ -118,7 +118,7 @@ export function ScreensaverSection() {
         terminal.
       </p>
 
-      <div className="grid grid-cols-3 gap-2 pt-1">
+      <div className="grid grid-cols-3 items-start gap-2 pt-1">
         {ORDER.map((option) => (
           <SaverTile
             key={option}
@@ -180,7 +180,7 @@ function SaverTile({
         active ? 'ring-1 ring-primary' : 'hover:ring-1 hover:ring-border/60',
       )}
     >
-      <div className="relative min-h-16 w-full flex-1 bg-background">
+      <div className="relative h-20 w-full bg-background">
         {drawable ? (
           <ScreensaverCanvas
             style={style as (typeof SCENE_STYLES)[number]}
