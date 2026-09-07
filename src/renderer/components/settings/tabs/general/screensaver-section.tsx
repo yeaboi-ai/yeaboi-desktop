@@ -172,14 +172,15 @@ function SaverTile({
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       className={cn(
-        // No outline of its own: the picture is the tile, and the one that is
+        // No fill and no outline of its own: the picture is the tile, its name
+        // sits on the page like every other label here, and the one that is
         // chosen says so in the accent rather than by being boxed.
-        'group flex flex-col overflow-hidden rounded-lg bg-card text-left transition-colors outline-none',
+        'group flex flex-col overflow-hidden rounded-lg text-left transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50',
-        active ? 'ring-1 ring-primary' : 'hover:bg-secondary/50',
+        active ? 'ring-1 ring-primary' : 'hover:ring-1 hover:ring-border/60',
       )}
     >
-      <div className="relative h-16 w-full bg-background">
+      <div className="relative min-h-16 w-full flex-1 bg-background">
         {drawable ? (
           <ScreensaverCanvas
             style={style as (typeof SCENE_STYLES)[number]}
@@ -197,7 +198,7 @@ function SaverTile({
           </div>
         )}
       </div>
-      <div className="px-2 py-1.5">
+      <div className="px-1 py-1.5">
         <p
           className={cn(
             'text-[11px] font-body font-medium',

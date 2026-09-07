@@ -16,8 +16,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocation } from 'react-router';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, FolderOpen, X } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 import { AboutFooter } from '@/components/settings/about-footer';
 import {
   type ProviderCatalog,
@@ -100,12 +101,22 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [openCard, setOpenCard] = useState('');
 
   const refresh = () => loadSettings().then(setSnapshot, (e: Error) => setError(e.message));
+  // Nothing said about this page outlives it.
+  useEffect(() => () => toast.dismiss(), []);
   useEffect(() => {
     void refresh();
     loadProviders().then(setCatalog, () => undefined);
   }, []);
 
   const save = async (key: string, value: string) => {
+    // Picking what is already set is not a change. Controls re-send their own
+    // value all the time — a segmented flick, a picker reopened, a form
+    // submitted twice — and every one of those used to write the file and say
+    // so. Secrets are the exception: their value comes back masked, so there
+    // is nothing here to compare.
+    const field = snapshot?.fields.find((one) => one.env === key);
+    const current = field?.choices?.length ? field.active_choice : (field?.value ?? '');
+    if (field && !field.secret && current === value) return;
     try {
       const result = await saveSetting(key, value);
       setStatus(result.message);
@@ -433,60 +444,63 @@ function AllowedPathsRow({
 
   return (
     <SettingRow label={field.label}>
-      <div className="w-full space-y-1.5">
-        {paths.length === 0 && (
-          <p className="font-mono text-[12px] text-muted-foreground/70">
-            none — sandboxed to the data directory
-          </p>
-        )}
-        {paths.map((p) => (
-          <div key={p} className="flex items-center gap-2">
-            <code className="font-mono text-[12px] text-foreground">{p}</code>
+      {paths.length === 0 ? (
+        <RowValue value="" fallback="none — sandboxed to the data directory" />
+      ) : (
+        paths.map((path) => (
+          <span
+            key={path}
+            className="inline-flex items-center gap-1.5 rounded-full bg-secondary/60 py-0.5 pr-1.5 pl-2.5"
+          >
+            <code className="font-mono text-[11.5px] text-foreground">{path}</code>
             <button
               type="button"
-              aria-label={`Remove ${p}`}
-              onClick={() => setPaths(paths.filter((x) => x !== p))}
-              className="text-[12px] text-muted-foreground/60 hover:text-destructive"
+              aria-label={`Remove ${path}`}
+              onClick={() => setPaths(paths.filter((one) => one !== path))}
+              className="text-muted-foreground/60 transition-colors hover:text-destructive"
             >
-              ✕
+              <X className="size-3" aria-hidden="true" />
             </button>
-          </div>
-        ))}
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            add(next);
-            setNext('');
-          }}
+          </span>
+        ))
+      )}
+
+      {/* One line, like the row above it: type a path and press return, or
+          point at a folder. */}
+      <form
+        className="flex min-w-0 flex-1 items-center justify-end gap-1.5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          add(next);
+          setNext('');
+        }}
+      >
+        <input
+          value={next}
+          aria-label="Path to allow"
+          placeholder="add a path…"
+          onChange={(event) => setNext(event.target.value)}
+          className={cn(inputClass, 'w-36 min-w-0')}
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          aria-label="Choose a folder to allow"
+          title="Choose a folder…"
+          onClick={() =>
+            void window.yeaboi
+              .pickDirectory({ title: 'Allow a folder' })
+              .then((picked) => add(picked.path))
+          }
         >
-          <input
-            value={next}
-            aria-label="Path to allow"
-            placeholder="/path/to/allow"
-            onChange={(event) => setNext(event.target.value)}
-            className={inputClass}
-          />
-          <Button variant="outline" size="sm" type="submit">
-            Add
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            type="button"
-            onClick={() =>
-              void window.yeaboi
-                .pickDirectory({ title: 'Allow a folder' })
-                .then((picked) => add(picked.path))
-            }
-          >
-            Choose folder…
-          </Button>
-        </form>
+          <FolderOpen className="size-3.5" aria-hidden="true" />
+        </Button>
         {dirty && (
-          <div className="flex items-center gap-2 pt-1">
+          <>
             <Button
               size="sm"
+              type="button"
               onClick={() => {
                 void saveAllowedPaths(paths).then(
                   (r) => onSaved(r.message),
@@ -496,12 +510,12 @@ function AllowedPathsRow({
             >
               Save
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setPaths(saved)}>
+            <Button variant="ghost" size="sm" type="button" onClick={() => setPaths(saved)}>
               Cancel
             </Button>
-          </div>
+          </>
         )}
-      </div>
+      </form>
     </SettingRow>
   );
 }

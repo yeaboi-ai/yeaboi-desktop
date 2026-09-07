@@ -28,9 +28,12 @@ interface ShowOptions {
  * Imperative toast API usable from anywhere (event handlers, hooks, callbacks).
  * Returns the toast id so the caller can `toast.dismiss(id)` early.
  */
+/** How long a toast stands before it goes, whatever the window is doing. */
+const LIFETIME = 5000;
+
 export const toast = {
-  show: ({ title, description, variant = 'default', timeout, action }: ShowOptions) =>
-    toastManager.add({
+  show: ({ title, description, variant = 'default', timeout, action }: ShowOptions) => {
+    const id = toastManager.add({
       title,
       description,
       timeout,
@@ -41,7 +44,13 @@ export const toast = {
           onClick: action.onClick,
         },
       }),
-    }),
+    });
+    // The manager pauses its own timer while the window is not in front or the
+    // pointer is over the stack, which is how a corner ends up holding four
+    // notices from ten minutes ago. This one does not pause.
+    if (timeout !== 0) setTimeout(() => toastManager.close(id), timeout ?? LIFETIME);
+    return id;
+  },
   success: (opts: Omit<ShowOptions, 'variant'>) => toast.show({ ...opts, variant: 'success' }),
   warning: (opts: Omit<ShowOptions, 'variant'>) => toast.show({ ...opts, variant: 'warning' }),
   error: (opts: Omit<ShowOptions, 'variant'>) => toast.show({ ...opts, variant: 'destructive' }),
