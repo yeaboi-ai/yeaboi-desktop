@@ -1783,7 +1783,8 @@ input[type='search']::-webkit-search-decoration {
 }
 
 /* The duck previewed on his settings page: a slow walk from one side to the
-   other, turning at each end, with the waddle the pet window gives him. */
+   other, turning at each end, with the pet window's own gait — the feet step
+   out of phase and the body bobs in time with them (pet.css, body-bob). */
 @keyframes duck-walk {
   0% {
     left: 0;
@@ -1803,13 +1804,36 @@ input[type='search']::-webkit-search-decoration {
   }
 }
 
-@keyframes duck-bob {
+@keyframes duck-step {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateX(-3%) rotate(-9deg);
   }
   50% {
-    transform: translateY(-2px);
+    transform: translateX(3%) rotate(9deg);
+  }
+}
+
+@keyframes duck-body-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-1.5px) rotate(-1.2deg);
+  }
+  75% {
+    transform: translateY(-1.5px) rotate(1.2deg);
+  }
+}
+
+@keyframes duck-wing-flap {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2.2%) rotate(-2.5deg);
   }
 }
 
@@ -1817,13 +1841,32 @@ input[type='search']::-webkit-search-decoration {
   animation: duck-walk var(--duck-walk-s, 22s) linear infinite;
 }
 
-.duck-bob {
-  animation: duck-bob 0.5s ease-in-out infinite;
+/* One stride: 0.36s, the pace the pet window walks at. */
+.preview-walking .preview-foot-back,
+.preview-walking .preview-foot-front {
+  transform-origin: 50% 90%;
+  animation: duck-step 0.36s ease-in-out infinite;
+}
+
+.preview-walking .preview-foot-front {
+  animation-delay: -0.18s;
+}
+
+.preview-walking {
+  animation: duck-body-bob 0.36s ease-in-out infinite;
+}
+
+.preview-walking .preview-wing {
+  transform-origin: 42% 55%;
+  animation: duck-wing-flap 1.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .duck-walk,
-  .duck-bob {
+  .preview-walking,
+  .preview-walking .preview-foot-back,
+  .preview-walking .preview-foot-front,
+  .preview-walking .preview-wing {
     animation: none;
   }
 }

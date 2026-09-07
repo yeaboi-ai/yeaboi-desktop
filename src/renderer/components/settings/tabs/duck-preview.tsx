@@ -42,12 +42,11 @@ export function DuckPreview({ prefs }: { prefs: PetPrefs }) {
             } as React.CSSProperties
           }
         >
-          <div className="duck-bob">
-            <DuckSprite
-              width={width}
-              filter={`hue-rotate(${prefs.hue}deg) saturate(${prefs.vividness})`}
-            />
-          </div>
+          <DuckSprite
+            width={width}
+            walking={prefs.walk}
+            filter={`hue-rotate(${prefs.hue}deg) saturate(${prefs.vividness})`}
+          />
         </div>
       </div>
     </div>

@@ -39,8 +39,12 @@ function Row({
   );
 }
 
+/** The rig width the pet window draws at scale 1. */
+const BASE_WIDTH = 72;
+
 export function DuckTab() {
   const { prefs, loading, update, reset } = usePetPrefs();
+  const tint = `hue-rotate(${prefs.hue}deg) saturate(${prefs.vividness})`;
 
   return (
     // One grid in rows, like the other tabs: what he does and what he says sit
@@ -164,67 +168,81 @@ export function DuckTab() {
         subtitle="size and colour, previewed live"
         className="xl:col-span-2"
       >
-        <div className="space-y-5 py-5">
-          <div>
-            <span className="mb-2 block text-sm font-medium">Colour</span>
-            <div className="flex flex-wrap gap-2">
-              {PET_COLOURS.map((colour) => {
-                const active = prefs.hue === colour.hue && prefs.vividness === colour.vividness;
-                return (
-                  <button
-                    key={colour.id}
-                    type="button"
-                    onClick={() => update({ hue: colour.hue, vividness: colour.vividness })}
-                    aria-pressed={active}
-                    aria-label={colour.label}
-                    title={colour.label}
-                    className={cn(
-                      'size-9 overflow-hidden rounded-md ring-1 transition-colors',
-                      active ? 'ring-primary' : 'ring-border/60 hover:ring-border',
-                    )}
-                  >
-                    <span className="flex size-full items-center justify-center">
-                      <DuckSprite
-                        width={28}
-                        filter={`hue-rotate(${colour.hue}deg) saturate(${colour.vividness})`}
-                      />
-                    </span>
-                  </button>
-                );
-              })}
+        {/* Him walking, above the controls rather than at the foot of the page,
+            where the window's own bottom fade washes him out. */}
+        <DuckPreview prefs={prefs} />
+
+        <div className="flex flex-wrap items-start gap-6 py-5">
+          {/* The duck at the chosen size and tint, still, beside the controls
+              that set them; the one walking below shows the gait. */}
+          <div
+            className="flex h-44 w-44 shrink-0 items-end justify-center overflow-hidden rounded-lg bg-secondary/30 ring-1 ring-border/40"
+            aria-hidden="true"
+          >
+            <div className="mb-3">
+              <DuckSprite width={BASE_WIDTH * prefs.scale} filter={tint} />
             </div>
           </div>
 
-          {/* Three of the same thing, laid out as three of the same thing. */}
-          <div className="grid gap-5 sm:grid-cols-3">
-            {(
-              [
-                ['Size', `${Math.round(prefs.scale * 100)}%`, 'scale', prefs.scale],
-                ['Hue', `${prefs.hue}°`, 'hue', prefs.hue],
-                ['Vividness', `${prefs.vividness.toFixed(2)}×`, 'vividness', prefs.vividness],
-              ] as const
-            ).map(([label, readout, key, value]) => (
-              <div key={key}>
-                <div className="mb-2 flex items-baseline justify-between">
-                  <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">{readout}</span>
-                </div>
-                <Slider
-                  value={value}
-                  min={PET_LIMITS[key].min}
-                  max={PET_LIMITS[key].max}
-                  step={PET_LIMITS[key].step}
-                  onValueChange={(next) => update({ [key]: first(next) })}
-                  aria-label={`Duck ${label.toLowerCase()}`}
-                />
+          <div className="min-w-0 flex-1 space-y-5">
+            <div>
+              <span className="mb-2 block text-sm font-medium">Colour</span>
+              <div className="flex flex-wrap gap-2">
+                {PET_COLOURS.map((colour) => {
+                  const active = prefs.hue === colour.hue && prefs.vividness === colour.vividness;
+                  return (
+                    <button
+                      key={colour.id}
+                      type="button"
+                      onClick={() => update({ hue: colour.hue, vividness: colour.vividness })}
+                      aria-pressed={active}
+                      aria-label={colour.label}
+                      title={colour.label}
+                      className={cn(
+                        'size-9 overflow-hidden rounded-md ring-1 transition-colors',
+                        active ? 'ring-primary' : 'ring-border/60 hover:ring-border',
+                      )}
+                    >
+                      <span className="flex size-full items-center justify-center">
+                        <DuckSprite
+                          width={28}
+                          filter={`hue-rotate(${colour.hue}deg) saturate(${colour.vividness})`}
+                        />
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            ))}
+            </div>
+
+            {/* Three of the same thing, laid out as three of the same thing. */}
+            <div className="grid gap-5 sm:grid-cols-3">
+              {(
+                [
+                  ['Size', `${Math.round(prefs.scale * 100)}%`, 'scale', prefs.scale],
+                  ['Hue', `${prefs.hue}°`, 'hue', prefs.hue],
+                  ['Vividness', `${prefs.vividness.toFixed(2)}×`, 'vividness', prefs.vividness],
+                ] as const
+              ).map(([label, readout, key, value]) => (
+                <div key={key}>
+                  <div className="mb-2 flex items-baseline justify-between">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">{readout}</span>
+                  </div>
+                  <Slider
+                    value={value}
+                    min={PET_LIMITS[key].min}
+                    max={PET_LIMITS[key].max}
+                    step={PET_LIMITS[key].step}
+                    onValueChange={(next) => update({ [key]: first(next) })}
+                    aria-label={`Duck ${label.toLowerCase()}`}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </SettingsSection>
-
-      {/* Him, in the window, while he is being changed. */}
-      <DuckPreview prefs={prefs} />
 
       <div
         className="flex animate-slide-up justify-end motion-reduce:animate-none xl:col-span-2"
