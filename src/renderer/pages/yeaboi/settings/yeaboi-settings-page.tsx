@@ -39,7 +39,6 @@ import { VoiceSetup } from '@/components/yeaboi/voice-setup';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
 import { SystemPanel } from '@/components/settings/system-panel';
-import { DuckVoiceCard } from '@/components/settings/duck-voice-card';
 import {
   ChoicePills,
   RowValue,
@@ -579,12 +578,7 @@ export default function YeaboiSettingsPage() {
         : {})}
     >
       {pathname === '/settings/duck' ? (
-        <>
-          <DuckTab />
-          <div className="mt-4">
-            <DuckVoiceCard />
-          </div>
-        </>
+        <DuckTab />
       ) : (
         <BackendGate>
           {engineTab?.route === '/settings/connections' ? (

@@ -402,72 +402,68 @@ function PrivacyBody() {
       {/* Two columns, the way the other tabs use the width. Not a grid: a row
           is as tall as its tallest cell, and these cards are all different
           heights, so one column of them would sit beside a column of holes. */}
-      <div className="mt-5 grid items-start gap-4 xl:grid-cols-2">
-        {[0, 1].map((column) => (
-          <div key={column} className="space-y-4">
-            {groups
-              .filter((_, at) => at % 2 === column)
-              .map((group, index) => {
-                const rows = rowsFor(group);
-                if (rows.length === 0) return null;
-                // A group whose toggleable rows all share one switch carries it on
-                // the header — state lives once (the tunnel family).
-                const entries = rows
-                  .map((row) => switchByKey.get(row.key))
-                  .filter((entry): entry is EgressSwitch => entry !== undefined);
-                const sharedEntry =
-                  rows.length > 1 &&
-                  entries.length === rows.length &&
-                  new Set(entries.map((entry) => entry.env)).size === 1
-                    ? entries[0]
-                    : undefined;
-                const sharedField = sharedEntry ? fieldByEnv.get(sharedEntry.env) : undefined;
-                // The header switch is live only with its field; without settings the
-                // group degrades to per-row passive chips like everything else.
-                const sharedLive = sharedEntry && sharedField ? sharedEntry : undefined;
+      {/* A grid, not two stacks: stacked, a group's rule sat wherever the group
+          above it happened to end, so the two columns never agreed on a line. */}
+      <div className="mt-5 grid items-start gap-x-10 gap-y-8 xl:grid-cols-2">
+        {groups.map((group, index) => {
+          const rows = rowsFor(group);
+          if (rows.length === 0) return null;
+          // A group whose toggleable rows all share one switch carries it on
+          // the header — state lives once (the tunnel family).
+          const entries = rows
+            .map((row) => switchByKey.get(row.key))
+            .filter((entry): entry is EgressSwitch => entry !== undefined);
+          const sharedEntry =
+            rows.length > 1 &&
+            entries.length === rows.length &&
+            new Set(entries.map((entry) => entry.env)).size === 1
+              ? entries[0]
+              : undefined;
+          const sharedField = sharedEntry ? fieldByEnv.get(sharedEntry.env) : undefined;
+          // The header switch is live only with its field; without settings the
+          // group degrades to per-row passive chips like everything else.
+          const sharedLive = sharedEntry && sharedField ? sharedEntry : undefined;
 
-                return (
-                  <SettingsSection
-                    key={group.key}
-                    index={index}
-                    title={group.title}
-                    subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
-                    action={
-                      sharedEntry && sharedField ? (
-                        <PathSwitch
-                          field={sharedField}
-                          onValue={sharedEntry.on_value}
-                          busy={busyEnv === sharedEntry.env}
-                          onFlip={(value) => void flip(sharedEntry.env, value)}
-                        />
-                      ) : undefined
-                    }
-                  >
-                    {sharedLive && notice?.env === sharedLive.env && (
-                      <div className="border-b border-border/40 pb-2.5">
-                        <NoticeLine notice={notice} />
-                      </div>
-                    )}
-                    <div className="divide-y divide-border/40">
-                      {rows.map((row) => {
-                        const entry = switchByKey.get(row.key);
-                        return (
-                          <DisclosureRow
-                            key={row.key}
-                            row={row}
-                            control={sharedLive ? null : controlFor(row)}
-                            notice={
-                              !sharedLive && entry && notice?.env === entry.env ? notice : undefined
-                            }
-                          />
-                        );
-                      })}
-                    </div>
-                  </SettingsSection>
-                );
-              })}
-          </div>
-        ))}
+          return (
+            <SettingsSection
+              key={group.key}
+              index={index}
+              title={group.title}
+              subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
+              action={
+                sharedEntry && sharedField ? (
+                  <PathSwitch
+                    field={sharedField}
+                    onValue={sharedEntry.on_value}
+                    busy={busyEnv === sharedEntry.env}
+                    onFlip={(value) => void flip(sharedEntry.env, value)}
+                  />
+                ) : undefined
+              }
+            >
+              {sharedLive && notice?.env === sharedLive.env && (
+                <div className="border-b border-border/40 pb-2.5">
+                  <NoticeLine notice={notice} />
+                </div>
+              )}
+              <div className="divide-y divide-border/40">
+                {rows.map((row) => {
+                  const entry = switchByKey.get(row.key);
+                  return (
+                    <DisclosureRow
+                      key={row.key}
+                      row={row}
+                      control={sharedLive ? null : controlFor(row)}
+                      notice={
+                        !sharedLive && entry && notice?.env === entry.env ? notice : undefined
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </SettingsSection>
+          );
+        })}
       </div>
     </>
   );

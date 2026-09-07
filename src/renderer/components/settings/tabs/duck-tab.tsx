@@ -6,6 +6,7 @@
 import { RotateCcw } from 'lucide-react';
 import { PET_COLOURS, PET_LIMITS } from '@shared/pet-prefs';
 import { SettingsListRow, SettingsSection } from '@/components/settings/primitives';
+import { DuckQuipsRow } from '@/components/settings/duck-quips-row';
 import { DuckSprite } from './duck-sprite';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -128,6 +129,7 @@ export function DuckTab() {
               aria-label="Chime"
             />
           </Row>
+          <DuckQuipsRow />
         </div>
       </SettingsSection>
 
