@@ -8,6 +8,7 @@
 // over it — a duck crossing the sliders being changed is a duck in the way.
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PetPrefs } from '@shared/pet-prefs';
 import { DuckSprite } from './duck-sprite';
 
@@ -42,18 +43,18 @@ export function DuckPreview({ prefs }: { prefs: PetPrefs }) {
   const width = BASE_WIDTH * prefs.scale;
   const seconds = Math.max(8, (2 * Math.max(0, span - width)) / (PX_PER_SECOND * prefs.scale));
 
-  return (
+  // Through a portal to the body: the deck animates a page with a transform,
+  // which makes it the containing block for anything fixed inside it — the
+  // duck would stand on the page's bottom edge rather than the window's.
+  return createPortal(
     // Along the foot of the window, over everything: the page's own bottom
     // fade sits at z-30 and washed him out from under it.
     <div
       aria-hidden="true"
       className="pointer-events-none fixed inset-x-0 z-[120] transition-opacity duration-500 ease-out"
-      style={{
-        bottom: `calc(var(--dock-clear, 4rem) * 0.35 + ${prefs.raise}px)`,
-        opacity: shown ? 1 : 0,
-      }}
+      style={{ bottom: prefs.raise, opacity: shown ? 1 : 0 }}
     >
-      <div ref={floor} className="relative mx-6" style={{ height: width }}>
+      <div ref={floor} className="relative" style={{ height: width }}>
         <div
           className={prefs.walk ? 'duck-walk absolute' : 'absolute left-1/2'}
           style={
@@ -72,6 +73,7 @@ export function DuckPreview({ prefs }: { prefs: PetPrefs }) {
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
