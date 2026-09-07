@@ -50,6 +50,9 @@ export function DuckTab() {
     // One grid in rows, like the other tabs: what he does and what he says sit
     // side by side, and the picture of him takes the width under them.
     <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2" aria-busy={loading}>
+      {/* Him, along the foot of the window, while he is being changed. */}
+      <DuckPreview prefs={prefs} />
+
       <SettingsSection
         index={0}
         title="On your desktop"
@@ -168,10 +171,6 @@ export function DuckTab() {
         subtitle="size and colour, previewed live"
         className="xl:col-span-2"
       >
-        {/* Him walking, above the controls rather than at the foot of the page,
-            where the window's own bottom fade washes him out. */}
-        <DuckPreview prefs={prefs} />
-
         <div className="flex flex-wrap items-start gap-6 py-5">
           {/* The duck at the chosen size and tint, still, beside the controls
               that set them; the one walking below shows the gait. */}

@@ -43,18 +43,23 @@ export function DuckPreview({ prefs }: { prefs: PetPrefs }) {
   const seconds = Math.max(8, (2 * Math.max(0, span - width)) / (PX_PER_SECOND * prefs.scale));
 
   return (
-    <div aria-hidden="true" className="xl:col-span-2">
-      <div
-        ref={floor}
-        className="relative border-b border-border/50 transition-opacity duration-500 ease-out"
-        style={{ height: width + prefs.raise + 8, opacity: shown ? 1 : 0 }}
-      >
+    // Along the foot of the window, over everything: the page's own bottom
+    // fade sits at z-30 and washed him out from under it.
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-x-0 z-[120] transition-opacity duration-500 ease-out"
+      style={{
+        bottom: `calc(var(--dock-clear, 4rem) * 0.35 + ${prefs.raise}px)`,
+        opacity: shown ? 1 : 0,
+      }}
+    >
+      <div ref={floor} className="relative mx-6" style={{ height: width }}>
         <div
           className={prefs.walk ? 'duck-walk absolute' : 'absolute left-1/2'}
           style={
             {
               width,
-              bottom: prefs.raise,
+              bottom: 0,
               '--duck-w': `${width}px`,
               '--duck-walk-s': `${seconds}s`,
             } as React.CSSProperties
