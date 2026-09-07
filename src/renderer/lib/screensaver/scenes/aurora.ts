@@ -113,6 +113,10 @@ export class Aurora implements Scene {
     for (const field of this.fields) field.radius *= min / (wasMin || min);
   }
 
+  setStill(still: boolean): void {
+    this.still = still;
+  }
+
   repalette(palette: Palette): void {
     this.palette = palette;
     this.light = isLightGround(palette.background);

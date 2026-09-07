@@ -35,15 +35,19 @@ export function ScreensaverCanvas({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<Scene | null>(null);
   const paletteRef = useRef<Palette | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  // Read by the build, which must not be rebuilt when it changes: a tile that
+  // starts moving picks up from the frame it was showing.
+  const stillRef = useRef(still);
+  stillRef.current = still;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctxRef.current = ctx;
 
-    let frame = 0;
-    let last = performance.now();
     let disposed = false;
     let width = 0;
     let height = 0;
@@ -68,7 +72,7 @@ export function ScreensaverCanvas({
         height,
         palette: paletteRef.current,
         random: seeded(seed ?? Math.floor(Math.random() * 0xffffffff)),
-        still,
+        still: stillRef.current,
       });
       const art = duckArtNow();
       if (art) scene.setArt(art);
@@ -83,32 +87,15 @@ export function ScreensaverCanvas({
     void loadDuckArt().then((art) => {
       if (disposed) return;
       sceneRef.current?.setArt(art);
-      if (still) sceneRef.current?.draw(ctx);
+      if (stillRef.current) sceneRef.current?.draw(ctx);
     });
 
-    const paint = (now: number): void => {
-      const scene = sceneRef.current;
-      if (!scene) return;
-      // Clamp the delta: a tab that was hidden for an hour must not try to
-      // simulate an hour on the frame it comes back.
-      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
-      last = now;
-      scene.step(dt);
-      scene.draw(ctx);
-      if (!still) frame = requestAnimationFrame(paint);
-    };
-
-    if (still) {
-      // One frame, then nothing. Under reduced motion the saver still covers
-      // the window — it just holds a pose, the way the Duck primitive does.
-      sceneRef.current?.draw(ctx);
-    } else {
-      frame = requestAnimationFrame(paint);
-    }
+    // One frame now; whether it keeps moving is the other effect's business.
+    sceneRef.current?.draw(ctx);
 
     const observer = new ResizeObserver(() => {
       fit();
-      if (still) sceneRef.current?.draw(ctx);
+      if (stillRef.current) sceneRef.current?.draw(ctx);
     });
     observer.observe(canvas);
 
@@ -116,14 +103,49 @@ export function ScreensaverCanvas({
       const palette = readPalette();
       paletteRef.current = palette;
       sceneRef.current?.repalette(palette);
-      if (still) sceneRef.current?.draw(ctx);
+      if (stillRef.current) sceneRef.current?.draw(ctx);
     });
 
-    // A screensaver that keeps the GPU busy behind another window is a battery
-    // bug, so the loop stops the moment the window is hidden and picks up from
-    // "now" when it comes back rather than replaying the gap.
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      stopWatchingTheme();
+      sceneRef.current = null;
+      ctxRef.current = null;
+    };
+  }, [style, seed]);
+
+  // Moving or held. The scene is not rebuilt either way, so a tile that starts
+  // animating carries on from the pose it was showing rather than snapping back
+  // to the opening frame.
+  //
+  // A screensaver that keeps the GPU busy behind another window is a battery
+  // bug, so the loop also stops while the window is hidden and picks up from
+  // "now" when it comes back rather than replaying the gap.
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    const scene = sceneRef.current;
+    if (!ctx || !scene) return;
+    scene.setStill(still);
+    if (still) {
+      scene.draw(ctx);
+      return;
+    }
+
+    let frame = 0;
+    let last = performance.now();
+    const paint = (now: number): void => {
+      // Clamp the delta: a tab that was hidden for an hour must not try to
+      // simulate an hour on the frame it comes back.
+      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+      last = now;
+      scene.step(dt);
+      scene.draw(ctx);
+      frame = requestAnimationFrame(paint);
+    };
+    frame = requestAnimationFrame(paint);
+
     const onVisibility = (): void => {
-      if (still) return;
       if (document.hidden) {
         cancelAnimationFrame(frame);
         frame = 0;
@@ -133,16 +155,11 @@ export function ScreensaverCanvas({
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
-
     return () => {
-      disposed = true;
       cancelAnimationFrame(frame);
-      observer.disconnect();
-      stopWatchingTheme();
       document.removeEventListener('visibilitychange', onVisibility);
-      sceneRef.current = null;
     };
-  }, [style, still, seed]);
+  }, [still, style, seed]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

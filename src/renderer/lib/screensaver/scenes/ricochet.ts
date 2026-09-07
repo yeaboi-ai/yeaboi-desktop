@@ -90,6 +90,10 @@ export class Ricochet implements Scene {
     this.y = Math.min(this.y, Math.max(0, height - this.boxH));
   }
 
+  setStill(still: boolean): void {
+    this.still = still;
+  }
+
   repalette(palette: Palette): void {
     this.palette = palette;
   }

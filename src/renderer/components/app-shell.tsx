@@ -6,7 +6,6 @@ import { AppNav } from './nav/app-nav';
 import { Deck } from './nav/deck';
 import { TipCompanion } from './yeaboi/tip-companion';
 import { useSmoothScroll } from '@/hooks/use-smooth-scroll';
-import { ThemePreviewBar } from './theme-preview-bar';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -53,7 +52,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           page turn neither unmounts him nor shrinks him with the card — he is
           the one thing on screen that stays put while the surfaces move. */}
       <TipCompanion />
-      <ThemePreviewBar />
     </>
   );
 }

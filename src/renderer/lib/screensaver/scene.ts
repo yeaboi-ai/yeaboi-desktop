@@ -26,6 +26,9 @@ export interface Scene {
   resize(width: number, height: number): void;
   /** A theme changed under us. */
   repalette(palette: Palette): void;
+  /** Hold the pose, or move again — a preview tile animates only under the
+   *  pointer, and it carries on from the frame it was showing. */
+  setStill(still: boolean): void;
 }
 
 export interface SceneOptions {

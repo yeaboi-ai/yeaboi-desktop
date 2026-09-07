@@ -79,17 +79,8 @@ interface BrandSuggestionPayload {
 
 export default function AppearanceSettingsPage() {
   const router = useRouter();
-  const {
-    themeId,
-    preference,
-    colorScheme,
-    setExplicit,
-    followOrgDefault,
-    preview,
-    previewTheme,
-    previewSystem,
-    cancelPreview,
-  } = useTheme();
+  const { themeId, preference, colorScheme, setExplicit, setSystemMode, followOrgDefault } =
+    useTheme();
   const { authFetch, ready } = useAuthFetch();
   const [customPresets, setCustomPresets] = useState<CustomPresetSummary[]>([]);
   const [orgDefault, setOrgDefault] = useState<{ org_id: string; theme_id: string } | null>(null);
@@ -143,7 +134,6 @@ export default function AppearanceSettingsPage() {
   // The persisted "active" — what's saved server-side (preview doesn't change this).
   const persistedId: ThemeId | null =
     preference.mode === 'explicit' ? (preference.theme_id ?? null) : null;
-  const previewingId: ThemeId | null = preview?.id ?? null;
 
   const userCustoms = customPresets.filter((p) => p.scope === 'user');
   const orgCustoms = customPresets.filter((p) => p.scope === 'org' && p.org_id === currentOrgId);
@@ -219,25 +209,21 @@ export default function AppearanceSettingsPage() {
                 name={BUILTIN_PRESETS[id].name}
                 tokens={BUILTIN_PRESETS[id].tokens}
                 colorScheme={BUILTIN_PRESETS[id].color_scheme}
-                active={persistedId === id && !previewingId}
-                previewing={previewingId === id}
-                onApply={() => previewTheme(id)}
+                active={persistedId === id}
+                onApply={() => setExplicit(id)}
                 onClone={() => router.push(`/settings/themes/edit?from=${encodeURIComponent(id)}`)}
               />
             ))}
 
-            {/* Match-system card — same preview-then-save flow as themes */}
+            {/* Match-system card — picking it is following it. */}
             <SystemCard
-              isActive={isSystem && !previewingId}
+              isActive={isSystem}
               activeScheme={colorScheme}
               onToggle={() => {
-                if (isSystem) {
-                  // Already following; clicking again previews "stop following"
-                  // (i.e. previews dark as the explicit choice).
-                  previewTheme('preset:dark');
-                } else {
-                  previewSystem('preset:light', 'preset:dark');
-                }
+                // Already following; clicking again stops, on whichever scheme
+                // is showing.
+                if (isSystem) setExplicit(colorScheme === 'dark' ? 'preset:dark' : 'preset:light');
+                else setSystemMode('preset:light', 'preset:dark');
               }}
             />
 
@@ -250,7 +236,7 @@ export default function AppearanceSettingsPage() {
                   ? `Following · ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
                   : `Inherit your org's theme — ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
               }
-              active={isFollowingOrg && !previewingId}
+              active={isFollowingOrg}
               onClick={() => open('org')}
             />
 
@@ -261,9 +247,8 @@ export default function AppearanceSettingsPage() {
                 <CustomThemeCard
                   key={p.id}
                   preset={p}
-                  active={persistedId === id && !previewingId}
-                  previewing={previewingId === id}
-                  onApply={() => previewTheme(id)}
+                  active={persistedId === id}
+                  onApply={() => setExplicit(id)}
                   onEdit={() => router.push(`/settings/themes/edit?id=${p.id}`)}
                   onDelete={() => onDeleteCustom(p)}
                 />
@@ -275,9 +260,8 @@ export default function AppearanceSettingsPage() {
                 <CustomThemeCard
                   key={p.id}
                   preset={p}
-                  active={persistedId === id && !previewingId}
-                  previewing={previewingId === id}
-                  onApply={() => previewTheme(id)}
+                  active={persistedId === id}
+                  onApply={() => setExplicit(id)}
                   onEdit={
                     isAdmin ? () => router.push(`/settings/themes/edit?id=${p.id}`) : undefined
                   }
@@ -365,7 +349,6 @@ function BuiltInCard({
   tokens,
   colorScheme,
   active,
-  previewing = false,
   onApply,
   onClone,
 }: {
@@ -373,18 +356,13 @@ function BuiltInCard({
   tokens: Record<string, string>;
   colorScheme: ColorScheme;
   active: boolean;
-  previewing?: boolean;
   onApply: () => void;
   onClone?: () => void;
 }) {
   return (
     <div
       className={`group relative flex h-full flex-col overflow-hidden rounded-lg border transition-colors ${
-        previewing
-          ? 'border-warning ring-2 ring-warning/60'
-          : active
-            ? 'border-primary ring-1 ring-primary'
-            : 'border-border hover:border-primary/40'
+        active ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/40'
       }`}
     >
       {/* The colour is the tile: filling the row's height is what keeps a
@@ -424,12 +402,7 @@ function BuiltInCard({
           </div>
         </div>
       </button>
-      {previewing && (
-        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
-          Previewing
-        </div>
-      )}
-      {!previewing && active && (
+      {active && (
         <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center pointer-events-none">
           <Check className="h-2.5 w-2.5" />
         </div>
@@ -456,14 +429,12 @@ function BuiltInCard({
 function CustomThemeCard({
   preset,
   active,
-  previewing = false,
   onApply,
   onEdit,
   onDelete,
 }: {
   preset: CustomPresetSummary;
   active: boolean;
-  previewing?: boolean;
   onApply: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -471,11 +442,7 @@ function CustomThemeCard({
   return (
     <div
       className={`relative border rounded-lg p-3 transition-colors ${
-        previewing
-          ? 'border-warning ring-2 ring-warning/60'
-          : active
-            ? 'border-primary ring-1 ring-primary'
-            : 'border-border hover:border-primary/40'
+        active ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/40'
       }`}
     >
       <button type="button" onClick={onApply} className="w-full text-left">
@@ -526,12 +493,7 @@ function CustomThemeCard({
           )}
         </div>
       </div>
-      {previewing && (
-        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-body uppercase tracking-wider bg-warning text-warning-foreground border border-warning pointer-events-none">
-          Previewing
-        </div>
-      )}
-      {!previewing && active && (
+      {active && (
         <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
           <Check className="h-2.5 w-2.5" />
         </div>

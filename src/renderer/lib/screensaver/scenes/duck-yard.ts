@@ -199,6 +199,10 @@ export class DuckYard implements Scene {
     this.populate();
   }
 
+  setStill(still: boolean): void {
+    this.still = still;
+  }
+
   repalette(palette: Palette): void {
     // Only the room changes colour; the ducks never do.
     this.palette = palette;

@@ -97,6 +97,10 @@ export class Constellation implements Scene {
     this.populate();
   }
 
+  setStill(still: boolean): void {
+    this.still = still;
+  }
+
   repalette(palette: Palette): void {
     this.palette = palette;
     this.points.forEach((point, i) => {
