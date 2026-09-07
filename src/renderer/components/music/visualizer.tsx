@@ -30,6 +30,7 @@ export function Visualizer({
   style,
   colour,
   source,
+  bare,
 }: {
   size: VizSize;
   className?: string;
@@ -37,6 +38,8 @@ export function Visualizer({
   style?: VizStyleId;
   colour?: VizColourId;
   source?: VizFrameSource;
+  /** Paint only what is lit — for a spectrum that sits on nothing. */
+  bare?: boolean;
 }) {
   const player = useMusicPlayer();
   const src = source ?? player.viz;
@@ -55,7 +58,7 @@ export function Visualizer({
 
     const painter = painterFor(styleId);
     const cache = createPainterCache();
-    const opts = { peaks, mirror, glow };
+    const opts = { peaks, mirror, glow, bare };
     let width = 0;
     let height = 0;
     let palette: VizPalette = paletteNow();
@@ -119,7 +122,7 @@ export function Visualizer({
       observer.disconnect();
       stopWatchingTheme();
     };
-  }, [src, styleId, colourId, customHex, bands, peaks, mirror, glow, size, reduced]);
+  }, [src, styleId, colourId, customHex, bands, peaks, mirror, glow, bare, size, reduced]);
 
   return (
     <canvas

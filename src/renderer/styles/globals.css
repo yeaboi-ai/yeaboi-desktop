@@ -1622,6 +1622,33 @@ input[type='search']::-webkit-search-decoration {
     width 200ms ease-out;
 }
 
+/* A line too long for its box walks its own length and back, resting at each
+   end. The distance is the element's, in `--drift`. */
+@keyframes music-drift {
+  0%,
+  14% {
+    transform: translateX(0);
+  }
+  50%,
+  64% {
+    transform: translateX(var(--drift, 0));
+  }
+  97%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.music-drift {
+  animation: music-drift 10s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-drift {
+    animation: none;
+  }
+}
+
 /* What is pinned over a scrolling page — a heading, a toolbar — hands off to
    the content passing under it rather than cutting it on a straight edge. The
    fall hangs below the pinned block, so nothing has to know how tall it is. */

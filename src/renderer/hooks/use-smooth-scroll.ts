@@ -18,7 +18,7 @@
 
 import { useEffect } from 'react';
 
-import { scrollerUnder } from '@/lib/scroller';
+import { ownsWheelItself, scrollerUnder } from '@/lib/scroller';
 
 /** Deltas smaller than this, in pixel mode, are a trackpad or a high-resolution
  *  mouse streaming rather than a wheel's detent. */
@@ -65,6 +65,8 @@ export function useSmoothScroll(): void {
     const onWheel = (event: WheelEvent) => {
       // Pinch-zoom and the horizontal axis are somebody else's.
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      // A control that takes the wheel for itself keeps it.
+      if (ownsWheelItself(event.target as Element | null)) return;
       const box = scrollerUnder(event.target as Element | null);
       if (!box) return;
       const glide = glides.get(box);

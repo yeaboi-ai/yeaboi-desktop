@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { scrollerUnder } from '@/lib/scroller';
+import { ownsWheelItself, scrollerUnder } from '@/lib/scroller';
 import { useAudience } from '@/components/providers/audience-provider';
 import { railSections } from '@/lib/nav/sections';
 import { isSettingsPath } from '@/lib/nav/rail-rows';
@@ -55,7 +55,7 @@ const LOCK_MS = 60;
  * list and the deck has the wheel again.
  */
 function ownsWheel(from: HTMLElement | null): boolean {
-  return Boolean(scrollerUnder(from));
+  return ownsWheelItself(from) || Boolean(scrollerUnder(from));
 }
 
 /** Somewhere Tab means "next field", not "next page". */

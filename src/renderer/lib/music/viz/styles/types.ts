@@ -20,6 +20,9 @@ export interface VizStyleOptions {
   peaks: boolean;
   mirror: boolean;
   glow: boolean;
+  /** Draw only what is lit. On a surface of its own the resting grid is the
+   *  picture's background, and this one has none. */
+  bare?: boolean;
 }
 
 export interface PainterCache {

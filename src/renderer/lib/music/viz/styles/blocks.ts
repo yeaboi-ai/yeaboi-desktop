@@ -41,6 +41,7 @@ export const blocks: VizPainter = {
           const y = pad + h - (r + 1) * cellH - r * gap;
           const isLit = r < lit;
           const isPeak = !isLit && peakRow > lit && r === peakRow - 1;
+          if (opts.bare && !isLit && !isPeak) continue;
           ctx.fillStyle = isLit || isPeak ? fill : colour;
           ctx.globalAlpha = alpha * (isLit ? (r === lit - 1 ? 1 : 0.82) : isPeak ? 0.6 : 0.12);
           if (!isLit && !isPeak) glowOff(ctx);

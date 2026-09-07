@@ -20,23 +20,8 @@ import { VisualizerStyleButton } from '@/components/music/visualizer-style-butto
 import { Slider } from '@/components/ui/slider';
 import { SERVICE_APPS, SERVICE_LABELS, type MusicService } from '@shared/music-links';
 import { STATUS_WORDS, formatElapsed } from '@/lib/music/state';
+import { STATION_NOTES } from '@/lib/music/stations';
 import { cn } from '@/lib/utils';
-
-/** The terminal's four stations, as the page describes them. */
-const STATION_NOTES: Record<string, { title: string; note: string; source: string }> = {
-  Lofi: { title: 'Groove Salad', note: 'a warm bath of downtempo', source: 'SomaFM · 128 kbps' },
-  Jazz: {
-    title: 'Sonic Universe',
-    note: 'jazz that wanders off the map',
-    source: 'SomaFM · 128 kbps',
-  },
-  Classical: {
-    title: 'France Musique',
-    note: 'the concert hall, from Paris',
-    source: 'Radio France · 128 kbps',
-  },
-  Ambient: { title: 'Drone Zone', note: 'served best chilled', source: 'SomaFM · 128 kbps' },
-};
 
 function useClock(startedAt: number | null): string {
   const [now, setNow] = useState(Date.now());

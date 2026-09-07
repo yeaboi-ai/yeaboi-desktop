@@ -14,3 +14,12 @@ export function scrollerUnder(from: Element | null): HTMLElement | null {
   }
   return null;
 }
+
+/** A control that takes the wheel for itself — a volume, a dial. While the
+ *  pointer is over one, nothing else scrolls and the deck does not turn. */
+export function ownsWheelItself(from: Element | null): boolean {
+  for (let node = from; node && node !== document.body; node = node.parentElement) {
+    if (node.hasAttribute('data-wheel')) return true;
+  }
+  return false;
+}
