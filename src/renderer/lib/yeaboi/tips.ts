@@ -53,13 +53,25 @@ export const MODE_ROUTES: Record<string, string> = {
   settings: '/settings/credentials',
   'agent-usage': '/agents/usage',
   'agent-advisor': '/agents/advisor',
-  'agent-standup': '/agents/standup',
   'agent-security': '/agents/security',
 };
 
 /** The route a tip opens, or null when it names no reachable mode. */
 export function tipRoute(tip: Pick<Tip, 'mode_key'>): string | null {
   return (tip.mode_key && MODE_ROUTES[tip.mode_key]) || null;
+}
+
+/** Where starting a session lands, for the modes whose hub is not the start.
+ *  Every other mode starts on its hub. */
+export const MODE_START_ROUTES: Record<string, string> = {
+  reporting: '/team/reporting/new',
+  'team-analysis': '/team/analysis/new',
+  poker: '/team/poker/new',
+};
+
+/** The route that starts a run of a mode, or null for a key with no page. */
+export function startRouteFor(key: string): string | null {
+  return MODE_START_ROUTES[key] ?? MODE_ROUTES[key] ?? null;
 }
 
 /**

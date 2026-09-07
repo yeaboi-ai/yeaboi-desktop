@@ -108,18 +108,22 @@ export function saveSchedule(
   return apiPost<{ message: string }>('/api/standup/schedule', body);
 }
 
-/** `solo` is the Solo world: a self-only run with a first-person summary. */
+/** `solo` is the Solo world: a self-only run with a first-person summary.
+ *  `projectId` is an engine project (`proj-<8hex>`) the run shares context
+ *  through; absent, the run is a one-off. */
 export function runStandup(
   sessionId: string,
   deliver: boolean,
   onLine: (line: RunLine) => void,
-  opts: { solo?: boolean } = {},
+  opts: { solo?: boolean; projectId?: string } = {},
 ): Promise<void> {
-  return apiStream(
-    '/api/standup/run',
-    { session_id: sessionId, deliver, solo: opts.solo ?? false },
-    (line) => onLine(line as RunLine),
-  );
+  const body: Record<string, unknown> = {
+    session_id: sessionId,
+    deliver,
+    solo: opts.solo ?? false,
+  };
+  if (opts.projectId) body.project_id = opts.projectId;
+  return apiStream('/api/standup/run', body, (line) => onLine(line as RunLine));
 }
 
 /** Record a thumbs up/down on one member's practice signal. */
@@ -169,6 +173,8 @@ export interface RunRequest {
   depth: string;
   window_days: number;
   model: string | null;
+  /** An engine project (`proj-<8hex>`) the run shares context through. */
+  project_id?: string;
 }
 
 export function loadAnalysisOptions(): Promise<AnalysisOptions> {

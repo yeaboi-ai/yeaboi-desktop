@@ -64,7 +64,6 @@ const MODE_ICONS: Partial<Record<IconKey, RailIcon>> = {
   review: CalendarClock,
   'agent-usage': Gauge,
   'agent-advisor': Megaphone,
-  'agent-standup': Sunrise,
   'agent-security': ShieldCheck,
 };
 

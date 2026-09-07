@@ -101,6 +101,14 @@
      height plus the margin they float on, plus a line of air. Every surface
      ends above it. */
   --dock-clear: 76px;
+  /* The page frame main brought with it (components/page-shell.tsx): one column
+     width and one bottom clearance. The deck's own shell keeps its own width;
+     these are what main's pages read. */
+  --page-w: 64rem;
+  --page-pb: 7rem;
+  /* What is left of the viewport under the title bar and the provider-health
+     banner (which sets --banner-h on <html>). */
+  --page-min-h: calc(100vh - var(--titlebar-h) - var(--banner-h, 0px));
   /* What the rail occupies along the left edge: its collapsed width plus the
      air a page keeps off it. Settings takes the rail open, which is wider, so
      the pages move over rather than run underneath it. */
@@ -453,12 +461,9 @@ body::before {
 }
 
 /* `titleBarStyle: 'hiddenInset'` puts the traffic lights over the page itself,
-   at the position main/index.ts pins them to. The reserve below clears them,
-   and `.titlebar-drag` is the strip that moves the window in their place — a
-   frameless window has nothing else to grab. */
-:root[data-chrome='hidden'] {
-  --titlebar-h: 34px;
-}
+   at the position main/index.ts pins them to. The deck's own chrome clears
+   them; `.titlebar-drag` is the strip that moves the window, since a frameless
+   window has nothing else to grab. */
 
 .titlebar-drag {
   -webkit-app-region: drag;
@@ -1844,5 +1849,646 @@ input[type='search']::-webkit-search-decoration {
   .preview-walking .preview-foot-front,
   .preview-walking .preview-wing {
     animation: none;
+  }
+}
+
+/* --- from main --- */
+
+/* A Sessions bubble on the home wanders a few px and back; --drift-x/y are its
+   reach and the animation's duration is its pace. */
+
+@keyframes home-drift {
+  to {
+    transform: translate(var(--drift-x), var(--drift-y));
+  }
+}
+
+/* The Projects guide's duck, floating beside his bubble. */
+
+@keyframes guide-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+[data-guide-float] {
+  animation: guide-float 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-guide-float] {
+    animation: none;
+  }
+}
+
+/* The sheet: the paper sits on the app background like a broadsheet on a
+   desk, two more editions under it, a faint print grain over it. Every colour
+   is a token, so a user's theme is the paper's stock and ink. */
+
+.paper {
+  position: relative;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 36px 48px 40px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 1px 0 var(--border),
+    0 12px 32px -18px color-mix(in srgb, var(--foreground) 35%, transparent);
+}
+
+.paper::before,
+.paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  translate: 3px 3px;
+}
+
+.paper::after {
+  translate: 6px 6px;
+}
+
+.paper-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    color-mix(in srgb, var(--foreground) 3%, transparent) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+[data-color-scheme='dark'] .paper-grain {
+  opacity: 0.6;
+}
+
+.paper > :not(.paper-grain) {
+  position: relative;
+}
+
+.paper-nameplate {
+  margin: 0;
+  padding: 10px 0 8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 72px;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.paper-folio {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.paper-folio span:nth-child(2) {
+  text-align: center;
+}
+
+.paper-folio span:last-child {
+  text-align: right;
+}
+
+.paper-rule {
+  margin: 0;
+  border: 0;
+  height: 4px;
+  border-top: 1px solid var(--audience-accent);
+  border-bottom: 1px solid var(--audience-accent);
+}
+
+.paper-edition {
+  padding-top: 18px;
+}
+
+.paper-kicker-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.paper-kicker-group {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.paper-kicker {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted-foreground);
+}
+
+/* The outlet's tag: its name as printed, a hairline round it. */
+
+.paper-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  font-family: var(--font-body), sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+a.paper-tag:hover {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+a.paper-tag:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.paper-counter {
+  min-width: 5ch;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The turn buttons come up when the reader is on the page, and stay up under
+   reduced motion: the way to stop a clock must never sit behind a hover. */
+
+.paper-turn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transition:
+    opacity 150ms ease,
+    color 150ms ease;
+}
+
+.paper-edition:hover .paper-turn,
+.paper-edition:focus-within .paper-turn {
+  opacity: 1;
+}
+
+.paper-turn:hover {
+  color: var(--foreground);
+}
+
+.paper-turn:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* The story is a fixed shape: the headline keeps two lines and never runs
+   past three, and the text column is as tall as the picture, so a turn never
+   moves the page. */
+
+.paper-headline {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 56px;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  min-height: 2.04em;
+  max-width: 34ch;
+  text-wrap: balance;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  color: var(--foreground);
+}
+
+.paper-headline-rule {
+  margin: 14px 0 22px;
+  border: 0;
+  border-top: 1px solid var(--audience-accent);
+}
+
+.paper-spread {
+  display: grid;
+  grid-template-columns: 400px minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.paper-figure {
+  margin: 0;
+  width: 400px;
+}
+
+.paper-frame {
+  position: relative;
+  width: 400px;
+  height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--foreground);
+  background: var(--background);
+}
+
+.paper-scene {
+  display: block;
+  width: 400px;
+  height: 240px;
+}
+
+.paper-stand {
+  position: absolute;
+  line-height: 0;
+}
+
+.paper-caption {
+  margin-top: 8px;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--muted-foreground);
+}
+
+.paper-text {
+  display: flex;
+  flex-direction: column;
+  min-height: 242px;
+  min-width: 0;
+}
+
+.paper-body {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--foreground);
+}
+
+.paper-body::first-letter {
+  float: left;
+  padding: 6px 8px 0 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 58px;
+  line-height: 0.8;
+}
+
+.paper-byline {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.paper-read {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 14px;
+  padding: 7px 16px;
+  border: 1px solid var(--foreground);
+  border-radius: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--foreground);
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.paper-read:hover {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.paper-read:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.paper-colophon {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+/* Text buttons in the folio's and the colophon's own voice. */
+
+.paper-refresh,
+.paper-colophon-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--border);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.paper-refresh:hover,
+.paper-colophon-link:hover {
+  color: var(--foreground);
+  text-decoration-color: currentColor;
+}
+
+.paper-refresh:focus-visible,
+.paper-colophon-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Inside this edition: one folded line at the foot of the sheet, opening to
+   the other headlines. */
+
+.paper-inside {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.paper-inside-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.paper-inside-toggle:hover {
+  color: var(--foreground);
+}
+
+.paper-inside-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.paper-inside-chevron {
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  transition: transform 160ms ease;
+}
+
+.paper-inside-chevron[data-open='true'] {
+  transform: rotate(180deg);
+}
+
+.paper-inside-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paper-inside-list li + li {
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.paper-inside-row {
+  display: grid;
+  grid-template-columns: 9.5em minmax(0, 1fr) 2.5ch;
+  column-gap: 16px;
+  align-items: baseline;
+  width: 100%;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.paper-inside-outlet {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted-foreground);
+}
+
+.paper-inside-headline {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-family: var(--font-display), Georgia, serif;
+  max-width: 64ch;
+  font-size: 18px;
+  line-height: 1.25;
+  text-wrap: pretty;
+}
+
+.paper-inside-page {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 16px;
+  line-height: 1.25;
+  text-align: right;
+  color: var(--muted-foreground);
+}
+
+.paper-inside-row:hover .paper-inside-headline {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.paper-inside-row:hover .paper-inside-page {
+  color: var(--foreground);
+}
+
+.paper-inside-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* A turn: the top sheet lifted off the pile. The sheet on top is picked up
+   (a bigger shadow, a slight tilt), carried off to the left and let go; the
+   story beneath was there all along. A back turn plays the same lift in
+   reverse, laying a sheet down. */
+
+.paper-sheet-stage {
+  position: relative;
+}
+
+.paper-sheet {
+  position: relative;
+}
+
+.paper-sheet-lift {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--card);
+  transform-origin: 50% 60%;
+  animation: paper-lift var(--paper-lift-ms, 600ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform, opacity;
+}
+
+.paper-sheet-lift[data-direction='back'] {
+  animation-direction: reverse;
+}
+
+@keyframes paper-lift {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    box-shadow: 0 1px 0 var(--border);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(-2%, -10px) rotate(-1deg) scale(1.012);
+    box-shadow: 0 18px 36px -14px color-mix(in srgb, var(--foreground) 55%, transparent);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-70%, -24px) rotate(-4deg) scale(1.012);
+    box-shadow: 0 18px 36px -14px transparent;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .paper {
+    padding: 20px 18px 24px;
+  }
+  .paper::before,
+  .paper::after {
+    display: none;
+  }
+  .paper-inside-row {
+    grid-template-columns: minmax(0, 1fr) 2.5ch;
+    row-gap: 2px;
+  }
+  .paper-inside-outlet {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  .paper-nameplate {
+    font-size: 56px;
+  }
+  .paper-headline {
+    font-size: 40px;
+  }
+  .paper-spread {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .paper-text {
+    min-height: 0;
+  }
+}
+
+/* The story's duck: the pet's rig in CSS. The body bobs, the wing flaps, the
+   glasses ride, the hat goes with the body. The names are the page's own so
+   they never collide with the design package's duck.module.css. The 128px
+   sprite is drawn at 128px, so it stays crisp and blocky. */
+
+.paper-duck {
+  display: inline-block;
+  position: relative;
+  line-height: 0;
+  scale: -1 1;
+}
+
+.paper-duck img {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.paper-duck-body {
+  position: relative;
+  display: block;
+  animation: paper-bob 3.1s ease-in-out infinite;
+  will-change: transform;
+}
+
+.paper-duck-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.paper-duck-wing {
+  transform-origin: 42% 55%;
+  animation: paper-flap 1.4s ease-in-out infinite;
+}
+
+.paper-duck-glasses {
+  animation: paper-shades 2.6s ease-in-out infinite;
+}
+
+@keyframes paper-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3.5%) rotate(-1.2deg);
+  }
+}
+
+@keyframes paper-flap {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4.5%) rotate(-5deg);
+  }
+}
+
+@keyframes paper-shades {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1.5%);
   }
 }

@@ -96,8 +96,20 @@ body {
   user-select: none;
   -webkit-user-drag: none;
 }
-.duck-rig .d-base {
+.duck-rig .d-base,
+.duck-rig .d-outfit-body {
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.4));
+}
+/* the persona's canvas is taller than the body by --outfit-rise of the body's
+   height, so its top sits that far above the rig; the rig's own box stays the
+   body's, which is what the floor and the hitbox measure. */
+.duck-rig .d-outfit {
+  position: absolute;
+  left: 0;
+  top: calc(var(--outfit-rise, 0) * -100%);
+}
+.duck-rig .d-outfit[hidden] {
+  display: none;
 }
 .duck-rig .d-wing,
 .duck-rig .d-glasses,

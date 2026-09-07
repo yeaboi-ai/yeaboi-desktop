@@ -22,7 +22,6 @@ export type IconKey =
   | 'review'
   | 'agent-usage'
   | 'agent-advisor'
-  | 'agent-standup'
   | 'agent-security'
   | 'ceremonies'
   | 'provenance'
@@ -108,7 +107,6 @@ const AGENTS_SECTIONS: NavSectionSpec[] = [
     items: [
       { href: '/agents/usage', label: 'Usage', icon: 'agent-usage' },
       { href: '/agents/advisor', label: 'Advisor', icon: 'agent-advisor' },
-      { href: '/agents/standup', label: 'Standup', icon: 'agent-standup' },
       { href: '/agents/security', label: 'Security', icon: 'agent-security' },
     ],
   },
@@ -176,3 +174,36 @@ export function opsSection(audience: Audience): NavSectionSpec | null {
   const items = section.items.filter((item) => !OPS_ELSEWHERE.has(item.href));
   return items.length > 0 ? { ...section, items } : null;
 }
+
+// ── What main's Projects and Sessions pages read ──────────────────────────
+// Their own rail is gone — the deck is this window's navigation — but the two
+// sheets still list these as rows at their foot, and they are the manifest's
+// paths verbatim rather than a second list of truths.
+
+export interface PageLink {
+  href: string;
+  label: string;
+  /** One line saying what is behind the link, where a page lists it as a row. */
+  fact?: string;
+}
+
+/** The other ways into a project, at the foot of the Projects sheet. */
+export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
+  {
+    href: '/projects/new/from-roadmap',
+    label: 'From a roadmap',
+    fact: 'A Confluence or Notion roadmap page becomes a project.',
+  },
+  {
+    href: '/board',
+    label: 'All tickets',
+    fact: 'Every open ticket across your projects, on one board.',
+  },
+];
+
+/** Reached from the foot of Sessions. */
+export const SESSIONS_FOOT_LINKS: readonly PageLink[] = [
+  { href: '/ceremonies', label: 'Ceremonies' },
+  { href: '/provenance', label: 'Provenance' },
+  { href: '/usage', label: 'Spend' },
+];

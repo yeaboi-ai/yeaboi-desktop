@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
 import { type SlackPage, linkSlackMember, loadSlack, pollSlack } from '@/lib/yeaboi/ops';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 
@@ -279,10 +280,10 @@ function CeremoniesSlackBody() {
 
 export default function CeremoniesSlackPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <CeremoniesSlackBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

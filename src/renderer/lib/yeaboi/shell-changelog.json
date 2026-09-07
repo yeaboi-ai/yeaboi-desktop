@@ -2,6 +2,114 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.4.0",
+      "date": "2026-09-06",
+      "headline": "Projects have a status and carry references",
+      "summary": "Give projects an explicit status so you can mark them done when finished, and keep them organized in separate In progress and Completed sections. Projects now carry descriptions with links to tickets, repos, pages, and screenshots.",
+      "highlights": [
+        {
+          "text": "Mark projects done when they're finished and reopen them if plans change",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Add references to Jira, GitHub, Azure DevOps and Confluence in the project",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Attach screenshots to projects and see them with the description",
+          "areas": ["shell"]
+        },
+        {
+          "text": "New projects open automatically so you can start working right away",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
+      "version": "4.3.0",
+      "date": "2026-09-06",
+      "headline": "Agent security now tells you what to do",
+      "summary": "The security page opens with what needs a decision, replays the session behind each finding, and fixes it with a click or a pull request. Agent standup is gone and the agents pages stop re-scanning on every open.",
+      "highlights": [
+        {
+          "text": "Each finding says whether the command ran or was only written into a test file",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Replay the transcript around a finding without leaving the page",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Block a risky command family or fix a setting with one click, or open a PR",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Cost pages count every token and say when a figure is included in your plan",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
+      "version": "4.2.0",
+      "date": "2026-09-05",
+      "headline": "Music now plays: radio, Spotify, Apple Music, YouTube",
+      "summary": "Browse and play music from the built-in radio, Spotify, Apple Music or YouTube Music. The player keeps playing when you leave the music page — pick a track, move to another page, and the pocket shows what's playing.",
+      "highlights": [
+        {
+          "text": "The built-in radio plays through six styles of visualizer",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Sign in to Spotify, Apple Music or YouTube Music to browse your library",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The player keeps playing when you leave the music page",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
+      "version": "4.1.1",
+      "date": "2026-09-05",
+      "headline": "Settings stays put as you move between sections",
+      "summary": "Every page now sits in the same column, so switching settings sections or moving between pages no longer shifts the layout sideways or leaves a stray scrollbar.",
+      "highlights": [
+        {
+          "text": "Themes and the theme editor line up with the other settings sections",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Short pages no longer scroll, and long ones keep the same margins",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
+      "version": "4.1.0",
+      "date": "2026-09-04",
+      "headline": "A front page, a rail you arrange, and eight ducks",
+      "summary": "The home opens as a newspaper: one story at a time from yeaboi, AI and engineering, drawn in ink with a duck in the picture, from outlets you choose. The sidebar is a rail of squares you arrange, and the duck comes in eight personas.",
+      "highlights": [
+        {
+          "text": "The home is a front page: one story at a time, drawn in ink with a duck",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Choose the front page's outlets in Settings, add your own feed, and set how fast it turns",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The sidebar is a rail of squares: add any page, pick its icon or upload your own",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Eight persona ducks: one stands in every front-page picture, in colour on the ink",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.0.0",
       "date": "2026-08-30",
       "headline": "The desktop app grows up: setup, updates, notes",

@@ -9,6 +9,8 @@ import { join } from 'node:path';
 import { app } from 'electron';
 import { type PetPrefs, mergePetPrefs, normalizePetPrefs } from '../shared/pet-prefs';
 import { type Audience, normalizeAudience } from '../shared/audience';
+import { type RailPrefs, mergeRailPrefs, normalizeRailPrefs } from '../shared/rail';
+import { type MusicPrefs, mergeMusicPrefs, normalizeMusicPrefs } from '../shared/music';
 
 export interface Identity {
   email: string;
@@ -27,6 +29,11 @@ interface SettingsFile {
   /** Pre-prefs pet switch. Still written, so a downgrade still finds it. */
   petEnabled?: boolean;
   pet?: unknown;
+  /** The rail's icons, one list per world. Absent means never arranged. */
+  rail?: unknown;
+  /** Volume, source tab and the saved playlist shelf. The radio's station
+   *  and on/off flag are the backend's (/api/ambience), shared with the terminal. */
+  music?: unknown;
   apiUrl?: string;
   jwtSecret?: string;
   /** The active theme's background, so a new window paints the right colour
@@ -121,6 +128,31 @@ export class Settings {
   setUpdateCheck(on: boolean): void {
     this.data.updateCheck = on;
     this.save();
+  }
+
+  /** The rail per world, clamped. The renderer clamps again against the
+   *  routes it knows; here only the shape is checked. */
+  get rail(): RailPrefs {
+    return normalizeRailPrefs(this.data.rail);
+  }
+
+  setRail(patch: unknown): RailPrefs {
+    const next = mergeRailPrefs(this.rail, patch);
+    this.data.rail = next;
+    this.save();
+    return next;
+  }
+
+  /** Music preferences, clamped; every saved link re-parsed on the way out. */
+  get music(): MusicPrefs {
+    return normalizeMusicPrefs(this.data.music);
+  }
+
+  setMusic(patch: unknown): MusicPrefs {
+    const next = mergeMusicPrefs(this.music, patch);
+    this.data.music = next;
+    this.save();
+    return next;
   }
 
   /** Pre-paint window colour. Defaults to the dark preset's background — the

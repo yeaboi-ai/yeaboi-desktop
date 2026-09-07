@@ -5,6 +5,8 @@
 
 import { RotateCcw } from 'lucide-react';
 import { CHIMES, PET_COLOURS, PET_LIMITS, type ChimeId } from '@shared/pet-prefs';
+import { resolvePersona } from '@shared/personas';
+import { PersonaPicker } from '@/components/settings/persona-picker';
 import { SettingsListRow, SettingsSection } from '@/components/settings/primitives';
 import { DuckQuipsRow } from '@/components/settings/duck-quips-row';
 import { DuckSprite } from './duck-sprite';
@@ -167,6 +169,17 @@ export function DuckTab() {
 
       <SettingsSection
         index={2}
+        title="Who he is"
+        subtitle="here and in the screensaver; the doors' ducks change on each visit"
+        className="xl:col-span-2"
+      >
+        <div className="py-4">
+          <PersonaPicker />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        index={3}
         title="How he looks"
         subtitle="size and colour, previewed live"
         className="xl:col-span-2"
@@ -179,7 +192,11 @@ export function DuckTab() {
             aria-hidden="true"
           >
             <div className="mb-3">
-              <DuckSprite width={BASE_WIDTH * prefs.scale} filter={tint} />
+              <DuckSprite
+                width={BASE_WIDTH * prefs.scale}
+                filter={tint}
+                persona={resolvePersona(prefs.persona, Date.now())}
+              />
             </div>
           </div>
 

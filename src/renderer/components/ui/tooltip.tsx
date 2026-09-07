@@ -20,18 +20,23 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 function TooltipContent({
   className,
   sideOffset = 6,
+  side,
   children,
   ...props
 }: TooltipPrimitive.Popup.Props & {
   sideOffset?: number;
+  /** Preferred placement; Base UI flips it when there is no room. */
+  side?: 'top' | 'bottom' | 'left' | 'right' | 'inline-end' | 'inline-start';
 }) {
   return (
     <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Positioner sideOffset={sideOffset}>
+      {/* The z-index sits on the positioner: it is the stacking context, so a
+          popup's own z-index cannot lift it above the fixed rail. */}
+      <TooltipPrimitive.Positioner sideOffset={sideOffset} side={side} className="z-[300]">
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            'z-[300] max-w-xs rounded-md bg-secondary px-2 py-1 text-[11px] text-foreground/95 ring-1 ring-white/10 shadow-lg',
+            'max-w-xs rounded-md bg-secondary px-2 py-1 text-[11px] text-foreground/95 ring-1 ring-white/10 shadow-lg',
             'data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-opacity duration-150',
             className,
           )}

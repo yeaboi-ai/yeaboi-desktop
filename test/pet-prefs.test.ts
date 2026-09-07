@@ -81,6 +81,14 @@ describe('normalizePetPrefs', () => {
     expect(normalizePetPrefs({ notify: 'loud' }).notify).toEqual(PET_DEFAULTS.notify);
   });
 
+  it('takes a persona it knows, and rotates otherwise', () => {
+    expect(PET_DEFAULTS.persona).toBe('rotate');
+    expect(normalizePetPrefs({ persona: 'chef' }).persona).toBe('chef');
+    expect(normalizePetPrefs({ persona: 'rotate' }).persona).toBe('rotate');
+    expect(normalizePetPrefs({ persona: 'pirate' }).persona).toBe('rotate');
+    expect(normalizePetPrefs({ persona: 4 }).persona).toBe('rotate');
+  });
+
   it('drops keys that are not preferences', () => {
     expect(normalizePetPrefs({ quack: true })).toEqual(PET_DEFAULTS);
   });
@@ -101,6 +109,11 @@ describe('mergePetPrefs', () => {
     expect(merged.scale).toBe(PET_LIMITS.scale.max);
     expect(merged.evade).toBe(true);
     expect(merged.walk).toBe(PET_DEFAULTS.walk);
+  });
+
+  it('keeps the persona across an unrelated patch', () => {
+    const chef = mergePetPrefs(PET_DEFAULTS, { persona: 'chef' });
+    expect(mergePetPrefs(chef, { scale: 1.5 }).persona).toBe('chef');
   });
 
   it('patches one notification without clearing the others', () => {

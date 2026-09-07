@@ -58,6 +58,22 @@ describe('every shipped provider has a mark', () => {
   });
 });
 
+describe('the music services', () => {
+  const contract = JSON.parse(
+    readFileSync(join(__dirname, '..', 'contracts', 'v1', 'connectors.json'), 'utf8'),
+  ) as { connectors: { key: string; family: string; managed_by: string }[] };
+
+  it('are catalogue rows in the music family with a real logomark each', () => {
+    for (const key of ['spotify', 'apple_music', 'youtube_music']) {
+      const row = contract.connectors.find((c) => c.key === key);
+      expect(row, `${key} is not in the vendored contract`).toBeDefined();
+      expect(row?.family).toBe('music');
+      expect(row?.managed_by).toBe('connections');
+      expect(ICON_PATHS).toHaveProperty(key);
+    }
+  });
+});
+
 describe('every catalogued connector has a mark', () => {
   // The vendored identity table (contracts/v1/connectors.json) is the roster
   // the catalog page renders — a key with no mark falls through to a monogram,

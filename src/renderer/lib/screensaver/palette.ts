@@ -16,6 +16,12 @@ export interface Palette {
   border: string;
   /** chart-1..8, in order — the ramp scenes colour their elements from. */
   chart: string[];
+  /** `--destructive`: what a failed stream is drawn in. */
+  destructive: string;
+  /** The world's accent and its bright twin (`--audience-accent*`), which no
+   *  theme preset owns: team green, solo gold, agents blue. */
+  audienceAccent: string;
+  audienceAccentBright: string;
 }
 
 const CHART_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8'];
@@ -29,6 +35,9 @@ export const FALLBACK_PALETTE: Palette = {
   muted: '#858585',
   border: '#222222',
   chart: ['#e5a630', '#60a5fa', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#22d3ee', '#facc15'],
+  destructive: '#ef4444',
+  audienceAccent: 'rgb(100, 180, 100)',
+  audienceAccentBright: 'rgb(80, 220, 120)',
 };
 
 export function readPalette(el: HTMLElement = document.documentElement): Palette {
@@ -48,20 +57,24 @@ export function readPalette(el: HTMLElement = document.documentElement): Palette
     muted: token('muted-foreground', FALLBACK_PALETTE.muted),
     border: token('border', FALLBACK_PALETTE.border),
     chart: chart.length ? chart : FALLBACK_PALETTE.chart,
+    destructive: token('destructive', FALLBACK_PALETTE.destructive),
+    audienceAccent: token('audience-accent', FALLBACK_PALETTE.audienceAccent),
+    audienceAccentBright: token('audience-accent-bright', FALLBACK_PALETTE.audienceAccentBright),
   };
 }
 
 /**
- * Watch for a theme change while the saver is up.
+ * Watch for a theme or world change while a scene is up.
  *
  * A theme can be switched from another window (ThemeProvider broadcasts it), so
- * the saver must not hold the palette it started with. Returns an unsubscribe.
+ * a scene must not hold the palette it started with; the world flips the accent
+ * the same way. Returns an unsubscribe.
  */
 export function onPaletteChange(handler: () => void): () => void {
   const observer = new MutationObserver(handler);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['style', 'data-theme', 'data-color-scheme'],
+    attributeFilter: ['style', 'data-theme', 'data-color-scheme', 'data-audience'],
   });
   return () => observer.disconnect();
 }

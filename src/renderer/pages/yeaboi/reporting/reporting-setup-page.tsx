@@ -22,7 +22,11 @@ import {
   resolveWindow,
   runReport,
 } from '@/lib/yeaboi/modes';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
+import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
+import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
+import { scopedRunBody } from '@/lib/yeaboi/project-scope';
 import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
 import { useAudience } from '@/components/providers/audience-provider';
@@ -58,6 +62,8 @@ const inputClass =
 function ReportingSetupBody() {
   const router = useRouter();
   const { audience } = useAudience();
+  const scope = useProjectScope();
+  const [scopeNote, setScopeNote] = useState('');
   const [options, setOptions] = useState<ReportingOptions | null>(null);
   const [period, setPeriod] = useState('');
   const [theme, setTheme] = useState('midnight');
@@ -130,13 +136,21 @@ function ReportingSetupBody() {
         body.window_start = range.start;
         body.window_end = range.end;
       }
-      await runReport(body, (line) => {
+      // A project that cannot be scoped still gets its report, as a one-off.
+      let engineId = '';
+      setScopeNote('');
+      try {
+        engineId = await scope.engineId();
+      } catch (e) {
+        setScopeNote(`${(e as Error).message} This report is a one-off instead.`);
+      }
+      await runReport(scopedRunBody(body, engineId), (line) => {
         state = reduceModeRun(state, line);
         setRun(state);
       });
       if (state.done) {
         quip('report_done');
-        router.push('/team/reporting');
+        router.push(engineId ? `/projects/${scope.projectId}` : '/team/reporting');
       }
     } catch (e) {
       setError((e as Error).message);
@@ -151,10 +165,19 @@ function ReportingSetupBody() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl text-foreground">New report</h1>
+          {scope.scoped && (
+            <div className="mt-1">
+              <ProjectScopeLine
+                name={scope.project?.name ?? 'this project'}
+                onClear={scope.clear}
+              />
+            </div>
+          )}
           <p className="text-[13px] text-muted-foreground mt-1">{options.sources.summary}</p>
+          {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
         </div>
         <Link
-          href="/team/reporting"
+          href={scope.scoped ? `/projects/${scope.projectId}` : '/team/reporting'}
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back
@@ -337,10 +360,10 @@ function ReportingSetupBody() {
 
 export default function ReportingSetupPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ReportingSetupBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

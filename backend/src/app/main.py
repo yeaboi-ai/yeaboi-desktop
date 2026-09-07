@@ -51,6 +51,7 @@ from .routers.notifications import router as notifications_router
 from .routers.oauth import router as oauth_router
 from .routers.orchestrator import router as orchestrator_router
 from .routers.organizations import router as organizations_router
+from .routers.project_attachments import router as project_attachments_router
 from .routers.project_outputs import router as project_outputs_router
 from .routers.projects import router as projects_router
 from .routers.public_status import router as public_status_router
@@ -246,6 +247,7 @@ def create_app() -> FastAPI:
     app.include_router(character_previews_router)
     app.include_router(boards_router)
     app.include_router(card_attachments_router)
+    app.include_router(project_attachments_router)
     app.include_router(card_links_router)
     app.include_router(card_views_router)
     app.include_router(integration_mappings_router)

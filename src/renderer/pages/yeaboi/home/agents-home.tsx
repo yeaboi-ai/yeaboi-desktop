@@ -12,7 +12,7 @@ import { apiGet } from '@/lib/yeaboi/api';
 import { loadAgentLatest, loadAgentModes } from '@/lib/yeaboi/ops';
 import { RoboMark } from '@/components/brand/robo';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
-import { type ModeCard } from '@/components/yeaboi/mode-card-grid';
+import type { ModeCard } from '@/lib/yeaboi/capabilities';
 import { MODE_ROUTES } from '@/lib/yeaboi/tips';
 
 interface CategoryCard {
@@ -55,8 +55,9 @@ export function AgentsHome() {
     if (!caps) return;
     for (const card of caps.agents) {
       loadAgentLatest(kindOf(card.key)).then(
-        ({ report, as_of }) => {
-          if (report) setLatest((prev) => ({ ...prev, [card.key]: asOfLabel(as_of) }));
+        (latest) => {
+          if (latest?.report)
+            setLatest((prev) => ({ ...prev, [card.key]: asOfLabel(latest.as_of) }));
         },
         () => undefined,
       );

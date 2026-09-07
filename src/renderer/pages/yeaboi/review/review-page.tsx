@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { DuckMark } from '@/components/brand/duck';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { ReviewBody } from '@/components/yeaboi/review-body';
@@ -261,10 +262,10 @@ function ReviewHub() {
 
 export default function ReviewPage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <ReviewHub />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

@@ -15,11 +15,23 @@ export const DUCK_ART_W = 128;
 export const DUCK_ART_H = 136;
 export const DUCK_ASPECT = DUCK_ART_H / DUCK_ART_W;
 
-/** The three layers, stacked in this order. */
+/**
+ * One layer of what the duck wears, drawn on a canvas taller than the sprite
+ * by `headroom` rows (a hat rises above the crown). `body` sits between the
+ * body and the wing, the way a belt does; `top` goes over everything.
+ */
+export interface OutfitLayer {
+  image: HTMLImageElement;
+  headroom: number;
+  slot: 'body' | 'top';
+}
+
+/** The three layers, stacked in this order, and whatever the duck is wearing. */
 export interface DuckArt {
   base: HTMLImageElement;
   wing: HTMLImageElement;
   glasses: HTMLImageElement;
+  outfits?: readonly OutfitLayer[];
 }
 
 // Verbatim from duck.module.css. The amplitudes there carry a note explaining
@@ -68,10 +80,16 @@ export interface DuckPose {
   squash?: number;
   /** Overall opacity. */
   alpha?: number;
+  /**
+   * Let the browser average pixels. Right when the duck is drawn smaller than
+   * its 2x-crisp size (64px): nearest-neighbour minification throws away the
+   * shades' hairlines. The brand marks make the same choice.
+   */
+  smooth?: boolean;
 }
 
 /** 0 → 1 → 0 across one period, the shape of an ease-in-out keyframe pair. */
-function swing(time: number, period: number): number {
+export function swing(time: number, period: number): number {
   return (1 - Math.cos((2 * Math.PI * time) / period)) / 2;
 }
 
@@ -92,7 +110,7 @@ export function drawDuck(ctx: CanvasRenderingContext2D, art: DuckArt, pose: Duck
   ctx.save();
   // The art is pixel art at 2x the drawn size; smoothing it turns a deliberate
   // edge into mush. The primitive says the same thing with image-rendering.
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = pose.smooth ?? false;
   if (pose.alpha !== undefined) ctx.globalAlpha *= pose.alpha;
   if (pose.rotate) ctx.rotate((pose.rotate * Math.PI) / 180);
   if (pose.squash !== undefined && pose.squash !== 1) ctx.scale(1 / pose.squash, pose.squash);
@@ -111,6 +129,17 @@ export function drawDuck(ctx: CanvasRenderingContext2D, art: DuckArt, pose: Duck
   ctx.shadowBlur = w * SHADOW_BLUR;
   ctx.drawImage(art.base, left, top, w, h);
   ctx.restore();
+
+  // The outfit rides the body: same bob, same facing, each layer drawn on its
+  // own taller canvas so a hat's crown lands above the head.
+  const wearing = (slot: OutfitLayer['slot']): void => {
+    for (const layer of art.outfits ?? []) {
+      if (layer.slot !== slot) continue;
+      const rise = (layer.headroom / DUCK_ART_W) * w;
+      ctx.drawImage(layer.image, left, top - rise, w, h + rise);
+    }
+  };
+  wearing('body');
 
   const flap = swing(pose.time, WING_PERIOD);
   ctx.save();
@@ -134,6 +163,8 @@ export function drawDuck(ctx: CanvasRenderingContext2D, art: DuckArt, pose: Duck
   ctx.rotate((tilt * Math.PI) / 180);
   ctx.drawImage(art.glasses, left, top, w, h);
   ctx.restore();
+
+  wearing('top');
 
   ctx.restore();
 }

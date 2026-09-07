@@ -106,6 +106,17 @@ describe('signing', () => {
     }
   });
 
+  it('says why it asks to control Spotify and Music before macOS asks the user', () => {
+    // The first AppleScript to either app prompts with this string; a
+    // description that names only the Dock would read as a wrong request.
+    const description = String(builder.mac.extendInfo.NSAppleEventsUsageDescription);
+    expect(description).toContain('Spotify');
+    expect(description).toContain('Music');
+    expect(read('build/entitlements.mac.plist')).toContain(
+      'com.apple.security.automation.apple-events',
+    );
+  });
+
   it('the bundled pythons may load the on-demand voice pack', () => {
     // The pack is pip-installed into ~/.yeaboi at runtime and loaded over
     // PYTHONPATH, so its .so files carry a different Team ID than the process.
@@ -183,8 +194,8 @@ describe('updates', () => {
 
   it('the publish target is the public releases repo', () => {
     // What electron-updater polls, written verbatim into the packaged
-    // app-update.yml. This repository is private and can host nothing anybody
-    // can download; pointed at it, an installed app updates itself to nothing.
+    // app-update.yml. Every installed app already points here; moving the
+    // releases would strand each one's updater.
     expect(builder.publish.provider).toBe('github');
     expect(builder.publish.owner).toBe('yeaboi-ai');
     expect(builder.publish.repo).toBe('yeaboi-desktop-releases');
@@ -217,6 +228,62 @@ describe('updates', () => {
     expect(read('src/main/updater.ts')).toContain("from '../shared/update'");
     expect(read('src/main/tray.ts')).toContain("from '../shared/update'");
     expect(read('src/renderer/lib/yeaboi/api.ts')).toContain("from '@shared/update'");
+  });
+});
+
+describe('the release runs itself', () => {
+  // The desktop ships like the TUI: auto-version.yml moves the version on the
+  // PR, and the merge to main is what builds and publishes. Everything here is
+  // what keeps that from shipping the wrong thing, or nothing, quietly.
+  const resolve = release.slice(release.indexOf('resolve:'), release.indexOf('  build:'));
+
+  it('starts on a push to main, and can still be dispatched', () => {
+    const on = parse(release).on;
+    expect(on.push.branches).toEqual(['main']);
+    expect(on.workflow_dispatch.inputs.yeaboi_version.required).toBe(false);
+  });
+
+  it('bundles the newest final wheel on PyPI unless one is named', () => {
+    expect(resolve).toContain('pypi.org/pypi/yeaboi/json');
+    expect(resolve).toContain('.yanked == false');
+    expect(resolve).toContain('sort -V | tail -1');
+  });
+
+  it('is a no-op on a push whose version is already out, and refuses by hand', () => {
+    // A docs-only merge must stay green; a human re-dispatching a shipped
+    // version must hear about it.
+    const check = resolve.slice(resolve.indexOf('is already published'));
+    expect(resolve).toMatch(/if \[ "\$EVENT" = "push" \][\s\S]*should_release=false[\s\S]*exit 0/);
+    expect(check).toContain('::error::');
+    expect(resolve).toContain('should_release=true');
+  });
+
+  it('tests the tree that ships, before any leg is paid for', () => {
+    expect(resolve).toMatch(/npm ci\n\s+npm test/);
+    expect(resolve.indexOf('npm test')).toBeLessThan(resolve.indexOf('Create the one draft'));
+  });
+
+  it('skips the build and the merge when there is nothing to release', () => {
+    for (const jobName of ['  build:', '  update-metadata:']) {
+      const start = release.indexOf(jobName);
+      const jobText = release.slice(start, release.indexOf('\n    steps:', start));
+      expect(jobText).toContain("if: needs.resolve.outputs.should_release == 'true'");
+    }
+    // the matrix must exist even on the skip path: an empty include vector is
+    // an evaluation error on a job that is only about to be skipped
+    const legs = parse(release).jobs.resolve.steps.find((s: { id?: string }) => s.id === 'legs');
+    expect(legs.if).toBeUndefined();
+  });
+
+  it('publishes last, and only a build Gatekeeper was asked about', () => {
+    const publish = release.slice(release.indexOf('Publish the release'));
+    expect(release.indexOf('--draft=false')).toBeGreaterThan(
+      release.indexOf('releases tagged v$VERSION, expected 1'),
+    );
+    expect(publish).toContain("SIGNED: ${{ secrets.CSC_LINK != '' }}");
+    expect(publish).toMatch(
+      /if \[ "\$SIGNED" != "true" \][\s\S]*exit 0[\s\S]*gh release edit "v\$VERSION"[\s\S]*--draft=false --latest/,
+    );
   });
 });
 

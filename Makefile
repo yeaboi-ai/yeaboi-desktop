@@ -40,7 +40,7 @@ include $(TOOLING)/mk/node.mk
 # charge of the same file, and contracts-check would go red every time a route
 # moved here before yeaboi.ai caught up.
 
-.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check duck-marks duck-marks-check
+.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check duck-marks duck-marks-check seed-projects
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -56,7 +56,11 @@ help: ## Show this help
 # The backend is the planning-platform FastAPI stack, run from that repo:
 #   cd ../planning-platform && docker compose up -d && make db-migrate && make dev-backend
 dev: ## Run the app with HMR (needs the planning-platform backend on :8000)
+	bash scripts/dev-preflight.sh
 	$(NPM) run dev
+
+seed-projects: ## Seed a few local projects to look at in the ledger (CLEAN=1 removes them again)
+	CLEAN=$(CLEAN) node scripts/seed-projects.mjs
 
 # Rendered from the website's master duck art, committed here, and asserted by
 # test/icons.test.ts without Pillow. `uv run --with` needs only uv — there is
@@ -67,8 +71,8 @@ icons: ## Re-render the committed icon set from the yeaboi-site duck art (needs 
 sprites: ## Re-render the onboarding lifecycle sprites from the yeaboi-site duck art (needs uv)
 	uv run --with pillow --no-project python scripts/gen_lifecycle_sprites.py
 
-robo: ## Re-render the Agents world's robo mascot from the vendored pixel duck (needs uv)
-	uv run --with pillow --no-project python scripts/gen_robo_sprites.py
+mascots: ## Re-render the robo and the eight persona layers (app + pet scale) from the vendored pixel duck (needs uv)
+	uv run --with pillow --no-project python scripts/gen_mascot_sprites.py
 
 duck-marks: ## Re-draw the in-app duck marks as curves, into the design tarball (needs uv)
 	uv run --with pillow --with scikit-image --with numpy --no-project python scripts/gen_duck_marks.py

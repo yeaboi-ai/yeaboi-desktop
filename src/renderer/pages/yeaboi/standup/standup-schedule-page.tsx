@@ -15,6 +15,7 @@ import {
   saveSchedule,
   weekdaySpec,
 } from '@/lib/yeaboi/dashboards';
+import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
 import { useAudience } from '@/components/providers/audience-provider';
@@ -267,10 +268,10 @@ function StandupScheduleBody() {
 
 export default function StandupSchedulePage() {
   return (
-    <BackendGate>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+    <PageShell width="narrow">
+      <BackendGate>
         <StandupScheduleBody />
-      </div>
-    </BackendGate>
+      </BackendGate>
+    </PageShell>
   );
 }

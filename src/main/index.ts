@@ -19,6 +19,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { BrowserWindow, app, dialog, ipcMain, nativeImage, session, shell } from 'electron';
+import { AppMenu } from './menu';
 // The 1024px master of the committed icon set. macOS reads a packaged app's
 // icon from the bundle, so this is what dresses the dev run's Dock and what
 // Windows and Linux draw on the window itself.
@@ -27,6 +28,8 @@ import { registerApiProxy } from './api-proxy';
 import { mintToken } from './auth';
 import { closeAllBoardWindows, registerBoardWindows } from './boards';
 import { registerBoardPlay } from './board-play';
+import { registerMusicNative } from './music-native';
+import { registerRadioHeaders } from './radio';
 import { ensureMediaAccess, registerCapture } from './capture';
 import { EventReader, broadcast } from './events';
 import { LivekitSidecar } from './livekit';
@@ -43,6 +46,7 @@ import { normalizeAudience } from '../shared/audience';
 import { loadMachineSecrets, loadSharedEnv } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
+import { routeWindowOpen } from '../shared/window-open';
 import { AppTray } from './tray';
 import { Updater } from './updater';
 import { VoiceAgentSidecar, registerVoicePack, voicePackInstalled } from './voice-pack';
@@ -58,6 +62,7 @@ const notifier = new Notifier((route) => openApp(route));
 const updater = new Updater();
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;
+let appMenu: AppMenu | null = null;
 
 // An externally provided backend URL means "mine, don't spawn one" — the dev
 // escape hatch for pointing the renderer at a hand-run planning server.
@@ -116,6 +121,12 @@ function createMainWindow(): void {
       : {}),
     // What the window is called until index.html's own <title> loads.
     title: app.getName(),
+    // The renderer draws the title bar (components/title-bar.tsx); the OS
+    // keeps only its window controls, centred in that 38px strip.
+    titleBarStyle: 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : { titleBarOverlay: { height: 38 } }),
     // The last theme's background, so no flash of the wrong scheme while the
     // renderer boots. The renderer keeps it current over theme:background.
     //
@@ -190,9 +201,12 @@ function createMainWindow(): void {
     if (BrowserWindow.getFocusedWindow() === null) pet.setSuppressed(false);
   });
 
-  // External links open in the OS browser; anything else is denied.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://') || url.startsWith('http://')) void shell.openExternal(url);
+  // External links open in the OS browser; a music link a frame opens (a
+  // YouTube tray tile, say) goes back to the player; anything else is denied.
+  mainWindow.webContents.setWindowOpenHandler(({ url, referrer }) => {
+    const route = routeWindowOpen(url, referrer?.url ?? '');
+    if (route.action === 'music') mainWindow?.webContents.send('app:music-link', route.url);
+    else if (route.action === 'external') void shell.openExternal(url);
     return { action: 'deny' };
   });
 
@@ -222,11 +236,18 @@ function showAbout(): void {
   mainWindow?.webContents.send('app:about');
 }
 
+/** Bring the window forward with the palette open: the Go menu's first row. */
+function showPalette(): void {
+  openApp();
+  mainWindow?.webContents.send('app:palette');
+}
+
 /** The one path a duck preference travels: store, window, tray checkbox. */
 function setPetPreference(patch: Partial<PetPrefs>): PetPrefs {
   const prefs = settings.setPet(patch);
   pet.setPrefs(prefs);
   tray?.setPetEnabled(prefs.enabled);
+  appMenu?.setPetEnabled(prefs.enabled);
   return prefs;
 }
 
@@ -421,7 +442,10 @@ if (!gotLock) {
     ipcMain.handle('audience:get', () => settings.audience ?? null);
     ipcMain.handle('audience:set', (_event, value: unknown) => {
       const audience = normalizeAudience(value);
-      if (audience) settings.setAudience(audience);
+      if (audience) {
+        settings.setAudience(audience);
+        appMenu?.setAudience(audience);
+      }
       return settings.audience ?? null;
     });
 
@@ -473,6 +497,12 @@ if (!gotLock) {
       pet.handoff(at);
       return { enabled: pet.on };
     });
+    ipcMain.handle('rail:get-prefs', () => settings.rail);
+    ipcMain.handle('rail:set-prefs', (_event, patch: unknown) => settings.setRail(patch));
+    ipcMain.handle('music:get-prefs', () => settings.music);
+    ipcMain.handle('music:set-prefs', (_event, patch: unknown) => settings.setMusic(patch));
+    registerMusicNative();
+    registerRadioHeaders();
 
     // The renderer reports the active theme's background so the next window
     // opens in the right colour. Fire-and-forget; bad values are dropped.
@@ -531,6 +561,7 @@ if (!gotLock) {
     ipcMain.handle('update:download', () => updater.download());
     ipcMain.handle('update:install', () => updater.install());
     updater.onState((state) => {
+      appMenu?.setUpdateState(state);
       tray?.setUpdateState(state);
       for (const window of BrowserWindow.getAllWindows())
         window.webContents.send('update:state', state);
@@ -547,16 +578,35 @@ if (!gotLock) {
 
     createMainWindow();
     pet.setPrefs(settings.pet);
+    // One menu item for the whole update sequence: it does whatever the
+    // state it is showing says it does.
+    const runUpdate = () => {
+      if (updater.current.kind === 'ready') updater.install();
+      else if (updater.current.kind === 'available') void updater.download();
+      else void updater.check();
+    };
+    appMenu = new AppMenu({
+      open: (route) => openApp(route),
+      palette: () => showPalette(),
+      about: () => showAbout(),
+      update: runUpdate,
+      // The world flips here, in the store, and in the window at once.
+      setAudience: (audience) => {
+        settings.setAudience(audience);
+        appMenu?.setAudience(audience);
+        mainWindow?.webContents.send('app:audience', audience);
+      },
+      togglePet: (enabled) => void setPetPreference({ enabled }),
+      recenterPet: () => pet.recenter(),
+      petSettings: () => openApp('/settings/duck'),
+      // The transport chords: the window that holds the player answers them.
+      music: (id) => mainWindow?.webContents.send('app:music', id),
+    });
+    appMenu.install({ audience: settings.audience, petEnabled: settings.petEnabled });
     tray = new AppTray({
       open: () => openApp(),
       about: () => showAbout(),
-      // One menu item for the whole update sequence: it does whatever the
-      // state it is showing says it does.
-      update: () => {
-        if (updater.current.kind === 'ready') updater.install();
-        else if (updater.current.kind === 'available') void updater.download();
-        else void updater.check();
-      },
+      update: runUpdate,
       togglePet: (enabled) => void setPetPreference({ enabled }),
       nudgePet: (delta) => void setPetPreference({ raise: settings.pet.raise + delta }),
       recenterPet: () => pet.recenter(),

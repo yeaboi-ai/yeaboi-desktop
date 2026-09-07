@@ -2,6 +2,8 @@
 // here rather than deep-importing @design paths everywhere.
 
 import { Duck, type DuckState } from '@design/primitives/Duck';
+import { OUTFIT_HEADROOM, PERSONA_SRC } from '@/lib/screensaver/duck-art';
+import type { PersonaId } from '@/lib/yeaboi/personas';
 
 export { Duck, useDuckPulse } from '@design/primitives/Duck';
 export type { DuckPulse, DuckRest, DuckState } from '@design/primitives/Duck';
@@ -61,6 +63,53 @@ export function DuckMark({ size = 24, state = 'idle', jamming, facing, className
       style={{ width: size, display: 'inline-block', lineHeight: 0 }}
     >
       <Duck state={state} size={size} jamming={jamming} />
+    </span>
+  );
+}
+
+/** The sprite's width in source pixels; the personas are drawn on the same canvas. */
+const SPRITE_WIDTH = 128;
+
+/**
+ * The duck as a persona (see lib/yeaboi/personas.ts). Each layer is laid
+ * over the ordinary mark, mirrored the way the primitive mirrors its body, on
+ * a canvas taller than the sprite so a hat rises above the crown; at mark
+ * sizes the body's bob is under a pixel, so the layers sit still.
+ */
+export function PersonaDuckMark({
+  persona,
+  size = 24,
+  className,
+}: {
+  persona: PersonaId;
+  size?: number;
+  className?: string;
+}) {
+  const rise = (OUTFIT_HEADROOM / SPRITE_WIDTH) * size;
+  return (
+    <span
+      data-duck-mark
+      className={className}
+      style={{ width: size, display: 'inline-block', lineHeight: 0, position: 'relative' }}
+    >
+      <Duck state="idle" size={size} />
+      {PERSONA_SRC[persona].map((layer) => (
+        <img
+          key={layer.src}
+          src={layer.src}
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: -rise,
+            width: size,
+            height: 'auto',
+            scale: '-1 1',
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
     </span>
   );
 }

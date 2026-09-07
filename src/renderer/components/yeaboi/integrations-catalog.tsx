@@ -21,6 +21,7 @@
 // Credentials deep-link there instead of duplicating their forms.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { ChevronDown, ImagePlus, Plus, Search, Sparkles, X } from 'lucide-react';
 import {
   type ConnectionRow,
@@ -89,6 +90,13 @@ export function IntegrationsCatalog() {
   const [folding, setFolding] = useState(true);
   const [creating, setCreating] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  // `?open=<key>` lands on one connector's sheet — how the Music page sends
+  // someone here to set a service up.
+  const [searchParams] = useSearchParams();
+  const wanted = searchParams.get('open') ?? '';
+  useEffect(() => {
+    if (wanted) setOpenKey(wanted);
+  }, [wanted]);
 
   const refresh = useCallback(async () => {
     try {
@@ -393,6 +401,7 @@ const FAMILY_OPTIONS = [
   'docs',
   'chat',
   'media',
+  'music',
 ];
 
 const EMPTY_SPEC: CustomConnectionSpec = {

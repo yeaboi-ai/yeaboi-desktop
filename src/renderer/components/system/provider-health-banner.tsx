@@ -183,10 +183,11 @@ export function ProviderHealthBanner() {
       role="alert"
       data-variant={content.variant}
       className={cn(
-        'fixed inset-x-0 top-0 z-50 w-full border-b backdrop-blur-md text-foreground',
+        'fixed inset-x-0 z-50 w-full border-b backdrop-blur-md text-foreground',
         isAmber ? 'border-warning/40' : 'border-destructive/40',
       )}
       style={{
+        top: 'var(--titlebar-h, 0px)',
         background: `color-mix(in srgb, var(${isAmber ? '--warning' : '--destructive'}) 15%, var(--background))`,
       }}
     >

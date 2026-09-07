@@ -37,9 +37,17 @@ class Project(TimestampMixin, Base):
     # no defaults so the wizard starts with nothing checked.
     default_modifiers: Mapped[list] = mapped_column(JSON, nullable=False, default=list, server_default="[]")
 
+    # What the project points at: [{source, subject, label, url}] — a Jira
+    # ticket, a GitHub repo, a Notion page, an AWS resource, a URL. Stored as
+    # `reference_links` because `references` is a reserved word.
+    references: Mapped[list] = mapped_column("reference_links", JSON, nullable=False, default=list, server_default="[]")
+
     # The yeaboi engine's project row this project is a client of (proj-<8hex>,
     # minted lazily on the first engine-touching run). Soft reference — the
     # engine's sessions.db is a different database, so no FK.
     yeaboi_project_id: Mapped[str | None] = mapped_column(String(64), default=None)
+
+    # `active` | `done`. Done means the owner marked it complete; archive and delete are separate.
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active", default="active")
 
     owner: Mapped["User"] = relationship(back_populates="projects")  # noqa: F821

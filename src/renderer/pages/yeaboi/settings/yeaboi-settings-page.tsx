@@ -48,6 +48,8 @@ import {
 } from '@/components/settings/primitives';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
+import { FrontPageTab } from '@/components/settings/tabs/front-page-tab';
+import { MusicTab } from '@/components/settings/tabs/music-tab';
 import { Button } from '@/components/ui/button';
 
 function activeChoice(fields: SettingField[], env: string): string {
@@ -592,6 +594,10 @@ export default function YeaboiSettingsPage() {
     >
       {pathname === '/settings/duck' ? (
         <DuckTab />
+      ) : pathname === '/settings/news' ? (
+        <FrontPageTab />
+      ) : pathname === '/settings/music' ? (
+        <MusicTab />
       ) : (
         <BackendGate>
           {engineTab?.route === '/settings/connections' ? (

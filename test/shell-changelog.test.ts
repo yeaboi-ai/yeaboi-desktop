@@ -83,6 +83,7 @@ describe('the ledger', () => {
       'OpenAI',
       'JavaScript',
       'TypeScript',
+      'YouTube',
     ]);
     for (const entry of SHELL_ENTRIES) {
       const strings = [entry.headline ?? '', entry.summary, ...entry.highlights.map((h) => h.text)];

@@ -147,11 +147,6 @@
       "title": "Agent Advisor"
     },
     {
-      "path": "/agents/standup",
-      "capability": "agent-standup",
-      "title": "Agent Standup"
-    },
-    {
       "path": "/agents/security",
       "capability": "agent-security",
       "title": "Agent Security"
@@ -320,28 +315,76 @@
       "path": "/clip/:token",
       "capability": null,
       "title": "Shared clip"
+    },
+    {
+      "path": "/sessions",
+      "capability": "sessions",
+      "title": "Sessions"
+    },
+    {
+      "path": "/agents/projects",
+      "capability": "projects",
+      "title": "Agent projects"
+    },
+    {
+      "path": "/agents/projects/:id",
+      "capability": "projects",
+      "title": "Agent project"
+    },
+    {
+      "path": "/music",
+      "capability": null,
+      "title": "Music"
+    },
+    {
+      "path": "/settings/music",
+      "capability": null,
+      "title": "Settings · Player"
+    },
+    {
+      "path": "/settings/news",
+      "capability": null,
+      "title": "Settings · Front page"
     }
   ],
   "settings_tabs": [
     {
       "route": "/settings/credentials",
       "title": "Credentials",
-      "sections": ["provider", "jira", "azure", "github", "notion", "slack", "integrations"]
+      "sections": [
+        "provider",
+        "jira",
+        "azure",
+        "github",
+        "notion",
+        "slack",
+        "integrations"
+      ]
     },
     {
       "route": "/settings/connections",
       "title": "Integrations",
-      "sections": ["connections"]
+      "sections": [
+        "connections"
+      ]
     },
     {
       "route": "/settings/sharing",
       "title": "Sharing",
-      "sections": ["sharing"]
+      "sections": [
+        "sharing"
+      ]
     },
     {
       "route": "/settings/system",
       "title": "System",
-      "sections": ["storage", "standup", "voice", "privacy", "advanced"]
+      "sections": [
+        "storage",
+        "standup",
+        "voice",
+        "privacy",
+        "advanced"
+      ]
     }
   ],
   "commands": []

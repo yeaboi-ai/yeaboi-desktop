@@ -42,8 +42,8 @@ asar: true
 # electron-updater asks this repository what the latest version is, so it must
 # be the repository the release workflow publishes into — an installed app
 # pointed at the wrong one updates itself to nothing, silently, forever.
-# yeaboi-desktop is private and can host no installers anybody can download, so the
-# builds go to a public releases-only repo. This block is also written verbatim into
+# The builds go to a releases-only repo, and every installed app already polls it,
+# so it cannot move. This block is also written verbatim into
 # the packaged app-update.yml, which is what electron-updater polls: the publish
 # target and the update feed are one decision, and pointed apart an installed app
 # updates itself to nothing, silently, forever.
@@ -86,7 +86,8 @@ mac:
     # A UIElement app gets no Dock tile and no menu bar. Stated, not inferred.
     LSUIElement: false
     # The duck climbs the Dock by asking the Dock where its icons are.
-    NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it.
+    # The Dock for the duck; Spotify and Music for the rail's now-playing pocket.
+    NSAppleEventsUsageDescription: yeaboi asks the Dock for its position so the desktop duck can perch on it, and asks Spotify or Music what is playing so the rail can show it.
     NSMicrophoneUsageDescription: yeaboi uses the microphone for voice calls in planning sessions and for on-device dictation.
     NSCameraUsageDescription: yeaboi uses the camera for video tiles in planning-session calls.
 

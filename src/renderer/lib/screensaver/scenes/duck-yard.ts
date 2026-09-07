@@ -15,9 +15,10 @@
 // is not a mascot, so the duck keeps its own colours and the room changes
 // around it.
 
-import { drawDuck, peekAt, type DuckArt } from '../duck-rig';
+import { drawDuck, peekAt, type DuckArt, type OutfitLayer } from '../duck-rig';
 import { isLightGround } from '../luminance';
 import type { Palette } from '../palette';
+import { drawRings, spawnRing, stepRings, type Ring } from '../rings';
 import { between, type Scene, type SceneOptions } from '../scene';
 
 // Tuning. Speeds and distances are in duck-widths per second and duck-widths,
@@ -40,9 +41,6 @@ const DUCK_MIN = 4;
 const DUCK_MAX = 30;
 /** How often the anchored hero looks over the top of his shades. */
 const HERO_PEEK_EVERY = 6;
-/** An impact ring, in theme accent, drawn where two ducks meet. */
-const RING_SECONDS = 0.35;
-const RING_GROWTH = 1.3; // final radius, as a multiple of the duck's
 const STEP = 1 / 120; // fixed timestep, so the sim is frame-rate independent
 const MAX_CATCH_UP = 0.5; // seconds of simulation per frame, at most
 
@@ -62,14 +60,8 @@ interface Duck {
   /** Seconds left of the squash, and the world-space normal it happened along. */
   squishLeft: number;
   normal: number; // radians
-}
-
-/** A collision, briefly, as a ring of theme colour. */
-interface Ring {
-  x: number;
-  y: number;
-  radius: number;
-  left: number;
+  /** Which of the wardrobe's personas this duck wears, as a fraction of the list. */
+  wear: number;
 }
 
 /** How many ducks a window of this size holds. */
@@ -105,6 +97,7 @@ export class DuckYard implements Scene {
   private clock = 0;
   private rings: Ring[] = [];
   private art: DuckArt | null = null;
+  private wardrobe: readonly (readonly OutfitLayer[])[] | null = null;
   private light = false;
 
   constructor(options: SceneOptions) {
@@ -119,6 +112,17 @@ export class DuckYard implements Scene {
 
   setArt(art: DuckArt): void {
     this.art = art;
+  }
+
+  /** Every persona's layers: the crowd wears a mix of them. The hero wears
+   *  whatever the art itself wears. Null undresses the crowd. */
+  setWardrobe(wardrobe: readonly (readonly OutfitLayer[])[] | null): void {
+    this.wardrobe = wardrobe && wardrobe.length > 0 ? wardrobe : null;
+  }
+
+  /** The wardrobe index a crowd duck draws from, for a wardrobe of `count`. */
+  wornBy(duck: Duck, count: number): number {
+    return Math.min(count - 1, Math.floor(duck.wear * count));
   }
 
   private populate(): void {
@@ -138,6 +142,7 @@ export class DuckYard implements Scene {
       facing: 'right',
       squishLeft: 0,
       normal: 0,
+      wear: 0,
     };
     const ducks = [hero];
 
@@ -187,6 +192,7 @@ export class DuckYard implements Scene {
         facing: Math.cos(heading) < 0 ? 'left' : 'right',
         squishLeft: 0,
         normal: 0,
+        wear: this.random(),
       });
     }
     this.ducks = ducks;
@@ -212,8 +218,7 @@ export class DuckYard implements Scene {
   step(dt: number): void {
     if (this.still) return;
     this.clock += dt;
-    for (const ring of this.rings) ring.left -= dt;
-    this.rings = this.rings.filter((ring) => ring.left > 0);
+    this.rings = stepRings(this.rings, dt);
     this.carry = Math.min(this.carry + dt, MAX_CATCH_UP);
     while (this.carry >= STEP) {
       this.advance(STEP);
@@ -326,8 +331,7 @@ export class DuckYard implements Scene {
 
   /** Record a collision as a ring, at the point of contact. */
   private ring(x: number, y: number, radius: number): void {
-    if (this.rings.length > 12) return; // a busy yard must not become fireworks
-    this.rings.push({ x, y, radius, left: RING_SECONDS });
+    spawnRing(this.rings, x, y, radius);
   }
 
   /** How flat a duck is right now, 1 being round. */
@@ -344,7 +348,7 @@ export class DuckYard implements Scene {
 
     const hero = this.ducks.find((duck) => duck.anchored);
     if (hero) this.drawHalo(ctx, hero);
-    this.drawRings(ctx);
+    drawRings(ctx, this.rings, this.palette.primary);
 
     // The hero draws last, so the crowd passes behind him rather than over him.
     const order = [...this.ducks].sort((a, b) => Number(a.anchored) - Number(b.anchored));
@@ -389,20 +393,6 @@ export class DuckYard implements Scene {
     ctx.restore();
   }
 
-  private drawRings(ctx: CanvasRenderingContext2D): void {
-    ctx.save();
-    ctx.strokeStyle = this.palette.primary;
-    for (const ring of this.rings) {
-      const through = 1 - ring.left / RING_SECONDS;
-      ctx.globalAlpha = 0.3 * (1 - through);
-      ctx.lineWidth = 2 * (1 - through) + 0.5;
-      ctx.beginPath();
-      ctx.arc(ring.x, ring.y, ring.radius * (0.6 + RING_GROWTH * through), 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
   /** Draw one duck, centred on the current origin. */
   private stamp(ctx: CanvasRenderingContext2D, duck: Duck, size: number): void {
     const art = this.art;
@@ -416,7 +406,11 @@ export class DuckYard implements Scene {
       ctx.fill();
       return;
     }
-    drawDuck(ctx, art, {
+    const outfits =
+      !duck.anchored && this.wardrobe
+        ? this.wardrobe[this.wornBy(duck, this.wardrobe.length)]
+        : art.outfits;
+    drawDuck(ctx, outfits ? { ...art, outfits } : art, {
       time: this.clock + duck.phase,
       width: size,
       rotate: Math.sin((duck.angle * Math.PI) / 180) * SWAY_DEGREES,

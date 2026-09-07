@@ -45,6 +45,8 @@ export interface YeaboiBridge {
    *  chooser gates the window once, like onboarding. */
   getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
   setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  /** The menu bar's World menu flipped the world. */
+  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
   /** One authed call to the yeaboi app backend, relayed through main. */
   api: (
     path: string,
@@ -95,6 +97,8 @@ export interface YeaboiBridge {
   onNavigate: (callback: (route: string) => void) => void;
   /** The tray asking for the About panel, which is a modal and not a route. */
   onAbout: (callback: () => void) => void;
+  /** The Go menu asking for the palette, which is a dialog and not a route. */
+  onPalette: (callback: () => void) => void;
   /** The shell's own identity — versions the backend cannot know. */
   appMeta: () => Promise<{
     version: string;
@@ -121,6 +125,23 @@ export interface YeaboiBridge {
   onPetReturned: (fn: () => void) => void;
   /** The desktop duck is drawing him now, so the app can stop. */
   onPetTookOver: (fn: () => void) => void;
+  /** The rail's icons per world; a patch names the worlds it replaces. */
+  getRailPrefs: () => Promise<unknown>;
+  setRailPrefs: (patch: unknown) => Promise<unknown>;
+  /** Music: the shelf and volume live in main; the native apps are driven there. */
+  getMusicPrefs: () => Promise<unknown>;
+  setMusicPrefs: (patch: unknown) => Promise<unknown>;
+  onMusicCommand: (callback: (id: string) => void) => void;
+  /** A music link a frame tried to open: play it here instead. */
+  onMusicLink: (callback: (url: string) => void) => void;
+  musicNativeState: (app: string) => Promise<unknown>;
+  musicNativeCommand: (app: string, command: string) => Promise<unknown>;
+  musicNativeOpen: (app: string, url: string) => Promise<unknown>;
+  musicNativeInstalled: (app: string) => Promise<unknown>;
+  /** The Music app's own library, by shelf or playlist; and a click on a row. */
+  musicNativeLibrary: (app: string, playlistId?: string) => Promise<unknown>;
+  musicNativePlayItem: (app: string, kind: string, id: string) => Promise<unknown>;
+  musicNativeLaunch: (app: string) => Promise<unknown>;
   /** A native banner for a run that finished. Clamped in main. */
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   /** The active theme's background — the next window opens in it. */
@@ -147,6 +168,11 @@ const bridge: YeaboiBridge = {
   completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),
   getAudience: () => ipcRenderer.invoke('audience:get'),
   setAudience: (audience) => ipcRenderer.invoke('audience:set', audience),
+  onAudience: (callback) => {
+    ipcRenderer.on('app:audience', (_event, audience: 'solo' | 'team' | 'agents') =>
+      callback(audience),
+    );
+  },
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),
   apiStream: (path, body, onLine) => {
     // The channel is per call, so two concurrent turns never cross lines; the
@@ -186,6 +212,9 @@ const bridge: YeaboiBridge = {
   onAbout: (callback) => {
     ipcRenderer.on('app:about', () => callback());
   },
+  onPalette: (callback) => {
+    ipcRenderer.on('app:palette', () => callback());
+  },
   appMeta: () => ipcRenderer.invoke('app:meta'),
   getPetEnabled: () => ipcRenderer.invoke('pet:get-enabled'),
   setPetEnabled: (enabled) => ipcRenderer.invoke('pet:set-enabled', enabled),
@@ -201,6 +230,25 @@ const bridge: YeaboiBridge = {
   onPetTookOver: (fn) => {
     ipcRenderer.on('pet:took-over', () => fn());
   },
+  getRailPrefs: () => ipcRenderer.invoke('rail:get-prefs'),
+  setRailPrefs: (patch) => ipcRenderer.invoke('rail:set-prefs', patch),
+  getMusicPrefs: () => ipcRenderer.invoke('music:get-prefs'),
+  setMusicPrefs: (patch) => ipcRenderer.invoke('music:set-prefs', patch),
+  onMusicCommand: (callback) => {
+    ipcRenderer.on('app:music', (_event, id: string) => callback(id));
+  },
+  onMusicLink: (callback) => {
+    ipcRenderer.on('app:music-link', (_event, url: string) => callback(url));
+  },
+  musicNativeState: (app) => ipcRenderer.invoke('music:native-state', app),
+  musicNativeCommand: (app, command) => ipcRenderer.invoke('music:native-command', app, command),
+  musicNativeOpen: (app, url) => ipcRenderer.invoke('music:native-open', app, url),
+  musicNativeInstalled: (app) => ipcRenderer.invoke('music:native-installed', app),
+  musicNativeLibrary: (app, playlistId) =>
+    ipcRenderer.invoke('music:native-library', app, playlistId ?? ''),
+  musicNativePlayItem: (app, kind, id) =>
+    ipcRenderer.invoke('music:native-play-item', app, kind, id),
+  musicNativeLaunch: (app) => ipcRenderer.invoke('music:native-launch', app),
   notify: (banner) => ipcRenderer.send('app:notify', banner),
   setThemeBackground: (colour) => ipcRenderer.send('theme:background', colour),
   onUpdateState: (callback) => {

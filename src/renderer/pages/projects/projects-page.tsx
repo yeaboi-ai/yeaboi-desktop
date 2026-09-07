@@ -1,45 +1,458 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+// Projects — the durable way to work. Every run inside one reads what the
+// runs before it left behind. The page is one ledger: the New project
+// composer as its first ruled line, a head row that says what each step
+// leaves, then a line per project carrying its name, a dot per flow step
+// (filled where that mode has run inside) and a date, Completed under them,
+// and the other ways in at the foot. With no projects yet, the sheet is the
+// composer alone and one line offering to suggest projects; pressing it
+// unfolds what this machine's connections suggest starting
+// (components/projects/suggested-projects.tsx), and choosing one fills the
+// composer. Every row opens its project; hovering one (or right-clicking it)
+// offers rename, Mark done or Reopen, and delete, so a project is resumed,
+// renamed or removed from here. The duck in the header band's right half
+// explains projects in three lines, above the sheet and never on it.
+
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ProjectCard } from '@/components/project-card';
-import { CreateProjectDialog } from '@/components/create-project-dialog';
+import { useLocation } from 'react-router';
+import { Check, Lightbulb, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import { useConfirm } from '@/components/ui/confirm-dialog';
+import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
+import { LedgerFlowList, LedgerHead } from '@/components/projects/ledger-head';
+import { ProjectComposer, type ProjectDraft } from '@/components/projects/project-composer';
+import { ProjectGuide } from '@/components/projects/project-guide';
+import { RunTrace } from '@/components/projects/run-trace';
+import { SuggestedProjects } from '@/components/projects/suggested-projects';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { useAudience } from '@/components/providers/audience-provider';
+import { DOOR_MASCOT } from '@/lib/audience/worlds';
+import { glideText } from '@/lib/motion/glide';
+import { PROJECTS_HEADER_LINKS, type PageLink } from '@/lib/nav/sections';
+import { allCards, loadCapabilities, menuFor, type Capabilities } from '@/lib/yeaboi/capabilities';
+import {
+  ALL_DONE_LINE,
+  COMPLETED_WORD,
+  DELETE_LABEL,
+  DELETE_PROJECT_MESSAGE,
+  DELETE_PROJECT_TITLE,
+  IN_PROGRESS_WORD,
+  LEDGER_ROW,
+  NOT_ALLOWED_LINE,
+  NOT_ALLOWED_TITLE,
+  OTHER_WAYS_WORD,
+  UNREACHABLE_LINE,
+  ledgerColumns,
+  ledgerSections,
+  projectCount,
+  rowActions,
+  type RowAction,
+} from '@/lib/yeaboi/ledger';
+import {
+  isDone,
+  nextStatus,
+  runsByEngineProject,
+  traceFor,
+  traceSentence,
+} from '@/lib/yeaboi/projects';
+import { REFERENCE_COPY, type ProjectReference } from '@/lib/yeaboi/references';
+import { cn } from '@/lib/utils';
+import { fallbackFlowKeys, flowFor, type FlowStep } from '@/lib/yeaboi/reads';
+import { loadRecentSessions, relativeDay } from '@/lib/yeaboi/sessions';
+import { HIDE_SUGGESTIONS_LABEL, SUGGEST_LABEL, SUGGEST_PROMPT } from '@/lib/yeaboi/suggestions';
 import { logger } from '@/lib/logger';
+import { PageShell } from '@/components/page-shell';
+
+/** Enough runs to trace every project on a desktop; the list is read once. */
+const TRACE_LIMIT = 200;
 
 interface Project {
   id: string;
   name: string;
   description: string | null;
   created_at: string;
+  updated_at?: string;
+  status?: string;
+  /** The engine project runs inside this one share context through; minted on the first run. */
+  yeaboi_project_id?: string | null;
+  references?: ProjectReference[];
+}
+
+interface RowHandlers {
+  onRename: (project: Project, name: string) => Promise<void>;
+  onToggleStatus: (project: Project) => Promise<void>;
+  onDelete: (project: Project) => Promise<void>;
+}
+
+const ACTION_ICONS = { rename: Pencil, delete: Trash2 } as const;
+
+function LedgerRow({
+  project,
+  now,
+  steps,
+  colors,
+  ran,
+  onRename,
+  onToggleStatus,
+  onDelete,
+}: {
+  project: Project;
+  now: Date;
+  steps: FlowStep[];
+  colors: Record<string, string>;
+  ran: Map<string, Set<string>>;
+} & RowHandlers) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(project.name);
+  const trace = traceFor(
+    steps,
+    project.yeaboi_project_id ? ran.get(project.yeaboi_project_id) : undefined,
+  );
+  // Escape unmounts the focused input, which still fires blur; the flag is what
+  // keeps that blur from committing the rename Escape just cancelled.
+  const cancelled = useRef(false);
+  const actions = rowActions(project.status);
+  const run = (key: RowAction['key']) => {
+    if (key === 'rename') {
+      cancelled.current = false;
+      setDraft(project.name);
+      setEditing(true);
+    } else if (key === 'status') {
+      void onToggleStatus(project);
+    } else {
+      void onDelete(project);
+    }
+  };
+  const commitRename = () => {
+    setEditing(false);
+    if (cancelled.current) return;
+    const name = draft.trim();
+    if (name && name !== project.name) void onRename(project, name);
+  };
+  const iconFor = (key: RowAction['key']) =>
+    key === 'status' ? (isDone(project) ? RotateCcw : Check) : ACTION_ICONS[key];
+  const description = project.description && (
+    <span className="mt-0.5 block truncate text-[13px] font-body text-muted-foreground">
+      {project.description}
+    </span>
+  );
+  const labelled = trace.length > 0 && (
+    <span className="mt-1.5 block md:hidden">
+      <RunTrace trace={trace} colors={colors} variant="labelled" />
+    </span>
+  );
+  const date = relativeDay(project.updated_at ?? project.created_at, now);
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger render={<li className="group relative" />}>
+        {editing ? (
+          <div className={LEDGER_ROW}>
+            <span className="min-w-0">
+              <input
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitRename();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelled.current = true;
+                    setDraft(project.name);
+                    setEditing(false);
+                  }
+                }}
+                aria-label={`Rename ${project.name}`}
+                className="w-full border-0 border-b border-border bg-transparent px-0 py-0 font-display text-[18px] leading-tight text-foreground outline-none"
+              />
+              {description}
+              {labelled}
+            </span>
+            <span className="hidden md:contents">
+              <RunTrace trace={trace} colors={colors} variant="dots" />
+            </span>
+            <span className="text-[12px] font-body tabular-nums text-muted-foreground md:text-right">
+              {date}
+            </span>
+          </div>
+        ) : (
+          <Link
+            href={`/projects/${project.id}`}
+            className={LEDGER_ROW}
+            aria-label={`${project.name}. ${traceSentence(trace)}`}
+          >
+            <span className="min-w-0">
+              <span className="block truncate font-display text-[18px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
+                {project.name}
+              </span>
+              {description}
+              {labelled}
+            </span>
+            <span className="hidden md:contents">
+              <RunTrace trace={trace} colors={colors} variant="dots" />
+            </span>
+            <span className="text-[12px] font-body tabular-nums text-muted-foreground transition-opacity md:text-right md:group-hover:opacity-0 md:group-focus-within:opacity-0">
+              {date}
+            </span>
+          </Link>
+        )}
+        {!editing && (
+          <span className="absolute inset-y-0 right-0 hidden items-center gap-0.5 group-hover:flex group-focus-within:flex">
+            {actions.map((action) => {
+              const Icon = iconFor(action.key);
+              return (
+                <button
+                  key={action.key}
+                  type="button"
+                  onClick={() => run(action.key)}
+                  aria-label={`${action.label} ${project.name}`}
+                  title={action.label}
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded text-muted-foreground/50 outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50',
+                    action.key === 'delete' && 'hover:bg-destructive/10 hover:text-destructive',
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </button>
+              );
+            })}
+          </span>
+        )}
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        {actions.map((action) => (
+          <ContextMenuItem
+            key={action.key}
+            variant={action.key === 'delete' ? 'destructive' : 'default'}
+            onClick={() => run(action.key)}
+          >
+            {action.label}
+          </ContextMenuItem>
+        ))}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+/** The one line an empty sheet offers in place of rows; the button unfolds them. */
+function SuggestLine({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-5 pb-3 text-[13px] font-body leading-snug text-muted-foreground">
+      <span>{SUGGEST_PROMPT}</span>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="suggested-projects"
+        className="inline-flex items-center gap-1.5 text-foreground/80 transition-colors hover:text-foreground"
+      >
+        <Lightbulb aria-hidden className="h-3 w-3" />
+        {open ? HIDE_SUGGESTIONS_LABEL : SUGGEST_LABEL}
+      </button>
+    </p>
+  );
+}
+
+function SheetWord({ children, tail }: { children: string; tail?: string }) {
+  return (
+    <p className="flex items-baseline gap-3 pt-5 pb-1 leading-none">
+      <span className="font-display italic text-[18px] text-muted-foreground">{children}</span>
+      {tail && <span className="text-[12px] font-body text-muted-foreground/70">{tail}</span>}
+    </p>
+  );
+}
+
+function WayInRow({ link }: { link: PageLink }) {
+  return (
+    <li>
+      <Link
+        href={link.href}
+        className="group grid gap-x-4 gap-y-0.5 py-2.5 md:grid-cols-[10rem_minmax(0,1fr)] md:items-baseline"
+      >
+        <span className="font-display text-[16px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
+          {link.label}
+        </span>
+        {link.fact && (
+          <span className="text-[12px] font-body leading-snug text-muted-foreground">
+            {link.fact}
+          </span>
+        )}
+      </Link>
+    </li>
+  );
 }
 
 export default function ProjectsPage() {
   const { authFetch, ready, teamVersion } = useAuthFetch();
+  const { audience } = useAudience();
+  const Mascot = DOOR_MASCOT[audience].projects;
   const router = useRouter();
-  // Was a Next server action; the desktop talks to FastAPI directly.
+  const { search } = useLocation();
+  const confirm = useConfirm();
+  // Was a Next server action; the desktop talks to FastAPI directly. The
+  // screenshots follow the row one by one; a failed one is said, not fatal.
   const createProject = useCallback(
-    async (data: { description: string; name?: string }) => {
+    async (draft: ProjectDraft) => {
       const resp = await authFetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ description: draft.description, references: draft.references }),
       });
       if (!resp.ok) {
-        // The dialog renders this verbatim, so prefer the backend's wording.
+        // The composer renders this verbatim, so prefer the backend's wording.
         const body = await resp.json().catch(() => ({}));
         throw new Error(body.detail || `Couldn't create the project (${resp.status}).`);
       }
-      return resp.json();
+      const created = (await resp.json()) as { id: string };
+      logger.info('project created', { id: created.id, references: draft.references.length });
+      const failed: string[] = [];
+      for (const file of draft.files) {
+        const form = new FormData();
+        form.append('file', file);
+        try {
+          const upload = await authFetch(`/api/projects/${created.id}/attachments`, {
+            method: 'POST',
+            body: form,
+          });
+          if (!upload.ok) failed.push(file.name);
+        } catch {
+          failed.push(file.name);
+        }
+      }
+      if (failed.length > 0) {
+        logger.warn('project screenshots not attached', { id: created.id, failed });
+        await confirm({
+          title: REFERENCE_COPY.NOT_ATTACHED_TITLE,
+          message: REFERENCE_COPY.notAttached(failed),
+          variant: 'warning',
+          confirmLabel: 'OK',
+          cancelLabel: 'Close',
+        });
+      }
+      return created;
     },
-    [authFetch],
+    [authFetch, confirm],
+  );
+  // One PATCH per row action; a refusal is said in a dialog and the row keeps its state.
+  const patchProject = useCallback(
+    async (project: Project, body: Record<string, unknown>, title: string): Promise<boolean> => {
+      let detail = UNREACHABLE_LINE;
+      try {
+        const resp = await authFetch(`/api/projects/${project.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (resp.ok) return true;
+        const data = await resp.json().catch(() => ({}));
+        detail = data?.detail || `The change was refused (${resp.status}).`;
+      } catch {
+        // unreachable: the default line says so
+      }
+      await confirm({
+        title,
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+      return false;
+    },
+    [authFetch, confirm],
+  );
+  const renameProject = useCallback(
+    async (project: Project, name: string) => {
+      if (!(await patchProject(project, { name }, 'Name unchanged'))) return;
+      logger.info('project renamed', { id: project.id });
+      setProjects((current) => current.map((p) => (p.id === project.id ? { ...p, name } : p)));
+    },
+    [patchProject],
+  );
+  const toggleStatus = useCallback(
+    async (project: Project) => {
+      const status = nextStatus(project.status);
+      if (!(await patchProject(project, { status }, 'Status unchanged'))) return;
+      logger.info('project status set', { id: project.id, status });
+      const updated_at = new Date().toISOString();
+      setProjects((current) =>
+        current.map((p) => (p.id === project.id ? { ...p, status, updated_at } : p)),
+      );
+    },
+    [patchProject],
+  );
+  const deleteProject = useCallback(
+    async (project: Project) => {
+      const ok = await confirm({
+        title: DELETE_PROJECT_TITLE,
+        message: DELETE_PROJECT_MESSAGE,
+        variant: 'danger',
+        confirmLabel: DELETE_LABEL,
+      });
+      if (!ok) return;
+      let title = 'Delete failed';
+      let detail = UNREACHABLE_LINE;
+      try {
+        const resp = await authFetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+        if (resp.ok || resp.status === 204) {
+          logger.info('project deleted', { id: project.id });
+          setProjects((current) => current.filter((p) => p.id !== project.id));
+          return;
+        }
+        if (resp.status === 403) {
+          title = NOT_ALLOWED_TITLE;
+          detail = NOT_ALLOWED_LINE;
+        } else {
+          const data = await resp.json().catch(() => ({}));
+          detail = data?.detail || `Delete failed with status ${resp.status}.`;
+        }
+      } catch {
+        // unreachable: the default line says so
+      }
+      await confirm({
+        title,
+        message: detail,
+        variant: 'warning',
+        confirmLabel: 'OK',
+        cancelLabel: 'Close',
+      });
+    },
+    [authFetch, confirm],
   );
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [description, setDescription] = useState('');
+  const field = useRef<HTMLTextAreaElement>(null);
+  // null while the sidecar is being asked, or when it cannot be; the ledger
+  // never waits on it.
+  const [caps, setCaps] = useState<Capabilities | null>(null);
+  // Which modes have run inside each engine project; empty until the sidecar
+  // answers, and empty for good on one without the route.
+  const [ran, setRan] = useState<Map<string, Set<string>>>(() => new Map());
+  // The suggested rows stay folded until asked for, so an empty sheet is the
+  // composer and one line, and no connection is read behind the reader's back.
+  const [suggesting, setSuggesting] = useState(false);
   // Render nothing until we know the user has finished onboarding. Otherwise
   // the projects page paints for one frame before the redirect fires, which
   // shows up as a flash of the wrong UI right after first-time sign-in.
   const [gate, setGate] = useState<'checking' | 'redirecting' | 'ok'>('checking');
+
+  useEffect(() => {
+    loadCapabilities().then(setCaps, () => setCaps(null));
+    loadRecentSessions({ limit: TRACE_LIMIT }).then(
+      (sessions) => setRan(runsByEngineProject(sessions ?? [])),
+      () => setRan(new Map()),
+    );
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -63,140 +476,136 @@ export default function ProjectsPage() {
       .then((data) => setProjects(data))
       .catch(() => setProjects([]))
       .finally(() => setLoading(false));
-  }, [ready, authFetch, router, teamVersion]);
+  }, [ready, authFetch, teamVersion]);
 
-  const refetchProjects = useCallback(() => {
-    authFetch('/api/projects')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setProjects(data))
-      .catch(() => logger.warn('Failed to refresh projects'));
-  }, [authFetch]);
+  const steps = useMemo(
+    () =>
+      flowFor(
+        audience,
+        caps ? menuFor(caps, audience).map((card) => card.key) : fallbackFlowKeys(audience),
+      ),
+    [audience, caps],
+  );
+  const colors = useMemo(
+    () => Object.fromEntries((caps ? allCards(caps) : []).map((card) => [card.key, card.color])),
+    [caps],
+  );
 
   if (gate !== 'ok') {
-    return <div className="min-h-screen bg-background" aria-busy="true" />;
+    return <div className="min-h-[var(--page-min-h)] bg-background" aria-busy="true" />;
   }
 
+  const now = new Date();
+  const { rows, completed } = ledgerSections(projects);
+  const empty = !loading && rows.length === 0 && completed.length === 0;
+  // After Create the app opens the project; the old view is where the work is.
+  const openCreated = (created: { id: string }) => router.push(`/projects/${created.id}`);
+  const pickExample = (from: HTMLElement, text: string) => {
+    const target = field.current;
+    if (!target) return;
+    glideText(from, target, () => {
+      setDescription(text);
+      target.focus();
+    });
+  };
+  const rowProps = {
+    now,
+    steps,
+    colors,
+    ran,
+    onRename: renameProject,
+    onToggleStatus: toggleStatus,
+    onDelete: deleteProject,
+  };
+  // The column heads label rows; the unfolded suggestions bring their own.
+  const headed = loading || !empty;
+  const sheetStyle = { '--ledger-cols': ledgerColumns(steps.length) } as CSSProperties;
+
   return (
-    <div className="min-h-screen">
-      <main className="mx-auto max-w-6xl px-6 py-14">
-        {/* Page masthead — asymmetric split */}
-        <div className="flex items-end justify-between mb-14 gap-8">
-          <div className="max-w-lg animate-slide-up stagger-1">
-            <p className="text-xs font-body font-medium tracking-[0.18em] uppercase text-muted-foreground mb-3">
-              Workspace
-            </p>
-            <h1 className="font-display text-6xl italic leading-[1.05] text-foreground">
+    <PageShell>
+      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5 animate-slide-up stagger-1">
+        <div>
+          <div className="flex items-center gap-4">
+            <Mascot size={40} />
+            <h1 className="font-display italic text-[40px] leading-none text-foreground">
               Projects
             </h1>
           </div>
-
-          <div className="flex flex-col items-end gap-2 animate-fade-in stagger-2 shrink-0">
-            {!loading && projects.length > 0 && (
-              <span className="text-xs text-muted-foreground font-body tabular-nums">
-                {projects.length} project{projects.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            <CreateProjectDialog onCreate={createProject} onCreated={refetchProjects} />
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-border mb-12 animate-fade-in stagger-2" />
-
-        {/* Content */}
-        {loading ? (
-          <div className="space-y-4 animate-slide-up stagger-3">
-            {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                className="rounded-lg border border-border h-32 bg-card animate-pulse"
-                style={{ animationDelay: `${n * 80}ms` }}
-              />
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          <EmptyState onCreate={createProject} onCreated={refetchProjects} />
-        ) : (
-          <ProjectGrid projects={projects} />
-        )}
-      </main>
-    </div>
-  );
-}
-
-function EmptyState({
-  onCreate,
-  onCreated,
-}: {
-  onCreate: (data: { description: string; name?: string }) => Promise<unknown>;
-  onCreated: () => void;
-}) {
-  return (
-    <div className="animate-slide-up stagger-3">
-      <div className="border border-border border-dashed rounded-lg p-16 flex flex-col justify-between min-h-[280px]">
-        <div>
-          <p className="text-xs font-body font-medium tracking-[0.15em] uppercase text-muted-foreground/60 mb-6">
-            No projects yet
-          </p>
-          <p className="font-display text-4xl italic text-muted-foreground/40 leading-tight max-w-sm">
-            Start your first
-            <br />
-            planning session
+          <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+            Every run inside a project reads what the runs before it left.
           </p>
         </div>
-        <div className="mt-8">
-          <CreateProjectDialog onCreate={onCreate} onCreated={onCreated} />
-        </div>
-      </div>
-    </div>
-  );
-}
+        <ProjectGuide steps={steps} colors={colors} />
+      </header>
 
-function ProjectGrid({ projects }: { projects: Project[] }) {
-  if (projects.length === 0) return null;
-
-  const [featured, ...rest] = projects;
-
-  return (
-    <div className="space-y-4">
-      {/* Featured project — full width, taller */}
-      <div className="animate-slide-up stagger-3">
-        <ProjectCard
-          id={featured.id}
-          name={featured.name}
-          description={featured.description}
-          createdAt={featured.created_at}
-          featured
+      <section
+        aria-label="Projects"
+        className="mt-10 rounded-lg border border-border bg-card px-8 py-5 animate-slide-up stagger-2"
+        style={sheetStyle}
+      >
+        <ProjectComposer
+          value={description}
+          onChange={setDescription}
+          onCreate={createProject}
+          onCreated={openCreated}
+          autoFocus={empty || new URLSearchParams(search).has('new')}
+          fieldRef={field}
         />
-      </div>
 
-      {/* Remaining — 60/40 or 3-col depending on count */}
-      {rest.length > 0 && (
-        <div
-          className={`grid gap-4 ${
-            rest.length === 1
-              ? 'grid-cols-1 max-w-lg'
-              : rest.length === 2
-                ? 'grid-cols-[3fr_2fr]'
-                : 'grid-cols-[2fr_1fr_1fr]'
-          }`}
-        >
-          {rest.map((p, i) => (
-            <div
-              key={p.id}
-              className={`animate-slide-up`}
-              style={{ animationDelay: `${(i + 4) * 60}ms` }}
-            >
-              <ProjectCard
-                id={p.id}
-                name={p.name}
-                description={p.description}
-                createdAt={p.created_at}
-              />
-            </div>
-          ))}
+        {!loading && rows.length > 0 && (
+          <SheetWord tail={projectCount(rows.length)}>{IN_PROGRESS_WORD}</SheetWord>
+        )}
+
+        {headed && <LedgerHead steps={steps} colors={colors} />}
+
+        {loading ? (
+          <GhostSkeleton steps={steps} />
+        ) : empty ? (
+          <>
+            <SuggestLine open={suggesting} onToggle={() => setSuggesting((open) => !open)} />
+            {suggesting && (
+              <div id="suggested-projects">
+                <SuggestedProjects steps={steps} colors={colors} onPick={pickExample} />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {rows.length === 0 ? (
+              <p className="py-3 text-[13px] font-body leading-relaxed text-muted-foreground">
+                {ALL_DONE_LINE}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/50">
+                {rows.map((project) => (
+                  <LedgerRow key={project.id} project={project} {...rowProps} />
+                ))}
+              </ul>
+            )}
+            {completed.length > 0 && (
+              <>
+                <SheetWord>{COMPLETED_WORD}</SheetWord>
+                <ul className="divide-y divide-border/50">
+                  {completed.map((project) => (
+                    <LedgerRow key={project.id} project={project} {...rowProps} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
+        )}
+
+        {headed && <LedgerFlowList steps={steps} colors={colors} />}
+
+        <div className="mt-5 border-t border-border">
+          <SheetWord>{OTHER_WAYS_WORD}</SheetWord>
+          <ul className="divide-y divide-border/50">
+            {PROJECTS_HEADER_LINKS.map((link) => (
+              <WayInRow key={link.href} link={link} />
+            ))}
+          </ul>
         </div>
-      )}
-    </div>
+      </section>
+    </PageShell>
   );
 }

@@ -17,6 +17,8 @@ import { execFile } from 'node:child_process';
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import { DOCK_SCRIPT, type DockRect, dockConfig, parseDockRect } from './dock';
 import { PET_DEFAULTS, type PetPrefs } from '../shared/pet-prefs';
+import { ROTATE, resolvePersona, type PersonaId } from '../shared/personas';
+import { petOutfit } from '../shared/pet-outfit';
 import { petFeedsActive, petWindowCommand } from '../shared/pet-visibility';
 
 /** Window-local cursor feed rate. 16ms is one frame at 60fps — the duck flees
@@ -24,6 +26,8 @@ import { petFeedsActive, petWindowCommand } from '../shared/pet-visibility';
 const CURSOR_FEED_MS = 16;
 /** The dock can move, resize or hide; the floor is re-polled on this cadence. */
 const LAYOUT_POLL_MS = 2_000;
+/** While the persona rotates, how often main checks whether it has moved on. */
+const PERSONA_POLL_MS = 60_000;
 
 export interface PetNotice {
   quip: string;
@@ -49,6 +53,9 @@ export class Pet {
   private window: BrowserWindow | null = null;
   private layoutTimer: NodeJS.Timeout | null = null;
   private cursorTimer: NodeJS.Timeout | null = null;
+  private personaTimer: NodeJS.Timeout | null = null;
+  /** The persona the window was last told about. */
+  private worn: PersonaId | null = null;
   /** The live window's feed callbacks — set at creation, cleared with it. */
   private feeds: { layout: () => void; cursor: () => void } | null = null;
   private prefs: PetPrefs = PET_DEFAULTS;
@@ -232,18 +239,30 @@ export class Pet {
     this.feeds.layout(); // the dock may have moved while the duck was hidden
     this.layoutTimer = setInterval(this.feeds.layout, LAYOUT_POLL_MS);
     this.cursorTimer = setInterval(this.feeds.cursor, CURSOR_FEED_MS);
+    this.personaTimer = setInterval(() => this.rotatePersona(), PERSONA_POLL_MS);
   }
 
   private clearFeeds(): void {
     if (this.layoutTimer) clearInterval(this.layoutTimer);
     if (this.cursorTimer) clearInterval(this.cursorTimer);
+    if (this.personaTimer) clearInterval(this.personaTimer);
     this.layoutTimer = null;
     this.cursorTimer = null;
+    this.personaTimer = null;
+  }
+
+  /** A rotating duck changes persona on the clock; a chosen one never does. */
+  private rotatePersona(): void {
+    if (this.prefs.persona !== ROTATE) return;
+    if (resolvePersona(this.prefs.persona, Date.now()) !== this.worn) this.sendPrefs();
   }
 
   private sendPrefs(): void {
     const window = this.window;
-    if (window && !window.isDestroyed()) window.webContents.send('pet:prefs', this.prefs);
+    if (!window || window.isDestroyed()) return;
+    const persona = resolvePersona(this.prefs.persona, Date.now());
+    this.worn = persona;
+    window.webContents.send('pet:prefs', { ...this.prefs, outfit: petOutfit(persona) });
   }
 
   /** Tell the duck about something that happened while nobody was looking. */

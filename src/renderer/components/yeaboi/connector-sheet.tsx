@@ -1,15 +1,15 @@
 'use client';
 
-// The connector sheet and tile — shared by the Integrations catalog, the
-// set-up view and the ceremony that needs a channel to post to. The sheet is
-// the whole connect/edit flow, laid out as the sequence it really is: choose an
-// auth method, collect the keys at the vendor, paste them, then one "Save &
-// test" writing through POST /api/settings/set and probing through the
-// connection verify route. Built-ins are configured here like everything else —
-// their fields are the same envs a settings card would have written. Custom
-// rows add delete, and webhook customs a delivery panel.
+// The connector sheet and tile — shared by the Integrations catalog and the
+// Credentials tab's connected-integrations view. The sheet is the whole
+// connect/edit flow, laid out as the sequence it really is: choose an auth
+// method, collect the keys at the vendor, paste them, then one "Save & test"
+// writing through POST /api/settings/set and probing through the connection
+// verify route. Rows managed by Credentials deep-link there; custom rows add
+// delete, and webhook customs a delivery panel.
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import {
   AlertCircle,
   ArrowUpRight,
@@ -36,6 +36,10 @@ import {
 import { saveSetting } from '@/lib/yeaboi/settings';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
+import { MusicConnectorNote } from '@/components/music/music-connector-note';
+import { ServiceAccount } from '@/components/music/service-account';
+import { isMusicService } from '@shared/music-links';
+import { catalogueChanged } from '@/lib/music/catalogue-changed';
 import { ChoicePills } from '@/components/settings/primitives';
 import { Button } from '@/components/ui/button';
 import {
@@ -98,13 +102,9 @@ export function ConnectorTile({ row, onOpen }: { row: ConnectionRow; onOpen: () 
       data-connector={row.key}
       style={{ '--tile-accent': row.accent } as React.CSSProperties}
       className={cn(
-        // The vendor's accent, taken down towards the border it replaces: at
-        // full strength LaunchDarkly's blue read as a browser focus ring, and
-        // an accent that is nearly black showed nothing at all.
-        'group flex items-center gap-3.5 rounded-2xl bg-card px-4 py-3 text-left ring-1 transition-[background-color,box-shadow,ring-color] duration-150',
-        !row.connected &&
-          'hover:bg-[color-mix(in_srgb,var(--tile-accent)_7%,var(--card))] hover:ring-[color-mix(in_srgb,var(--tile-accent)_40%,var(--border))]',
-        'focus-visible:ring-primary/50 focus-visible:outline-none',
+        'group flex items-center gap-3.5 rounded-2xl bg-card px-4 py-3 text-left ring-1 transition-[box-shadow,ring-color] duration-150',
+        'hover:ring-[var(--tile-accent)] hover:shadow-[0_0_16px_-6px_var(--tile-accent)]',
+        'focus-visible:ring-[var(--tile-accent)] focus-visible:outline-none',
         row.connected
           ? 'ring-[var(--tile-accent)] shadow-[0_0_16px_-8px_var(--tile-accent)]'
           : 'ring-border/60',
@@ -148,7 +148,11 @@ export function ConnectorSheet({
 }) {
   return (
     <Sheet open={Boolean(row)} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" style={{ '--tile-accent': row?.accent } as React.CSSProperties}>
+      <SheetContent
+        side="right"
+        className="sm:max-w-lg"
+        style={{ '--tile-accent': row?.accent } as React.CSSProperties}
+      >
         {row && <ConnectorSheetBody row={row} onChanged={onChanged} onClose={onClose} />}
       </SheetContent>
     </Sheet>
@@ -323,33 +327,43 @@ function ConnectorSheetBody({
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const isCustom = row.key.startsWith('custom_');
   const isWebhook = row.kind === 'webhook';
+  const isManaged = row.managed_by === 'credentials';
 
   const active: ConnectionAuthMethod | undefined = methods.find((m) => m.key === method);
+  // A sign-in's fields are minted by the flow, never typed: the account row
+  // below the fields stands in for them.
   const shownFields = (row.fields ?? []).filter(
     (f) =>
-      f.env !== row.auth_env && (!methods.length || !f.auth_method || f.auth_method === method),
+      f.env !== row.auth_env &&
+      f.action !== 'signin' &&
+      (!methods.length || !f.auth_method || f.auth_method === method),
   );
   const touched = shownFields.some((f) => (values[f.env] ?? '').trim());
 
   // "Get your keys": the vendor docs page plus every create-a-key link the
   // shown fields carry, deduped — one purposeful block instead of a helper
   // line under each input.
+  // A music service holds no credential: its one field is a choice, so the
+  // sheet has no keys to fetch and the field step says what the click does.
+  const keyless = row.family === 'music';
   const keyLinks: { label: string; url: string; scope: string }[] = [];
-  if (row.docs_url) {
-    keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
-  }
-  for (const field of shownFields) {
-    if (field.help_url && !keyLinks.some((k) => k.url === field.help_url)) {
-      keyLinks.push({
-        label: `Create ${field.label}`,
-        url: field.help_url,
-        scope: field.help_scope,
-      });
+  if (!isManaged && !keyless) {
+    if (row.docs_url) {
+      keyLinks.push({ label: 'Where the credential comes from', url: row.docs_url, scope: '' });
+    }
+    for (const field of shownFields) {
+      if (field.help_url && !keyLinks.some((k) => k.url === field.help_url)) {
+        keyLinks.push({
+          label: `Create ${field.label}`,
+          url: field.help_url,
+          scope: field.help_scope,
+        });
+      }
     }
   }
 
   const steps: { title: string; body: ReactNode }[] = [];
-  {
+  if (!isManaged) {
     if (methods.length > 0) {
       steps.push({
         title: 'How to connect',
@@ -393,7 +407,7 @@ function ConnectorSheetBody({
       steps.push({ title: 'Point deliveries here', body: <WebhookPanel row={row} /> });
     } else if (shownFields.length > 0) {
       steps.push({
-        title: 'Paste them here',
+        title: keyless ? 'Switch it on' : 'Paste them here',
         body: (
           <div className="space-y-3.5">
             {shownFields.map((field) => (
@@ -428,6 +442,7 @@ function ConnectorSheetBody({
         setResult({ ok: true, message: 'Saved — this connection has no live probe.' });
       }
       await onChanged();
+      if (row.family === 'music') catalogueChanged();
     } catch (e) {
       setResult({ ok: false, message: (e as Error).message });
     } finally {
@@ -448,7 +463,7 @@ function ConnectorSheetBody({
     }
   };
 
-  const showFooter = !isWebhook || isCustom;
+  const showFooter = !isManaged && (!isWebhook || isCustom);
 
   return (
     <>
@@ -502,17 +517,46 @@ function ConnectorSheetBody({
       </SheetHeader>
 
       <div className="flex-1 overflow-y-auto px-5 py-5">
-        {steps.map((step, index) => (
-          <Step
-            key={step.title}
-            number={index + 1}
-            title={step.title}
-            last={index === steps.length - 1}
-            stagger={index + 1}
-          >
-            {step.body}
-          </Step>
-        ))}
+        {isManaged ? (
+          <div className="space-y-4">
+            {row.docs_url && (
+              <a
+                href={row.docs_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-body text-muted-foreground transition-colors hover:text-primary"
+              >
+                Where the credential comes from
+                <ArrowUpRight className="size-3" aria-hidden />
+              </a>
+            )}
+            <div className="rounded-xl bg-secondary/40 px-4 py-3 text-[12px] text-muted-foreground">
+              {row.label} is one of the built-in integrations — its credentials live under{' '}
+              <Link href="/settings/credentials" className="text-primary hover:underline">
+                Settings · Credentials
+              </Link>
+              {row.section === 'voice' ? ' (System · Voice)' : ''}, or re-run setup.
+            </div>
+          </div>
+        ) : (
+          steps.map((step, index) => (
+            <Step
+              key={step.title}
+              number={index + 1}
+              title={step.title}
+              last={index === steps.length - 1}
+              stagger={index + 1}
+            >
+              {step.body}
+            </Step>
+          ))
+        )}
+        {row.family === 'music' && isMusicService(row.key) && row.signin !== undefined && (
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <ServiceAccount service={row.key} compact />
+          </div>
+        )}
+        {row.family === 'music' && <MusicConnectorNote connectorKey={row.key} />}
       </div>
 
       {showFooter && (

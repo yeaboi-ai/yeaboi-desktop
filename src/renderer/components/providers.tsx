@@ -16,6 +16,11 @@ import { CapturePicker } from '@/components/session/capture-picker';
 import { OnboardingGate } from '@/components/onboarding/onboarding-gate';
 import { AudienceProvider } from '@/components/providers/audience-provider';
 import { AudienceGate } from '@/components/audience/audience-gate';
+import { RailProvider } from '@/components/providers/rail-provider';
+import { PaletteProvider } from '@/components/providers/palette-provider';
+import { MusicProvider } from '@/components/providers/music-provider';
+import { EmbedHost } from '@/components/music/embed-host';
+import { GlobalPalette } from '@/components/palette/global-palette';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -31,13 +36,30 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   {/* Once onboarding is done, the audience question gates the
                       window the same way — once, and never again. */}
                   <AudienceProvider>
-                    <AudienceGate>
-                      <ProviderHealthBanner />
-                      <AppShell>{children}</AppShell>
-                      <NikoBar />
-                      <AmbienceHost />
-                      <ScreensaverHost />
-                    </AudienceGate>
+                    {/* The rail's squares are a preference per world; the rail
+                        and the dialog that arranges it read one copy. */}
+                    <RailProvider>
+                      {/* Find anything: one dialog the home's field, the title
+                          bar and the Go menu all open. */}
+                      <PaletteProvider>
+                        {/* One player for the rail's pocket, the Music page
+                            and the menu chords; the radio's station is the
+                            backend's, shared with the terminal. */}
+                        <MusicProvider>
+                          <AudienceGate>
+                            <ProviderHealthBanner />
+                            <AppShell>{children}</AppShell>
+                            <NikoBar />
+                            <GlobalPalette />
+                            <AmbienceHost />
+                            {/* The embed frame outlives the Music page, so
+                                leaving the page never stops the music. */}
+                            <EmbedHost />
+                            <ScreensaverHost />
+                          </AudienceGate>
+                        </MusicProvider>
+                      </PaletteProvider>
+                    </RailProvider>
                   </AudienceProvider>
                 </OnboardingGate>
                 <CapturePicker />

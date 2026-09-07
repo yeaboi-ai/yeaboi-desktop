@@ -22,6 +22,7 @@ interface YeaboiBridge {
   completeOnboarding: () => Promise<void>;
   getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
   setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
   api: (
     path: string,
     init?: { method?: string; body?: unknown },
@@ -45,6 +46,7 @@ interface YeaboiBridge {
   onFullScreen: (callback: (full: boolean) => void) => void;
   onNavigate: (callback: (route: string) => void) => void;
   onAbout: (callback: () => void) => void;
+  onPalette: (callback: () => void) => void;
   appMeta: () => Promise<{
     version: string;
     electron: string;
@@ -65,6 +67,20 @@ interface YeaboiBridge {
   /** The duck has finished his introduction and is coming back inside. */
   onPetReturned: (fn: () => void) => void;
   onPetTookOver: (fn: () => void) => void;
+  getRailPrefs: () => Promise<unknown>;
+  setRailPrefs: (patch: unknown) => Promise<unknown>;
+  getMusicPrefs: () => Promise<unknown>;
+  setMusicPrefs: (patch: unknown) => Promise<unknown>;
+  onMusicCommand: (callback: (id: string) => void) => void;
+  musicNativeState: (app: string) => Promise<unknown>;
+  musicNativeCommand: (app: string, command: string) => Promise<unknown>;
+  musicNativeOpen: (app: string, url: string) => Promise<unknown>;
+  musicNativeInstalled: (app: string) => Promise<unknown>;
+  /** Optional: absent on a preload older than the renderer (a hot reload). */
+  onMusicLink?: (callback: (url: string) => void) => void;
+  musicNativeLibrary: (app: string, playlistId?: string) => Promise<unknown>;
+  musicNativePlayItem: (app: string, kind: string, id: string) => Promise<unknown>;
+  musicNativeLaunch: (app: string) => Promise<unknown>;
   notify: (banner: { title: string; body?: string; route?: string }) => void;
   setThemeBackground: (colour: string) => void;
   onUpdateState: (callback: (state: unknown) => void) => void;

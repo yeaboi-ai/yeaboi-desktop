@@ -319,7 +319,7 @@ export default function SessionPage() {
       {
         id: 'ui.command-palette',
         label: 'Command palette',
-        keys: 'mod+k',
+        keys: 'mod+shift+k',
         group: 'Misc',
         allowInInputs: true,
         run: (e) => {

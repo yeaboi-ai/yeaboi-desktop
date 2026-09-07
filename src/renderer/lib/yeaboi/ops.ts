@@ -6,7 +6,7 @@
 // says instead of a cadence, whether the Slack lane can read back and how
 // fresh a saved agent report is are all backend answers.
 
-import { type Envelope, apiGet, apiPost, apiStream, callTool } from './api';
+import { type Envelope, apiGet, apiGetOptional, apiPost, apiStream, callTool } from './api';
 
 // ── Ceremonies ─────────────────────────────────────────────────────────────
 
@@ -146,6 +146,8 @@ export interface AgentModes {
   modes: AgentModeOption[];
   actions: string[];
   beta_notice: string;
+  /** How long a saved report counts as fresh; a page re-runs only past it. */
+  fresh_minutes?: number;
 }
 
 export interface AgentLatest {
@@ -153,7 +155,29 @@ export interface AgentLatest {
   label: string;
   report: Record<string, unknown> | null;
   as_of: string;
+  /** The backend's verdict: true means the page shows `report` and does not
+   *  re-run on open. An older sidecar omits it, which reads as stale. */
+  fresh?: boolean;
+  /** Present only when the read was scoped to a project's repo: saved reports
+   *  carry no project, so `report` is null and the surface runs fresh. */
+  scoped_to?: string;
 }
+
+/** Whether a sidecar honoured a project scope: `scoped` when it answered with
+ *  the repo it scoped to, `unscoped` when it ignored the param or the kind is
+ *  machine-wide (the key is always sent, empty when unscoped), `unsupported`
+ *  when it has no such route at all (404). Unscoped wants are always `unscoped`. */
+export type AgentScopeState = 'scoped' | 'unscoped' | 'unsupported';
+
+export function agentScopeState(latest: AgentLatest | null, wanted: string): AgentScopeState {
+  if (!wanted) return latest ? 'unscoped' : 'unsupported';
+  if (!latest) return 'unsupported';
+  return latest.scoped_to ? 'scoped' : 'unscoped';
+}
+
+/** The kinds that read the whole machine whatever project they are opened
+ *  from — a secret in one repo's session log is a secret. */
+export const MACHINE_WIDE_KINDS: ReadonlySet<string> = new Set(['security']);
 
 export interface AgentComponent {
   component_id: string;
@@ -210,11 +234,205 @@ export function reduceAgentRun(state: AgentRunState, line: unknown): AgentRunSta
 
 export const loadAgentModes = (): Promise<AgentModes> => apiGet('/api/agents/modes');
 
-export const loadAgentLatest = (kind: string): Promise<AgentLatest> =>
-  apiGet(`/api/agents/${encodeURIComponent(kind)}/latest`);
+/** `agent-usage` the card, `usage` the API kind. */
+export const kindOf = (key: string): string => key.replace(/^agent-/, '');
 
-export const runAgentMode = (kind: string, onLine: (line: unknown) => void): Promise<void> =>
-  apiStream(`/api/agents/${encodeURIComponent(kind)}/run`, {}, onLine);
+export interface AgentScopeOpts {
+  /** An engine project id (`proj-<8hex>`); its repo path scopes the read. */
+  projectId?: string;
+  /** Security: list the informational findings the saved report only counts.
+   *  Answered by re-deriving the saved report, never by a scan. */
+  includeInfo?: boolean;
+}
+
+/** Per-run knobs a page exposes; each reaches only the engines that take it. */
+export interface AgentRunOpts extends AgentScopeOpts {
+  windowDays?: number;
+  includeInfo?: boolean;
+}
+
+export const AGENT_WINDOWS: readonly number[] = [7, 30, 90];
+
+/** The latest saved report; null when the sidecar has no such route. */
+export const loadAgentLatest = (
+  kind: string,
+  opts: AgentScopeOpts = {},
+): Promise<AgentLatest | null> => {
+  const params = new URLSearchParams();
+  if (opts.projectId) params.set('project_id', opts.projectId);
+  if (opts.includeInfo) params.set('include_info', '1');
+  const query = params.toString();
+  return apiGetOptional(
+    `/api/agents/${encodeURIComponent(kind)}/latest${query ? `?${query}` : ''}`,
+  );
+};
+
+export const runAgentMode = (
+  kind: string,
+  onLine: (line: unknown) => void,
+  opts: AgentRunOpts = {},
+): Promise<void> => {
+  const body: Record<string, unknown> = {};
+  if (opts.projectId) body.project_id = opts.projectId;
+  if (opts.windowDays !== undefined) body.window_days = opts.windowDays;
+  if (opts.includeInfo !== undefined) body.include_info = opts.includeInfo;
+  return apiStream(`/api/agents/${encodeURIComponent(kind)}/run`, body, onLine);
+};
+
+export interface AgentDismissal {
+  key: string;
+  reason: string;
+  by: string;
+  at: string;
+  expires: string;
+}
+
+/** Set one security finding aside with the reason why; `undo` restores it.
+ *  The answer carries the re-derived report, so the page needs no scan. */
+export const dismissAgentFinding = (
+  key: string,
+  reason: string,
+  undo = false,
+  includeInfo = false,
+): Promise<{ ok: boolean; dismissed: AgentDismissal[]; report?: Record<string, unknown> | null }> =>
+  apiPost(
+    '/api/agents/security/dismiss',
+    undo
+      ? { key, undo: true, include_info: includeInfo }
+      : { key, reason, include_info: includeInfo },
+  );
+
+// ── Security: verdicts, fixes, replay ──────────────────────────────────────
+
+export interface SecurityFix {
+  id: string;
+  /** write | pr | link | dismiss | manual */
+  kind: string;
+  label: string;
+  target: string;
+  detail: string;
+  scope: string;
+}
+
+export interface SecurityIssue {
+  id: string;
+  category: string;
+  pattern: string;
+  title: string;
+  why: string;
+  /** needs-decision | unsure | test-data | handled | info */
+  verdict: string;
+  severity: string;
+  signals: number;
+  sessions: number;
+  files: number;
+  last_seen: string;
+  finding_keys: string[];
+  fixes: SecurityFix[];
+}
+
+export interface SecurityFindingRow {
+  key: string;
+  category: string;
+  pattern: string;
+  severity: string;
+  location: string;
+  line_no: number;
+  occurrences: number;
+  verdict: string;
+  verdict_reason: string;
+  context: string;
+  target: string;
+  snippet: string;
+  at: string;
+  session_id: string;
+  project_label: string;
+  fixes: SecurityFix[];
+}
+
+export interface ReplayTurn {
+  index: number;
+  line_no: number;
+  at: string;
+  /** you | agent | result | system */
+  role: string;
+  /** text | tool_use | tool_result */
+  kind: string;
+  tool: string;
+  text: string;
+  truncated: boolean;
+  flagged: boolean;
+}
+
+export interface Replay {
+  session_id: string;
+  source_path: string;
+  project_path: string;
+  started_at: string;
+  line_no: number;
+  pattern: string;
+  turns: ReplayTurn[];
+  focus: number;
+  warnings: string[];
+}
+
+export interface SecuritySignal {
+  line_no: number;
+  at: string;
+  session_id: string;
+  context: string;
+  snippet: string;
+}
+
+export interface SecurityActionResult {
+  ok: boolean;
+  fix_id?: string;
+  detail?: string;
+  pr_url?: string;
+  paths?: string[];
+  handled?: string[];
+  restored?: string[];
+  report?: Record<string, unknown> | null;
+}
+
+/** Many findings at once: `test-data` (reason filled in), `dismiss` (needs a reason) or `undo`. */
+export const setSecurityVerdict = (
+  keys: string[],
+  verdict: 'test-data' | 'dismiss' | 'undo',
+  opts: { reason?: string; includeInfo?: boolean } = {},
+): Promise<SecurityActionResult> =>
+  apiPost('/api/agents/security/verdict', {
+    keys,
+    verdict,
+    ...(opts.reason ? { reason: opts.reason } : {}),
+    include_info: Boolean(opts.includeInfo),
+  });
+
+/** Apply one of a finding's fixes; `keys` widens the handled set to the whole issue. */
+export const applySecurityFix = (
+  key: string,
+  fixId: string,
+  opts: { keys?: string[]; reason?: string; repo?: string; includeInfo?: boolean } = {},
+): Promise<SecurityActionResult> =>
+  apiPost('/api/agents/security/fix', {
+    key,
+    fix_id: fixId,
+    ...(opts.keys?.length ? { keys: opts.keys } : {}),
+    ...(opts.reason ? { reason: opts.reason } : {}),
+    ...(opts.repo ? { repo: opts.repo } : {}),
+    include_info: Boolean(opts.includeInfo),
+  });
+
+export const loadSecurityReplay = (key: string, line = 0): Promise<Replay> => {
+  const params = new URLSearchParams({ key });
+  if (line > 0) params.set('line', String(line));
+  return apiGet(`/api/agents/security/replay?${params.toString()}`);
+};
+
+export const loadSecuritySignals = (
+  key: string,
+): Promise<{ key: string; signals: SecuritySignal[] }> =>
+  apiGet(`/api/agents/security/signals?key=${encodeURIComponent(key)}`);
 
 export const exportAgentReport = (
   kind: string,

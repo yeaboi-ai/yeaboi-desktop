@@ -10,11 +10,13 @@
 // element's size.
 
 import { useEffect, useRef } from 'react';
-import { duckArtNow, loadDuckArt } from '@/lib/screensaver/duck-art';
+import { duckArtNow, loadDuckArt, loadWardrobe, wardrobeNow } from '@/lib/screensaver/duck-art';
+import { dressed, readPersonaChoice } from '@/lib/screensaver/persona';
 import { readPalette, onPaletteChange, type Palette } from '@/lib/screensaver/palette';
 import { seeded, type Scene } from '@/lib/screensaver/scene';
 import { createScene } from '@/lib/screensaver/scenes';
 import type { SceneStyle } from '@/lib/screensaver/styles';
+import { DEFAULT_PERSONA, type PersonaChoice } from '@shared/personas';
 
 /** Retina is worth paying for; a 3x display is not, for a background animation. */
 const MAX_DPR = 2;
@@ -51,6 +53,7 @@ export function ScreensaverCanvas({
     let disposed = false;
     let width = 0;
     let height = 0;
+    let choice: PersonaChoice = DEFAULT_PERSONA;
 
     const fit = (): void => {
       const rect = canvas.getBoundingClientRect();
@@ -75,7 +78,9 @@ export function ScreensaverCanvas({
         still: stillRef.current,
       });
       const art = duckArtNow();
-      if (art) scene.setArt(art);
+      const wardrobe = wardrobeNow();
+      if (art && wardrobe) dressed(scene, art, wardrobe, choice);
+      else if (art) scene.setArt(art);
       sceneRef.current = scene;
     };
 
@@ -83,12 +88,22 @@ export function ScreensaverCanvas({
     build();
 
     // Every scene draws the duck, so the art is always wanted. A scene renders
-    // without it until it lands rather than holding a blank frame.
+    // without it until it lands rather than holding a blank frame. The
+    // wardrobe and the persona choice follow: bare until then.
     void loadDuckArt().then((art) => {
       if (disposed) return;
       sceneRef.current?.setArt(art);
       if (stillRef.current) sceneRef.current?.draw(ctx);
     });
+    void Promise.all([loadDuckArt(), loadWardrobe(), readPersonaChoice()]).then(
+      ([art, wardrobe, stored]) => {
+        if (disposed) return;
+        choice = stored;
+        const scene = sceneRef.current;
+        if (scene) dressed(scene, art, wardrobe, choice);
+        if (still) sceneRef.current?.draw(ctx);
+      },
+    );
 
     // One frame now; whether it keeps moving is the other effect's business.
     sceneRef.current?.draw(ctx);

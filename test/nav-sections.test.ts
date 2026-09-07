@@ -40,7 +40,6 @@ const FULL_INVENTORY = [
   '/team/ship',
   '/agents/usage',
   '/agents/advisor',
-  '/agents/standup',
   '/agents/security',
   '/ceremonies',
   '/provenance',

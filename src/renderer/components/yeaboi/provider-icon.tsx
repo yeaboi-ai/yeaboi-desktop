@@ -16,8 +16,19 @@
 // glyph: the mark stays monochrome and inside the design system, and a vendor
 // we ship no logo for still reads as itself in a list of several.
 
-import { Activity, Bug, CalendarDays, Cloud, Mail, Siren, Sunrise, Video } from 'lucide-react';
 import {
+  Activity,
+  Bug,
+  CalendarDays,
+  Cloud,
+  Mail,
+  Music,
+  Siren,
+  Sunrise,
+  Video,
+} from 'lucide-react';
+import {
+  siApplemusic,
   siAtlassian,
   siBitbucket,
   siCircleci,
@@ -43,8 +54,10 @@ import {
   siPagerduty,
   siQwen,
   siSentry,
+  siSpotify,
   siStatuspage,
   siTrello,
+  siYoutubemusic,
   siZdotai,
 } from 'simple-icons';
 
@@ -120,13 +133,17 @@ export const ICON_PATHS: Record<string, string> = {
   // JSM Ops is Atlassian-branded (Opsgenie is a retired brand, so its old
   // mark would be the wrong logo, not a nostalgic one).
   jsm_ops: siAtlassian.path,
+  // The music services (keyless connectors; the desktop's Music page plays them).
+  spotify: siSpotify.path,
+  apple_music: siApplemusic.path,
+  youtube_music: siYoutubemusic.path,
   // launchdarkly ships in no icon set we bundle — it renders its wire glyph.
 };
 
 /** Marks whose source does not normalise to a 24-square. Anything absent here
  *  is drawn in simple-icons' own 0 0 24 24 box; the browser fits and centres
  *  whatever box is named. */
-const ICON_VIEWBOXES: Record<string, string> = {
+export const ICON_VIEWBOXES: Record<string, string> = {
   incidentio: '0 0 256 346',
 };
 
@@ -154,6 +171,7 @@ const FAMILY_GLYPHS: Record<
   errors: Bug,
   cloud: Cloud,
   calendar: CalendarDays,
+  music: Music,
 };
 
 /** `rgb(r,g,b)` from the connector catalog → the same colour at `alpha`. */
