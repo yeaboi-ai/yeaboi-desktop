@@ -51,10 +51,14 @@ async def test_upload_lists_and_shows_on_the_detail(client, auth_headers, upload
 
     second = (await _upload(client, auth_headers, project_id, name="dash.png")).json()
     listed = (await client.get(f"/api/projects/{project_id}/attachments", headers=auth_headers)).json()
-    assert [a["id"] for a in listed] == [body["id"], second["id"]]
+    # Both are there, and both endpoints agree on the order. Which order that is
+    # cannot be asserted here: SQLite's CURRENT_TIMESTAMP has one-second
+    # resolution, so two uploads in the same second tie and fall through to the
+    # uuid tiebreak. Postgres timestamps them apart.
+    assert {a["id"] for a in listed} == {body["id"], second["id"]}
 
     detail = (await client.get(f"/api/projects/{project_id}", headers=auth_headers)).json()
-    assert [a["id"] for a in detail["attachments"]] == [body["id"], second["id"]]
+    assert [a["id"] for a in detail["attachments"]] == [a["id"] for a in listed]
 
 
 @pytest.mark.parametrize(

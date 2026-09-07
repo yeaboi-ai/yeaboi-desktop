@@ -62,8 +62,15 @@ export function factsLine(
 /** The one line the empty ledger offers instead of the rows; pressing the
  *  button unfolds them, so nothing is read until asked. */
 export const SUGGEST_PROMPT = 'Not sure where to start?';
+/** The same offer once the sheet already has rows: not a first step, a next one. */
+export const SUGGEST_PROMPT_MORE = 'Looking for the next one?';
 export const SUGGEST_LABEL = 'Suggest projects';
 export const HIDE_SUGGESTIONS_LABEL = 'Hide suggestions';
+
+/** What the suggest line asks, given whether anything is on the sheet yet. */
+export function suggestPrompt(empty: boolean): string {
+  return empty ? SUGGEST_PROMPT : SUGGEST_PROMPT_MORE;
+}
 
 export const CONNECT_LINE =
   'Connect GitHub, Jira or Linear and yeaboi will suggest projects from what you are working on.';

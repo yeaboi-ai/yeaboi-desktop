@@ -22,6 +22,7 @@ from ..deps import get_current_org, get_current_user
 from ..middleware.rate_limit import limiter
 from ..models.organization import Organization
 from ..models.project import Project
+from ..models.project_attachment import ProjectAttachment
 from ..models.session import ChatMessage, Participant, Session
 from ..models.user import User
 from ..schemas.session import (
@@ -49,8 +50,10 @@ from ..schemas.wireframe_plan import (
 from ..services.audit_service import log_audit
 from ..services.blueprint_service import get_or_create_blueprint, update_section
 from ..services.facilitator import process_message
+from ..services.image_insight import describe_image
 from ..services.livekit_service import publish_steering
 from ..services.mentions import resolve_mentions
+from ..services.project_context import attachment_line, reference_lines
 from ..services.slack_dispatcher import dispatch_event
 from ..services.tts_service import list_voices, synthesize_speech, synthesize_speech_mp3
 from ..services.wireframe_dna import dna_block_for_subscreen, extract_design_dna
@@ -1338,6 +1341,12 @@ async def create_session(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Asked before this session exists: only the first one reads the project's
+    # screenshots, because what it finds stays in the blueprint for the rest.
+    is_first_session = not (
+        await db.execute(select(Session.id).where(Session.project_id == project_id).limit(1))
+    ).scalar_one_or_none()
+
     # Auto-generate a short title from initial_idea if no title provided
     title = body.title
     if (not title or not title.strip()) and body.initial_idea and body.initial_idea.strip():
@@ -1466,15 +1475,33 @@ async def create_session(
     participant = Participant(session_id=session.id, user_id=user.id, role="host")
     db.add(participant)
 
-    # Seed blueprint — distribute project context across appropriate sections
+    # Seed blueprint — distribute project context across appropriate sections.
+    # What the project points at goes in too: the reader chose those tickets and
+    # repos while describing it, so the first session should not start blind to them.
     context_parts = []
     if project.description:
         context_parts.append(project.description.strip())
     if body.initial_idea:
         context_parts.append(body.initial_idea.strip())
+    project_references = reference_lines(project.references)
+    context_parts.extend(project_references)
+    attachment_rows = (
+        (
+            await db.execute(
+                select(ProjectAttachment)
+                .where(ProjectAttachment.project_id == project_id)
+                .order_by(ProjectAttachment.created_at)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    shots_line = attachment_line([row.filename for row in attachment_rows])
+    if shots_line:
+        context_parts.append(shots_line)
     if context_parts:
         await get_or_create_blueprint(project_id, db, iteration_id=new_iter.id)
-        combined = " ".join(context_parts)
+        combined = "\n".join(context_parts)
         # Use AI to distribute info across sections
         try:
             from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
@@ -1544,6 +1571,7 @@ async def create_session(
 
     # Fire background task to generate an AI intro message
     user_name = user.display_name or user.name or user.email.split("@")[0]
+    project_context = [*project_references, shots_line] if shots_line else list(project_references)
     asyncio.create_task(
         _generate_intro_safe(
             session.id,
@@ -1553,8 +1581,15 @@ async def create_session(
             org.id,
             user_name,
             persona=ai_config.get("persona", "default"),
+            project_context=project_context,
         )
     )
+
+    # The first session reads the mockups the project was described with, down
+    # the same vision path the manual analyze-image route uses. Later sessions
+    # do not: the reading is already in the blueprint by then.
+    if is_first_session and attachment_rows:
+        asyncio.create_task(_read_project_screenshots_safe(session.id, project_id, org.id))
 
     # Reload with participants and user info
     result = await db.execute(
@@ -2921,6 +2956,67 @@ async def _generate_welcome_back(
             )
 
 
+# A project is described with a handful of mockups, not an album; past this the
+# opening context stops being an opening.
+MAX_READ_SCREENSHOTS = 4
+
+
+async def _read_project_screenshots_safe(session_id: str, project_id: str, org_id: str) -> None:
+    """Background: read the project's screenshots into the blueprint's UI/UX section.
+
+    One unreadable image must never cost the session its opening, so every
+    failure here is logged and dropped.
+    """
+    try:
+        from ..services.ai_provider import get_ai_client
+        from ..services.attachment_storage import get_storage
+
+        session_factory = get_session_factory()
+        async with session_factory() as db:
+            rows = (
+                (
+                    await db.execute(
+                        select(ProjectAttachment)
+                        .where(ProjectAttachment.project_id == project_id)
+                        .order_by(ProjectAttachment.created_at)
+                        .limit(MAX_READ_SCREENSHOTS)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            if not rows:
+                return
+            storage = get_storage()
+            ai = await get_ai_client(org_id, db, task="fast")
+            readings: list[str] = []
+            for row in rows:
+                try:
+                    data = await storage.get(row.storage_key)
+                    analysis = await describe_image(ai, data, row.mime_type)
+                except Exception as exc:  # noqa: BLE001 — one image, not the session
+                    logger.warning("Could not read project screenshot %s: %s", row.id, exc)
+                    continue
+                readings.append(f"From {row.filename}:\n{analysis}")
+            if not readings:
+                return
+            # One snapshot for the lot, on top of whatever the seeding left —
+            # update_section only replaces or merges bullets, and these are prose.
+            blueprint = await get_or_create_blueprint(project_id, db)
+            existing = (blueprint.content or {}).get("ui_ux") or ""
+            await update_section(
+                project_id,
+                "ui_ux",
+                "\n\n".join([existing.strip(), *readings]).strip(),
+                "ai-vision",
+                db,
+                session_id=session_id,
+            )
+            logger.info("Read %d project screenshots into ui_ux for session %s", len(readings), session_id)
+    except Exception as e:  # noqa: BLE001 — background task
+        logger.error("Project screenshot reading error: %s", e, exc_info=True)
+
+
 async def _generate_intro_safe(
     session_id: str,
     project_name: str,
@@ -2929,10 +3025,20 @@ async def _generate_intro_safe(
     org_id: str,
     user_name: str,
     persona: str = "default",
+    project_context: list[str] | None = None,
 ):
     """Background: generate an AI intro message when a session starts."""
     try:
-        await _generate_intro(session_id, project_name, project_desc, initial_idea, org_id, user_name, persona=persona)
+        await _generate_intro(
+            session_id,
+            project_name,
+            project_desc,
+            initial_idea,
+            org_id,
+            user_name,
+            persona=persona,
+            project_context=project_context,
+        )
     except Exception as e:
         logger.error("Intro generation error: %s", e, exc_info=True)
 
@@ -2945,6 +3051,7 @@ async def _generate_intro(
     org_id: str,
     user_name: str,
     persona: str = "default",
+    project_context: list[str] | None = None,
 ):
     """Generate and save an AI greeting that acknowledges what the user wants to build."""
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
@@ -2970,6 +3077,9 @@ async def _generate_intro(
             context_parts.append(f"Project description: {project_desc}")
         if initial_idea:
             context_parts.append(f"Session idea: {initial_idea}")
+        # What the project points at, and the screenshots it was described with,
+        # so the greeting can name them instead of asking what this is about.
+        context_parts.extend(project_context or [])
         context_parts.append(f"User's name: {user_name}")
 
         # Check existing blueprint state to personalise the greeting
@@ -3862,9 +3972,7 @@ async def analyze_image(
     """Analyze an uploaded image using AI Vision and extract UI insights."""
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    # Read and encode image
     image_data = await file.read()
-    b64 = base64.b64encode(image_data).decode()
     media_type = file.content_type or "image/png"
 
     # Get org_id for provider routing
@@ -3874,33 +3982,7 @@ async def analyze_image(
     oid = proj_r.scalar_one_or_none() if proj_r else None
 
     ai = await get_ai_client(oid, db, task="fast")
-    analysis = await ai.chat(
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {"type": "base64", "media_type": media_type, "data": b64},
-                    },
-                    {
-                        "type": "text",
-                        "text": (
-                            "Analyze this UI design/screenshot and extract:\n"
-                            "1. Layout structure (grid, sidebar, header, etc.)\n"
-                            "2. Color palette (primary, secondary, accent colors as hex)\n"
-                            "3. Typography observations (serif/sans-serif, sizes)\n"
-                            "4. Key UI components visible (cards, forms, tables, nav, etc.)\n"
-                            "5. Design style (minimal, material, glassmorphism, etc.)\n"
-                            "6. Suggested improvements or patterns to follow\n\n"
-                            "Be concise and actionable. Format as clear sections."
-                        ),
-                    },
-                ],
-            }
-        ],
-        max_tokens=2048,
-    )
+    analysis = await describe_image(ai, image_data, media_type)
 
     # Auto-update the UI/UX blueprint section
     session_result = await db.execute(select(Session).where(Session.id == session_id))

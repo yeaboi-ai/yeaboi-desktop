@@ -15,6 +15,8 @@ import {
   SETTINGS_LABEL,
   SUGGEST_LABEL,
   SUGGEST_PROMPT,
+  SUGGEST_PROMPT_MORE,
+  suggestPrompt,
   SUGGESTIONS_MAX_RETRIES,
   SUGGESTIONS_STALE_RETRY_MS,
   emptyNote,
@@ -134,6 +136,12 @@ describe('the words', () => {
     }
   });
 
+  it('asks for a first project on an empty sheet and a next one on a full sheet', () => {
+    expect(suggestPrompt(true)).toBe(SUGGEST_PROMPT);
+    expect(suggestPrompt(false)).toBe(SUGGEST_PROMPT_MORE);
+    expect(SUGGEST_PROMPT_MORE).toBe('Looking for the next one?');
+  });
+
   it('links to a settings page that exists', () => {
     const routes = JSON.parse(
       readFileSync(join(__dirname, '..', 'src/renderer/lib/yeaboi/routes.json'), 'utf8'),
@@ -228,6 +236,19 @@ describe('the page', () => {
     expect(page).toContain('{suggesting && (');
     expect(page).not.toContain('useProjectSuggestions');
     expect(page).not.toContain('FIRST_PROJECT_EXAMPLES');
+  });
+
+  it('offers the line whether or not the sheet has rows', () => {
+    // It used to live inside the empty branch, so a single project hid it.
+    expect(page).toContain('<SuggestLine');
+    const line = page.slice(page.indexOf('<SuggestLine'));
+    expect(line).toContain('empty={empty}');
+    expect(page).not.toContain('empty ? (\n          <>\n            <SuggestLine');
+  });
+
+  it('leaves the head row to the sheet when the sheet already drew one', () => {
+    expect(page).toContain('showHead={empty}');
+    expect(unfolded).toContain('showHead && (ghost === ');
   });
 
   it('reads the suggestions through the hook once unfolded, and shows them the ledger way', () => {
