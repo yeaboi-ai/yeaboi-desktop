@@ -1782,30 +1782,8 @@ input[type='search']::-webkit-search-decoration {
   background: var(--background);
 }
 
-/* The duck previewed on his settings page: a slow walk from one side to the
-   other, turning at each end, with the pet window's own gait — the feet step
-   out of phase and the body bobs in time with them (pet.css, body-bob). */
-/* The art is drawn facing left (pet.js applyFacing), so scaleX(-1) is the
-   duck walking to the right and scaleX(1) is him walking home. */
-@keyframes duck-walk {
-  0% {
-    left: 0;
-    transform: scaleX(-1);
-  }
-  49.6% {
-    left: calc(100% - var(--duck-w, 72px));
-    transform: scaleX(-1);
-  }
-  50% {
-    left: calc(100% - var(--duck-w, 72px));
-    transform: scaleX(1);
-  }
-  100% {
-    left: 0;
-    transform: scaleX(1);
-  }
-}
-
+/* The duck previewed on his settings page. The walk itself is JS (it hands
+   over to a throw and back), so what is here is the gait pet.css gives him. */
 @keyframes duck-step {
   0%,
   100% {
@@ -1839,12 +1817,8 @@ input[type='search']::-webkit-search-decoration {
   }
 }
 
-.duck-walk {
-  animation: duck-walk var(--duck-walk-s, 22s) linear infinite;
-}
-
 /* One stride: 0.44s — BASE.stride (24px) at BASE.walkSpeed (0.9px/frame), the
-   pace the pet window walks at, and the pace `--duck-walk-s` is derived from. */
+   pace the pet window walks at. */
 .preview-walking .preview-foot-back,
 .preview-walking .preview-foot-front {
   transform-origin: 50% 90%;
@@ -1865,7 +1839,6 @@ input[type='search']::-webkit-search-decoration {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .duck-walk,
   .preview-walking,
   .preview-walking .preview-foot-back,
   .preview-walking .preview-foot-front,
