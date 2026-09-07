@@ -70,7 +70,7 @@ export function duckQuip(key: string, options?: { sticky?: boolean; route?: stri
       ...(route ? { action: { label: 'Open', onClick: () => navigateTo(route) } } : {}),
     });
   }
-  if (prefs.notify.chime) playChime();
+  if (prefs.notify.chime) playChime(prefs.notify.chimeSound);
 }
 
 /** A quieter tier for hints; in-app bubble only, never the desktop pet. */

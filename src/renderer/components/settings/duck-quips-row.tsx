@@ -9,7 +9,8 @@
 
 import { useEffect, useState } from 'react';
 import { type SettingField, loadSettings, saveSetting } from '@/lib/yeaboi/settings';
-import { ChoicePills, SettingsListRow } from './primitives';
+import { SettingsListRow } from './primitives';
+import { Switch } from '@/components/ui/switch';
 
 export function DuckQuipsRow() {
   const [field, setField] = useState<SettingField | null>(null);
@@ -25,16 +26,19 @@ export function DuckQuipsRow() {
 
   if (!field) return null;
 
+  // The engine states this as a pair of choices; beside three switches it is
+  // one too, so the row reads like the rows around it.
+  const isOn = (choice: string) => /^(on|true|yes|enabled)$/i.test(choice);
+  const on = isOn(field.active_choice);
+  const pick = (next: boolean) => {
+    const choice = field.choices.find((one) => isOn(one) === next);
+    if (choice) void saveSetting(field.env, choice).then(refresh, refresh);
+  };
+
   return (
     <SettingsListRow
-      trailing={
-        <ChoicePills
-          options={field.choices}
-          active={field.active_choice}
-          labels={field.choice_labels}
-          onPick={(value) => void saveSetting(field.env, value).then(refresh, refresh)}
-        />
-      }
+      hoverable={false}
+      trailing={<Switch checked={on} onCheckedChange={pick} aria-label="Quips" />}
     >
       <div className="text-sm font-medium">Quips</div>
       <div className="text-xs text-muted-foreground">

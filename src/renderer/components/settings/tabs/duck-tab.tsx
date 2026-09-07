@@ -4,14 +4,16 @@
 // a window this app draws on your desktop, so none of it goes near the backend.
 
 import { RotateCcw } from 'lucide-react';
-import { PET_COLOURS, PET_LIMITS } from '@shared/pet-prefs';
+import { CHIMES, PET_COLOURS, PET_LIMITS, type ChimeId } from '@shared/pet-prefs';
 import { SettingsListRow, SettingsSection } from '@/components/settings/primitives';
 import { DuckQuipsRow } from '@/components/settings/duck-quips-row';
 import { DuckSprite } from './duck-sprite';
+import { DuckPreview } from './duck-preview';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { usePetPrefs } from '@/hooks/use-pet-prefs';
+import { playChime } from '@/lib/chime';
 import { cn } from '@/lib/utils';
 
 /** The rig width the pet window draws at scale 1. */
@@ -33,7 +35,7 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <SettingsListRow trailing={children}>
+    <SettingsListRow hoverable={false} trailing={children}>
       <div className="text-sm font-medium">{title}</div>
       <div className="text-xs text-muted-foreground">{hint}</div>
     </SettingsListRow>
@@ -48,6 +50,8 @@ export function DuckTab() {
     // One grid in rows, like the other tabs: what he does and what he says sit
     // side by side, and the picture of him takes the width under them.
     <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2" aria-busy={loading}>
+      {/* Him, in the window, while he is being changed. */}
+      <DuckPreview prefs={prefs} />
       <SettingsSection
         index={0}
         title="On your desktop"
@@ -122,13 +126,40 @@ export function DuckTab() {
               aria-label="In-app toast"
             />
           </Row>
-          <Row title="Chime" hint="A short two-note ding">
+          <Row title="Chime" hint="A short sound when something lands">
             <Switch
               checked={prefs.notify.chime}
               onCheckedChange={(chime) => update({ notify: { ...prefs.notify, chime } })}
               aria-label="Chime"
             />
           </Row>
+          {/* Picking one plays it: a list of names is no way to choose a sound. */}
+          {prefs.notify.chime && (
+            <div className="flex flex-wrap gap-1.5 pt-1 pb-2">
+              {CHIMES.map((sound) => {
+                const on = prefs.notify.chimeSound === sound.id;
+                return (
+                  <button
+                    key={sound.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      playChime(sound.id as ChimeId);
+                      update({ notify: { ...prefs.notify, chimeSound: sound.id } });
+                    }}
+                    className={cn(
+                      'rounded-full px-3 py-1 font-body text-[11.5px] transition-colors',
+                      on
+                        ? 'bg-primary/10 text-foreground ring-1 ring-primary/40'
+                        : 'text-muted-foreground hover:bg-secondary/60',
+                    )}
+                  >
+                    {sound.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <DuckQuipsRow />
         </div>
       </SettingsSection>

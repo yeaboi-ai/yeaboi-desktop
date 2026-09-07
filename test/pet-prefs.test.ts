@@ -25,7 +25,13 @@ describe('PET_DEFAULTS', () => {
     // Opt-in: the duck stays in the app until asked for. See 'the desktop
     // offer' below for the rule that does the asking.
     expect(PET_DEFAULTS.enabled).toBe(false);
-    expect(PET_DEFAULTS.notify).toEqual({ os: true, bubble: true, toast: true, chime: false });
+    expect(PET_DEFAULTS.notify).toEqual({
+      os: true,
+      bubble: true,
+      toast: true,
+      chime: false,
+      chimeSound: 'marimba',
+    });
   });
 
   it('is itself a fixed point of normalisation', () => {

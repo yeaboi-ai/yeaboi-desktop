@@ -79,13 +79,15 @@ function ToastList() {
               // In the flow of the viewport's column rather than stacked on
               // top of each other: a pile of cards fanned out under the newest
               // one is four notices where there is one.
-              'w-80 max-w-[calc(100vw-3rem)]',
+              'w-80 max-w-[calc(100vw-3rem)] overflow-hidden',
               'rounded-2xl bg-card/95 shadow-2xl ring-1 backdrop-blur-xl',
               v.ring,
               // Animations honour reduced-motion via tw-animate-css
-              'data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0',
-              'data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0',
-              'transition-[opacity,transform] duration-200',
+              'max-h-40 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0',
+              // The one leaving collapses as it fades, so the one below it
+              // rises with it rather than snapping up once it is gone.
+              'data-[ending-style]:max-h-0 data-[ending-style]:-mt-2 data-[ending-style]:opacity-0',
+              'transition-[opacity,transform,max-height,margin] duration-200 ease-out',
             )}
           >
             <div className="flex items-start gap-3 px-4 py-3.5">

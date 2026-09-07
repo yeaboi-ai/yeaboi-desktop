@@ -129,6 +129,9 @@ export interface YeaboiBridge {
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
   checkForUpdate: () => Promise<unknown>;
+  /** Whether the shell asks GitHub Releases for a newer build on its own. */
+  getUpdateCheck: () => Promise<boolean>;
+  setUpdateCheck: (on: boolean) => Promise<boolean>;
   downloadUpdate: () => Promise<unknown>;
   installUpdate: () => Promise<unknown>;
   platform: string;
@@ -205,6 +208,8 @@ const bridge: YeaboiBridge = {
   },
   getUpdateState: () => ipcRenderer.invoke('update:get-state'),
   checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  getUpdateCheck: () => ipcRenderer.invoke('update:get-auto'),
+  setUpdateCheck: (on: boolean) => ipcRenderer.invoke('update:set-auto', on),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
   platform: process.platform,

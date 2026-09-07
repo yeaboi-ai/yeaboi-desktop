@@ -164,7 +164,7 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
         <SettingRow key={field.env} label={field.label}>
           <RowValue value={field.value} fallback="~/.yeaboi (default)" />
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() =>
               void window.yeaboi
@@ -414,34 +414,31 @@ function AllowedPathsRow({
   field: SettingField;
   onSaved: (message: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [paths, setPaths] = useState<string[]>([]);
+  const saved = field.value ? field.value.split(',').filter(Boolean) : [];
+  const [paths, setPaths] = useState<string[]>(saved);
   const [next, setNext] = useState('');
-
-  const begin = () => {
-    setPaths(field.value ? field.value.split(',').filter(Boolean) : []);
-    setOpen(true);
-  };
+  useEffect(
+    () => setPaths(field.value ? field.value.split(',').filter(Boolean) : []),
+    [field.value],
+  );
 
   const add = (raw: string) => {
     const value = raw.trim();
     if (value && !paths.includes(value)) setPaths((current) => [...current, value]);
   };
 
-  if (!open) {
-    return (
-      <SettingRow label={field.label}>
-        <RowValue value={field.value} fallback="none — sandboxed to the data directory" />
-        <Button variant="ghost" size="sm" onClick={begin}>
-          Edit
-        </Button>
-      </SettingRow>
-    );
-  }
+  // Save and Cancel appear once the list differs from what is stored: the
+  // editor is always open, so there is nothing to confirm until it is.
+  const dirty = paths.join(',') !== saved.join(',');
 
   return (
     <SettingRow label={field.label}>
       <div className="w-full space-y-1.5">
+        {paths.length === 0 && (
+          <p className="font-mono text-[12px] text-muted-foreground/70">
+            none — sandboxed to the data directory
+          </p>
+        )}
         {paths.map((p) => (
           <div key={p} className="flex items-center gap-2">
             <code className="font-mono text-[12px] text-foreground">{p}</code>
@@ -474,7 +471,7 @@ function AllowedPathsRow({
             Add
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             type="button"
             onClick={() =>
@@ -486,22 +483,24 @@ function AllowedPathsRow({
             Choose folder…
           </Button>
         </form>
-        <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={() => {
-              void saveAllowedPaths(paths).then(
-                (r) => (setOpen(false), onSaved(r.message)),
-                (e: Error) => onSaved(e.message),
-              );
-            }}
-          >
-            Save
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
+        {dirty && (
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              size="sm"
+              onClick={() => {
+                void saveAllowedPaths(paths).then(
+                  (r) => onSaved(r.message),
+                  (e: Error) => onSaved(e.message),
+                );
+              }}
+            >
+              Save
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPaths(saved)}>
+              Cancel
+            </Button>
+          </div>
+        )}
       </div>
     </SettingRow>
   );

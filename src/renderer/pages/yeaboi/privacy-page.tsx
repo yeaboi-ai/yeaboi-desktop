@@ -20,13 +20,12 @@ import {
   Bot,
   Download,
   Globe,
-  Info,
   MessageSquare,
   MonitorDown,
   RefreshCw,
   Share2,
 } from 'lucide-react';
-import { apiGet } from '@/lib/yeaboi/api';
+import { apiGet, getUpdateCheck, setUpdateCheck } from '@/lib/yeaboi/api';
 import {
   loadSettings,
   saveSetting,
@@ -38,6 +37,7 @@ import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { SettingsSection } from '@/components/settings/primitives';
 import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/toast';
 import { Switch } from '@/components/ui/switch';
 import { DuckMark } from '@/components/brand/duck';
 import { cn } from '@/lib/utils';
@@ -100,12 +100,6 @@ const SETTINGS_PATHS: Record<string, string> = {
   'Settings ▸ System ▸ Privacy': '/settings/system',
   'Settings ▸ System': '/settings/system',
 };
-
-interface SaveNotice {
-  env: string;
-  message: string;
-  restart: boolean;
-}
 
 function IconTile({ icon: Icon }: { icon?: React.ComponentType<{ className?: string }> }) {
   if (!Icon) return null;
@@ -199,30 +193,43 @@ function PathSwitch({
   );
 }
 
-function NoticeLine({ notice }: { notice: SaveNotice }) {
+/** The desktop shell's own update check. Not a settings-engine field — it is
+ *  this window's settings.json — so it carries its own state. */
+function DesktopUpdateSwitch() {
+  const [on, setOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    getUpdateCheck().then(setOn, () => setOn(null));
+  }, []);
+  if (on === null) return null;
   return (
-    <p
-      className={cn(
-        'mt-1.5 flex items-center gap-1.5 text-[11.5px]',
-        notice.restart ? 'text-warning' : 'text-muted-foreground',
-      )}
-    >
-      <Info className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      {notice.message}
-    </p>
+    <span className="flex items-center gap-2">
+      <span className="text-[10.5px] text-muted-foreground/80">{on ? 'on' : 'off'}</span>
+      <Switch
+        size="sm"
+        checked={on}
+        onCheckedChange={(next) => {
+          setOn(next);
+          void setUpdateCheck(next).then(setOn, () => setOn(!next));
+        }}
+        aria-label="Version query for the desktop shell"
+      />
+    </span>
   );
 }
 
 function DisclosureRow({
   row,
   control,
-  notice,
+  offSwitch,
 }: {
   row: EgressRow;
   control: React.ReactNode;
-  notice?: SaveNotice;
+  /** What turns it off here, where there is no switch to point at. Empty for
+   *  a row that carries one: the disclosure's wording is written for the
+   *  terminal, where an env var is the only control there is. */
+  offSwitch: string;
 }) {
-  const switchless = row.off_switch.toLowerCase().startsWith('none');
+  const switchless = offSwitch.toLowerCase().startsWith('none');
   return (
     <div className="flex items-start gap-3 py-3">
       <IconTile icon={PATH_ICONS[row.key]} />
@@ -238,16 +245,17 @@ function DisclosureRow({
             Out of the box · {row.default}
           </p>
         )}
-        <p
-          className={cn(
-            'mt-1.5 text-[12px] leading-relaxed',
-            switchless ? 'text-muted-foreground/80' : 'text-foreground/90',
-          )}
-        >
-          <span className="text-muted-foreground/70">Off-switch · </span>
-          <OffSwitch text={row.off_switch} />
-        </p>
-        {notice && <NoticeLine notice={notice} />}
+        {offSwitch && (
+          <p
+            className={cn(
+              'mt-1.5 text-[12px] leading-relaxed',
+              switchless ? 'text-muted-foreground/80' : 'text-foreground/90',
+            )}
+          >
+            <span className="text-muted-foreground/70">Off-switch · </span>
+            <OffSwitch text={offSwitch} />
+          </p>
+        )}
       </div>
       {control}
     </div>
@@ -261,7 +269,6 @@ function PrivacyBody() {
   // passive chips (older backend, or the settings capability off).
   const [settings, setSettings] = useState<SettingsSnapshot | null>(null);
   const [busyEnv, setBusyEnv] = useState<string | null>(null);
-  const [notice, setNotice] = useState<SaveNotice | null>(null);
 
   useEffect(() => {
     apiGet<PrivacyPayload>('/api/meta/privacy').then(setPayload, (e: Error) => setError(e.message));
@@ -297,18 +304,29 @@ function PrivacyBody() {
     setBusyEnv(env);
     try {
       const result = await saveSetting(env, value);
-      setNotice({ env, message: result.message, restart: result.restart_required });
-      // The write landed; a failed refresh must not overwrite its notice.
+      // Said in the corner the duck stands in, like every other saved setting —
+      // and in the same voice: a saved setting is not a warning.
+      toast.show({ title: result.message });
       try {
         setSettings(await loadSettings());
       } catch {
-        /* stale switch until the next load — the notice already says what happened */
+        /* stale switch until the next load — the toast already said what happened */
       }
     } catch (e) {
-      setNotice({ env, message: (e as Error).message, restart: false });
+      toast.error({ title: (e as Error).message });
     } finally {
       setBusyEnv(null);
     }
+  };
+
+  // What turns a path off in this window. A row with a switch says so and
+  // nothing else: the env var behind it is the terminal's way in, and this
+  // page has the switch itself an inch to the right.
+  const offSwitchFor = (row: EgressRow, governed: boolean): string => {
+    if (governed || row.key === 'desktop-update') return '';
+    const entry = switchByKey.get(row.key);
+    if (entry && fieldByEnv.get(entry.env)) return '';
+    return row.off_switch;
   };
 
   // The control a row carries: its live switch, or a passive state chip.
@@ -330,8 +348,7 @@ function PrivacyBody() {
           Always on
         </Badge>
       );
-    if (row.key === 'desktop-update')
-      return <span className="mt-1 text-[11px] text-muted-foreground/70">No switch yet</span>;
+    if (row.key === 'desktop-update') return <DesktopUpdateSwitch />;
     if (row.key === 'feedback')
       return (
         <Badge variant="secondary" className="mt-0.5">
@@ -441,25 +458,23 @@ function PrivacyBody() {
                 ) : undefined
               }
             >
-              {sharedLive && notice?.env === sharedLive.env && (
-                <div className="border-b border-border/40 pb-2.5">
-                  <NoticeLine notice={notice} />
-                </div>
-              )}
               <div className="divide-y divide-border/40">
-                {rows.map((row) => {
-                  const entry = switchByKey.get(row.key);
-                  return (
-                    <DisclosureRow
-                      key={row.key}
-                      row={row}
-                      control={sharedLive ? null : controlFor(row)}
-                      notice={
-                        !sharedLive && entry && notice?.env === entry.env ? notice : undefined
-                      }
-                    />
-                  );
-                })}
+                {rows.map((row) => (
+                  <DisclosureRow
+                    key={row.key}
+                    row={row}
+                    offSwitch={offSwitchFor(row, Boolean(sharedLive))}
+                    control={
+                      sharedLive ? (
+                        <span className="text-[10.5px] text-muted-foreground/80">
+                          {isFiring(row) ? 'on' : 'off'}
+                        </span>
+                      ) : (
+                        controlFor(row)
+                      )
+                    }
+                  />
+                ))}
               </div>
             </SettingsSection>
           );

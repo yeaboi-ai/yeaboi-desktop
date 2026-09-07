@@ -70,6 +70,8 @@ interface YeaboiBridge {
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
   checkForUpdate: () => Promise<unknown>;
+  getUpdateCheck: () => Promise<boolean>;
+  setUpdateCheck: (on: boolean) => Promise<boolean>;
   downloadUpdate: () => Promise<unknown>;
   installUpdate: () => Promise<unknown>;
   platform: string;

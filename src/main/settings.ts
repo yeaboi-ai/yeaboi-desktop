@@ -32,6 +32,9 @@ interface SettingsFile {
   /** The active theme's background, so a new window paints the right colour
    *  before first render instead of flashing dark on a light theme. */
   windowBackground?: string;
+  /** Whether the shell asks GitHub Releases whether a newer build exists.
+   *  Absent means on, which is what it has always done. */
+  updateCheck?: boolean;
 }
 
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
@@ -107,6 +110,17 @@ export class Settings {
     this.data.petEnabled = next.enabled;
     this.save();
     return next;
+  }
+
+  /** Whether the shell may ask GitHub Releases for a newer build. Nothing
+   *  downloads either way until a person clicks Update. */
+  get updateCheck(): boolean {
+    return this.data.updateCheck !== false;
+  }
+
+  setUpdateCheck(on: boolean): void {
+    this.data.updateCheck = on;
+    this.save();
   }
 
   /** Pre-paint window colour. Defaults to the dark preset's background — the

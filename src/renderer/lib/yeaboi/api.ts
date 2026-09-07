@@ -33,6 +33,8 @@ interface Bridge {
   onUpdateState: (callback: (state: unknown) => void) => void;
   getUpdateState: () => Promise<unknown>;
   checkForUpdate: () => Promise<unknown>;
+  getUpdateCheck?: () => Promise<boolean>;
+  setUpdateCheck?: (on: boolean) => Promise<boolean>;
   downloadUpdate: () => Promise<unknown>;
   installUpdate: () => Promise<unknown>;
   onAbout: (callback: () => void) => void;
@@ -173,6 +175,13 @@ export const getUpdateState = (): Promise<UpdateState> =>
   bridge().getUpdateState() as Promise<UpdateState>;
 export const checkForUpdate = (): Promise<UpdateState> =>
   bridge().checkForUpdate() as Promise<UpdateState>;
+/** Whether the shell asks GitHub Releases for a newer build on its own.
+ *  Rejects on a shell that predates the switch, so callers can leave it out. */
+export const getUpdateCheck = (): Promise<boolean> =>
+  bridge().getUpdateCheck?.() ?? Promise.reject(new Error('this shell has no update switch'));
+export const setUpdateCheck = (on: boolean): Promise<boolean> =>
+  bridge().setUpdateCheck?.(on) ?? Promise.reject(new Error('this shell has no update switch'));
+
 export const downloadUpdate = (): Promise<UpdateState> =>
   bridge().downloadUpdate() as Promise<UpdateState>;
 export const installUpdate = (): Promise<unknown> => bridge().installUpdate();

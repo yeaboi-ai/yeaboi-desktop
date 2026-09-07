@@ -123,8 +123,10 @@ function ProvenanceBody() {
   const [trace, setTrace] = useState<ProvenanceTrace | null>(null);
   const [error, setError] = useState('');
 
+  // The window changes what the same sections say, not which sections exist:
+  // clearing the audit first swapped the page for "Loading…" and every section
+  // played its entrance again on the way back.
   useEffect(() => {
-    setAudit(null);
     provenanceAudit(windowDays).then(
       (envelope) => setAudit(envelope.data),
       (e: Error) => setError(e.message),
@@ -144,35 +146,33 @@ function ProvenanceBody() {
 
   return (
     <div className="space-y-8">
-      {/* What this record is belongs in the heading above; what belongs here is
-          how far back it is being read. */}
-      <header className="flex items-center justify-end gap-4">
-        <div className="flex shrink-0 items-center gap-1.5">
-          {WINDOWS.map((days) => (
-            <button
-              key={days}
-              type="button"
-              onClick={() => setWindowDays(days)}
-              className={`rounded-full px-3 py-1 text-[12px] transition-colors ${
-                windowDays === days
-                  ? 'bg-primary/10 text-foreground ring-1 ring-primary/40'
-                  : 'bg-secondary/40 text-muted-foreground hover:bg-secondary/70'
-              }`}
-            >
-              {days} days
-            </button>
-          ))}
-        </div>
-      </header>
-
       {audit.warnings.length > 0 && <Notice title="Read this first" items={audit.warnings} />}
 
       <Section
         title={audit.chain_valid ? 'The record is intact' : 'The record has been changed'}
         actions={
-          <Badge variant={audit.chain_valid ? 'default' : 'destructive'}>
-            {audit.chain_valid ? 'verified' : 'broken'}
-          </Badge>
+          <div className="flex items-center gap-3">
+            {/* Beside the counts it scopes — "in this window" is this picker. */}
+            <div className="flex items-center gap-1">
+              {WINDOWS.map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setWindowDays(days)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] transition-colors ${
+                    windowDays === days
+                      ? 'bg-primary/10 text-foreground ring-1 ring-primary/40'
+                      : 'text-muted-foreground hover:bg-secondary/60'
+                  }`}
+                >
+                  {days} days
+                </button>
+              ))}
+            </div>
+            <Badge variant={audit.chain_valid ? 'default' : 'destructive'}>
+              {audit.chain_valid ? 'verified' : 'broken'}
+            </Badge>
+          </div>
         }
       >
         <div className="grid grid-cols-3 gap-6">

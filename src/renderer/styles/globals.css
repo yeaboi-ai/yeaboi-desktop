@@ -1781,3 +1781,49 @@ input[type='search']::-webkit-search-decoration {
   overflow: hidden;
   background: var(--background);
 }
+
+/* The duck previewed on his settings page: a slow walk from one side to the
+   other, turning at each end, with the waddle the pet window gives him. */
+@keyframes duck-walk {
+  0% {
+    left: 0;
+    transform: scaleX(1);
+  }
+  48% {
+    left: calc(100% - var(--duck-w, 72px));
+    transform: scaleX(1);
+  }
+  52% {
+    left: calc(100% - var(--duck-w, 72px));
+    transform: scaleX(-1);
+  }
+  100% {
+    left: 0;
+    transform: scaleX(-1);
+  }
+}
+
+@keyframes duck-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.duck-walk {
+  animation: duck-walk var(--duck-walk-s, 22s) linear infinite;
+}
+
+.duck-bob {
+  animation: duck-bob 0.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duck-walk,
+  .duck-bob {
+    animation: none;
+  }
+}

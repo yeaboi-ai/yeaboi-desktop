@@ -522,6 +522,11 @@ if (!gotLock) {
       packaged: app.isPackaged,
     }));
     ipcMain.handle('update:get-state', () => updater.current);
+    ipcMain.handle('update:get-auto', () => settings.updateCheck);
+    ipcMain.handle('update:set-auto', (_event, on: unknown) => {
+      settings.setUpdateCheck(Boolean(on));
+      return settings.updateCheck;
+    });
     ipcMain.handle('update:check', () => updater.check());
     ipcMain.handle('update:download', () => updater.download());
     ipcMain.handle('update:install', () => updater.install());
@@ -534,7 +539,7 @@ if (!gotLock) {
     // clicks (autoDownload stays false in updater.ts).
     if (updater.current.kind !== 'unsupported') {
       const autoCheck = () => {
-        if (shouldAutoCheck(updater.current.kind)) void updater.check();
+        if (settings.updateCheck && shouldAutoCheck(updater.current.kind)) void updater.check();
       };
       setTimeout(autoCheck, UPDATE_CHECK_DELAY_MS);
       setInterval(autoCheck, UPDATE_CHECK_INTERVAL_MS);

@@ -4,6 +4,20 @@
 // Pure — no Electron import — so the clamping is testable and so the settings
 // tab can import the same defaults the main process writes.
 
+/** The notification sounds, in the order they are offered. */
+export const CHIMES = [
+  { id: 'ding', label: 'Ding' },
+  { id: 'marimba', label: 'Marimba' },
+  { id: 'bell', label: 'Bell' },
+  { id: 'pluck', label: 'Pluck' },
+  { id: 'rise', label: 'Rise' },
+  { id: 'drop', label: 'Drop' },
+] as const;
+
+export type ChimeId = (typeof CHIMES)[number]['id'];
+
+export const DEFAULT_CHIME: ChimeId = 'marimba';
+
 export interface PetNotifyPrefs {
   /** A native OS notification, for when the window is not in front. */
   os: boolean;
@@ -12,6 +26,8 @@ export interface PetNotifyPrefs {
   /** An in-app toast, for when you are already looking at the app. */
   toast: boolean;
   chime: boolean;
+  /** Which sound it makes. */
+  chimeSound: ChimeId;
 }
 
 /** Where the standing offer to let the duck out has got to.
@@ -76,7 +92,7 @@ export const PET_DEFAULTS: PetPrefs = {
   raise: 0,
   walk: true,
   evade: false,
-  notify: { os: true, bubble: true, toast: true, chime: false },
+  notify: { os: true, bubble: true, toast: true, chime: false, chimeSound: DEFAULT_CHIME },
 };
 
 /** Named hues, so a duck can be recoloured without aiming a slider. */
@@ -167,6 +183,9 @@ export function normalizePetPrefs(raw: unknown, legacyEnabled?: unknown): PetPre
       bubble: bool(notify['bubble'], PET_DEFAULTS.notify.bubble),
       toast: bool(notify['toast'], PET_DEFAULTS.notify.toast),
       chime: bool(notify['chime'], PET_DEFAULTS.notify.chime),
+      chimeSound: CHIMES.some((one) => one.id === notify['chimeSound'])
+        ? (notify['chimeSound'] as ChimeId)
+        : PET_DEFAULTS.notify.chimeSound,
     },
   };
 }
