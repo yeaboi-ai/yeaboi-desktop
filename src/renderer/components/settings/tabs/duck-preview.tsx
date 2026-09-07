@@ -15,9 +15,10 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { PetPrefs } from '@shared/pet-prefs';
 
-/** How much of the window's foot he gets. Room to be thrown, not so much that
- *  the page below is behind a sheet of glass. */
-const STRIP = 260;
+/** How much of the window's foot he gets: room to be thrown, and to stand at
+ *  200% without his head meeting the ceiling. The strip is transparent to the
+ *  pointer except where he is, so its size costs the page nothing. */
+const STRIP = 'clamp(320px, 45vh, 560px)';
 
 export function DuckPreview({ prefs }: { prefs: PetPrefs }) {
   const frame = useRef<HTMLIFrameElement>(null);
