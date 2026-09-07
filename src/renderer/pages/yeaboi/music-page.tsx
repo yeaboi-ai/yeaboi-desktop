@@ -45,11 +45,6 @@ function RadioPanel() {
 
   return (
     <div>
-      <div className="mt-6 flex items-center justify-end">
-        <VisualizerStyleButton />
-      </div>
-      <Visualizer size="page" className="mt-2 block h-[min(30vh,240px)] w-full" />
-
       <div className="mt-8 flex items-start gap-5">
         <button
           type="button"
@@ -203,6 +198,20 @@ function RadioHabits() {
   );
 }
 
+/** The spectrum and the style button. Drawn as part of the heading rather
+ *  than as the top of the page, so it does not move at all while the page
+ *  scrolls under it. */
+function RadioStage() {
+  return (
+    <>
+      <div className="mt-6 flex items-center justify-end">
+        <VisualizerStyleButton />
+      </div>
+      <Visualizer size="page" bare className="mt-2 block h-[min(30vh,240px)] w-full" />
+    </>
+  );
+}
+
 function ServicePanel({ service }: { service: MusicService }) {
   const { serviceFor, backend, embed, nowPlaying } = useMusicPlayer();
   const state = serviceFor(service);
@@ -217,7 +226,7 @@ function ServicePanel({ service }: { service: MusicService }) {
           <div className="mt-6 flex items-center justify-end">
             <VisualizerStyleButton />
           </div>
-          <Visualizer size="page" className="mt-2 block h-[120px] w-full" />
+          <Visualizer size="page" bare className="mt-2 block h-[120px] w-full" />
         </>
       )}
       <div className="mt-8">
@@ -263,6 +272,7 @@ export default function MusicPage() {
           <div className="mt-6">
             <SourceTabs />
           </div>
+          {source === 'radio' && <RadioStage />}
         </>
       }
     >
