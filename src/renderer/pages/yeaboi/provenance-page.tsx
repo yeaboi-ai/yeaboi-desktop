@@ -17,6 +17,7 @@ import {
 } from '@/lib/yeaboi/ops';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
+import { SettingsSection } from '@/components/settings/primitives';
 import { Badge } from '@/components/ui/badge';
 
 const WINDOWS = [7, 30, 90];
@@ -31,19 +32,17 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl bg-card ring-1 ring-border/60 p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[13px] font-body font-medium text-foreground">{title}</h2>
-        {actions}
-      </div>
-      {children}
-    </section>
+    <SettingsSection animate={false} title={title} action={actions}>
+      <div className="pt-3">{children}</div>
+    </SettingsSection>
   );
 }
 
+/** Something to read before the numbers under it — a warning, or a chain that
+ *  did not verify. */
 function Notice({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-2xl bg-card ring-1 ring-border/60 p-4">
+    <div className="border-l-2 border-primary/40 pl-3">
       <p className="text-[13px] font-medium text-foreground">{title}</p>
       {items.map((item) => (
         <p key={item} className="text-[12px] text-muted-foreground mt-1">
@@ -56,9 +55,9 @@ function Notice({ title, items }: { title: string; items: string[] }) {
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-secondary/40 px-3 py-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-[13px] font-medium text-foreground">{value}</p>
+    <div>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em]">{label}</p>
+      <p className="mt-0.5 font-display text-2xl text-foreground">{value}</p>
     </div>
   );
 }
@@ -144,13 +143,10 @@ function ProvenanceBody() {
   if (!audit) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
   return (
-    <div className="space-y-4">
-      {/* The page's own name is the settings heading above it; what belongs
-          here is what this record is and how far back it is being read. */}
-      <header className="flex items-start justify-between gap-4">
-        <p className="text-[13px] text-muted-foreground">
-          The tamper-evident record of what was decided, by whom, and on what.
-        </p>
+    <div className="space-y-8">
+      {/* What this record is belongs in the heading above; what belongs here is
+          how far back it is being read. */}
+      <header className="flex items-center justify-end gap-4">
         <div className="flex shrink-0 items-center gap-1.5">
           {WINDOWS.map((days) => (
             <button
@@ -179,7 +175,7 @@ function ProvenanceBody() {
           </Badge>
         }
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-6">
           <Tile label="Decisions recorded" value={String(audit.total_records)} />
           <Tile label="In this window" value={String(audit.window_records)} />
           <Tile label="Breaks" value={String(audit.breaks.length)} />
@@ -277,7 +273,10 @@ export default function ProvenancePage() {
   // A settings section rather than a page of its own — same frame, same
   // heading, same width as the tabs it sits with in the rail.
   return (
-    <SettingsPageShell active="/provenance" maxWidth="max-w-5xl">
+    <SettingsPageShell
+      active="/provenance"
+      subtitle="The tamper-evident record of what was decided, by whom, and on what."
+    >
       <BackendGate>
         <ProvenanceBody />
       </BackendGate>
