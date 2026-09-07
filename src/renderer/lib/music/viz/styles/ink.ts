@@ -16,7 +16,7 @@ export const ink: VizPainter = {
   paint(ctx, frame, geo, palette, opts, mode, cache) {
     const pad = inset(geo);
     const { colour, alpha, live } = inkOf(palette, mode);
-    const fill = fillFor(ctx, palette, mode, geo, cache);
+    const fill = fillFor(ctx, palette, mode, geo, cache, false, frame.fall);
     mirrored(ctx, geo, opts, (g) => {
       const n = Math.max(2, g.bands);
       const w = g.width - pad * 2;

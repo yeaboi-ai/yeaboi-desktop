@@ -18,8 +18,8 @@ export const blocks: VizPainter = {
   },
   paint(ctx, frame, geo, palette, opts, mode, cache) {
     const pad = inset(geo);
-    const { colour, alpha, live } = ink(palette, mode);
-    const fill = fillFor(ctx, palette, mode, geo, cache);
+    const { colour, alpha, live } = ink(palette, mode, frame.fall);
+    const fill = fillFor(ctx, palette, mode, geo, cache, false, frame.fall);
     mirrored(ctx, geo, opts, (g) => {
       const rows = g.size === 'pocket' ? 6 : BLOCK_ROWS;
       const cols = Math.max(1, g.bands);

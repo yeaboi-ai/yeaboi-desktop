@@ -47,6 +47,10 @@ const VOL_OPEN = TOTAL - VOL_GAP - BUTTON;
 const VIZ_W = 232;
 const VIZ_H = 40;
 const VIZ_GAP = 6;
+/** How long an opened control waits, with nothing sounding, before folding
+ *  itself away. Kept open by preference it stays; opened by hand it is a thing
+ *  you reached for, and a transport with nothing to transport is clutter. */
+const IDLE_MS = 60_000;
 
 const TAP =
   'rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
@@ -217,6 +221,14 @@ export function MusicPocket() {
     box.addEventListener('wheel', spin, { passive: false });
     return () => box.removeEventListener('wheel', spin);
   }, [radio]);
+
+  // Nothing sounding for a minute and the control folds itself back to the
+  // note. Only what was opened by hand: the preference outranks the timer.
+  useEffect(() => {
+    if (!reached || playing) return;
+    const fold = setTimeout(() => setReached(false), IDLE_MS);
+    return () => clearTimeout(fold);
+  }, [reached, playing]);
 
   // A click anywhere else, or Escape, folds him back — the way the chat bar
   // closes.

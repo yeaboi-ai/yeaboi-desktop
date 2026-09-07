@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
-import { PageShell } from '@/components/page-shell';
+import { PageShell } from '@/components/ui/page-shell';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { Browser } from '@/components/music/browser';
 import { EmbedSlot } from '@/components/music/embed-slot';
@@ -253,14 +253,19 @@ function ServicePanel({ service }: { service: MusicService }) {
 export default function MusicPage() {
   const { source } = useMusicPlayer();
   return (
-    <PageShell className="pb-32">
-      <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
-      <p className="mt-2 text-[14px] text-muted-foreground">
-        Something to work to. Nothing plays until you press play.
-      </p>
-      <div className="mt-8">
-        <SourceTabs />
-      </div>
+    <PageShell
+      header={
+        <>
+          <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
+          <p className="mt-2 text-[14px] text-muted-foreground">
+            Something to work to. Nothing plays until you press play.
+          </p>
+          <div className="mt-6">
+            <SourceTabs />
+          </div>
+        </>
+      }
+    >
       {source === 'radio' ? <RadioPanel /> : <ServicePanel key={source} service={source} />}
       <p className="sr-only">{source === 'radio' ? 'Radio' : SERVICE_LABELS[source]}</p>
     </PageShell>

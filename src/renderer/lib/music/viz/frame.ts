@@ -19,6 +19,9 @@ export interface VizFrame {
   rms: number;
   /** Seconds since the state was made; painters that idle-animate read it. */
   t: number;
+  /** 1 while something is sounding, falling to 0 as a paused frame dies away.
+   *  The colour rides it down, so pausing dims rather than switches. */
+  fall: number;
 }
 
 export interface VizOptions {
@@ -56,6 +59,7 @@ export function createVizState(sampleRate: number, fftSize: number): VizState {
     waveBytes: new Uint8Array(new ArrayBuffer(fftSize)),
     rms: 0,
     t: 0,
+    fall: 1,
     phase: 0,
   };
 }
@@ -67,6 +71,32 @@ export function rmsOf(wave: Float32Array): number {
   return Math.sqrt(sum / wave.length);
 }
 
+/** How long a paused frame takes to fall away, in seconds of e-folding. */
+const DECAY_TAU = 0.6;
+/** Below this a band is nothing, and rounding it to nothing is what lets the
+ *  loop know it has finished. */
+const SILENT = 0.002;
+
+/** Let a frame fall to silence rather than freezing where the sound stopped:
+ *  what "paused" shows on its way down. Returns true once nothing is left. */
+export function decayFrame(state: VizState, dt: number): boolean {
+  const step = Math.min(0.1, Math.max(0, dt));
+  const keep = Math.exp(-step / DECAY_TAU);
+  let loudest = 0;
+  for (let i = 0; i < state.bands.length; i += 1) {
+    const band = state.bands[i]! * keep;
+    const peak = state.peaks[i]! * keep;
+    state.bands[i] = band < SILENT ? 0 : band;
+    state.peaks[i] = peak < SILENT ? 0 : peak;
+    loudest = Math.max(loudest, state.bands[i]!, state.peaks[i]!);
+  }
+  for (let i = 0; i < state.wave.length; i += 1) state.wave[i] = state.wave[i]! * keep;
+  state.rms *= keep;
+  state.t += step;
+  state.fall = loudest === 0 ? 0 : state.fall * keep;
+  return loudest === 0;
+}
+
 /** Zero the live parts of a frame: what "off" and "failed" show. */
 export function resetFrame(state: VizState): void {
   state.bands.fill(0);
@@ -76,6 +106,7 @@ export function resetFrame(state: VizState): void {
   state.peakHold.fill(0);
   state.wave.fill(0);
   state.rms = 0;
+  state.fall = 0;
 }
 
 /** One tick from byte spectra. Mutates and returns `state`. */
@@ -105,6 +136,7 @@ export function stepFrame(
   }
   state.rms = Math.min(1, rmsOf(state.wave) * 1.25);
   state.t += step;
+  state.fall = 1;
   return state;
 }
 

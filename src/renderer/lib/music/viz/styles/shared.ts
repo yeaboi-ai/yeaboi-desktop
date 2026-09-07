@@ -29,10 +29,14 @@ export function columns(
   return { levels: cache.scratch, peaks: cache.scratchPeaks };
 }
 
-/** The one colour a mode paints in, and how strongly. */
+/** The one colour a mode paints in, and how strongly.
+ *
+ *  `fall` is what is left of a paused frame: at 1 it still wears the live
+ *  colour, at 0 the mode's own, so a pause dims rather than switches. */
 export function ink(
   palette: VizPalette,
   mode: VizMode,
+  fall = 0,
 ): { colour: string; alpha: number; live: boolean } {
   switch (mode) {
     case 'live':
@@ -40,7 +44,14 @@ export function ink(
     case 'connecting':
       return { colour: palette.main, alpha: 0.6, live: true };
     case 'paused':
-      return { colour: palette.dim, alpha: 0.9, live: false };
+      return {
+        colour:
+          fall > 0.01
+            ? `color-mix(in oklch, ${palette.main} ${Math.round(fall * 100)}%, ${palette.dim})`
+            : palette.dim,
+        alpha: 0.9 + 0.1 * Math.min(1, Math.max(0, fall)),
+        live: false,
+      };
     case 'failed':
       return { colour: palette.failed, alpha: 0.9, live: false };
     default:
@@ -56,8 +67,9 @@ export function fillFor(
   geo: VizGeometry,
   cache: PainterCache,
   vertical = false,
+  fall = 0,
 ): string | CanvasGradient {
-  const { colour, live } = ink(palette, mode);
+  const { colour, live } = ink(palette, mode, fall);
   if (!live || !palette.ramp) return colour;
   const key = `${palette.ramp[0]}|${palette.ramp[1]}|${geo.width}|${geo.height}|${vertical ? 'v' : 'h'}`;
   if (cache.key !== key || !cache.gradient) {

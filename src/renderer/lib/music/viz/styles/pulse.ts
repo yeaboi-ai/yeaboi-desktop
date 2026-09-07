@@ -13,8 +13,8 @@ export const pulse: VizPainter = {
   },
   paint(ctx, frame, geo, palette, opts, mode, cache) {
     const pad = inset(geo);
-    const { colour, alpha, live } = ink(palette, mode);
-    const fill = fillFor(ctx, palette, mode, geo, cache, true);
+    const { colour, alpha, live } = ink(palette, mode, frame.fall);
+    const fill = fillFor(ctx, palette, mode, geo, cache, true, frame.fall);
     const side = Math.min(geo.width, geo.height) - pad * 2;
     const cx = geo.width / 2;
     const cy = geo.height / 2;

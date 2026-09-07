@@ -92,7 +92,7 @@ describe('vizMode and tickInput', () => {
     expect(tickInput('live', true)).toBe('analyser');
     expect(tickInput('live', false)).toBe('synthetic');
     expect(tickInput('connecting', true)).toBe('synthetic');
-    expect(tickInput('paused', true)).toBe('none');
+    expect(tickInput('paused', true)).toBe('decay');
     expect(tickInput('off', true)).toBe('none');
     expect(tickInput('failed', false)).toBe('none');
   });
@@ -139,7 +139,7 @@ describe('createVizSource', () => {
     expect(loop.queued()).toBe(0);
   });
 
-  it('stops on pause and repaints once, zeroes on off', () => {
+  it('falls away on pause rather than freezing, and zeroes on off', () => {
     const loop = fakeLoop();
     const source = createVizSource(loop.deps);
     const modes: string[] = [];
@@ -147,11 +147,23 @@ describe('createVizSource', () => {
     source.set({ analyser: null, mode: 'live', opts: OPTS });
     loop.flush();
     loop.flush();
-    expect(source.current().frame.bands.some((v) => v > 0)).toBe(true);
+    const loudest = () => Math.max(...source.current().frame.bands);
+    const wasLoud = loudest();
+    expect(wasLoud).toBeGreaterThan(0);
+
+    // Paused keeps the loop for as long as the frame takes to fall.
     source.set({ analyser: null, mode: 'paused', opts: OPTS });
-    expect(loop.queued()).toBe(0);
+    expect(loop.queued()).toBe(1);
+    loop.flush();
     expect(modes.at(-1)).toBe('paused');
-    expect(source.current().frame.bands.some((v) => v > 0)).toBe(true);
+    expect(loudest()).toBeLessThan(wasLoud);
+    expect(loudest()).toBeGreaterThan(0);
+
+    // …and lets go of it once there is nothing left to draw.
+    for (let i = 0; i < 1000 && loop.queued() > 0; i += 1) loop.flush();
+    expect(loop.queued()).toBe(0);
+    expect(source.current().frame.bands.every((v) => v === 0)).toBe(true);
+
     source.set({ analyser: null, mode: 'off', opts: OPTS });
     expect(source.current().frame.bands.every((v) => v === 0)).toBe(true);
     expect(modes.at(-1)).toBe('off');

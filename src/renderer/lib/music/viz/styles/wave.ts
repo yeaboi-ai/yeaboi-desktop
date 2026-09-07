@@ -16,8 +16,8 @@ export const wave: VizPainter = {
   },
   paint(ctx, frame, geo, palette, opts, mode, cache) {
     const pad = inset(geo);
-    const { colour, alpha, live } = ink(palette, mode);
-    const stroke = fillFor(ctx, palette, mode, geo, cache);
+    const { colour, alpha, live } = ink(palette, mode, frame.fall);
+    const stroke = fillFor(ctx, palette, mode, geo, cache, false, frame.fall);
     mirrored(ctx, geo, opts, (g) => {
       const w = g.width - pad * 2;
       const h = g.height - pad * 2;

@@ -14,8 +14,8 @@ export const bars: VizPainter = {
   },
   paint(ctx, frame, geo, palette, opts, mode, cache) {
     const pad = inset(geo);
-    const { colour, alpha, live } = ink(palette, mode);
-    const fill = fillFor(ctx, palette, mode, geo, cache);
+    const { colour, alpha, live } = ink(palette, mode, frame.fall);
+    const fill = fillFor(ctx, palette, mode, geo, cache, false, frame.fall);
     mirrored(ctx, geo, opts, (g) => {
       const n = Math.max(1, g.bands);
       const w = g.width - pad * 2;

@@ -18,7 +18,13 @@ export function PersonaPicker({ className }: { className?: string }) {
     ...PERSONAS,
   ];
   return (
-    <div className={cn('flex flex-wrap gap-2', className)} role="group" aria-label="Persona">
+    // One row across the section: nine of them, each as wide as the room
+    // divides into, rather than nine fixed tiles and a gap at the end.
+    <div
+      className={cn('grid grid-cols-[repeat(9,minmax(0,1fr))] gap-2', className)}
+      role="group"
+      aria-label="Persona"
+    >
       {options.map((option) => {
         const active = prefs.persona === option.id;
         return (
@@ -29,7 +35,7 @@ export function PersonaPicker({ className }: { className?: string }) {
             aria-pressed={active}
             title={option.blurb}
             className={cn(
-              'flex w-[76px] flex-col items-center gap-1.5 rounded-md border px-1 pt-3 pb-2 transition-colors',
+              'flex flex-col items-center gap-1.5 rounded-md border px-1 pt-3 pb-2 transition-colors',
               active
                 ? 'border-foreground ring-2 ring-ring/40'
                 : 'border-border hover:border-foreground/50',
