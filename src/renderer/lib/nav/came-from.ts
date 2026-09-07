@@ -11,7 +11,14 @@ import { isSettingsPath } from './rail-rows';
 /** The pages that are a detour rather than a destination. Registered routes
  *  with no row in any world's rail: they open from a tile, a button, or the
  *  drawer, and the only thing to do at the end of one is leave. */
-const ASIDE = new Set(['/ceremonies', '/usage', '/whats-new', '/system-check', '/feedback']);
+const ASIDE = new Set([
+  '/ceremonies',
+  '/usage',
+  '/whats-new',
+  '/system-check',
+  '/feedback',
+  '/music',
+]);
 
 export function isAsidePath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

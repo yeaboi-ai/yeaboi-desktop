@@ -18,6 +18,7 @@ import { SourceTabs } from '@/components/music/source-tabs';
 import { Visualizer } from '@/components/music/visualizer';
 import { VisualizerStyleButton } from '@/components/music/visualizer-style-button';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { SERVICE_APPS, SERVICE_LABELS, type MusicService } from '@shared/music-links';
 import { STATUS_WORDS, formatElapsed } from '@/lib/music/state';
 import { STATION_NOTES } from '@/lib/music/stations';
@@ -47,7 +48,7 @@ function RadioPanel() {
       <div className="mt-6 flex items-center justify-end">
         <VisualizerStyleButton />
       </div>
-      <Visualizer size="page" className="mt-2 block h-[120px] w-full" />
+      <Visualizer size="page" className="mt-2 block h-[min(30vh,240px)] w-full" />
 
       <div className="mt-8 flex items-start gap-5">
         <button
@@ -150,6 +151,54 @@ function RadioPanel() {
           </span>
         </div>
       </div>
+
+      <RadioHabits />
+    </div>
+  );
+}
+
+/** How the radio behaves, on the page it belongs to rather than in a settings
+ *  tab that said the same things a second time. */
+function RadioHabits() {
+  const { prefs, updatePrefs } = useMusicPlayer();
+  return (
+    <div className="mt-14 border-t border-border/50 pt-6 pl-[68px]">
+      <h3 className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+        Habits
+      </h3>
+      <div className="mt-4 grid gap-x-12 gap-y-4 sm:grid-cols-2">
+        <label className="flex items-start justify-between gap-6">
+          <span className="min-w-0">
+            <span className="block text-[13px] text-foreground">Pause during calls</span>
+            <span className="mt-0.5 block text-[11.5px] leading-relaxed text-muted-foreground">
+              The radio waits while a call or a voice session is live and comes back after, the way
+              it does in the terminal while you dictate.
+            </span>
+          </span>
+          <Switch
+            checked={prefs.pauseInCalls}
+            onCheckedChange={(pauseInCalls) => updatePrefs({ pauseInCalls })}
+            aria-label="Pause during calls"
+          />
+        </label>
+        <label className="flex items-start justify-between gap-6">
+          <span className="min-w-0">
+            <span className="block text-[13px] text-foreground">Keep the player open</span>
+            <span className="mt-0.5 block text-[11.5px] leading-relaxed text-muted-foreground">
+              The control on the bottom row stands as the transport and the spectrum rather than
+              folding back to its pill.
+            </span>
+          </span>
+          <Switch
+            checked={prefs.dockOpen}
+            onCheckedChange={(dockOpen) => updatePrefs({ dockOpen })}
+            aria-label="Keep the player open"
+          />
+        </label>
+      </div>
+      <p className="mt-4 text-[11.5px] text-muted-foreground">
+        Nothing plays when the app starts, and the station is shared with the terminal.
+      </p>
     </div>
   );
 }

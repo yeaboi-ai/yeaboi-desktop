@@ -11,7 +11,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { ArrowUpRight, Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+
+import { cameFrom } from '@/lib/nav/came-from';
 
 import { ServiceMark } from '@/components/music/service-mark';
 import { Visualizer } from '@/components/music/visualizer';
@@ -148,15 +150,17 @@ export function MusicPocket() {
   } = useMusicPlayer();
   const pathname = usePathname();
   const router = useRouter();
-  // Opened by hand, or standing open because that is where it is kept.
+  const here = Boolean(pathname?.startsWith('/music'));
+  // Opened by hand, or standing open because that is where it is kept. On the
+  // Music page it is neither: the page is the player, and the control is the
+  // way back off it.
   const [reached, setReached] = useState(false);
-  const open = prefs.dockOpen || reached;
+  const open = !here && (prefs.dockOpen || reached);
   const [wide, setWide] = useState(false);
   const volume_ = useRef<HTMLDivElement>(null);
   const level = useRef(0);
   const { state } = radio;
   const station = channels[state.channel]?.name ?? 'Radio';
-  const here = Boolean(pathname?.startsWith('/music'));
 
   const label =
     mood === 'embed' && nowPlaying
@@ -174,7 +178,8 @@ export function MusicPocket() {
     state.status === 'connecting' ||
     native.nowPlaying?.status === 'playing' ||
     (mood === 'embed' && nowPlaying?.status === 'playing');
-  const shut = playing ? PILL : BUTTON;
+  // On the Music page it is one button and one job, whatever is sounding.
+  const shut = here || !playing ? BUTTON : PILL;
   // What is on, over what there is to say about it: the artist where the
   // source knows one, and what the Music page says about the station where it
   // does not — its genre and who carries it, rather than a count.
@@ -295,10 +300,10 @@ export function MusicPocket() {
           >
             <button
               type="button"
-              title={label}
-              aria-label={mood === 'off' ? 'Music' : `Music — ${label}`}
+              title={here ? 'Back' : label}
+              aria-label={here ? 'Leave Music' : mood === 'off' ? 'Music' : `Music — ${label}`}
               aria-expanded={open}
-              onClick={() => setReached(true)}
+              onClick={() => (here ? router.push(cameFrom()) : setReached(true))}
               className={`absolute right-0 bottom-0 flex items-center justify-center transition-[opacity,color,background-color] duration-300 ease-out ${
                 open ? 'pointer-events-none opacity-0' : 'opacity-100'
               } ${
@@ -313,14 +318,24 @@ export function MusicPocket() {
                   sounds the spectrum itself, wall to wall. */}
               <Music
                 aria-hidden
-                className={`absolute h-[14px] w-[14px] transition-opacity duration-300 ease-out ${
-                  playing ? 'opacity-0' : 'opacity-100'
+                className={`absolute h-[14px] w-[14px] transition-all duration-300 ease-out ${
+                  here
+                    ? 'rotate-90 scale-75 opacity-0'
+                    : playing
+                      ? 'opacity-0'
+                      : 'rotate-0 scale-100 opacity-100'
+                }`}
+              />
+              <ArrowLeft
+                aria-hidden
+                className={`absolute h-[14px] w-[14px] transition-all duration-300 ease-out ${
+                  here ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-75 opacity-0'
                 }`}
               />
               <span
                 aria-hidden
                 className={`absolute inset-[5px] overflow-hidden rounded-lg transition-opacity duration-300 ease-out ${
-                  playing && !open ? 'opacity-100' : 'opacity-0'
+                  playing && !open && !here ? 'opacity-100' : 'opacity-0'
                 }`}
               >
                 <Visualizer size="popover" className="block h-full w-full" />

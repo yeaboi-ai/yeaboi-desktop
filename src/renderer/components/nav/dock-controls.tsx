@@ -9,7 +9,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -44,6 +44,7 @@ import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import { audiencesForRoute, type Audience } from '@shared/audience';
 import { BUTTON, CONTROL, FLOAT } from './dock-float';
 import { MusicPocket } from './dock-music';
+import { SwapIcon } from './dock-swap';
 import { useTeamScope, type Scoped } from './use-team-scope';
 
 /** The padding the counts pill wears while it is still a pill. */
@@ -185,29 +186,6 @@ function OpsMenu({ cmdHeld }: { cmdHeld: boolean }) {
         </div>
       </PopoverContent>
     </Popover>
-  );
-}
-
-/** A button that changes job in front of you.
- *
- *  Both faces are here and one of them is always leaving: the icon winds a
- *  quarter turn out as the arrow swings in, rather than the two swapping
- *  between frames. */
-function SwapIcon({ away, back }: { away: React.ReactElement; back: boolean }) {
-  const face = 'absolute h-[14px] w-[14px] transition-all duration-200 ease-out';
-  return (
-    <span className="relative flex h-[14px] w-[14px] items-center justify-center">
-      {cloneElement(away as React.ReactElement<{ className?: string; 'aria-hidden'?: boolean }>, {
-        'aria-hidden': true,
-        className: `${face} ${back ? 'rotate-90 scale-75 opacity-0' : 'rotate-0 scale-100 opacity-100'}`,
-      })}
-      <ArrowLeft
-        aria-hidden
-        className={`${face} ${
-          back ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-75 opacity-0'
-        }`}
-      />
-    </span>
   );
 }
 

@@ -63,7 +63,6 @@ export const ROUTE_ICONS: Record<string, RailLucideName> = {
   '/feedback': 'MessageSquareText',
   '/board': 'SquareKanban',
   '/music': 'Radio',
-  '/settings/music': 'Music',
   '/settings/appearance': 'Palette',
   '/settings/duck': 'Bird',
   '/settings/news': 'Newspaper',
@@ -76,7 +75,13 @@ const FALLBACK_ICON: RailLucideName = 'Compass';
 /** The mascot goes home and the foot is Settings, so neither is offered. And
  *  a settings section folded into another is not a second place to go: the
  *  route still resolves, but offering it lists the same page twice. */
-const HIDDEN = new Set(['/home', '/settings', ...Object.keys(FOLDED_TABS)]);
+const HIDDEN = new Set([
+  '/home',
+  '/settings',
+  // The Music screen is the music settings, and this route only lands there.
+  '/settings/music',
+  ...Object.keys(FOLDED_TABS),
+]);
 
 const ABOUT = new Set(ABOUT_PAGES.map((page) => page.route));
 

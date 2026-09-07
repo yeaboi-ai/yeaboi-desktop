@@ -166,7 +166,10 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/settings/system': <YeaboiSettingsPage />,
   '/settings/appearance': <AppearanceSettingsPage />,
   '/settings/duck': <YeaboiSettingsPage />,
-  '/settings/music': <YeaboiSettingsPage />,
+  // The Music screen is the music settings — the station, the volume, the
+  // visualiser and the shelf are all on it — so a tab beside it was the same
+  // page with a heading of its own. The route stays for the links that name it.
+  '/settings/music': <Navigate to="/music" replace />,
   '/setup': <SetupPage />,
 };
 
