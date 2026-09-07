@@ -218,6 +218,21 @@ export function NikoBar() {
     [],
   );
 
+  // A click anywhere else is a way out too: the bar covers the foot of the
+  // window, and reaching for the page behind it should not mean finding the
+  // key that closes it. Pointerdown rather than click, so the page's own
+  // handler runs against a bar that is already leaving.
+  useEffect(() => {
+    if (!isOpen) return;
+    const away = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[data-niko]')) return;
+      close();
+    };
+    window.addEventListener('pointerdown', away);
+    return () => window.removeEventListener('pointerdown', away);
+  }, [isOpen, close]);
+
   // Cmd+. opens and closes from anywhere; Escape only closes. Typing a
   // character with nothing focused opens the bar and keeps the character —
   // `summonsNiko` is the guard, and unlike planning's it reads
