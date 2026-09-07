@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Play } from 'lucide-react';
 import { ScreensaverCanvas } from '@/components/screensaver/screensaver-canvas';
+import { SettingsSection } from '@/components/settings/primitives';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { logger } from '@/lib/logger';
 import { getAmbience, setAmbience } from '@/lib/yeaboi/ambience';
@@ -88,11 +89,10 @@ export function ScreensaverSection() {
   };
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
-          Screensaver
-        </h2>
+    <SettingsSection
+      animate={false}
+      title="Screensaver"
+      action={
         <div className="flex items-center gap-2">
           {saving && (
             <Loader2 className="size-3 animate-spin text-muted-foreground" aria-hidden="true" />
@@ -110,9 +110,9 @@ export function ScreensaverSection() {
             Preview
           </button>
         </div>
-      </div>
-
-      <p className="text-[11px] text-muted-foreground font-body leading-relaxed">
+      }
+    >
+      <p className="pt-2 text-[11px] text-muted-foreground font-body leading-relaxed">
         After {Math.round(idleSeconds / 60)} minutes of quiet. The duck keeps his own colours;
         everything around him is drawn from the theme you are using. The choice is shared with the
         terminal.
@@ -138,7 +138,7 @@ export function ScreensaverSection() {
           The backend is not up, so this cannot be saved yet.
         </p>
       )}
-    </div>
+    </SettingsSection>
   );
 }
 

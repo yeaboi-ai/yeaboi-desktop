@@ -15,7 +15,7 @@ import { GuideLink } from '@/components/onboarding/guide-link';
 import { Linkified } from '@/components/yeaboi/linkified';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { Picker } from '@/components/ui/picker';
-import { SettingsCard } from '@/components/settings/primitives';
+import { SettingsSection } from '@/components/settings/primitives';
 import { Segmented } from '@/components/ui/segmented';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -135,35 +135,31 @@ export function ProviderPanel({
   return (
     // No card behind it: what is on it is a summary line and two controls that
     // are cards themselves.
-    <SettingsCard index={0} variant="flat" animate={false}>
-      <div className="flex items-center gap-3.5 border-b border-border/40 px-[var(--card-gutter,1rem)] py-3">
-        <ProviderIcon provider={card?.provider_val ?? 'anthropic'} size={40} />
-        <span className="min-w-0 flex-1">
-          <span className="block font-body text-[13.5px] font-medium text-foreground">
-            AI provider
+    <SettingsSection
+      animate={false}
+      title="AI provider"
+      subtitle={
+        <>
+          <span className="text-muted-foreground">{card?.full_name ?? 'LLM provider'}</span>
+          <span className="text-muted-foreground/50">{DOT}</span>
+          <span className="text-muted-foreground">{model || `${recommended} (default)`}</span>
+          <span className="text-muted-foreground/50">{DOT}</span>
+          <span
+            className={
+              unhealthy
+                ? 'text-destructive'
+                : state.live
+                  ? 'text-success'
+                  : 'text-muted-foreground/70'
+            }
+          >
+            {state.text}
           </span>
-          <span className="block truncate text-[12px]">
-            <span className="text-muted-foreground">{card?.full_name ?? 'LLM provider'}</span>
-            <span className="text-muted-foreground/50">{DOT}</span>
-            <span className="text-muted-foreground">{model || `${recommended} (default)`}</span>
-            <span className="text-muted-foreground/50">{DOT}</span>
-            <span
-              className={
-                unhealthy
-                  ? 'text-destructive'
-                  : state.live
-                    ? 'text-success'
-                    : 'text-muted-foreground/70'
-              }
-            >
-              {state.text}
-            </span>
-          </span>
-        </span>
-        {action}
-      </div>
-
-      <div className="space-y-5 px-[var(--card-gutter,1rem)] py-4">
+        </>
+      }
+      action={action}
+    >
+      <div className="space-y-5 py-4">
         {/* Read together and changed together, so they sit together. */}
         <div className="grid gap-5 md:grid-cols-2">
           {providerField && catalog && (
@@ -298,6 +294,6 @@ export function ProviderPanel({
           </div>
         </div>
       </div>
-    </SettingsCard>
+    </SettingsSection>
   );
 }

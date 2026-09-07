@@ -312,6 +312,26 @@ export function IntegrationsCatalog() {
                         </div>
                       </section>
                     ))}
+                    {/* One of the rest: writing your own is what you do when
+                        nothing on the shelf is it. */}
+                    <button
+                      type="button"
+                      onClick={() => setCreating(true)}
+                      className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
+                        <Plus aria-hidden className="size-5 text-muted-foreground" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13.5px] font-body font-medium text-foreground">
+                          Create your own
+                        </span>
+                        <span className="block text-[12px] text-muted-foreground/70">
+                          A generic API, an inbound webhook or an MCP server — describe it, or fill
+                          the form.
+                        </span>
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -319,29 +339,6 @@ export function IntegrationsCatalog() {
           )}
         </>
       )}
-
-      {/* Last in, after the shelves it sits under. */}
-      <button
-        type="button"
-        onClick={() => setCreating(true)}
-        style={{
-          animationDelay: `${120 + Math.min(shelfFamilies.length, 5) * 60}ms`,
-          animationFillMode: 'backwards',
-        }}
-        className="flex w-full animate-slide-up items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 motion-reduce:animate-none focus-visible:outline-none"
-      >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
-          <Plus aria-hidden className="size-5 text-muted-foreground" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-[13.5px] font-body font-medium text-foreground">
-            Create your own
-          </span>
-          <span className="block text-[12px] text-muted-foreground/70">
-            A generic API, an inbound webhook or an MCP server — describe it, or fill the form.
-          </span>
-        </span>
-      </button>
 
       <ConnectorSheet row={openRow} onClose={() => setOpenKey('')} onChanged={refresh} />
       <CreateCustomSheet

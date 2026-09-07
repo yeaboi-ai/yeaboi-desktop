@@ -39,14 +39,12 @@ import { VoiceSetup } from '@/components/yeaboi/voice-setup';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
 import { SystemPanel } from '@/components/settings/system-panel';
-import { SectionIcon } from '@/components/settings/section-icon';
 import { DuckVoiceCard } from '@/components/settings/duck-voice-card';
 import {
   ChoicePills,
   RowValue,
   SettingRow,
-  SettingsCard,
-  SettingsSectionHeader,
+  SettingsSection,
 } from '@/components/settings/primitives';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
 import { DuckTab } from '@/components/settings/tabs/duck-tab';
@@ -336,13 +334,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
 
     return (
       <>
-        <SettingsCard index={0} variant="flat">
-          <SettingsSectionHeader
-            title="Sharing"
-            subtitle="Who can open a board you share"
-            icon={<SectionIcon section="sharing" />}
-          />
-          <div className="px-[var(--card-gutter,1.25rem)] py-4">
+        <SettingsSection index={0} title="Sharing" subtitle="who can open a board you share">
+          <div className="py-3">
             {shareMode && (
               <ShareModeChoice
                 active={shareMode.active_choice}
@@ -350,8 +343,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
               />
             )}
           </div>
-          {timeout && <div className="border-t border-border/40 py-1.5">{renderRow(timeout)}</div>}
-        </SettingsCard>
+          {timeout && <div className="py-1">{renderRow(timeout)}</div>}
+        </SettingsSection>
         {/* The five keys mean nothing on the default path, so they appear with
           the tier — the same rule the terminal's Sharing section follows. */}
         {shareAccess && accessFields.length > 0 && (
@@ -396,17 +389,13 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
               }
             />
           }
-          openCard={openCard}
-          onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
-          onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
           /* A section the backend grows later still lands somewhere. */
           extras={snapshot.sections
             .filter((section) => !knownSections.has(section))
             .map((section) => (
-              <SettingsCard key={section} variant="flat">
-                <SettingsSectionHeader title={section} />
-                <div className="py-1.5">{sectionFields(section).map(renderRow)}</div>
-              </SettingsCard>
+              <SettingsSection key={section} title={section}>
+                <div className="py-1">{sectionFields(section).map(renderRow)}</div>
+              </SettingsSection>
             ))}
         />
         {/* What is running, on the page about what is running. */}

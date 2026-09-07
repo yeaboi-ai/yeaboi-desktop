@@ -16,8 +16,7 @@
 import type { ReactNode } from 'react';
 import type { SettingField } from '@/lib/yeaboi/settings';
 import { cn } from '@/lib/utils';
-import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
-import { SectionIcon } from '@/components/settings/section-icon';
+import { SettingsSection } from '@/components/settings/primitives';
 
 export const HIDDEN_ON_SYSTEM = new Set([
   'SAVER_STYLE',
@@ -35,9 +34,6 @@ export function SystemPanel({
   dictationRow,
   sharing,
   provider,
-  openCard,
-  onToggle,
-  onSaved,
   extras,
 }: {
   /** Every field in the snapshot; this picks what it shows. */
@@ -53,10 +49,7 @@ export function SystemPanel({
    *  Full width above the columns: it is the one thing on this page that is
    *  not a card among cards. */
   provider?: ReactNode;
-  openCard: string;
-  onToggle: (key: string) => void;
-  onSaved: (title: string) => void;
-  /** Cards for sections this build does not know about yet. */
+  /** Sections this build does not know about yet. */
   extras?: ReactNode;
 }) {
   const pick = (envs: string[]) =>
@@ -70,12 +63,6 @@ export function SystemPanel({
   const dictation = pick(DICTATION_ENVS);
   const advanced = bySection('advanced');
 
-  const card = (key: string) => ({
-    open: openCard === key,
-    onToggle: () => onToggle(key),
-    onSaved,
-  });
-
   // One grid, laid out in rows rather than two columns packed by hand: four
   // sections down two hand-packed stacks ended at different heights and their
   // second rows began at different places. A row of cells is as tall as its
@@ -83,38 +70,35 @@ export function SystemPanel({
   return (
     <div>
       {provider}
-      <div className={cn('grid items-stretch gap-4 xl:grid-cols-2', provider && 'mt-6')}>
+      <div className={cn('grid items-start gap-x-10 gap-y-8 xl:grid-cols-2', provider && 'mt-8')}>
         {storage.length > 0 && (
-          <SettingsCard index={0} variant="flat">
-            <SettingsSectionHeader title="Storage" icon={<SectionIcon section="storage" />} />
+          <SettingsSection index={0} title="Storage">
             {/* Not a collapsed card: the allowed-paths list grants the agent read
                 *and* write over each entry, and the editor replaces the list
                 wholesale. That is worth keeping in plain sight. */}
-            <div className="py-1.5">{storage.map(renderRow)}</div>
-          </SettingsCard>
+            <div className="py-1">{storage.map(renderRow)}</div>
+          </SettingsSection>
         )}
 
         {sharing}
 
         {(dictation.length > 0 || dictationRow) && (
-          <SettingsCard index={1} variant="flat">
-            <SettingsSectionHeader
-              title="Dictation"
-              subtitle="Speech to text, transcribed on this machine"
-              icon={<SectionIcon section="voice" />}
-            />
-            <div className="py-1.5">
+          <SettingsSection
+            index={1}
+            title="Dictation"
+            subtitle="speech to text, transcribed on this machine"
+          >
+            <div className="py-1">
               {dictationRow}
               {dictation.map(renderRow)}
             </div>
-          </SettingsCard>
+          </SettingsSection>
         )}
 
         {advanced.length > 0 && (
-          <SettingsCard index={3} variant="flat">
-            <SettingsSectionHeader title="Advanced" icon={<SectionIcon section="advanced" />} />
-            <div className="py-1.5">{advanced.map(renderRow)}</div>
-          </SettingsCard>
+          <SettingsSection index={3} title="Advanced">
+            <div className="py-1">{advanced.map(renderRow)}</div>
+          </SettingsSection>
         )}
 
         {extras}

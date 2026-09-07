@@ -5,11 +5,7 @@
 
 import { RotateCcw } from 'lucide-react';
 import { PET_COLOURS, PET_LIMITS } from '@shared/pet-prefs';
-import {
-  SettingsCard,
-  SettingsListRow,
-  SettingsSectionHeader,
-} from '@/components/settings/primitives';
+import { SettingsListRow, SettingsSection } from '@/components/settings/primitives';
 import { DuckSprite } from './duck-sprite';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -50,13 +46,13 @@ export function DuckTab() {
   return (
     // One grid in rows, like the other tabs: what he does and what he says sit
     // side by side, and the picture of him takes the width under them.
-    <div className="grid items-stretch gap-4 xl:grid-cols-2" aria-busy={loading}>
-      <SettingsCard index={0} variant="flat">
-        <SettingsSectionHeader
-          title="On your desktop"
-          subtitle="A duck above every window, and what he does while you work"
-        />
-        <div className="py-2">
+    <div className="grid items-start gap-x-10 gap-y-8 xl:grid-cols-2" aria-busy={loading}>
+      <SettingsSection
+        index={0}
+        title="On your desktop"
+        subtitle="a duck above every window, and what he does while you work"
+      >
+        <div className="py-1">
           <Row title="Duck on the desktop" hint="Also in the menu-bar duck's menu">
             <Switch
               checked={prefs.enabled}
@@ -82,7 +78,7 @@ export function DuckTab() {
             />
           </Row>
         </div>
-        <div className="px-[var(--card-gutter,1.25rem)] pt-1 pb-5">
+        <div className="pt-2 pb-4">
           <div className="mb-2 flex items-baseline justify-between">
             <span className="text-sm font-medium">Sit height</span>
             <span className="text-xs tabular-nums text-muted-foreground">{prefs.raise}px</span>
@@ -96,14 +92,14 @@ export function DuckTab() {
             aria-label="Sit height"
           />
         </div>
-      </SettingsCard>
+      </SettingsSection>
 
-      <SettingsCard index={1} variant="flat">
-        <SettingsSectionHeader
-          title="How you hear him"
-          subtitle="When a run, a ceremony or a session has finished"
-        />
-        <div className="py-2">
+      <SettingsSection
+        index={1}
+        title="How you hear him"
+        subtitle="when a run, a ceremony or a session has finished"
+      >
+        <div className="py-1">
           <Row title="System notification" hint="The only one that reaches you with yeaboi closed">
             <Switch
               checked={prefs.notify.os}
@@ -133,11 +129,15 @@ export function DuckTab() {
             />
           </Row>
         </div>
-      </SettingsCard>
+      </SettingsSection>
 
-      <SettingsCard index={2} variant="flat" className="xl:col-span-2">
-        <SettingsSectionHeader title="How he looks" subtitle="Size and colour, previewed live" />
-        <div className="flex flex-wrap items-start gap-6 px-[var(--card-gutter,1.25rem)] py-5">
+      <SettingsSection
+        index={2}
+        title="How he looks"
+        subtitle="size and colour, previewed live"
+        className="xl:col-span-2"
+      >
+        <div className="flex flex-wrap items-start gap-6 py-5">
           {/* The preview is the duck itself, at the chosen size and tint, so
               the choice is made here rather than by hunting it on the desktop. */}
           <div
@@ -207,7 +207,7 @@ export function DuckTab() {
             </div>
           </div>
         </div>
-      </SettingsCard>
+      </SettingsSection>
 
       <div
         className="flex animate-slide-up justify-end motion-reduce:animate-none xl:col-span-2"

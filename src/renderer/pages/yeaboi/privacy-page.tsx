@@ -19,13 +19,11 @@ import {
   BarChart3,
   Bot,
   Download,
-  EyeOff,
   Globe,
   Info,
   MessageSquare,
   MonitorDown,
   RefreshCw,
-  Send,
   Share2,
 } from 'lucide-react';
 import { apiGet } from '@/lib/yeaboi/api';
@@ -37,7 +35,7 @@ import {
 } from '@/lib/yeaboi/settings';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
-import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
+import { SettingsSection } from '@/components/settings/primitives';
 import { PostureStrip, type PostureCell } from '@/components/yeaboi/posture-strip';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -75,13 +73,6 @@ interface PrivacyPayload {
 
 // A backend that predates the grouped payload still renders — as one ledger.
 const UNGROUPED: EgressGroup[] = [{ key: 'all', title: 'Everything that can leave this machine' }];
-
-const GROUP_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  always: Globe,
-  tunnel: Share2,
-  'opt-in': EyeOff,
-  you: Send,
-};
 
 // One glyph per egress path, in the settings tile vocabulary.
 const PATH_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -122,19 +113,6 @@ function IconTile({ icon: Icon }: { icon?: React.ComponentType<{ className?: str
     <span
       aria-hidden
       className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary/60 text-foreground/70 ring-1 ring-border/40"
-    >
-      <Icon className="h-4 w-4" />
-    </span>
-  );
-}
-
-function GroupIcon({ group }: { group: string }) {
-  const Icon = GROUP_ICONS[group];
-  if (!Icon) return null;
-  return (
-    <span
-      aria-hidden
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-foreground/70 ring-1 ring-border/40"
     >
       <Icon className="h-4 w-4" />
     </span>
@@ -204,7 +182,10 @@ function PathSwitch({
 }) {
   const on = field.active_choice === onValue;
   return (
-    <span className="flex flex-col items-end gap-1">
+    <span className="flex items-center gap-2">
+      <span className="text-[10.5px] text-muted-foreground/80">
+        {field.choice_labels[field.active_choice] ?? field.active_choice}
+      </span>
       <Switch
         size="sm"
         checked={on}
@@ -214,9 +195,6 @@ function PathSwitch({
         }
         aria-label={field.label}
       />
-      <span className="text-[10.5px] text-muted-foreground/80">
-        {field.choice_labels[field.active_choice] ?? field.active_choice}
-      </span>
     </span>
   );
 }
@@ -246,7 +224,7 @@ function DisclosureRow({
 }) {
   const switchless = row.off_switch.toLowerCase().startsWith('none');
   return (
-    <div className="flex items-start gap-3 px-4 py-3">
+    <div className="flex items-start gap-3 py-3">
       <IconTile icon={PATH_ICONS[row.key]} />
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-medium text-foreground">{row.what}</p>
@@ -449,24 +427,24 @@ function PrivacyBody() {
                 const sharedLive = sharedEntry && sharedField ? sharedEntry : undefined;
 
                 return (
-                  <SettingsCard key={group.key} index={index}>
-                    <SettingsSectionHeader
-                      title={group.title}
-                      subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
-                      icon={<GroupIcon group={group.key} />}
-                      action={
-                        sharedEntry && sharedField ? (
-                          <PathSwitch
-                            field={sharedField}
-                            onValue={sharedEntry.on_value}
-                            busy={busyEnv === sharedEntry.env}
-                            onFlip={(value) => void flip(sharedEntry.env, value)}
-                          />
-                        ) : undefined
-                      }
-                    />
+                  <SettingsSection
+                    key={group.key}
+                    index={index}
+                    title={group.title}
+                    subtitle={`${rows.length} ${rows.length === 1 ? 'path' : 'paths'}`}
+                    action={
+                      sharedEntry && sharedField ? (
+                        <PathSwitch
+                          field={sharedField}
+                          onValue={sharedEntry.on_value}
+                          busy={busyEnv === sharedEntry.env}
+                          onFlip={(value) => void flip(sharedEntry.env, value)}
+                        />
+                      ) : undefined
+                    }
+                  >
                     {sharedLive && notice?.env === sharedLive.env && (
-                      <div className="border-b border-border/50 px-4 pb-2.5">
+                      <div className="border-b border-border/40 pb-2.5">
                         <NoticeLine notice={notice} />
                       </div>
                     )}
@@ -485,7 +463,7 @@ function PrivacyBody() {
                         );
                       })}
                     </div>
-                  </SettingsCard>
+                  </SettingsSection>
                 );
               })}
           </div>

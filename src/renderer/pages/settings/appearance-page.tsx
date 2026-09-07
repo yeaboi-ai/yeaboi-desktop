@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
+import { SettingsSection } from '@/components/settings/primitives';
 import { ScreensaverSection } from '@/components/settings/tabs/general/screensaver-section';
 import { BUILTIN_PRESETS } from '@/lib/theme/presets';
 import type { BuiltInPresetId, ColorScheme, ThemeId, TokenMap } from '@/lib/theme/types';
@@ -191,7 +192,6 @@ export default function AppearanceSettingsPage() {
     <>
       <SettingsPageShell
         active="/settings/appearance"
-        maxWidth="max-w-6xl"
         subtitle="How the window looks — a built-in theme, your organization's, one of your own, or your system's light/dark setting — and what it shows while you are away."
       >
         {deleteError && (
@@ -210,97 +210,98 @@ export default function AppearanceSettingsPage() {
 
         {/* Named, like the screensaver block below it: a grid of colours with
             no heading is the page's only unlabelled thing. */}
-        <h2 className="mb-2 font-body text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
-          Colour scheme
-        </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-          {/* Built-ins */}
-          {BUILTIN_ORDER.map((id) => (
-            <BuiltInCard
-              key={id}
-              name={BUILTIN_PRESETS[id].name}
-              tokens={BUILTIN_PRESETS[id].tokens}
-              colorScheme={BUILTIN_PRESETS[id].color_scheme}
-              active={persistedId === id && !previewingId}
-              previewing={previewingId === id}
-              onApply={() => previewTheme(id)}
-              onClone={() => router.push(`/settings/themes/edit?from=${encodeURIComponent(id)}`)}
+        <SettingsSection animate={false} title="Colour scheme">
+          <div className="grid grid-cols-2 gap-3 pt-3 lg:grid-cols-3 xl:grid-cols-4">
+            {/* Built-ins */}
+            {BUILTIN_ORDER.map((id) => (
+              <BuiltInCard
+                key={id}
+                name={BUILTIN_PRESETS[id].name}
+                tokens={BUILTIN_PRESETS[id].tokens}
+                colorScheme={BUILTIN_PRESETS[id].color_scheme}
+                active={persistedId === id && !previewingId}
+                previewing={previewingId === id}
+                onApply={() => previewTheme(id)}
+                onClone={() => router.push(`/settings/themes/edit?from=${encodeURIComponent(id)}`)}
+              />
+            ))}
+
+            {/* Match-system card — same preview-then-save flow as themes */}
+            <SystemCard
+              isActive={isSystem && !previewingId}
+              activeScheme={colorScheme}
+              onToggle={() => {
+                if (isSystem) {
+                  // Already following; clicking again previews "stop following"
+                  // (i.e. previews dark as the explicit choice).
+                  previewTheme('preset:dark');
+                } else {
+                  previewSystem('preset:light', 'preset:dark');
+                }
+              }}
             />
-          ))}
 
-          {/* Match-system card — same preview-then-save flow as themes */}
-          <SystemCard
-            isActive={isSystem && !previewingId}
-            activeScheme={colorScheme}
-            onToggle={() => {
-              if (isSystem) {
-                // Already following; clicking again previews "stop following"
-                // (i.e. previews dark as the explicit choice).
-                previewTheme('preset:dark');
-              } else {
-                previewSystem('preset:light', 'preset:dark');
+            {/* Org-default card — opens drawer */}
+            <CompactCard
+              icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
+              title="Organization default"
+              subtitle={
+                isFollowingOrg
+                  ? `Following · ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
+                  : `Inherit your org's theme — ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
               }
-            }}
-          />
+              active={isFollowingOrg && !previewingId}
+              onClick={() => open('org')}
+            />
 
-          {/* Org-default card — opens drawer */}
-          <CompactCard
-            icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
-            title="Organization default"
-            subtitle={
-              isFollowingOrg
-                ? `Following · ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
-                : `Inherit your org's theme — ${labelForThemeId(orgDefault?.theme_id ?? 'preset:dark', customPresets)}`
-            }
-            active={isFollowingOrg && !previewingId}
-            onClick={() => open('org')}
-          />
+            {/* Custom themes */}
+            {userCustoms.map((p) => {
+              const id: ThemeId = `custom:${p.id}`;
+              return (
+                <CustomThemeCard
+                  key={p.id}
+                  preset={p}
+                  active={persistedId === id && !previewingId}
+                  previewing={previewingId === id}
+                  onApply={() => previewTheme(id)}
+                  onEdit={() => router.push(`/settings/themes/edit?id=${p.id}`)}
+                  onDelete={() => onDeleteCustom(p)}
+                />
+              );
+            })}
+            {orgCustoms.map((p) => {
+              const id: ThemeId = `custom:${p.id}`;
+              return (
+                <CustomThemeCard
+                  key={p.id}
+                  preset={p}
+                  active={persistedId === id && !previewingId}
+                  previewing={previewingId === id}
+                  onApply={() => previewTheme(id)}
+                  onEdit={
+                    isAdmin ? () => router.push(`/settings/themes/edit?id=${p.id}`) : undefined
+                  }
+                  onDelete={isAdmin ? () => onDeleteCustom(p) : undefined}
+                />
+              );
+            })}
 
-          {/* Custom themes */}
-          {userCustoms.map((p) => {
-            const id: ThemeId = `custom:${p.id}`;
-            return (
-              <CustomThemeCard
-                key={p.id}
-                preset={p}
-                active={persistedId === id && !previewingId}
-                previewing={previewingId === id}
-                onApply={() => previewTheme(id)}
-                onEdit={() => router.push(`/settings/themes/edit?id=${p.id}`)}
-                onDelete={() => onDeleteCustom(p)}
-              />
-            );
-          })}
-          {orgCustoms.map((p) => {
-            const id: ThemeId = `custom:${p.id}`;
-            return (
-              <CustomThemeCard
-                key={p.id}
-                preset={p}
-                active={persistedId === id && !previewingId}
-                previewing={previewingId === id}
-                onApply={() => previewTheme(id)}
-                onEdit={isAdmin ? () => router.push(`/settings/themes/edit?id=${p.id}`) : undefined}
-                onDelete={isAdmin ? () => onDeleteCustom(p) : undefined}
-              />
-            );
-          })}
+            {/* + Custom theme — opens drawer (preset / brand-from-URL / blank) */}
+            <CompactCard
+              icon={<Plus className="h-4 w-4 text-foreground" />}
+              title="New custom theme"
+              subtitle={
+                isAdmin
+                  ? 'Start from a preset, brand from a website, or open blank'
+                  : 'Build your own colors from scratch or a preset'
+              }
+              variant="plus"
+              onClick={() => open('new-custom')}
+            />
+          </div>
+        </SettingsSection>
 
-          {/* + Custom theme — opens drawer (preset / brand-from-URL / blank) */}
-          <CompactCard
-            icon={<Plus className="h-4 w-4 text-foreground" />}
-            title="New custom theme"
-            subtitle={
-              isAdmin
-                ? 'Start from a preset, brand from a website, or open blank'
-                : 'Build your own colors from scratch or a preset'
-            }
-            variant="plus"
-            onClick={() => open('new-custom')}
-          />
-        </div>
-
-        <div className="mt-8">
+        <div className="mt-10">
           <ScreensaverSection />
         </div>
       </SettingsPageShell>
