@@ -18,6 +18,7 @@ import {
   Gauge,
   Lock,
   MessageSquare,
+  Music,
   ScrollText,
   Settings,
   Sparkles,
@@ -25,6 +26,13 @@ import {
   Wrench,
 } from 'lucide-react';
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { opsSection, type IconKey } from '@/lib/nav/sections';
 import { isSettingsPath } from '@/lib/nav/rail-rows';
@@ -35,6 +43,12 @@ import {
   type Report,
 } from '@/lib/yeaboi/system-check';
 import { apiGet } from '@/lib/yeaboi/api';
+
+import { MiniPlayer } from '@/components/music/mini-player';
+import { ServiceMark } from '@/components/music/service-mark';
+import { useMusicPlayer } from '@/components/providers/music-provider';
+import { STATUS_WORDS } from '@/lib/music/state';
+import { NATIVE_APPS } from '@shared/music-native';
 
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { WorldSwitcher } from '@/components/audience/world-switcher';
@@ -217,6 +231,88 @@ function SwapIcon({ away, back }: { away: React.ReactElement; back: boolean }) {
   );
 }
 
+/** Music, as a button on the row.
+ *
+ *  A note while nothing is on, and the visualizer once something is — the
+ *  vendor's mark in the corner when the sound is someone else's. Click for
+ *  the transport, right-click for what you would otherwise open the page for. */
+function MusicPocket() {
+  const { radio, channels, mood, native, nativeApp, embed, nowPlaying, clearEmbed, toggle, next } =
+    useMusicPlayer();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const { state } = radio;
+  const station = channels[state.channel]?.name ?? 'Radio';
+  const here = Boolean(pathname?.startsWith('/music'));
+
+  const label =
+    mood === 'embed' && nowPlaying
+      ? `${nowPlaying.title} · ${nowPlaying.status === 'paused' ? 'paused' : 'playing'} here`
+      : mood === 'native' && native.nowPlaying
+        ? `${native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name} · in ${NATIVE_APPS[native.nowPlaying.app].name}`
+        : mood === 'off'
+          ? 'Music'
+          : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
+
+  const badge = mood === 'embed' && embed ? embed.service : mood === 'native' ? nativeApp : null;
+  const playing =
+    state.status === 'playing' ||
+    state.status === 'connecting' ||
+    native.nowPlaying?.status === 'playing';
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger render={<div />}>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                title={label}
+                aria-label={mood === 'off' ? 'Music' : `Music — ${label}`}
+                className={`${FLOAT} ${CONTROL} flex w-8 shrink-0 items-center justify-center transition-colors ${
+                  here || open || mood !== 'off'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                }`}
+              >
+                <span className="relative flex h-[14px] w-[14px] items-center justify-center">
+                  <Music className="h-[14px] w-[14px]" />
+                  {/* Whose sound it is, when it is not ours. The rail had room
+                      for the visualizer here; at button size it is a smudge. */}
+                  {badge && (
+                    <ServiceMark
+                      service={badge}
+                      size={8}
+                      className="absolute -right-1.5 -bottom-1.5 text-muted-foreground"
+                    />
+                  )}
+                </span>
+              </button>
+            }
+          />
+          <PopoverContent side="top" align="end" className="p-0">
+            <MiniPlayer />
+          </PopoverContent>
+        </Popover>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        {mood === 'embed' ? (
+          <ContextMenuItem onClick={clearEmbed}>Stop</ContextMenuItem>
+        ) : (
+          <>
+            <ContextMenuItem onClick={toggle}>{playing ? 'Pause' : 'Play'}</ContextMenuItem>
+            <ContextMenuItem onClick={next}>Next station or track</ContextMenuItem>
+          </>
+        )}
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => router.push('/music')}>Open Music</ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
 /** A dot per status and how many are in it. The strip of one cell per check
  *  said the same thing in twenty-one marks; at this size a count reads and a
  *  cell does not. */
@@ -272,14 +368,10 @@ function SystemCheckPill() {
 
   return (
     <Link
-      // Part of the bottom row, so it retreats with it: a board staged in the
-      // window is the window, and the app's own chrome gets off it. The
-      // transition comes with the attribute — see globals.css.
-      data-dock="right"
       href={here ? cameFrom() : '/system-check'}
       title={label}
       aria-label={label}
-      className={`${FLOAT} ${CONTROL} fixed right-[calc(6.5rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center justify-center overflow-hidden font-code text-[11px] text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
+      className={`${FLOAT} ${CONTROL} relative flex shrink-0 items-center justify-center overflow-hidden font-code text-[11px] text-muted-foreground transition-[width,color,background-color] duration-200 ease-out hover:bg-secondary/50 hover:text-foreground`}
       style={{ width: here ? BUTTON : full || undefined }}
     >
       {/* On the page it leads to, it is the way back: the pill narrows to a
@@ -337,24 +429,33 @@ export function DockControls({ cmdHeld }: { cmdHeld: boolean }) {
 
   return (
     <>
-      {/* Beside the duck rather than in the row on the left: telling us
-          something is not a setting, and he is the one on screen who looks
-          like he would pass it on. Clear of his perch, on the row's baseline. */}
-      <Link
+      {/* The row beside the duck rather than in the one on the left: what is
+          playing, what the system check found, and telling us something — none
+          of them a setting, and he is the one on screen who looks like he
+          would pass it on. Clear of his perch, on the row's baseline.
+          It retreats with the rest of the dock: a board staged in the window
+          is the window, and the app's own chrome gets off it. The transition
+          comes with the attribute — see globals.css. */}
+      <div
         data-dock="right"
-        href={feedbackActive ? back : '/feedback'}
-        title={feedbackActive ? 'Back' : 'Send feedback'}
-        aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
-        className={`${FLOAT} ${CONTROL} fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex w-8 items-center justify-center ${
-          feedbackActive
-            ? 'text-foreground'
-            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-        }`}
+        className="fixed right-[calc(4rem+var(--turn-inset))] bottom-[calc(1rem+var(--turn-inset))] z-40 flex items-center gap-2"
       >
-        <SwapIcon away={<MessageSquare />} back={feedbackActive} />
-      </Link>
+        <MusicPocket />
+        <SystemCheckPill />
 
-      <SystemCheckPill />
+        <Link
+          href={feedbackActive ? back : '/feedback'}
+          title={feedbackActive ? 'Back' : 'Send feedback'}
+          aria-label={feedbackActive ? 'Leave feedback' : 'Send feedback'}
+          className={`${FLOAT} ${CONTROL} flex w-8 shrink-0 items-center justify-center transition-colors ${
+            feedbackActive
+              ? 'text-foreground'
+              : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+          }`}
+        >
+          <SwapIcon away={<MessageSquare />} back={feedbackActive} />
+        </Link>
+      </div>
 
       <div
         data-dock
