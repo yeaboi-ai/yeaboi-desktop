@@ -46,6 +46,7 @@ import { apiGet } from '@/lib/yeaboi/api';
 
 import { MiniPlayer } from '@/components/music/mini-player';
 import { ServiceMark } from '@/components/music/service-mark';
+import { Visualizer } from '@/components/music/visualizer';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { STATUS_WORDS } from '@/lib/music/state';
 import { NATIVE_APPS } from '@shared/music-native';
@@ -68,6 +69,11 @@ const CONTROL = 'h-8';
  *  back, and the padding it wears while it is still a pill. */
 const BUTTON = 32;
 const PILL_PAD = 12;
+/** What the pill widens to while something is sounding — the spectrum fills
+ *  it, so this is the whole of the picture. */
+const PILL = 88;
+/** The player the pill opens out into — MiniPlayer's own `w-72`. */
+const PANEL_W = 288;
 
 function ScopeSelect({
   value,
@@ -231,17 +237,22 @@ function SwapIcon({ away, back }: { away: React.ReactElement; back: boolean }) {
   );
 }
 
-/** Music, as a button on the row.
+/** Music, on the row.
  *
- *  A note while nothing is on, and the visualizer once something is — the
- *  vendor's mark in the corner when the sound is someone else's. Click for
- *  the transport, right-click for what you would otherwise open the page for. */
+ *  A note at rest. Something playing widens him into a pill with the spectrum
+ *  in it, and a click opens that same box out into the player rather than
+ *  hanging a panel above it — one object, growing.
+ *  Right-click for what you would otherwise open the page for. */
 function MusicPocket() {
   const { radio, channels, mood, native, nativeApp, embed, nowPlaying, clearEmbed, toggle, next } =
     useMusicPlayer();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // The player stays in the DOM for the fold as well as the unfold.
+  const [carried, setCarried] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  const [panelH, setPanelH] = useState(0);
   const { state } = radio;
   const station = channels[state.channel]?.name ?? 'Radio';
   const here = Boolean(pathname?.startsWith('/music'));
@@ -256,46 +267,115 @@ function MusicPocket() {
           : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
 
   const badge = mood === 'embed' && embed ? embed.service : mood === 'native' ? nativeApp : null;
+  // Sounding, rather than merely chosen: stopping folds him back to the note.
   const playing =
     state.status === 'playing' ||
     state.status === 'connecting' ||
-    native.nowPlaying?.status === 'playing';
+    native.nowPlaying?.status === 'playing' ||
+    (mood === 'embed' && nowPlaying?.status === 'playing');
+  const shut = playing ? PILL : BUTTON;
+
+  useEffect(() => {
+    if (open) setCarried(true);
+  }, [open]);
+
+  // The player's height is its own; the box has to be told, because `auto`
+  // does not transition.
+  useLayoutEffect(() => {
+    const box = panel.current;
+    if (!box) return;
+    const take = () => setPanelH(box.offsetHeight);
+    take();
+    const watch = new ResizeObserver(take);
+    watch.observe(box);
+    return () => watch.disconnect();
+  }, [carried]);
+
+  // A click anywhere else folds him back, the way the chat bar closes.
+  useEffect(() => {
+    if (!open) return;
+    const away = (event: PointerEvent) => {
+      if ((event.target as HTMLElement | null)?.closest('[data-music]')) return;
+      setOpen(false);
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('pointerdown', away);
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('pointerdown', away);
+      window.removeEventListener('keydown', key);
+    };
+  }, [open]);
 
   return (
     <ContextMenu>
       <ContextMenuTrigger render={<div />}>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger
-            render={
-              <button
-                type="button"
-                title={label}
-                aria-label={mood === 'off' ? 'Music' : `Music — ${label}`}
-                className={`${FLOAT} ${CONTROL} flex w-8 shrink-0 items-center justify-center transition-colors ${
-                  here || open || mood !== 'off'
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+        <div data-music className="relative shrink-0" style={{ width: shut, height: BUTTON }}>
+          <div
+            className={`${FLOAT} absolute right-0 bottom-0 overflow-hidden transition-[width,height] duration-300 ease-out ${
+              open ? 'z-50' : ''
+            }`}
+            style={{ width: open ? PANEL_W : shut, height: open && panelH ? panelH : BUTTON }}
+            onTransitionEnd={(event) => {
+              if (event.propertyName === 'height' && !open) setCarried(false);
+            }}
+          >
+            <button
+              type="button"
+              title={label}
+              aria-label={mood === 'off' ? 'Music' : `Music — ${label}`}
+              aria-expanded={open}
+              onClick={() => setOpen((was) => !was)}
+              className={`absolute right-0 bottom-0 flex items-center justify-center transition-[opacity,color,background-color] duration-200 ease-out ${
+                open ? 'pointer-events-none opacity-0' : 'opacity-100'
+              } ${
+                here || playing
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+              }`}
+              style={{ width: shut, height: BUTTON }}
+            >
+              {/* The two faces are laid over each other so the one thing that
+                  moves is the box: a note at rest, and while something sounds
+                  the spectrum itself, wall to wall. */}
+              <Music
+                aria-hidden
+                className={`absolute h-[14px] w-[14px] transition-opacity duration-200 ease-out ${
+                  playing ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
+              <span
+                aria-hidden
+                className={`absolute inset-0 transition-opacity duration-200 ease-out ${
+                  playing ? 'opacity-100' : 'opacity-0'
                 }`}
               >
-                <span className="relative flex h-[14px] w-[14px] items-center justify-center">
-                  <Music className="h-[14px] w-[14px]" />
-                  {/* Whose sound it is, when it is not ours. The rail had room
-                      for the visualizer here; at button size it is a smudge. */}
-                  {badge && (
-                    <ServiceMark
-                      service={badge}
-                      size={8}
-                      className="absolute -right-1.5 -bottom-1.5 text-muted-foreground"
-                    />
-                  )}
-                </span>
-              </button>
-            }
-          />
-          <PopoverContent side="top" align="end" className="p-0">
-            <MiniPlayer />
-          </PopoverContent>
-        </Popover>
+                <Visualizer size="popover" className="block h-full w-full" />
+                {badge && (
+                  <ServiceMark
+                    service={badge}
+                    size={11}
+                    className="absolute right-1.5 bottom-1 text-muted-foreground"
+                  />
+                )}
+              </span>
+            </button>
+
+            {carried && (
+              <div
+                ref={panel}
+                className={`absolute right-0 bottom-0 transition-opacity duration-200 ease-out ${
+                  open ? 'opacity-100 delay-75' : 'opacity-0'
+                }`}
+                style={{ width: PANEL_W }}
+              >
+                <MiniPlayer />
+              </div>
+            )}
+          </div>
+        </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         {mood === 'embed' ? (
