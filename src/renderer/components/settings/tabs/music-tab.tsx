@@ -72,9 +72,18 @@ export function MusicTab() {
               aria-label="Pause during calls"
             />
           </SettingRow>
+          <SettingRow label="Keep the player open">
+            <Switch
+              checked={prefs.dockOpen}
+              onCheckedChange={(dockOpen) => updatePrefs({ dockOpen })}
+              aria-label="Keep the player open"
+            />
+          </SettingRow>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             The radio waits while a call or a voice session is live and comes back after, the way it
-            does in the terminal while you dictate. Nothing plays when the app starts.
+            does in the terminal while you dictate. Nothing plays when the app starts. Kept open,
+            the control on the bottom row stands as the transport and the spectrum rather than
+            folding back to its pill.
           </p>
         </div>
       </SettingsCard>

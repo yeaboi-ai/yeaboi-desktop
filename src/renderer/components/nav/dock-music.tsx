@@ -123,7 +123,7 @@ function VolumeRail({ percent, onChange }: { percent: number; onChange: (next: n
     >
       <span
         aria-hidden
-        className={`absolute top-1/2 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rail-thumb transition-[height] duration-300 ease-out ${
+        className={`absolute top-1/2 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rail-thumb transition-[height] duration-300 ease-out ${
           dragging ? 'h-4' : 'h-2.5 group-hover/rail:h-4'
         }`}
         style={{ left: `${percent}%` }}
@@ -133,11 +133,24 @@ function VolumeRail({ percent, onChange }: { percent: number; onChange: (next: n
 }
 
 export function MusicPocket() {
-  const { radio, channels, mood, native, nativeApp, embed, nowPlaying, clearEmbed, toggle, next } =
-    useMusicPlayer();
+  const {
+    radio,
+    channels,
+    mood,
+    native,
+    nativeApp,
+    embed,
+    nowPlaying,
+    prefs,
+    clearEmbed,
+    toggle,
+    next,
+  } = useMusicPlayer();
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // Opened by hand, or standing open because that is where it is kept.
+  const [reached, setReached] = useState(false);
+  const open = prefs.dockOpen || reached;
   const [wide, setWide] = useState(false);
   const volume_ = useRef<HTMLDivElement>(null);
   const level = useRef(0);
@@ -203,13 +216,13 @@ export function MusicPocket() {
   // A click anywhere else, or Escape, folds him back — the way the chat bar
   // closes.
   useEffect(() => {
-    if (!open) return;
+    if (!reached || prefs.dockOpen) return;
     const away = (event: PointerEvent) => {
       if ((event.target as HTMLElement | null)?.closest('[data-music]')) return;
-      setOpen(false);
+      setReached(false);
     };
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') setReached(false);
     };
     window.addEventListener('pointerdown', away);
     window.addEventListener('keydown', key);
@@ -217,7 +230,7 @@ export function MusicPocket() {
       window.removeEventListener('pointerdown', away);
       window.removeEventListener('keydown', key);
     };
-  }, [open]);
+  }, [reached, prefs.dockOpen]);
 
   return (
     <ContextMenu>
@@ -285,7 +298,7 @@ export function MusicPocket() {
               title={label}
               aria-label={mood === 'off' ? 'Music' : `Music — ${label}`}
               aria-expanded={open}
-              onClick={() => setOpen(true)}
+              onClick={() => setReached(true)}
               className={`absolute right-0 bottom-0 flex items-center justify-center transition-[opacity,color,background-color] duration-300 ease-out ${
                 open ? 'pointer-events-none opacity-0' : 'opacity-100'
               } ${
@@ -306,7 +319,7 @@ export function MusicPocket() {
               />
               <span
                 aria-hidden
-                className={`absolute inset-0 transition-opacity duration-300 ease-out ${
+                className={`absolute inset-[5px] overflow-hidden rounded-lg transition-opacity duration-300 ease-out ${
                   playing && !open ? 'opacity-100' : 'opacity-0'
                 }`}
               >
@@ -315,7 +328,7 @@ export function MusicPocket() {
                   <ServiceMark
                     service={badge}
                     size={11}
-                    className="absolute right-1.5 bottom-1 text-muted-foreground"
+                    className="absolute right-0 bottom-0 text-muted-foreground"
                   />
                 )}
               </span>

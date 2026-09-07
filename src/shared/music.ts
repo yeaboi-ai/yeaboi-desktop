@@ -189,6 +189,8 @@ export interface MusicPrefs {
   source: MusicSourceId;
   /** Pause the radio while a call or a voice session is live. */
   pauseInCalls: boolean;
+  /** The dock's music control stands open rather than folded to its pill. */
+  dockOpen: boolean;
   library: SavedLink[];
   /** How the radio looks while it plays: window-only, the terminal has none. */
   visualizer: VisualizerPrefs;
@@ -198,6 +200,7 @@ export const MUSIC_DEFAULTS: MusicPrefs = {
   volume: 0.35,
   source: 'radio',
   pauseInCalls: true,
+  dockOpen: false,
   library: [],
   visualizer: VISUALIZER_DEFAULTS,
 };
@@ -251,6 +254,7 @@ export function normalizeMusicPrefs(raw: unknown): MusicPrefs {
     volume: clamp01(data['volume'], MUSIC_DEFAULTS.volume),
     source: source(data['source']),
     pauseInCalls: typeof data['pauseInCalls'] === 'boolean' ? data['pauseInCalls'] : true,
+    dockOpen: data['dockOpen'] === true,
     library,
     visualizer: normalizeVisualizerPrefs(data['visualizer']),
   };
