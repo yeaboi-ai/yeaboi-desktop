@@ -180,7 +180,7 @@ function SaverTile({
         active ? 'ring-1 ring-primary' : 'hover:ring-1 hover:ring-border/60',
       )}
     >
-      <div className="relative h-20 w-full bg-background">
+      <div className="relative h-20 w-full overflow-hidden bg-background">
         {drawable ? (
           <ScreensaverCanvas
             style={style as (typeof SCENE_STYLES)[number]}
@@ -197,12 +197,13 @@ function SaverTile({
             </span>
           </div>
         )}
-      </div>
-      <div className="px-1 py-1.5">
+        {/* On the scene rather than under it: the tile is the picture, and a
+            name below it was a second row of furniture per tile. */}
         <p
           className={cn(
-            'text-[11px] font-body font-medium',
-            active ? 'text-primary' : 'text-foreground',
+            'absolute bottom-1.5 left-2 font-body text-[11px] font-medium',
+            '[text-shadow:0_1px_3px_rgba(0,0,0,0.65)]',
+            active ? 'text-primary' : 'text-white',
           )}
         >
           {name}
