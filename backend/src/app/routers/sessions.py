@@ -71,6 +71,12 @@ from ..ws.manager import manager
 router = APIRouter(tags=["sessions"])
 logger = logging.getLogger(__name__)
 
+# A project is described with a handful of mockups, not an album; past this the
+# opening context stops being an opening. These reads are model spend nobody
+# pressed a button for, so they are bounded three ways: only screenshots the
+# author attached, only the project's first session, and only this many.
+MAX_READ_SCREENSHOTS = 4
+
 
 @router.post("/api/projects/{project_id}/create-from-review")
 async def create_from_review(
@@ -1490,13 +1496,13 @@ async def create_session(
             await db.execute(
                 select(ProjectAttachment)
                 .where(ProjectAttachment.project_id == project_id)
-                .order_by(ProjectAttachment.created_at)
+                .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
             )
         )
         .scalars()
         .all()
     )
-    shots_line = attachment_line([row.filename for row in attachment_rows])
+    shots_line = attachment_line([row.filename for row in attachment_rows[:MAX_READ_SCREENSHOTS]])
     if shots_line:
         context_parts.append(shots_line)
     if context_parts:
@@ -1589,7 +1595,9 @@ async def create_session(
     # the same vision path the manual analyze-image route uses. Later sessions
     # do not: the reading is already in the blueprint by then.
     if is_first_session and attachment_rows:
-        asyncio.create_task(_read_project_screenshots_safe(session.id, project_id, org.id))
+        asyncio.create_task(
+            _read_project_screenshots_safe(session.id, project_id, org.id, new_iter.id)
+        )
 
     # Reload with participants and user info
     result = await db.execute(
@@ -2956,12 +2964,9 @@ async def _generate_welcome_back(
             )
 
 
-# A project is described with a handful of mockups, not an album; past this the
-# opening context stops being an opening.
-MAX_READ_SCREENSHOTS = 4
-
-
-async def _read_project_screenshots_safe(session_id: str, project_id: str, org_id: str) -> None:
+async def _read_project_screenshots_safe(
+    session_id: str, project_id: str, org_id: str, iteration_id: str
+) -> None:
     """Background: read the project's screenshots into the blueprint's UI/UX section.
 
     One unreadable image must never cost the session its opening, so every
@@ -2978,7 +2983,7 @@ async def _read_project_screenshots_safe(session_id: str, project_id: str, org_i
                     await db.execute(
                         select(ProjectAttachment)
                         .where(ProjectAttachment.project_id == project_id)
-                        .order_by(ProjectAttachment.created_at)
+                        .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
                         .limit(MAX_READ_SCREENSHOTS)
                     )
                 )
@@ -3002,7 +3007,7 @@ async def _read_project_screenshots_safe(session_id: str, project_id: str, org_i
                 return
             # One snapshot for the lot, on top of whatever the seeding left —
             # update_section only replaces or merges bullets, and these are prose.
-            blueprint = await get_or_create_blueprint(project_id, db)
+            blueprint = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
             existing = (blueprint.content or {}).get("ui_ux") or ""
             await update_section(
                 project_id,
@@ -3011,6 +3016,7 @@ async def _read_project_screenshots_safe(session_id: str, project_id: str, org_i
                 "ai-vision",
                 db,
                 session_id=session_id,
+                iteration_id=iteration_id,
             )
             logger.info("Read %d project screenshots into ui_ux for session %s", len(readings), session_id)
     except Exception as e:  # noqa: BLE001 — background task

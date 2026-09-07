@@ -319,8 +319,12 @@ export function ProjectComposer({
       />
       <div className="mt-2 flex min-h-[2rem] items-center justify-between gap-4">
         {/* The sheet's own two tones, one size down from SheetWord: the promise
-            in the ledger's serif, the consequence in body type beside it. */}
-        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
+            in the ledger's serif, the consequence in body type beside it. A
+            failed create takes the slot instead — the alert says enough. */}
+        <p
+          hidden={Boolean(error)}
+          className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug"
+        >
           <span
             key={note.lead}
             className="animate-fade-in font-display text-[15px] italic text-muted-foreground"
@@ -328,12 +332,15 @@ export function ProjectComposer({
             {note.lead}
           </span>
           {note.tail && (
-            <span
-              key={note.tail}
-              className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
-            >
-              {note.tail}
-            </span>
+            <>
+              <span className="sr-only">. </span>
+              <span
+                key={note.tail}
+                className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
+              >
+                {note.tail}
+              </span>
+            </>
           )}
         </p>
         {(text || attached) && (

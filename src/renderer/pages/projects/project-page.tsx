@@ -999,6 +999,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  // Undefined until the sessions fetch settles, the way run-inside-panel.tsx
+  // holds its list: a failed or slow read must not read as "none yet".
+  const [sessionsRead, setSessionsRead] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -1116,7 +1119,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
       setProject(await projectResp.json());
 
-      if (sessionsResp.ok) setSessions(await sessionsResp.json());
+      if (sessionsResp.ok) {
+        setSessions(await sessionsResp.json());
+        setSessionsRead(true);
+      }
 
       if (blueprintResp.ok) {
         const bp = await blueprintResp.json();
@@ -1418,8 +1424,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   );
 
   // Nothing has happened inside this project yet: every dashboard panel would
-  // be empty, so the page says what to do instead of showing them.
-  const firstRun = isFirstRun(sessions);
+  // be empty, so the page says what to do instead of showing them. Only once
+  // the sessions have actually been read — a failed fetch keeps the dashboard.
+  const firstRun = sessionsRead && isFirstRun(sessions);
 
   // Filter sections by active iteration type
   const activeIter = iterations.find((i) => i.id === activeIterationId);
@@ -1572,7 +1579,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             modes a line below it. */}
         {firstRun ? (
           <div className="mb-10">
-            <FirstRunCard projectId={project.id}>
+            <FirstRunCard projectId={project.id} canStart={project.is_own_team !== false}>
               <RunInsidePanel project={project} />
             </FirstRunCard>
           </div>

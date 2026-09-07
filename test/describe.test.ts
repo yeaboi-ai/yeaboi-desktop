@@ -131,6 +131,25 @@ describe('the promise is said on every screen it passes through', () => {
     expect(card).toContain('/sessions/new');
   });
 
+  it('the card heads and acts in different words', () => {
+    // Heading and button both reading "Start the conversation" said it twice.
+    expect(DESCRIBE_COPY.CARD_TITLE).not.toBe(DESCRIBE_COPY.CARD_ACTION);
+  });
+
+  it('withholds the offer on a borrowed project, as the rest of the page does', () => {
+    const card = read('components/projects/first-run-card.tsx');
+    expect(card).toContain('{canStart && (');
+    const page = read('pages/projects/project-page.tsx');
+    expect(page).toContain('canStart={project.is_own_team !== false}');
+  });
+
+  it('waits for the sessions fetch to settle before calling it a first run', () => {
+    // An unread list is [] too, and a failed fetch must not hide the dashboard.
+    const page = read('pages/projects/project-page.tsx');
+    expect(page).toContain('const firstRun = sessionsRead && isFirstRun(sessions)');
+    expect(page).toContain('setSessionsRead(true)');
+  });
+
   it('the session idea box says where its words came from', () => {
     const page = read('pages/session/session-new-page.tsx');
     expect(page).toContain('DESCRIBE_COPY.CARRIED');

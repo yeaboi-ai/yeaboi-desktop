@@ -1,6 +1,6 @@
 """Pluggable storage backend for card attachments.
 
-The Protocol exposes the minimal surface the router needs (put, get_url, delete).
+The Protocol exposes the minimal surface the router needs (put, get, get_url, delete).
 Two concrete implementations:
 
 * ``LocalDiskStorage`` — wraps the same UPLOAD_DIR the existing chat-attachment

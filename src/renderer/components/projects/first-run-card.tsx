@@ -13,11 +13,13 @@ import { DESCRIBE_COPY } from '@/lib/yeaboi/describe';
 
 export interface FirstRunCardProps {
   projectId: string;
+  /** False on a borrowed project: the rest of the page withholds the offer too. */
+  canStart: boolean;
   /** The engine modes, revealed under the quiet line. */
   children: React.ReactNode;
 }
 
-export function FirstRunCard({ projectId, children }: FirstRunCardProps) {
+export function FirstRunCard({ projectId, canStart, children }: FirstRunCardProps) {
   const [modesOpen, setModesOpen] = useState(false);
 
   return (
@@ -28,25 +30,32 @@ export function FirstRunCard({ projectId, children }: FirstRunCardProps) {
       <p className="mt-3 max-w-xl text-[13px] font-body leading-relaxed text-muted-foreground">
         {DESCRIBE_COPY.CARD_BODY}
       </p>
-      <div className="mt-5">
-        <Link
-          href={`/projects/${projectId}/sessions/new`}
-          className={buttonVariants({ size: 'sm', className: 'font-body' })}
-        >
-          {DESCRIBE_COPY.CARD_ACTION}
-          <ArrowRight data-icon="inline-end" />
-        </Link>
-      </div>
+      {canStart && (
+        <div className="mt-5">
+          <Link
+            href={`/projects/${projectId}/sessions/new`}
+            className={buttonVariants({ size: 'sm', className: 'font-body' })}
+          >
+            {DESCRIBE_COPY.CARD_ACTION}
+            <ArrowRight data-icon="inline-end" />
+          </Link>
+        </div>
+      )}
       <div className="mt-5 border-t border-border pt-4">
         <button
           type="button"
           onClick={() => setModesOpen((open) => !open)}
           aria-expanded={modesOpen}
+          aria-controls="first-run-modes"
           className="text-[12px] font-body text-muted-foreground/70 transition-colors hover:text-foreground"
         >
           {DESCRIBE_COPY.CARD_MODES}
         </button>
-        {modesOpen && <div className="mt-4 animate-fade-in">{children}</div>}
+        {modesOpen && (
+          <div id="first-run-modes" className="mt-4 animate-fade-in">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );

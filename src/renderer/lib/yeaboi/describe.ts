@@ -16,7 +16,7 @@ export const DESCRIBE_COPY = {
   /** Under the composer once there are words. */
   NAMING_LEAD: 'yeaboi names it from this and opens with it',
   /** The first-run card on a project that has had no session yet. */
-  CARD_TITLE: 'Start the conversation',
+  CARD_TITLE: 'Nothing has run inside this project yet',
   CARD_BODY:
     'What you wrote is above, and the first session opens with it — add to it there, or start from it as it is. Nothing is lost.',
   CARD_ACTION: 'Start the conversation',
