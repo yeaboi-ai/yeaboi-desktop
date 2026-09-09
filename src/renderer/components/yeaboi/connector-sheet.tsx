@@ -121,6 +121,7 @@ export function ConnectorTile({ row, onOpen }: { row: ConnectionRow; onOpen: () 
           <ConnectionStatusChip
             configured={row.connected}
             status={row.status}
+            probeable={Boolean(row.verify_kind)}
             className="shrink-0"
           />
           {row.read_only && (
@@ -491,7 +492,12 @@ function ConnectorSheetBody({
             <div className="flex items-center justify-between gap-2">
               <SheetTitle className="truncate text-[17px] font-semibold">{row.label}</SheetTitle>
               {row.connected ? (
-                <ConnectionStatusChip configured status={row.status} className="shrink-0" />
+                <ConnectionStatusChip
+                  configured
+                  status={row.status}
+                  probeable={Boolean(row.verify_kind)}
+                  className="shrink-0"
+                />
               ) : (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-secondary/60 px-2 py-0.5 text-[10.5px] text-muted-foreground/70">
                   not connected

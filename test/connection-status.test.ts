@@ -8,6 +8,10 @@
 import { describe, expect, it } from 'vitest';
 import { resolveStatus, statusFor } from '../src/renderer/lib/yeaboi/connection-status';
 import { terseAge } from '../src/renderer/lib/relative-time';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const read = (...parts: string[]) => readFileSync(join(__dirname, '..', ...parts), 'utf8');
 
 const NOW = new Date('2026-09-09T12:00:00Z');
 
@@ -68,6 +72,24 @@ describe('resolveStatus', () => {
   it('a refused key with no reason still says it failed', () => {
     const status = { outcome: 'failed' as const, message: '   ', checked_at: '' };
     expect(resolveStatus({ configured: true, status }, NOW).label).toBe('invalid key');
+  });
+});
+
+describe('a connection with no probe', () => {
+  it('is worded as presence, since nothing can ever test it', () => {
+    // Slack and Azure DevOps: "not tested" about a thing nothing tests reads
+    // as a fault. The chip component narrows the copy; the table still says
+    // untested, which is what the wire means.
+    const chip = read(
+      'src',
+      'renderer',
+      'components',
+      'settings',
+      'primitives',
+      'connection-status-chip.tsx',
+    );
+    expect(chip).toContain('probeable');
+    expect(chip).toContain("label: 'key saved'");
   });
 });
 

@@ -27,6 +27,7 @@ export function ConnectionStatusChip({
   busy,
   label,
   className,
+  probeable = true,
 }: {
   configured: boolean;
   status?: ConnectionStatus;
@@ -38,9 +39,19 @@ export function ConnectionStatusChip({
   /** What the re-test button announces, e.g. "ElevenLabs". */
   label?: string;
   className?: string;
+  /** False when this connection has no live probe: it can never leave
+   *  "not tested", and a grey chip saying so reads as a fault. */
+  probeable?: boolean;
 }) {
-  const copy = resolveStatus({ configured, status }, now ?? new Date());
-  if (copy.state === 'unset') return null;
+  const resolved = resolveStatus({ configured, status }, now ?? new Date());
+  if (resolved.state === 'unset') return null;
+  // Slack and Azure DevOps have no probe, so they can never leave "not
+  // tested" — and saying so reads as a fault rather than as an absence.
+  // Presence is the only fact there is about them, so that is what it says.
+  const copy =
+    !probeable && resolved.state === 'untested'
+      ? { ...resolved, label: 'key saved', detail: 'Saved. This connection has no live test.' }
+      : resolved;
 
   return (
     <span className={cn('inline-flex items-center gap-1', className)}>

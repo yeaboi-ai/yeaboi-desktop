@@ -192,7 +192,7 @@ export function ConnectionCard({
           </span>
         </span>
         <span className="shrink-0">
-          <ConnectionStatusChip configured={configured} status={shownStatus} />
+          <ConnectionStatusChip configured={configured} status={shownStatus} probeable={canProbe} />
         </span>
         <ChevronRight
           aria-hidden
