@@ -121,9 +121,25 @@ describe('focus', () => {
 });
 
 describe('the wheel', () => {
-  it('always dismisses — nothing on the paper scrolls', () => {
-    expect(reachStep(ev('wheel', { mod: true }), REACHING).wakes).toBe(true);
+  it('scrolls the paper while reaching, rather than dismissing it', () => {
+    // The paper is taller than the window: reaching in to read the rest is
+    // the same gesture as reaching in to click.
+    expect(reachStep(ev('wheel', { mod: true }), REACHING).wakes).toBe(false);
+  });
+
+  it('dismisses when nothing is held', () => {
     expect(reachStep(ev('wheel'), PASSIVE).wakes).toBe(true);
+    expect(reachStep(ev('wheel', { mod: true }), PASSIVE).wakes).toBe(true);
+  });
+
+  it('a lost keyup cannot leave the paper scrollable', () => {
+    const out = reachStep(ev('wheel', { mod: false }), REACHING);
+    expect(out.reaching).toBe(false);
+    expect(out.wakes).toBe(true);
+  });
+
+  it('never dismisses on a canvas scene by accident', () => {
+    expect(reachStep(ev('wheel', { mod: true }), CANVAS).wakes).toBe(true);
   });
 });
 
@@ -167,6 +183,12 @@ describe('the hint', () => {
 
   it('names whatever key the platform uses', () => {
     expect(reachHint('Ctrl', false).key).toBe('Ctrl');
+  });
+
+  it('names both things holding buys you', () => {
+    expect(reachHint('⌘', false).text).toMatch(/scroll/i);
+    expect(reachHint('⌘', false).text).toMatch(/click/i);
+    expect(reachHint('⌘', true).text).toMatch(/scroll/i);
   });
 
   it('reads as an affordance rather than a watermark', () => {

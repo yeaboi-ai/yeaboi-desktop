@@ -22,7 +22,7 @@
 //    no route at all all fall back to the release-notes paper; someone who
 //    chose this saver wants a front page, not an explanation.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAudience } from '@/components/providers/audience-provider';
 import { FrontPageView } from '@/components/news/front-page-view';
 import { fallbackPaper } from '@/lib/news/fallback';
@@ -44,6 +44,7 @@ function saverSpeed(): TurnSpeedId {
 }
 
 export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: boolean }) {
+  const surface = useRef<HTMLDivElement>(null);
   const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [notes, setNotes] = useState(false);
@@ -82,6 +83,10 @@ export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: 
     };
   }, []);
 
+  useEffect(() => {
+    if (!reaching) surface.current?.scrollTo({ top: 0 });
+  }, [reaching]);
+
   // Belt and braces: the release-notes paper is built from a committed ledger
   // and cannot be empty, but a saver that draws nothing is worse than a duck.
   if (!paper) {
@@ -92,7 +97,11 @@ export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: 
 
   return (
     <div
-      className={cn('h-full w-full overflow-hidden px-6 pt-10', !reaching && 'pointer-events-none')}
+      ref={surface}
+      className={cn(
+        'h-full w-full px-6 pt-10',
+        reaching ? 'overflow-y-auto overscroll-contain' : 'overflow-hidden pointer-events-none',
+      )}
     >
       <FrontPageView
         paper={paper}

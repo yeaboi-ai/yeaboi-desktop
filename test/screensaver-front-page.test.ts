@@ -64,7 +64,14 @@ describe('the saver', () => {
   });
 
   it('takes no pointer events unless the paper is being reached into', () => {
-    expect(saver).toMatch(/reaching[\s\S]{0,140}pointer-events-none/);
+    expect(saver).toMatch(/reaching[\s\S]{0,200}pointer-events-none/);
+  });
+
+  it('scrolls only while reached into, and returns to the top on release', () => {
+    // Turning underneath a scrolled view reads as a broken page.
+    expect(saver).toContain('overflow-y-auto');
+    expect(saver).toMatch(/reaching \?[\s\S]{0,120}overflow-hidden/);
+    expect(saver).toMatch(/if \(!reaching\)[\s\S]{0,60}scrollTo/);
   });
 
   it('turns on regardless of where the pointer is resting', () => {

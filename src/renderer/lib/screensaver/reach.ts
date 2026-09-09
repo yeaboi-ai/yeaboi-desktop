@@ -83,9 +83,12 @@ export function reachStep(input: ReachInput, state: ReachState): ReachOutcome {
       return { reaching: state.reaching && input.mod, wakes: false };
 
     case 'pointermove':
-    case 'pointerdown': {
+    case 'pointerdown':
+    case 'wheel': {
       // The flag on the event, not the remembered one: a keyup lost to an app
-      // switch cannot hold the reach open past the next movement.
+      // switch cannot hold the reach open past the next movement. A wheel is
+      // here because the paper is taller than the window — reaching in to read
+      // the rest of it is the same gesture as reaching in to click.
       const reaching = state.reaching && input.mod;
       return { reaching, wakes: !reaching };
     }
@@ -98,7 +101,6 @@ export function reachStep(input: ReachInput, state: ReachState): ReachOutcome {
       return { reaching: state.reaching, wakes: !state.reaching };
 
     default:
-      // wheel. Nothing on the paper scrolls, so this is only ever a person.
       return { reaching: false, wakes: WAKING.has(input.type) };
   }
 }
@@ -112,6 +114,6 @@ export interface ReachHint {
 /** The hint chip's copy. ``modKey`` comes from ``modKeyName(platform())``. */
 export function reachHint(modKey: string, reaching: boolean): ReachHint {
   return reaching
-    ? { key: null, text: 'Click a story to open it' }
-    : { key: modKey, text: 'hold to click a story' };
+    ? { key: null, text: 'Scroll, or click a story to open it' }
+    : { key: modKey, text: 'hold to scroll or click a story' };
 }
