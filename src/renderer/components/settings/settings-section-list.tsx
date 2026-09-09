@@ -15,7 +15,6 @@ import {
   Palette,
   Share2,
   SlidersHorizontal,
-  SwatchBook,
 } from 'lucide-react';
 import { ALL_SETTINGS_TABS, SETTINGS_GROUPS } from '@/lib/yeaboi/settings-tabs';
 import { cn } from '@/lib/utils';
@@ -27,7 +26,6 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/settings/system': SlidersHorizontal,
   '/settings/appearance': Palette,
   '/settings/news': Newspaper,
-  '/settings/themes': SwatchBook,
   '/settings/duck': Bird,
   '/settings/music': Music,
 };

@@ -42,6 +42,7 @@ import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
 import { AllowedPathsRow } from '@/components/settings/allowed-paths-row';
+import { ThemesSection } from '@/components/settings/tabs/general/themes-section';
 import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
@@ -568,6 +569,12 @@ function AppearanceTab() {
         </div>
       </SettingsCard>
       <SettingsCard index={1}>
+        <SettingsSectionHeader title="Theme" subtitle="The palette this window wears" />
+        <div className="px-5 py-5">
+          <ThemesSection />
+        </div>
+      </SettingsCard>
+      <SettingsCard index={2}>
         <SettingsSectionHeader
           title="Screensaver"
           subtitle="What the window shows when you have been away"

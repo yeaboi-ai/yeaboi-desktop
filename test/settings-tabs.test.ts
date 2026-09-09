@@ -45,9 +45,24 @@ describe('settings tabs', () => {
     }
   });
 
-  it('themes is chrome, not an engine tab', () => {
-    expect(CHROME_TABS.map((t) => t.route)).toContain('/settings/themes');
+  it('themes is reached from Appearance, not the section list', () => {
+    // It stays a route — deep links and the editor still resolve — but the
+    // row is gone: the theme is chosen where the rest of this window's look is.
+    expect(CHROME_TABS.map((t) => t.route)).not.toContain('/settings/themes');
     expect(SETTINGS_TABS.map((t) => t.route)).not.toContain('/settings/themes');
+    expect(PATHS.has('/settings/themes')).toBe(true);
+    expect(ROUTES_TSX).toContain('/settings/themes');
+  });
+
+  it('the Appearance card is what keeps the themes page reachable', () => {
+    const card = readFileSync(
+      new URL(
+        '../src/renderer/components/settings/tabs/general/themes-section.tsx',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    expect(card).toContain('/settings/themes');
   });
 
   it('chrome tabs carry no engine sections', () => {

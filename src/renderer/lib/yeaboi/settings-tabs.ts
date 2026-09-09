@@ -26,11 +26,13 @@ export const SETTINGS_TABS: readonly SettingsTab[] = registry.settings_tabs;
  *
  *  They are ordinary routes, never settings_tabs entries: that block is held
  *  equal to the terminal's section list, and the terminal has no appearance,
- *  themes or desktop-duck section to match. */
+ *  themes or desktop-duck section to match.
+ *
+ *  Themes is a route but not a row here: it is reached from the Appearance
+ *  section, which is where the rest of this window's look is chosen. */
 export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/appearance', title: 'Appearance' },
   { route: '/settings/news', title: 'Front page' },
-  { route: '/settings/themes', title: 'Themes' },
   { route: '/settings/duck', title: 'Duck' },
   { route: '/settings/music', title: 'Player' },
 ];
