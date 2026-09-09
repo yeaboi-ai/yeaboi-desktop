@@ -17,6 +17,9 @@ import type { AIConfig } from './ai-controls';
 import { INVOLVEMENT_LEVELS, INVOLVEMENT_DEFAULT } from './ai-controls';
 import { useAuthFetch, getStoredOrgId } from '@/hooks/use-auth-fetch';
 import { PersonaThumbnail } from './persona-thumbnail';
+import { listVideoAvatars, type VideoAvatar } from '@/lib/api/video-avatars';
+import { publishAgentControl } from '@/lib/agent-control';
+import { useApiUrl } from '@/hooks/use-api-url';
 
 const PERSONAS = [
   {
@@ -85,9 +88,6 @@ const TECHNICAL_COMFORT_LEVELS = [
   },
 ];
 
-// Note: LANGUAGES / EMOTIONS / REALTIME_VOICES were retired when voice config
-// moved into the per-persona Character (video_avatar) bundle.
-
 interface PersonaRecommendation {
   persona: string;
   label: string;
@@ -135,6 +135,13 @@ export function AISettingsDrawer({
   const [personas, setPersonas] = useState<
     Array<{ id: string; slug: string; name: string; video_avatar_id?: string | null }>
   >([]);
+  const [videoAvatars, setVideoAvatars] = useState<VideoAvatar[]>([]);
+  const characterVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const sampleAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Busts the browser cache once per mount, so a regenerated /uploads/*.mp3
+  // at the same path plays the new voice rather than the stale one.
+  const [cacheBust] = useState<number>(() => Date.now());
+  const apiUrl = useApiUrl();
 
   const currentAssertiveness =
     ASSERTIVENESS_LEVELS.find((l) => l.value === aiConfig.assertiveness) ?? ASSERTIVENESS_LEVELS[1];
@@ -157,7 +164,84 @@ export function AISettingsDrawer({
         if (Array.isArray(data)) setPersonas(data);
       })
       .catch(() => {});
+    listVideoAvatars(authFetch)
+      .then(setVideoAvatars)
+      .catch(() => {});
   }, [open, orgId, ready, authFetch]);
+
+  useEffect(
+    () => () => {
+      sampleAudioRef.current?.pause();
+      sampleAudioRef.current = null;
+    },
+    [],
+  );
+
+  // The persona's character, and the per-session override that can replace it.
+  // Each persona has its own slot, so switching persona reveals that persona's
+  // override — or the Studio default when its slot is empty.
+  const activePersonaSlug = aiConfig.persona ?? 'default';
+  const activePersona = personas.find((p) => p.slug === activePersonaSlug);
+  const overrides = aiConfig.video_avatar_overrides ?? {};
+  const sessionOverride = overrides[activePersonaSlug] ?? null;
+  const activeCharacterId = sessionOverride ?? activePersona?.video_avatar_id ?? null;
+
+  // The backend serves previews and voice samples from its own origin; a
+  // Tavus CDN url is already absolute and passes through.
+  const mediaUrl = (url: string) => (url.startsWith('/') ? `${apiUrl}${url}` : url);
+
+  // The sample is the ElevenLabs voice the call actually uses. The video's own
+  // audio is Tavus's default voice, so the card plays muted under it.
+  function previewCharacter(id: string) {
+    sampleAudioRef.current?.pause();
+    sampleAudioRef.current = null;
+    characterVideoRefs.current.forEach((el, key) => {
+      try {
+        el.muted = true;
+        if (key === id) {
+          el.currentTime = 0;
+          el.loop = true;
+          void el.play().catch(() => {});
+        } else {
+          el.pause();
+          el.currentTime = 0;
+        }
+      } catch {
+        /* a card that has gone away needs nothing */
+      }
+    });
+    const avatar = videoAvatars.find((v) => v.id === id);
+    if (!avatar?.voice_sample_url) return;
+    const separator = avatar.voice_sample_url.includes('?') ? '&' : '?';
+    const audio = new Audio(`${mediaUrl(avatar.voice_sample_url)}${separator}t=${cacheBust}`);
+    sampleAudioRef.current = audio;
+    audio.addEventListener('ended', () => {
+      const el = characterVideoRefs.current.get(id);
+      if (el) {
+        el.pause();
+        el.loop = false;
+      }
+    });
+    void audio.play().catch(() => {});
+  }
+
+  function pickCharacter(characterId: string) {
+    previewCharacter(characterId);
+    if (activeCharacterId === characterId) return;
+    // Only the session override moves; Studio's global default is untouched.
+    onConfigChange({
+      video_avatar_overrides: { ...overrides, [activePersonaSlug]: characterId },
+    });
+    if (inCall) publishAgentControl({ action: 'swap_avatar' });
+  }
+
+  function resetCharacterOverride() {
+    if (!sessionOverride) return;
+    const next = { ...overrides };
+    delete next[activePersonaSlug];
+    onConfigChange({ video_avatar_overrides: next });
+    if (inCall) publishAgentControl({ action: 'swap_avatar' });
+  }
 
   // Esc closes the dock
   useEffect(() => {
@@ -283,7 +367,7 @@ export function AISettingsDrawer({
           </div>
 
           {/* Three-column layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 divide-x divide-white/[0.05] max-h-[440px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-white/[0.05] max-h-[440px]">
             {/* ── Column 1: Persona ── */}
             <section className="px-5 py-4 space-y-3 overflow-y-auto">
               <div className="flex items-center justify-between">
@@ -504,6 +588,76 @@ export function AISettingsDrawer({
                     : 'Wireframes are generated bespoke per screen — more visual variance.'}
                 </p>
               </div>
+            </section>
+
+            {/* ── Column 3: Character ── */}
+            <section className="px-5 py-4 space-y-3 overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.14em]">
+                  Character
+                </Label>
+                {sessionOverride && (
+                  <button
+                    type="button"
+                    onClick={resetCharacterOverride}
+                    className="text-[9px] uppercase tracking-wider text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+                    title="Use the persona's default from Studio"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground/50 leading-snug">
+                The face and voice {activePersona?.name ?? 'this persona'} wears, for this session
+                only. Studio holds the default.
+                {inCall && sessionOverride ? ' Rebuilding mid-call takes a few seconds.' : ''}
+              </p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {videoAvatars.map((va) => {
+                  const selected = activeCharacterId === va.id;
+                  return (
+                    <button
+                      key={va.id}
+                      onClick={() => pickCharacter(va.id)}
+                      title={va.name}
+                      aria-pressed={selected}
+                      className={`relative rounded-md overflow-hidden border aspect-square transition-all hover:scale-[1.03] ${
+                        selected
+                          ? 'border-foreground/70 ring-1 ring-foreground/30'
+                          : 'border-border/60 hover:border-border'
+                      }`}
+                    >
+                      {va.preview_url ? (
+                        <video
+                          ref={(el) => {
+                            if (el) characterVideoRefs.current.set(va.id, el);
+                            else characterVideoRefs.current.delete(va.id);
+                          }}
+                          src={mediaUrl(va.preview_url)}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover bg-foreground/[0.05]"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-foreground/[0.05] text-muted-foreground/40 text-[9px]">
+                          No preview
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 py-0.5">
+                        <span className="text-[9px] text-white font-medium block truncate leading-tight">
+                          {va.name}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {videoAvatars.length === 0 && (
+                <p className="text-[10px] text-muted-foreground/50">
+                  No characters yet. Studio is where they are made.
+                </p>
+              )}
             </section>
           </div>
         </div>

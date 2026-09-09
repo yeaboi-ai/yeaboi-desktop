@@ -11,6 +11,7 @@ import { APP_ROUTES, DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import { isSoloOnlyRoute } from '@shared/audience';
 import { useAudience } from '@/components/providers/audience-provider';
 import GlobalBoardPage from '@/pages/board-page';
+import StudioPage from '@/pages/studio/studio-page';
 import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
@@ -186,6 +187,8 @@ const PLANNING_SERVED = new Set([
   '/recordings/:id',
   '/recording/:token',
   '/clip/:token',
+  '/studio',
+  '/studio/:area',
 ]);
 
 /** A page only the Solo world owns. The guard is on the element, not the route
@@ -246,6 +249,8 @@ export const router = createHashRouter([
       { path: '/projects/:id/sessions/:sessionId', element: <SessionPage /> },
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
+      { path: '/studio', element: <StudioPage /> },
+      { path: '/studio/:area', element: <StudioPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
       { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },
       { path: '/settings/themes', element: <ThemesSettingsPage /> },

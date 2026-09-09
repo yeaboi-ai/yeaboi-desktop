@@ -61,6 +61,7 @@ export const ROUTE_ICONS: Record<string, RailLucideName> = {
   '/privacy': 'Lock',
   '/feedback': 'MessageSquareText',
   '/board': 'SquareKanban',
+  '/studio': 'Wand',
   '/music': 'Radio',
   '/settings/music': 'Music',
   '/settings/appearance': 'Palette',

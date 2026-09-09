@@ -292,6 +292,16 @@
       "title": "Ticket"
     },
     {
+      "path": "/studio",
+      "capability": null,
+      "title": "Studio"
+    },
+    {
+      "path": "/studio/:area",
+      "capability": null,
+      "title": "Studio \u00b7 Section"
+    },
+    {
       "path": "/settings",
       "capability": null,
       "title": "Settings"

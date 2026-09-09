@@ -33,6 +33,11 @@ export const PROJECTS_HEADER_LINKS: readonly PageLink[] = [
     label: 'All tickets',
     fact: 'Every open ticket across your projects, on one board.',
   },
+  {
+    href: '/studio',
+    label: 'Studio',
+    fact: 'The personas, blueprint sections and ticket shapes a session is built from.',
+  },
 ];
 
 /** Reached from the foot of Sessions, and lit as Sessions on the rail. */
@@ -43,7 +48,7 @@ export const SESSIONS_FOOT_LINKS: readonly PageLink[] = [
 ];
 
 const SETTINGS_PREFIXES = ['/settings', '/setup'];
-const PROJECTS_PREFIXES = ['/projects', '/board', '/tickets', '/agents/projects'];
+const PROJECTS_PREFIXES = ['/projects', '/board', '/tickets', '/studio', '/agents/projects'];
 const SESSIONS_PREFIXES = [
   '/sessions',
   '/team',
