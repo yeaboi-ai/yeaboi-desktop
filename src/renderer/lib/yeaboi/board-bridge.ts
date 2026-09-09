@@ -146,6 +146,28 @@ export async function previewImport(
   return preview;
 }
 
+/** Send a task list to the board's own commit endpoint — the one code path
+ *  that gives cards their waves, labels and friendly ids. Shared with the
+ *  session's completion wizard, which commits the list it previewed.
+ *  Returns the count the board reports, falling back to what was sent. */
+export async function commitTasks<T>(
+  authFetch: AuthFetch,
+  projectId: string,
+  tasks: readonly T[],
+): Promise<number> {
+  const response = await authFetch(`/api/projects/${projectId}/stories/commit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tasks }),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(detail || `commit failed (${response.status})`);
+  }
+  const body = (await response.json().catch(() => ({}))) as { task_count?: number };
+  return body.task_count ?? tasks.length;
+}
+
 /** Run the import: create the new cards, update the matched ones. */
 export async function runImport(
   authFetch: AuthFetch,
@@ -154,14 +176,11 @@ export async function runImport(
 ): Promise<ImportSummary> {
   let created = 0;
   if (preview.create.length) {
-    const response = await authFetch(`/api/projects/${projectId}/stories/commit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tasks: preview.create.map((row) => row.task) }),
-    });
-    if (!response.ok) throw new Error(`commit failed (${response.status})`);
-    const body = (await response.json()) as { task_count?: number };
-    created = body.task_count ?? preview.create.length;
+    created = await commitTasks(
+      authFetch,
+      projectId,
+      preview.create.map((row) => row.task),
+    );
   }
   let updated = 0;
   for (const row of preview.update) {

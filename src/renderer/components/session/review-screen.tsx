@@ -1,7 +1,21 @@
 'use client';
 
-import { useRef } from 'react';
-import { GeneratePlanDialog } from '@/components/projects/generate-plan-dialog';
+// Session wrap-up: the wizard that turns the blueprint the session built into
+// tickets — fill the gaps, choose how much detail, preview what will be made,
+// then commit it to the board.
+//
+// The wizard owns the whole surface. This is only the commit handler and the
+// two callbacks it needs; the post-commit summary lives on
+// /projects/:id/sessions/:sessionId/completed.
+//
+// The blueprint page keeps its own Generate dialog, which runs the yeaboi
+// planning engine over a snapshot. That is the path without a session; this is
+// the path with one.
+
+import { useAuthFetch } from '@/hooks/use-auth-fetch';
+import { commitTasks } from '@/lib/yeaboi/board-bridge';
+import { CompletionWizard, type WizardTask } from './completion-wizard';
+import { clearCachedStories } from './completion-wizard-helpers';
 
 interface ReviewScreenProps {
   projectId: string;
@@ -10,27 +24,22 @@ interface ReviewScreenProps {
   onCancel?: () => void;
 }
 
-/**
- * Session wrap-up. The blueprint the session built is handed to the yeaboi
- * planning engine (the same Generate dialog the blueprint page uses): the
- * plan is generated, recorded on the iteration, and its stories land on the
- * board. The old completion wizard's own story generator retired with it.
- */
-export function ReviewScreen({ projectId, onComplete, onCancel }: ReviewScreenProps) {
-  // The dialog closes itself after a successful run — don't let that close
-  // read as a cancel.
-  const completed = useRef(false);
+export function ReviewScreen({ projectId, sessionId, onComplete, onCancel }: ReviewScreenProps) {
+  const { authFetch } = useAuthFetch();
+
+  // Throws on failure so the wizard's own error state shows it, with Try again.
+  const handleCommit = async (tasks: WizardTask[]) => {
+    await commitTasks(authFetch, projectId, tasks);
+    clearCachedStories(sessionId);
+    onComplete();
+  };
 
   return (
-    <GeneratePlanDialog
+    <CompletionWizard
       projectId={projectId}
-      onGenerated={() => {
-        completed.current = true;
-        onComplete();
-      }}
-      onClose={() => {
-        if (!completed.current) onCancel?.();
-      }}
+      sessionId={sessionId}
+      onCancel={() => onCancel?.()}
+      onCommit={handleCommit}
     />
   );
 }
