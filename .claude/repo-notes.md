@@ -12,6 +12,13 @@ never a library.
 **Nothing here builds Python, and nothing here pins a yeaboi version.** An installer wraps a wheel
 that is already on PyPI, named at release time.
 
+## `make dev` writes to the sibling checkout
+
+The preflight (`scripts/dev-preflight.sh`) does not just check the yeaboi.ai checkout the sidecar
+runs from — it heals a stray `core.bare`, fast-forwards it when it is behind, and restores a
+regenerated `uv.lock` if that is the only thing blocking the merge. Anything else uncommitted there
+stops `make dev` instead. `YEABOI_DEV_STALE_OK=1` skips all of it.
+
 ## Commit
 
 No pre-commit hooks here — commit normally. Trailer:
