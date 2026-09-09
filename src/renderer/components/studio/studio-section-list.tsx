@@ -1,49 +1,36 @@
 'use client';
 
-// The settings section list: a column of rows in two groups, the sections that
-// configure the engine and the ones that configure this window. Every row is a
-// route, so each is a link; Up and Down move through the whole list.
+// The Studio's section list: a column of rows in four groups, one per area.
+// Every row is a route, so each is a link; Up and Down move through the whole
+// list. The same shape as the settings list next door — Studio and Settings are
+// the two configuration surfaces and they wear one frame.
 
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router';
-import {
-  AudioLines,
-  Bird,
-  Blocks,
-  Brush,
-  Cpu,
-  KeyRound,
-  Music,
-  Newspaper,
-  Palette,
-  Share2,
-  SlidersHorizontal,
-  SwatchBook,
-  UserRound,
-} from 'lucide-react';
-import { ALL_SETTINGS_TABS, SETTINGS_GROUPS } from '@/lib/yeaboi/settings-tabs';
+import { Bot, FileText, Layers, Mic, Sparkles, Ticket } from 'lucide-react';
+import { ALL_STUDIO_ROWS, STUDIO_GROUPS, type StudioItem } from '@/lib/yeaboi/studio-areas';
 import { cn } from '@/lib/utils';
 
-const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  '/settings/credentials': KeyRound,
-  '/settings/connections': Blocks,
-  '/settings/sharing': Share2,
-  '/settings/system': SlidersHorizontal,
-  '/settings/profile': UserRound,
-  '/settings/models': Cpu,
-  '/settings/voice': AudioLines,
-  '/settings/brand': Brush,
-  '/settings/appearance': Palette,
-  '/settings/news': Newspaper,
-  '/settings/themes': SwatchBook,
-  '/settings/duck': Bird,
-  '/settings/music': Music,
+const ICONS: Record<StudioItem, React.ComponentType<{ className?: string }>> = {
+  'blueprint:sections': Layers,
+  'blueprint:templates': FileText,
+  'planning:personas': Mic,
+  'agent:harness': Bot,
+  'tickets:templates': Ticket,
+  'tickets:generation': Sparkles,
 };
 
-export function SettingsSectionList({ active, className }: { active: string; className?: string }) {
+export function StudioSectionList({
+  active,
+  className,
+}: {
+  /** The item the page is showing, used to light the row. */
+  active: StudioItem;
+  className?: string;
+}) {
   const listRef = React.useRef<HTMLElement>(null);
   const navigate = useNavigate();
-  const rows = ALL_SETTINGS_TABS;
+  const rows = ALL_STUDIO_ROWS;
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLAnchorElement>, index: number) => {
     if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
@@ -54,31 +41,32 @@ export function SettingsSectionList({ active, className }: { active: string; cla
     if (event.key === 'Home') next = 0;
     if (event.key === 'End') next = rows.length - 1;
     // The table is a non-empty literal; the index is already wrapped.
-    void navigate(rows[next]!.route);
+    void navigate(`/studio/${rows[next]!.segment}`);
     listRef.current?.querySelectorAll<HTMLAnchorElement>('a[data-section]')[next]?.focus();
   };
 
   let index = -1;
   return (
-    <nav ref={listRef} aria-label="Settings sections" className={className}>
-      {SETTINGS_GROUPS.map((group, groupIndex) => (
+    <nav ref={listRef} aria-label="Studio sections" className={className}>
+      {STUDIO_GROUPS.map((group, groupIndex) => (
         <div
-          key={group.key}
+          key={group.id}
           className={cn(groupIndex > 0 && 'md:mt-5', 'flex flex-wrap gap-0.5 md:flex-col')}
         >
           <p className="hidden md:block px-2 mb-1 text-[11px] font-body text-muted-foreground/70">
-            {group.title}
+            {group.label}
           </p>
-          {group.tabs.map((t) => {
+          {group.rows.map((row) => {
             index += 1;
             const rowIndex = index;
-            const Icon = ICONS[t.route];
-            const isActive = active === t.route || active.startsWith(`${t.route}/`);
+            const Icon = ICONS[row.item];
+            const isActive = active === row.item;
             return (
               <Link
-                key={t.route}
-                to={t.route}
-                data-section={t.route}
+                key={row.item}
+                to={`/studio/${row.segment}`}
+                data-section={row.segment}
+                title={row.description}
                 onKeyDown={(e) => handleKeyDown(e, rowIndex)}
                 aria-current={isActive ? 'page' : undefined}
                 className={cn(
@@ -90,7 +78,7 @@ export function SettingsSectionList({ active, className }: { active: string; cla
                 )}
               >
                 {Icon && <Icon className="size-3.5 shrink-0" aria-hidden="true" />}
-                {t.title}
+                {row.label}
               </Link>
             );
           })}

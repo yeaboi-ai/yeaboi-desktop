@@ -9,6 +9,7 @@ import {
   CHROME_TABS,
   SETTINGS_GROUPS,
   SETTINGS_TABS,
+  WORKSPACE_TABS,
 } from '../src/renderer/lib/yeaboi/settings-tabs';
 import registry from '../src/renderer/lib/yeaboi/routes.json';
 import { readFileSync } from 'node:fs';
@@ -52,7 +53,7 @@ describe('settings tabs', () => {
 
   it('chrome tabs carry no engine sections', () => {
     const engineRoutes = new Set(SETTINGS_TABS.map((t) => t.route));
-    for (const tab of CHROME_TABS) {
+    for (const tab of [...CHROME_TABS, ...WORKSPACE_TABS]) {
       expect(engineRoutes.has(tab.route)).toBe(false);
     }
   });
@@ -60,13 +61,14 @@ describe('settings tabs', () => {
 
 describe('settings groups', () => {
   it('flatten to the list, engine first', () => {
-    expect(SETTINGS_GROUPS.map((g) => g.key)).toEqual(['engine', 'window']);
+    expect(SETTINGS_GROUPS.map((g) => g.key)).toEqual(['engine', 'workspace', 'window']);
     expect(SETTINGS_GROUPS.flatMap((g) => g.tabs)).toEqual(ALL_SETTINGS_TABS);
   });
 
-  it('hold the engine sections in one group and the window sections in the other', () => {
-    const [engine, window] = SETTINGS_GROUPS;
+  it('hold each set of sections in its own group', () => {
+    const [engine, workspace, window] = SETTINGS_GROUPS;
     expect(engine!.tabs.map((t) => t.route)).toEqual(SETTINGS_TABS.map((t) => t.route));
+    expect(workspace!.tabs).toEqual(WORKSPACE_TABS);
     expect(window!.tabs).toEqual(CHROME_TABS);
   });
 

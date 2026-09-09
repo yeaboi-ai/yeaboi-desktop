@@ -35,7 +35,18 @@ export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/music', title: 'Player' },
 ];
 
-export type SettingsGroupKey = 'engine' | 'window';
+/** Sections that configure the planning workspace — the personas, the voice
+ *  they speak with, the brand the app wears. They are ordinary routes for the
+ *  same reason CHROME_TABS are: settings_tabs is held equal to the terminal's
+ *  section list, and the terminal has none of these. */
+export const WORKSPACE_TABS: readonly TabLink[] = [
+  { route: '/settings/profile', title: 'Profile' },
+  { route: '/settings/models', title: 'Models' },
+  { route: '/settings/voice', title: 'Voice' },
+  { route: '/settings/brand', title: 'Brand' },
+];
+
+export type SettingsGroupKey = 'engine' | 'window' | 'workspace';
 
 export interface SettingsGroup {
   key: SettingsGroupKey;
@@ -50,6 +61,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
     title: 'Engine',
     tabs: SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })),
   },
+  { key: 'workspace', title: 'Workspace', tabs: WORKSPACE_TABS },
   { key: 'window', title: 'This window', tabs: CHROME_TABS },
 ];
 

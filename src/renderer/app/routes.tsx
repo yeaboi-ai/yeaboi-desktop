@@ -11,6 +11,11 @@ import { APP_ROUTES, DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 import { isSoloOnlyRoute } from '@shared/audience';
 import { useAudience } from '@/components/providers/audience-provider';
 import GlobalBoardPage from '@/pages/board-page';
+import StudioPage from '@/pages/studio/studio-page';
+import ProfileSettingsPage from '@/pages/settings/profile-page';
+import ModelsSettingsPage from '@/pages/settings/models-page';
+import VoiceSettingsPage from '@/pages/settings/voice-page';
+import BrandSettingsPage from '@/pages/settings/brand-page';
 import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
@@ -181,11 +186,17 @@ const PLANNING_SERVED = new Set([
   '/board',
   '/tickets/:id',
   '/settings',
+  '/settings/profile',
+  '/settings/models',
+  '/settings/voice',
+  '/settings/brand',
   '/settings/themes',
   '/settings/themes/edit',
   '/recordings/:id',
   '/recording/:token',
   '/clip/:token',
+  '/studio',
+  '/studio/:area',
 ]);
 
 /** A page only the Solo world owns. The guard is on the element, not the route
@@ -246,8 +257,14 @@ export const router = createHashRouter([
       { path: '/projects/:id/sessions/:sessionId', element: <SessionPage /> },
       { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
+      { path: '/studio', element: <StudioPage /> },
+      { path: '/studio/:area', element: <StudioPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
       { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },
+      { path: '/settings/profile', element: <ProfileSettingsPage /> },
+      { path: '/settings/models', element: <ModelsSettingsPage /> },
+      { path: '/settings/voice', element: <VoiceSettingsPage /> },
+      { path: '/settings/brand', element: <BrandSettingsPage /> },
       { path: '/settings/themes', element: <ThemesSettingsPage /> },
       { path: '/settings/themes/edit', element: <ThemeEditorPage /> },
       { path: '/recordings/:id', element: <RecordingPage /> },
