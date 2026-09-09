@@ -2,6 +2,26 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.6.0",
+      "date": "2026-09-09",
+      "headline": "Solo becomes the center of the app",
+      "summary": "Agents and Solo merge into a single unified world. The app's interface simplifies by hiding world-switching menus when there's nothing to switch to, and your settings migrate automatically.",
+      "highlights": [
+        {
+          "text": "No more Agents world — Solo consolidates all capabilities",
+          "areas": ["shell"]
+        },
+        {
+          "text": "World-switching menus hide when there's only one option",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Your previous arrangement and projects migrate automatically",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.5.0",
       "date": "2026-09-07",
       "headline": "Descriptions guide your project from the start",
