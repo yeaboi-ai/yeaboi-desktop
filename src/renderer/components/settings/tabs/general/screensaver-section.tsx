@@ -14,7 +14,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Play } from 'lucide-react';
 import { ScreensaverCanvas } from '@/components/screensaver/screensaver-canvas';
-import { PersonaPicker } from '@/components/settings/persona-picker';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { logger } from '@/lib/logger';
 import { getAmbience, setAmbience } from '@/lib/yeaboi/ambience';
@@ -151,14 +150,6 @@ export function ScreensaverSection() {
           The backend is not up, so this cannot be saved yet.
         </p>
       )}
-
-      <p className="pt-4 text-[10px] font-body font-medium tracking-[0.1em] uppercase text-muted-foreground">
-        Persona
-      </p>
-      <p className="text-[11px] text-muted-foreground font-body leading-relaxed">
-        Who the duck is here and on the desktop. The doors' ducks change on each visit to the home.
-      </p>
-      <PersonaPicker className="pt-1" />
     </div>
   );
 }

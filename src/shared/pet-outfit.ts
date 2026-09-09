@@ -12,14 +12,18 @@ const BODY_PERSONAS: readonly PersonaId[] = ['martial'];
 export const PET_OUTFIT_RISE = 150 / 509;
 
 export interface PetOutfit {
-  persona: PersonaId;
+  /** null is the plain duck: every layer empty. */
+  persona: PersonaId | null;
   /** Relative to the pet's index.html. */
-  top: string;
+  top: string | null;
   body: string | null;
   rise: number;
 }
 
-export function petOutfit(persona: PersonaId): PetOutfit {
+export function petOutfit(persona: PersonaId | null): PetOutfit {
+  // Sent rather than omitted, so taking a costume off actually undresses the
+  // duck — the pet window only re-dresses when it is handed an outfit.
+  if (persona === null) return { persona: null, top: null, body: null, rise: 0 };
   return {
     persona,
     top: `assets/persona-${persona}.png`,

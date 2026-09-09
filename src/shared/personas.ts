@@ -35,10 +35,14 @@ export const PERSONAS: readonly Persona[] = [
   { id: 'wizard', name: 'Wizard', blurb: 'A pointed hat and a wand.' },
 ];
 
-/** The setting: one persona, or let the duck change on its own. */
+/** The setting: no costume, one persona, or let the duck change on its own. */
 export const ROTATE = 'rotate';
-export type PersonaChoice = PersonaId | typeof ROTATE;
-export const DEFAULT_PERSONA: PersonaChoice = ROTATE;
+/** The duck as drawn: no hat, no props. */
+export const PLAIN = 'plain';
+export type PersonaChoice = PersonaId | typeof ROTATE | typeof PLAIN;
+/** The duck himself. A costume is something you choose, not something you
+ *  arrive wearing. */
+export const DEFAULT_PERSONA: PersonaChoice = PLAIN;
 
 /** How long the pet and the screensaver keep one persona while rotating. */
 export const ROTATE_MINUTES = 30;
@@ -49,7 +53,7 @@ export function isPersonaId(value: unknown): value is PersonaId {
 }
 
 export function isPersonaChoice(value: unknown): value is PersonaChoice {
-  return value === ROTATE || isPersonaId(value);
+  return value === ROTATE || value === PLAIN || isPersonaId(value);
 }
 
 export function personaName(id: PersonaId): string {
@@ -63,6 +67,8 @@ export function personaAt(now: number, periodMs = ROTATE_MS): PersonaId {
   return PERSONA_IDS[slot % PERSONA_IDS.length]!;
 }
 
-export function resolvePersona(choice: PersonaChoice, now: number): PersonaId {
+/** The costume to wear now, or null for the plain duck. */
+export function resolvePersona(choice: PersonaChoice, now: number): PersonaId | null {
+  if (choice === PLAIN) return null;
   return choice === ROTATE ? personaAt(now) : choice;
 }

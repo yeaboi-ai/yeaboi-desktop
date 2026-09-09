@@ -52,7 +52,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
     title: 'Engine',
     tabs: SETTINGS_TABS.map((t) => ({ route: t.route, title: t.title })),
   },
-  { key: 'window', title: 'This window', tabs: CHROME_TABS },
+  { key: 'window', title: 'Look & feel', tabs: CHROME_TABS },
 ];
 
 /** Every section on the settings page, in list order. */

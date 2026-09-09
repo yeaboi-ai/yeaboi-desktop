@@ -27,7 +27,7 @@ export function dressed(
   choice: PersonaChoice,
 ): void {
   const persona = resolvePersona(choice, Date.now());
-  scene.setArt({ ...art, outfits: wardrobe[persona] });
+  scene.setArt({ ...art, outfits: persona ? wardrobe[persona] : undefined });
   if (scene instanceof DuckYard) {
     scene.setWardrobe(choice === ROTATE ? Object.values(wardrobe) : null);
   }

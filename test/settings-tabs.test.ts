@@ -73,6 +73,27 @@ describe('settings tabs', () => {
   });
 });
 
+describe('one setting, one place', () => {
+  const read = (...parts: string[]) =>
+    readFileSync(new URL(`../${parts.join('/')}`, import.meta.url), 'utf8');
+
+  it('the persona picker lives with the duck and nowhere else', () => {
+    // It was on Appearance as well, which is two places to change one thing.
+    const duck = read('src', 'renderer', 'components', 'settings', 'tabs', 'duck-tab.tsx');
+    const appearance = read(
+      'src',
+      'renderer',
+      'components',
+      'settings',
+      'tabs',
+      'general',
+      'screensaver-section.tsx',
+    );
+    expect(duck).toContain('<PersonaPicker');
+    expect(appearance).not.toContain('PersonaPicker');
+  });
+});
+
 describe('settings groups', () => {
   it('flatten to the list, engine first', () => {
     expect(SETTINGS_GROUPS.map((g) => g.key)).toEqual(['engine', 'window']);

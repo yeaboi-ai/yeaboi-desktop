@@ -6,6 +6,7 @@ import {
   DEFAULT_PERSONA,
   PERSONAS,
   PERSONA_IDS,
+  PLAIN,
   ROTATE,
   ROTATE_MINUTES,
   isPersonaChoice,
@@ -40,14 +41,27 @@ describe('the roster', () => {
     expect(PERSONA_LAYERS.martial).toEqual(['body', 'top']);
   });
 
-  it('recognises an id and the rotate choice, and nothing else', () => {
+  it('recognises an id, rotate and plain, and nothing else', () => {
     expect(isPersonaId('chef')).toBe(true);
     expect(isPersonaId('rotate')).toBe(false);
+    // plain is a choice, never a costume: nothing can be dressed in it.
+    expect(isPersonaId('plain')).toBe(false);
     expect(isPersonaChoice('rotate')).toBe(true);
+    expect(isPersonaChoice('plain')).toBe(true);
     expect(isPersonaChoice('chef')).toBe(true);
     expect(isPersonaChoice('pirate')).toBe(false);
     expect(isPersonaChoice(3)).toBe(false);
-    expect(DEFAULT_PERSONA).toBe(ROTATE);
+  });
+
+  it('starts as the duck himself', () => {
+    // A costume is something you choose, not something you arrive wearing.
+    expect(DEFAULT_PERSONA).toBe(PLAIN);
+  });
+
+  it('resolves plain to no costume at all', () => {
+    expect(resolvePersona(PLAIN, 0)).toBeNull();
+    expect(resolvePersona('chef', 0)).toBe('chef');
+    expect(resolvePersona(ROTATE, 0)).not.toBeNull();
   });
 });
 
