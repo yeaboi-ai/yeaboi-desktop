@@ -41,6 +41,7 @@ import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
+import { AllowedPathsRow } from '@/components/settings/allowed-paths-row';
 import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
@@ -497,106 +498,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
 
   // Every tab in the contract is handled above.
   return null;
-}
-
-function AllowedPathsRow({
-  field,
-  onSaved,
-}: {
-  field: SettingField;
-  onSaved: (message: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [paths, setPaths] = useState<string[]>([]);
-  const [next, setNext] = useState('');
-
-  const begin = () => {
-    setPaths(field.value ? field.value.split(',').filter(Boolean) : []);
-    setOpen(true);
-  };
-
-  const add = (raw: string) => {
-    const value = raw.trim();
-    if (value && !paths.includes(value)) setPaths((current) => [...current, value]);
-  };
-
-  if (!open) {
-    return (
-      <SettingRow label={field.label}>
-        <RowValue value={field.value} fallback="none — sandboxed to the data directory" />
-        <Button variant="ghost" size="sm" onClick={begin}>
-          Edit
-        </Button>
-      </SettingRow>
-    );
-  }
-
-  return (
-    <SettingRow label={field.label}>
-      <div className="w-full space-y-1.5">
-        {paths.map((p) => (
-          <div key={p} className="flex items-center gap-2">
-            <code className="font-mono text-[12px] text-foreground">{p}</code>
-            <button
-              type="button"
-              aria-label={`Remove ${p}`}
-              onClick={() => setPaths(paths.filter((x) => x !== p))}
-              className="text-[12px] text-muted-foreground/60 hover:text-destructive"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            add(next);
-            setNext('');
-          }}
-        >
-          <input
-            value={next}
-            aria-label="Path to allow"
-            placeholder="/path/to/allow"
-            onChange={(event) => setNext(event.target.value)}
-            className={inputClass}
-          />
-          <Button variant="outline" size="sm" type="submit">
-            Add
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={() =>
-              void window.yeaboi
-                .pickDirectory({ title: 'Allow a folder' })
-                .then((picked) => add(picked.path))
-            }
-          >
-            Choose folder…
-          </Button>
-        </form>
-        <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={() => {
-              void saveAllowedPaths(paths).then(
-                (r) => (setOpen(false), onSaved(r.message)),
-                (e: Error) => onSaved(e.message),
-              );
-            }}
-          >
-            Save
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </SettingRow>
-  );
 }
 
 /** Whether dictation can run here, and the way in or out.

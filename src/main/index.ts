@@ -19,6 +19,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { BrowserWindow, app, dialog, ipcMain, nativeImage, session, shell } from 'electron';
+import type { OpenDialogOptions } from 'electron';
 import { AppMenu } from './menu';
 // The 1024px master of the committed icon set. macOS reads a packaged app's
 // icon from the bundle, so this is what dresses the dev run's Dock and what
@@ -35,6 +36,7 @@ import { LivekitSidecar } from './livekit';
 import { Notifier } from './notify';
 import { Pet, type PetNotice } from './pet';
 import { clampBanner, noticeTitle } from '../shared/notices';
+import { clampPickOptions, pickProperties } from '../shared/pick-paths';
 import type { PetPrefs } from '../shared/pet-prefs';
 import { UPDATE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS, shouldAutoCheck } from '../shared/update';
 import { installPermissionHandlers, navigationAllowed } from './permissions';
@@ -423,17 +425,18 @@ if (!gotLock) {
     // A folder the user points at, for the settings paths. The renderer never
     // gets to browse — it asks, the OS asks the person, and one chosen path
     // comes back. Cancelling returns '' rather than throwing.
-    ipcMain.handle('dialog:pick-directory', async (_event, options: unknown) => {
-      const { title, defaultPath } = (options ?? {}) as { title?: string; defaultPath?: string };
+    ipcMain.handle('dialog:pick-paths', async (_event, options: unknown) => {
+      const picked = clampPickOptions(options);
       const opts = {
-        title,
-        defaultPath,
-        properties: ['openDirectory', 'createDirectory'] as const,
+        title: picked.title,
+        defaultPath: picked.defaultPath,
+        properties: pickProperties(picked.kind, picked.multi) as OpenDialogOptions['properties'],
+        filters: picked.filters.length ? picked.filters : undefined,
       };
       const result = await (mainWindow
-        ? dialog.showOpenDialog(mainWindow, { ...opts, properties: [...opts.properties] })
-        : dialog.showOpenDialog({ ...opts, properties: [...opts.properties] }));
-      return { path: result.canceled ? '' : (result.filePaths[0] ?? '') };
+        ? dialog.showOpenDialog(mainWindow, opts)
+        : dialog.showOpenDialog(opts));
+      return { paths: result.canceled ? [] : result.filePaths };
     });
 
     // Show a file in Finder/Explorer. The browser path's issue body tells the
