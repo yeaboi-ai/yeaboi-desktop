@@ -7,16 +7,26 @@
 
 export const SCENE_STYLES = ['duck-yard', 'constellation', 'ricochet', 'aurora'] as const;
 
-export type SceneStyle = (typeof SCENE_STYLES)[number];
+/** Styles drawn in React rather than on the canvas — the front page is the
+ *  news surface itself, not a scene a canvas could paint. */
+export const DOM_STYLES = ['front-page'] as const;
 
-/** Everything the preference may hold, including the two that are not scenes. */
-export type SaverStyle = SceneStyle | 'shuffle' | 'off';
+/** Every style that draws something, canvas and DOM alike. */
+export const DRAWABLE_STYLES = [...SCENE_STYLES, ...DOM_STYLES] as const;
+
+export type SceneStyle = (typeof SCENE_STYLES)[number];
+export type DomStyle = (typeof DOM_STYLES)[number];
+export type DrawableStyle = SceneStyle | DomStyle;
+
+/** Everything the preference may hold, including the two that draw nothing. */
+export type SaverStyle = DrawableStyle | 'shuffle' | 'off';
 
 export const DEFAULT_SAVER_STYLE: SceneStyle = 'duck-yard';
 
 /** Fallback names, used until the backend serves its own catalogue. */
 export const STYLE_NAMES: Record<SaverStyle, string> = {
   'duck-yard': 'Duck Yard',
+  'front-page': 'Front Page',
   constellation: 'Constellation',
   ricochet: 'Ricochet',
   aurora: 'Aurora',
@@ -26,6 +36,7 @@ export const STYLE_NAMES: Record<SaverStyle, string> = {
 
 export const STYLE_BLURBS: Record<SaverStyle, string> = {
   'duck-yard': 'A yard of ducks adrift, ricocheting off each other.',
+  'front-page': 'The paper, turning itself.',
   constellation: 'A duck adrift in a field of stars.',
   ricochet: 'The duck, loose in the window, with its name in tow.',
   aurora: 'The duck at rest, under slow fields of colour.',
@@ -37,6 +48,11 @@ export function isSaverStyle(value: string): value is SaverStyle {
   return value in STYLE_NAMES;
 }
 
+/** Whether this style is drawn in React instead of on the canvas. */
+export function isDomStyle(value: string): value is DomStyle {
+  return (DOM_STYLES as readonly string[]).includes(value);
+}
+
 /**
  * The scene to draw for a stored preference.
  *
@@ -45,13 +61,13 @@ export function isSaverStyle(value: string): value is SaverStyle {
  * and with future versions, and a style this build has not heard of is a
  * reason to draw the default, not to draw nothing.
  */
-export function resolveScene(stored: string, pick: () => number): SceneStyle {
+export function resolveScene(stored: string, pick: () => number): DrawableStyle {
   if (stored === 'shuffle') {
-    return SCENE_STYLES[
-      Math.min(SCENE_STYLES.length - 1, Math.floor(pick() * SCENE_STYLES.length))
+    return DRAWABLE_STYLES[
+      Math.min(DRAWABLE_STYLES.length - 1, Math.floor(pick() * DRAWABLE_STYLES.length))
     ];
   }
-  return (SCENE_STYLES as readonly string[]).includes(stored)
-    ? (stored as SceneStyle)
+  return (DRAWABLE_STYLES as readonly string[]).includes(stored)
+    ? (stored as DrawableStyle)
     : DEFAULT_SAVER_STYLE;
 }

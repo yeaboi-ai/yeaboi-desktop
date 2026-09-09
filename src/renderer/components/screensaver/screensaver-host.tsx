@@ -18,8 +18,14 @@ import { getAmbience } from '@/lib/yeaboi/ambience';
 import { IdleController, DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
 import { onPreviewRequest, onSaverPreferenceChange } from '@/lib/screensaver/preview';
 import { isSuppressed, onSuppressionChange } from '@/lib/screensaver/suppression';
-import { DEFAULT_SAVER_STYLE, resolveScene, type SceneStyle } from '@/lib/screensaver/styles';
+import {
+  DEFAULT_SAVER_STYLE,
+  type DrawableStyle,
+  isDomStyle,
+  resolveScene,
+} from '@/lib/screensaver/styles';
 import { ScreensaverCanvas } from './screensaver-canvas';
+import { ScreensaverScene } from './screensaver-scene';
 
 /** How often idleness is re-checked. Coarse on purpose — this is a 5-minute clock. */
 const TICK_MS = 1000;
@@ -31,7 +37,7 @@ export function ScreensaverHost() {
   const backend = useYeaboiBackend();
   const reduced = useReducedMotion();
   const [showing, setShowing] = useState(false);
-  const [scene, setScene] = useState<SceneStyle>(DEFAULT_SAVER_STYLE);
+  const [scene, setScene] = useState<DrawableStyle>(DEFAULT_SAVER_STYLE);
   const controllerRef = useRef(new IdleController(DEFAULT_IDLE_SECONDS, performance.now()));
   // Read inside listeners that must not be re-bound on every preference change.
   const preferenceRef = useRef<string>(DEFAULT_SAVER_STYLE);
@@ -157,7 +163,11 @@ export function ScreensaverHost() {
       className="fixed inset-0 z-[9998] cursor-none bg-background"
       data-screensaver={scene}
     >
-      <ScreensaverCanvas style={scene} still={reduced} className="h-full w-full" />
+      {isDomStyle(scene) ? (
+        <ScreensaverScene style={scene} still={reduced} />
+      ) : (
+        <ScreensaverCanvas style={scene} still={reduced} className="h-full w-full" />
+      )}
     </div>
   );
 }

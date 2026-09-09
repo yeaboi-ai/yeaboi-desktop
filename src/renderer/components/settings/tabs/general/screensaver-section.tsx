@@ -22,9 +22,11 @@ import { previewScreensaver, saverPreferenceChanged } from '@/lib/screensaver/pr
 import { DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
 import {
   DEFAULT_SAVER_STYLE,
+  DOM_STYLES,
   STYLE_BLURBS,
   STYLE_NAMES,
   SCENE_STYLES,
+  isDomStyle,
   isSaverStyle,
   type SaverStyle,
 } from '@/lib/screensaver/styles';
@@ -38,7 +40,7 @@ const TILE_SEEDS: Record<string, number> = {
   aurora: 13,
 };
 
-const ORDER: SaverStyle[] = [...SCENE_STYLES, 'shuffle', 'off'];
+const ORDER: SaverStyle[] = [...SCENE_STYLES, ...DOM_STYLES, 'shuffle', 'off'];
 
 export function ScreensaverSection() {
   const backend = useYeaboiBackend();
@@ -68,6 +70,12 @@ export function ScreensaverSection() {
       cancelled = true;
     };
   }, [backend.kind]);
+
+  // Shuffle and Off always stand. Everything else is offered only when the
+  // engine's own catalogue names it, so a style this app knows and the sidecar
+  // does not is never something a click could fail to save.
+  const offered = (option: SaverStyle) =>
+    option === 'shuffle' || option === 'off' || state !== 'ready' || option in names;
 
   const choose = (next: SaverStyle): void => {
     const previous = style;
@@ -120,7 +128,7 @@ export function ScreensaverSection() {
       </p>
 
       <div className="grid grid-cols-3 gap-2 pt-1">
-        {ORDER.map((option) => (
+        {ORDER.filter(offered).map((option) => (
           <SaverTile
             key={option}
             style={option}
@@ -187,7 +195,9 @@ function SaverTile({
       )}
     >
       <div className="relative h-16 w-full bg-background">
-        {drawable ? (
+        {isDomStyle(style) ? (
+          <MastheadTile />
+        ) : drawable ? (
           <ScreensaverCanvas
             style={style as (typeof SCENE_STYLES)[number]}
             // Still until the pointer is over it: six animating canvases on a
@@ -215,5 +225,25 @@ function SaverTile({
         </p>
       </div>
     </button>
+  );
+}
+
+/** The front-page tile: a drawn masthead, not a live paper — a settings page
+ *  should not fetch the news to render a 64-pixel preview. */
+function MastheadTile() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none flex h-full w-full flex-col justify-center gap-1 px-3"
+    >
+      <div className="h-px w-full bg-foreground/30" />
+      <div className="font-display text-[11px] leading-none text-foreground/80">yeaboi</div>
+      <div className="h-px w-full bg-foreground/30" />
+      <div className="mt-0.5 space-y-[3px]">
+        <div className="h-[2px] w-3/4 bg-foreground/20" />
+        <div className="h-[2px] w-full bg-foreground/15" />
+        <div className="h-[2px] w-2/3 bg-foreground/15" />
+      </div>
+    </div>
   );
 }
