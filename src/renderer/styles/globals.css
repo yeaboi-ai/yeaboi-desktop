@@ -1563,15 +1563,3 @@ a.paper-tag:focus-visible {
     animation: none;
   }
 }
-
-/* The screensaver's reach hint: readable when it appears, a whisper once it
-   has been read. In CSS rather than on a timer — an idle screen should not be
-   re-rendering to fade a chip. */
-@keyframes saver-hint-settle {
-  0% {
-    opacity: 0.8;
-  }
-  100% {
-    opacity: 0.25;
-  }
-}

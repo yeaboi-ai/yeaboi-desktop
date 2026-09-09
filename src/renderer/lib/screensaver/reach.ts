@@ -113,5 +113,5 @@ export interface ReachHint {
 export function reachHint(modKey: string, reaching: boolean): ReachHint {
   return reaching
     ? { key: null, text: 'Click a story to open it' }
-    : { key: modKey, text: 'Hold to read the paper' };
+    : { key: modKey, text: 'hold to click a story' };
 }

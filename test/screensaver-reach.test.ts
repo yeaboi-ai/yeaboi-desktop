@@ -168,6 +168,17 @@ describe('the hint', () => {
   it('names whatever key the platform uses', () => {
     expect(reachHint('Ctrl', false).key).toBe('Ctrl');
   });
+
+  it('reads as an affordance rather than a watermark', () => {
+    // It is the feature's only chance to be found: any pointer movement
+    // dismisses the saver, so nobody will ever hover it to learn what it is.
+    const hint = read('src', 'renderer', 'components', 'screensaver', 'reach-hint.tsx');
+    expect(hint).toContain('<kbd');
+    expect(hint).toMatch(/rounded-full[\s\S]{0,120}border/);
+    // Fading on a timer left an hour-old screen with no hint at all.
+    expect(hint).not.toContain('saver-hint-settle');
+    expect(read('src', 'renderer', 'styles', 'globals.css')).not.toContain('saver-hint-settle');
+  });
 });
 
 describe('the wiring, at the source', () => {
