@@ -332,6 +332,26 @@
       "title": "Settings · Front page"
     },
     {
+      "path": "/settings/profile",
+      "capability": null,
+      "title": "Settings · Profile"
+    },
+    {
+      "path": "/settings/models",
+      "capability": null,
+      "title": "Settings · Models"
+    },
+    {
+      "path": "/settings/voice",
+      "capability": null,
+      "title": "Settings · Voice"
+    },
+    {
+      "path": "/settings/brand",
+      "capability": null,
+      "title": "Settings · Brand"
+    },
+    {
       "path": "/settings/themes",
       "capability": null,
       "title": "Themes"

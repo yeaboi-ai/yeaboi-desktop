@@ -7,8 +7,11 @@
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
+  AudioLines,
   Bird,
   Blocks,
+  Brush,
+  Cpu,
   KeyRound,
   Music,
   Newspaper,
@@ -16,6 +19,7 @@ import {
   Share2,
   SlidersHorizontal,
   SwatchBook,
+  UserRound,
 } from 'lucide-react';
 import { ALL_SETTINGS_TABS, SETTINGS_GROUPS } from '@/lib/yeaboi/settings-tabs';
 import { cn } from '@/lib/utils';
@@ -25,6 +29,10 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   '/settings/connections': Blocks,
   '/settings/sharing': Share2,
   '/settings/system': SlidersHorizontal,
+  '/settings/profile': UserRound,
+  '/settings/models': Cpu,
+  '/settings/voice': AudioLines,
+  '/settings/brand': Brush,
   '/settings/appearance': Palette,
   '/settings/news': Newspaper,
   '/settings/themes': SwatchBook,
