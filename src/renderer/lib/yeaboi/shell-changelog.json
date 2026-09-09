@@ -2,6 +2,26 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.7.0",
+      "date": "2026-09-09",
+      "headline": "Configure planning with Studio and workspace settings",
+      "summary": "Studio lets you configure planning personas, templates, sections and generation presets, while workspace settings hold your profile, models, voice and brand. The completion wizard is back on session wrap-up to review and refine tasks.",
+      "highlights": [
+        {
+          "text": "Studio is where you configure planning personas, templates and presets",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Workspace settings hold your profile, models, voice and brand",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The completion wizard reviews and refines generated tasks on wrap-up",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.6.0",
       "date": "2026-09-09",
       "headline": "Solo becomes the center of the app",
