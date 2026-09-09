@@ -27,11 +27,16 @@ const home = read('src', 'renderer', 'pages', 'yeaboi', 'home', 'front-page.tsx'
 const edition = read('src', 'renderer', 'components', 'news', 'edition.tsx');
 
 describe('the host', () => {
-  it('branches on the style tier before it reaches the canvas', () => {
-    expect(host).toContain('isDomStyle(scene)');
+  it('never reaches the canvas without checking the style tier first', () => {
+    // createScene is indexed by SCENE_STYLES and throws on anything else, so
+    // every canvas the host draws has to sit in the else of an isDomStyle
+    // branch. Counting the pairs survives new overlays being added; an index
+    // comparison did not.
     expect(host).toContain('<ScreensaverScene');
-    // The canvas call must sit in the else, not before the branch.
-    expect(host.indexOf('isDomStyle(scene)')).toBeLessThan(host.indexOf('<ScreensaverCanvas'));
+    const branches = host.match(/isDomStyle\(/g) ?? [];
+    const canvases = host.match(/<ScreensaverCanvas/g) ?? [];
+    expect(canvases.length).toBeGreaterThan(0);
+    expect(branches.length).toBe(canvases.length);
   });
 
   it('keeps the idle clock, the off switch and the preview bus untouched', () => {
@@ -89,6 +94,47 @@ describe('the picker tile', () => {
   it('draws a masthead rather than fetching a paper for a preview', () => {
     expect(section).toContain('MastheadTile');
     expect(section).toContain('isDomStyle(style)');
+  });
+});
+
+describe('the hover preview', () => {
+  const bus = read('src', 'renderer', 'lib', 'screensaver', 'preview.ts');
+
+  it('is a signal of its own, not the idle preview', () => {
+    // The idle path dismisses on any pointer movement — which is the movement
+    // that starts a hover, so reusing it would flicker out instantly.
+    expect(bus).toContain('hoverScreensaver');
+    expect(bus).toContain('onHoverPreview');
+  });
+
+  it('draws an overlay that takes no pointer events', () => {
+    // This is what keeps the tile underneath receiving the hover that
+    // sustains it; without it the overlay steals the pointer and flickers.
+    expect(host).toMatch(/hovered[\s\S]{0,400}pointer-events-none/);
+  });
+
+  it('never touches the idle clock', () => {
+    const hoverBlock = host.slice(
+      host.indexOf('onHoverPreview'),
+      host.indexOf('onHoverPreview') + 400,
+    );
+    expect(hoverBlock).not.toContain('controller');
+    expect(hoverBlock).not.toContain('showNow');
+  });
+
+  it('yields to the real screensaver', () => {
+    expect(host).toContain('!showing && hovered');
+  });
+
+  it('the tile starts and ends it, and cleans up if it unmounts mid-hover', () => {
+    expect(section).toContain('hoverScreensaver(style)');
+    expect(section).toContain('hoverScreensaver(null)');
+    expect(section).toContain('useEffect(() => () => hoverScreensaver(null), [])');
+  });
+
+  it('the keyboard reaches it too', () => {
+    expect(section).toContain('onFocus={show}');
+    expect(section).toContain('onBlur={hide}');
   });
 });
 

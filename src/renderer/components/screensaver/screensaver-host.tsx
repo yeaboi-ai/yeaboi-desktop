@@ -16,7 +16,11 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { getAmbience } from '@/lib/yeaboi/ambience';
 import { IdleController, DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
-import { onPreviewRequest, onSaverPreferenceChange } from '@/lib/screensaver/preview';
+import {
+  onHoverPreview,
+  onPreviewRequest,
+  onSaverPreferenceChange,
+} from '@/lib/screensaver/preview';
 import { isSuppressed, onSuppressionChange } from '@/lib/screensaver/suppression';
 import {
   DEFAULT_SAVER_STYLE,
@@ -38,6 +42,9 @@ export function ScreensaverHost() {
   const reduced = useReducedMotion();
   const [showing, setShowing] = useState(false);
   const [scene, setScene] = useState<DrawableStyle>(DEFAULT_SAVER_STYLE);
+  // A tile on the settings page is being pointed at. Held apart from `scene`
+  // and from the idle clock entirely — see hoverScreensaver.
+  const [hovered, setHovered] = useState<DrawableStyle | null>(null);
   const controllerRef = useRef(new IdleController(DEFAULT_IDLE_SECONDS, performance.now()));
   // Read inside listeners that must not be re-bound on every preference change.
   const preferenceRef = useRef<string>(DEFAULT_SAVER_STYLE);
@@ -109,6 +116,16 @@ export function ScreensaverHost() {
   // The Preview button on the Appearance tab.
   useEffect(() => onPreviewRequest(activate), [activate]);
 
+  // Hovering a tile on the Appearance tab. Nothing here touches the idle
+  // controller: the pointer is moving, which is what would dismiss the saver.
+  useEffect(
+    () =>
+      onHoverPreview((style) =>
+        setHovered(style && style !== 'off' ? resolveScene(style, Math.random) : null),
+      ),
+    [],
+  );
+
   // The idle clock.
   useEffect(() => {
     const controller = controllerRef.current;
@@ -141,6 +158,24 @@ export function ScreensaverHost() {
       stopWatchingSuppression();
     };
   }, []);
+
+  // The real saver wins: an idle window is not the moment for a preview.
+  if (!showing && hovered) {
+    return (
+      <div
+        // Takes no pointer events, which is what keeps the tile underneath
+        // receiving the hover that sustains this. Moving off the tile ends it.
+        className="pointer-events-none fixed inset-0 z-[9997] bg-background"
+        data-screensaver-preview={hovered}
+      >
+        {isDomStyle(hovered) ? (
+          <ScreensaverScene style={hovered} still={reduced} />
+        ) : (
+          <ScreensaverCanvas style={hovered} still={reduced} className="h-full w-full" />
+        )}
+      </div>
+    );
+  }
 
   if (!showing) return null;
 

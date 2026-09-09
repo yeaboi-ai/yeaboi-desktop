@@ -18,7 +18,11 @@ import { PersonaPicker } from '@/components/settings/persona-picker';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { logger } from '@/lib/logger';
 import { getAmbience, setAmbience } from '@/lib/yeaboi/ambience';
-import { previewScreensaver, saverPreferenceChanged } from '@/lib/screensaver/preview';
+import {
+  hoverScreensaver,
+  previewScreensaver,
+  saverPreferenceChanged,
+} from '@/lib/screensaver/preview';
 import { DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
 import {
   DEFAULT_SAVER_STYLE,
@@ -179,6 +183,22 @@ function SaverTile({
   const [hovered, setHovered] = useState(false);
   const drawable = style !== 'off' && style !== 'shuffle';
 
+  // Pointing at a tile shows it full screen; moving off ends it. Also on
+  // focus, so the keyboard reaches the same thing the pointer does.
+  const show = () => {
+    // A disabled tile still receives pointerenter in some browsers, and
+    // previewing a style the backend cannot store is a promise it cannot keep.
+    if (disabled) return;
+    setHovered(true);
+    if (style !== 'off') hoverScreensaver(style);
+  };
+  const hide = () => {
+    setHovered(false);
+    hoverScreensaver(null);
+  };
+  // Leaving the page — or unmounting mid-hover — must not strand the overlay.
+  useEffect(() => () => hoverScreensaver(null), []);
+
   return (
     <button
       type="button"
@@ -186,8 +206,10 @@ function SaverTile({
       disabled={disabled}
       aria-pressed={active}
       title={blurb}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      onFocus={show}
+      onBlur={hide}
       className={cn(
         'group flex flex-col overflow-hidden rounded-lg border text-left transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50',
