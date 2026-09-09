@@ -31,6 +31,8 @@ export interface ConnectionField {
   action?: string;
 }
 
+import type { ConnectionStatus } from './connection-status';
+
 export interface ConnectionRow {
   key: string;
   label: string;
@@ -54,6 +56,8 @@ export interface ConnectionRow {
   icon: string;
   accent: string;
   verify_kind: string;
+  /** What the last live probe found. Absent on a sidecar that predates it. */
+  status?: ConnectionStatus;
   auth_env: string;
   /** The sign-in, for a connector that has one; null or absent otherwise. */
   signin?: { signed_in: boolean; account: string } | null;

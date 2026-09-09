@@ -14,10 +14,14 @@
 // never per field, and all five sections still render.
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import type { SettingField } from '@/lib/yeaboi/settings';
+import type { ConnectionStatus } from '@/lib/yeaboi/connection-status';
 import { ConnectionCard, type ConnectionCardSpec } from '@/components/yeaboi/connection-card';
 import { SettingsCard, SettingsSectionHeader } from '@/components/settings/primitives';
 import { SectionIcon } from '@/components/settings/section-icon';
+import { StandupRecipientsRow } from '@/components/settings/standup-recipients-row';
+import { ExportDestinationsCard } from '@/components/settings/export-destinations-card';
 
 const DOT = ' · ';
 
@@ -79,6 +83,8 @@ export function SystemPanel({
   onToggle,
   onSaved,
   extras,
+  connections,
+  reveal,
 }: {
   /** Every field in the snapshot; this picks what it shows. */
   fields: SettingField[];
@@ -91,6 +97,10 @@ export function SystemPanel({
   onSaved: (title: string) => void;
   /** Cards for sections this build does not know about yet. */
   extras?: ReactNode;
+  /** What the last live probe of each connection found. */
+  connections?: Record<string, ConnectionStatus>;
+  /** A connection the Catalog asked for by key, shown even when unconfigured. */
+  reveal?: string;
 }) {
   const pick = (envs: string[]) =>
     envs
@@ -103,8 +113,15 @@ export function SystemPanel({
   const storage = bySection('storage');
   const standup = bySection('standup');
   const dictation = pick(DICTATION_ENVS);
-  const elevenlabs = pick(ELEVENLABS_ENVS);
-  const tavus = pick(TAVUS_ENVS);
+  const isSet = (env: string) => Boolean(fields.find((f) => f.env === env)?.is_set);
+  // Credentials-shaped cards follow the Credentials rule: what is set up is
+  // here, what is not is found in the Catalog. The Standup card below is
+  // exempt — it is a machine section, not a credential, and nothing in the
+  // catalog would lead anyone to it.
+  const elevenlabs =
+    isSet('ELEVENLABS_API_KEY') || reveal === 'elevenlabs' ? pick(ELEVENLABS_ENVS) : [];
+  const tavus = isSet('TAVUS_API_KEY') || reveal === 'tavus' ? pick(TAVUS_ENVS) : [];
+  const cloudVoiceHidden = elevenlabs.length === 0 && tavus.length === 0;
   const privacy = bySection('privacy');
   const advanced = bySection('advanced');
 
@@ -135,6 +152,11 @@ export function SystemPanel({
           summary={[valueOf('STANDUP_GITHUB_REPO'), valueOf('STANDUP_SMTP_HOST')]
             .filter(Boolean)
             .join(DOT)}
+          renderField={(field) =>
+            field.env === 'STANDUP_EMAIL_RECIPIENTS' ? (
+              <StandupRecipientsRow field={field} onSaved={onSaved} />
+            ) : null
+          }
           {...card('standup')}
         />
       )}
@@ -149,6 +171,15 @@ export function SystemPanel({
           <div className="py-1.5">
             {dictationRow}
             {dictation.map(renderRow)}
+            {cloudVoiceHidden && (
+              <p className="px-4 py-2 text-[11px] text-muted-foreground/80">
+                Cloud voices (ElevenLabs, Tavus) live in the{' '}
+                <Link href="/settings/connections" className="text-primary hover:underline">
+                  catalog
+                </Link>
+                .
+              </p>
+            )}
           </div>
         </SettingsCard>
       )}
@@ -159,13 +190,22 @@ export function SystemPanel({
           fields={elevenlabs}
           prefillNonSecret
           summary={valueOf('ELEVENLABS_MODEL_ID') || 'eleven_turbo_v2_5'}
+          status={connections?.elevenlabs}
           {...card('elevenlabs')}
         />
       )}
 
       {tavus.length > 0 && (
-        <ConnectionCard card={TAVUS_CARD} fields={tavus} prefillNonSecret {...card('tavus')} />
+        <ConnectionCard
+          card={TAVUS_CARD}
+          fields={tavus}
+          prefillNonSecret
+          status={connections?.tavus}
+          {...card('tavus')}
+        />
       )}
+
+      <ExportDestinationsCard />
 
       {privacy.length > 0 && (
         <SettingsCard index={2}>

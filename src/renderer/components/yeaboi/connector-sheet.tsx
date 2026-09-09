@@ -41,6 +41,8 @@ import { ServiceAccount } from '@/components/music/service-account';
 import { isMusicService } from '@shared/music-links';
 import { catalogueChanged } from '@/lib/music/catalogue-changed';
 import { ChoicePills } from '@/components/settings/primitives';
+import { ConnectionStatusChip } from '@/components/settings/primitives/connection-status-chip';
+import { credentialsHref } from '@/lib/settings/deep-link';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -116,11 +118,11 @@ export function ConnectorTile({ row, onOpen }: { row: ConnectionRow; onOpen: () 
           <span className="truncate text-[13.5px] font-body font-medium text-foreground">
             {row.label}
           </span>
-          {row.connected && (
-            <span className="shrink-0 rounded-full bg-success/10 px-2 py-0.5 text-[10px] text-success">
-              connected
-            </span>
-          )}
+          <ConnectionStatusChip
+            configured={row.connected}
+            status={row.status}
+            className="shrink-0"
+          />
           {row.read_only && (
             <span className="shrink-0 rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] text-muted-foreground/80">
               read-only
@@ -489,10 +491,7 @@ function ConnectorSheetBody({
             <div className="flex items-center justify-between gap-2">
               <SheetTitle className="truncate text-[17px] font-semibold">{row.label}</SheetTitle>
               {row.connected ? (
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success/10 px-2 py-0.5 text-[10.5px] text-success">
-                  <span aria-hidden className="size-1.5 rounded-full bg-success" />
-                  connected
-                </span>
+                <ConnectionStatusChip configured status={row.status} className="shrink-0" />
               ) : (
                 <span className="inline-flex shrink-0 items-center rounded-full bg-secondary/60 px-2 py-0.5 text-[10.5px] text-muted-foreground/70">
                   not connected
@@ -532,10 +531,13 @@ function ConnectorSheetBody({
             )}
             <div className="rounded-xl bg-secondary/40 px-4 py-3 text-[12px] text-muted-foreground">
               {row.label} is one of the built-in integrations — its credentials live under{' '}
-              <Link href="/settings/credentials" className="text-primary hover:underline">
-                Settings · Credentials
-              </Link>
-              {row.section === 'voice' ? ' (System · Voice)' : ''}, or re-run setup.
+              {row.section === 'voice' ? 'Settings · System' : 'Settings · Credentials'}, which
+              hides what is not set up. This opens it there:
+              <div className="mt-2">
+                <Link href={credentialsHref(row)} className="text-primary hover:underline">
+                  Set up {row.label}
+                </Link>
+              </div>
             </div>
           </div>
         ) : (

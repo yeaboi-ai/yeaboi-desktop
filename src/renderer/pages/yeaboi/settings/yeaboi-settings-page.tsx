@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useLocation } from 'react-router';
+import { Link as RouterLink, useLocation, useSearchParams } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
 import { DuckMark } from '@/components/brand/duck';
 import {
@@ -36,12 +36,14 @@ import {
   ConnectionCard,
   GROUPS,
   groupConnections,
+  isConfigured,
 } from '@/components/yeaboi/connection-card';
 import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
 import { AllowedPathsRow } from '@/components/settings/allowed-paths-row';
+import { SlackChannelRow } from '@/components/settings/slack-channel-row';
 import { ThemesSection } from '@/components/settings/tabs/general/themes-section';
 import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
@@ -129,6 +131,11 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [signingIn, setSigningIn] = useState(false);
   const [moveAsk, setMoveAsk] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The Catalog sends people here for a connection Credentials owns. The card
+  // stays revealed after the parameter is consumed: it must not vanish from
+  // under someone who saves a non-secret field first.
+  const [revealed, setRevealed] = useState(() => searchParams.get('add') ?? '');
   const headerRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const refresh = () => loadSettings().then(setSnapshot, (e: Error) => setError(e.message));
@@ -136,6 +143,18 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     void refresh();
     loadProviders().then(setCatalog, () => undefined);
   }, []);
+
+  // Arriving from the Catalog: open the card that was asked for, then drop the
+  // parameter, so a bookmarked ?add= does not reveal it forever. An unknown
+  // section is ignored — the catalog is backend-driven and may name one this
+  // build has no card for.
+  useEffect(() => {
+    const wanted = searchParams.get('add');
+    if (!wanted || !snapshot) return;
+    setRevealed(wanted);
+    setOpenCard(wanted);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, snapshot, setSearchParams]);
 
   const save = async (key: string, value: string) => {
     try {
@@ -374,7 +393,11 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     const providerFields = sectionFields('provider');
     const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
     const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
-    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS);
+    // Credentials lists what you actually use; the Catalog is where the rest
+    // is found. ProviderPanel renders above this and is never filtered.
+    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS, {
+      keep: (spec, fields) => isConfigured(fields) || spec.section === revealed,
+    });
 
     let flat = -1;
     const headerKeyHandler = (index: number) => (event: React.KeyboardEvent) => {
@@ -394,6 +417,21 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           onSignIn={() => setSigningIn(true)}
         />
         <div className="mt-6 space-y-4">
+          {grouped.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border/60 px-5 py-6 text-center">
+              <p className="text-[13px] font-body text-foreground">No credentials yet.</p>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                Connections start in the catalog.
+              </p>
+              <RouterLink
+                to="/settings/connections"
+                className="mt-3 inline-flex items-center gap-1 text-[12px] font-body text-primary hover:underline"
+              >
+                Add a connection
+                <ArrowUpRight className="size-3" aria-hidden="true" />
+              </RouterLink>
+            </div>
+          )}
           {grouped.map((group) => (
             <div key={group.label}>
               <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
@@ -412,6 +450,18 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
                       summary={connectionSummary(spec.section, valueOf)}
                       open={openCard === spec.section}
                       onToggle={() => setOpenCard((s) => (s === spec.section ? '' : spec.section))}
+                      status={snapshot.connections?.[spec.verify ?? spec.section]}
+                      renderField={(field) =>
+                        field.env === 'SLACK_CHANNEL_ID' ? (
+                          <SlackChannelRow
+                            field={field}
+                            hasToken={Boolean(
+                              snapshot.fields.find((f) => f.env === 'SLACK_BOT_TOKEN')?.is_set,
+                            )}
+                            onPick={(id) => void save('SLACK_CHANNEL_ID', id)}
+                          />
+                        ) : null
+                      }
                       onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
                       headerRef={(el) => {
                         headerRefs.current[index] = el;
@@ -482,6 +532,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           openCard={openCard}
           onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
           onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+          connections={snapshot.connections}
+          reveal={revealed}
           /* A section the backend grows later still lands somewhere. */
           extras={snapshot.sections
             .filter((section) => !knownSections.has(section))
