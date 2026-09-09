@@ -147,7 +147,6 @@ describe('resolveAudience', () => {
 
   it('switches team into solo for the weekly review', () => {
     expect(resolveAudience('/solo/review', 'team')).toBe('solo');
-    expect(resolveAudience('/solo/review', 'team')).toBe('solo');
     expect(resolveAudience('/solo/review/report', 'solo')).toBeNull();
   });
 

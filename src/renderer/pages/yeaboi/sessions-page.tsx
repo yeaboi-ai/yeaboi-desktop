@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAudience } from '@/components/providers/audience-provider';
-import { useAgentStamps } from '@/hooks/yeaboi/use-agent-stamps';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GlimpseList } from '@/components/yeaboi/glimpse-list';
@@ -25,21 +24,21 @@ import {
   runModesFor,
   type Capabilities,
 } from '@/lib/yeaboi/capabilities';
-import {
-  SESSIONS_UNSUPPORTED,
-  agentGlimpse,
-  sessionRows,
-  SESSIONS_EMPTY,
-} from '@/lib/yeaboi/glimpse';
+import { SESSIONS_UNSUPPORTED, sessionRows, SESSIONS_EMPTY } from '@/lib/yeaboi/glimpse';
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
-import { loadRecentSessions, shapeSessions, type RecentSession } from '@/lib/yeaboi/sessions';
-import { MODE_ROUTES, startRouteFor, tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
+import {
+  loadRecentSessions,
+  shapeSessions,
+  visibleSessions,
+  type RecentSession,
+} from '@/lib/yeaboi/sessions';
+import { startRouteFor, tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
 
 const RECENT_LIMIT = 12;
 
 function SessionsBody() {
   const router = useRouter();
-  const { audience } = useAudience();
+  const { audience, soloEnabled } = useAudience();
   const [caps, setCaps] = useState<Capabilities | null>(null);
   const [error, setError] = useState('');
   const [tips, setTips] = useState<Tip[]>([]);
@@ -74,7 +73,9 @@ function SessionsBody() {
   if (!caps) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
   const cards = allCards(caps);
-  const recent = Array.isArray(sessions) ? sessionRows(shapeSessions(sessions, cards, now)) : [];
+  const recent = Array.isArray(sessions)
+    ? sessionRows(visibleSessions(shapeSessions(sessions, cards, now), soloEnabled))
+    : [];
   const recentEmpty =
     sessions === null
       ? SESSIONS_UNSUPPORTED

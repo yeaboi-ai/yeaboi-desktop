@@ -11,13 +11,12 @@ import { useAudience } from '@/components/providers/audience-provider';
 import { AudienceChooser } from './audience-chooser';
 
 export function AudienceGate({ children }: { children: ReactNode }) {
-  const { chosen, soloEnabled, soloKnown, setAudience } = useAudience();
+  const { chosen, soloEnabled, setAudience } = useAudience();
 
-  // On a first run, wait for the sidecar rather than flashing the shell and
-  // then covering it with a chooser a beat later.
-  if (!chosen && !soloKnown) return null;
-  // One world is not a question worth asking.
-  if (!soloEnabled) return <>{children}</>;
-  if (!chosen) return <AudienceChooser onChoose={setAudience} />;
-  return <>{children}</>;
+  // One world is not a question worth asking, and until the sidecar says
+  // otherwise there is one: a first run must never hold a blank window for the
+  // length of a Python boot, so the shell shows and the chooser arrives with
+  // the answer if there turns out to be a choice.
+  if (!soloEnabled || chosen) return <>{children}</>;
+  return <AudienceChooser onChoose={setAudience} />;
 }

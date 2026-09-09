@@ -35,7 +35,5 @@ export function personaFor(item: Pick<NewsItem, 'id' | 'topic' | 'persona'>): Pe
   return PERSONA_IDS[hash(item.id) % PERSONA_IDS.length]!;
 }
 
-/** Kept as a union, and still threaded through the paper's components, so a
- *  robo edition is one line away — no world picks it now that Agents merged
- *  into Solo. */
+/** Which mark the paper's components draw. Every edition is a duck today. */
 export type MarkKind = 'duck' | 'robo';

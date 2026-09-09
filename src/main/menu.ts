@@ -44,9 +44,14 @@ export class AppMenu {
 
   constructor(private readonly actions: MenuActions) {}
 
-  install(state: { audience: Audience | undefined; petEnabled: boolean }): void {
+  install(state: {
+    audience: Audience | undefined;
+    petEnabled: boolean;
+    soloEnabled?: boolean;
+  }): void {
     this.audience = state.audience ?? 'team';
     this.petEnabled = state.petEnabled;
+    this.solo = state.soloEnabled ?? false;
     this.render();
   }
 

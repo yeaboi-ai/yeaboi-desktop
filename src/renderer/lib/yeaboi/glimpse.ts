@@ -44,23 +44,6 @@ export function sessionRows(sessions: ShapedSession[]): GlimpseRow[] {
   }));
 }
 
-/** The Agents world's kinds: each one and when its report was saved. */
-export function agentGlimpse(
-  cards: { key: string; title: string }[],
-  stamps: Record<string, string>,
-  routes: Record<string, string>,
-  now: Date,
-): GlimpseRow[] {
-  return cards
-    .filter((card) => routes[card.key])
-    .map((card) => ({
-      key: card.key,
-      primary: card.title,
-      secondary: stamps[card.key] ? relativeDay(stamps[card.key]!, now) : 'no report yet',
-      href: routes[card.key]!,
-    }));
-}
-
 /** What a Sessions list says when nothing has run. */
 export const SESSIONS_EMPTY = 'Nothing has run on its own yet.';
 

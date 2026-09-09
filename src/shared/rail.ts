@@ -230,17 +230,25 @@ export function normalizeRailItems(
   return items;
 }
 
-/** Read a stored blob into a rail per world that will draw. */
+/** Whether a stored list is the untouched default, and so safe to replace.
+ *  `normalizeRailPrefs` writes every world back, so "Solo has no arrangement"
+ *  is the defaults, not a missing key. */
+function isDefaultRail(value: unknown, audience: Audience): boolean {
+  if (value === undefined) return true;
+  return JSON.stringify(value) === JSON.stringify(railDefaultsFor(audience));
+}
+
 /** The Agents world merged into Solo, so a rail arranged there is Solo's now —
- *  unless Solo already has one, since two arranged rails cannot become one
+ *  unless Solo carries an arrangement of its own, since two cannot become one
  *  without guessing. `/agents/*` is Solo-owned after the merge, so an adopted
  *  list still validates. */
 function foldAgentsRail(source: Record<string, unknown>): Record<string, unknown> {
-  if (!('agents' in source) || 'solo' in source) return source;
+  if (!('agents' in source) || !isDefaultRail(source['solo'], 'solo')) return source;
   const { agents, ...rest } = source;
   return { ...rest, solo: agents };
 }
 
+/** Read a stored blob into a rail per world that will draw. */
 export function normalizeRailPrefs(raw: unknown, known?: ReadonlySet<string>): RailPrefs {
   const source = foldAgentsRail(
     (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>,

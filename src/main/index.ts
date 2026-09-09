@@ -500,7 +500,11 @@ if (!gotLock) {
       // The transport chords: the window that holds the player answers them.
       music: (id) => mainWindow?.webContents.send('app:music', id),
     });
-    appMenu.install({ audience: settings.audience, petEnabled: settings.petEnabled });
+    appMenu.install({
+      audience: settings.audience,
+      petEnabled: settings.petEnabled,
+      soloEnabled: solo.current === true,
+    });
     tray = new AppTray({
       open: () => openApp(),
       about: () => showAbout(),

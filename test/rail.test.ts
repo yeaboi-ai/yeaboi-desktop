@@ -72,6 +72,14 @@ describe('normalizeRailPrefs', () => {
     expect(normalizeRailPrefs({ agents }).solo).toEqual(agents);
   });
 
+  it('adopts it even though every world is written back, so Solo is never absent', () => {
+    // normalizeRailPrefs fills every key, so a real settings.json always has a
+    // `solo` entry. "Solo has no arrangement" is the defaults, not a missing key.
+    const agents = [item({ id: 'usage', route: '/agents/usage', label: 'Agent Usage' })];
+    const stored = { ...RAIL_DEFAULTS, agents };
+    expect(normalizeRailPrefs(stored).solo).toEqual(agents);
+  });
+
   it('keeps Solo own arrangement when both are stored — two rails cannot merge', () => {
     const agents = [item({ id: 'usage', route: '/agents/usage', label: 'Agent Usage' })];
     const solo = [item()];

@@ -3,7 +3,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   SESSIONS_UNSUPPORTED,
-  agentGlimpse,
   sessionLabel,
   sessionRows,
   SESSIONS_EMPTY,
@@ -80,28 +79,6 @@ describe('sessionRows', () => {
       ['Reporting', 'Sprint 4'],
     ]);
     expect(rows.every((r) => r.secondary === 'yesterday')).toBe(true);
-  });
-});
-
-describe('agentGlimpse', () => {
-  const cards = [
-    { key: 'agent-usage', title: 'Usage' },
-    { key: 'agent-security', title: 'Security' },
-    { key: 'agent-nope', title: 'Nope' },
-  ];
-  const routes = { 'agent-usage': '/agents/usage', 'agent-security': '/agents/security' };
-
-  it('stamps a kind with its report day and says when there is none', () => {
-    const rows = agentGlimpse(cards, { 'agent-usage': '2026-09-02T10:00:00' }, routes, NOW);
-    expect(rows).toEqual([
-      { key: 'agent-usage', primary: 'Usage', secondary: 'yesterday', href: '/agents/usage' },
-      {
-        key: 'agent-security',
-        primary: 'Security',
-        secondary: 'no report yet',
-        href: '/agents/security',
-      },
-    ]);
   });
 });
 

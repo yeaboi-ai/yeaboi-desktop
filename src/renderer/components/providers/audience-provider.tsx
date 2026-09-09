@@ -132,9 +132,12 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
   // standing on the other world's route must not be fought back.
   const lastPathname = useRef<string | null>(null);
   useEffect(() => {
+    // The sidecar answers after the audience does, so the guard comes before
+    // the stamp: stamping first would consume a cold deep link on the pass
+    // where Solo was still unknown, and the re-run would find nothing to do.
+    if (!soloEnabled) return; // one world — nothing to switch into
     if (!chosen || !pathname || lastPathname.current === pathname) return;
     lastPathname.current = pathname;
-    if (!soloEnabled) return; // one world — nothing to switch into
     const next = resolveAudience(pathname, audience);
     if (next) setAudience(next);
   }, [pathname, audience, chosen, soloEnabled, setAudience]);

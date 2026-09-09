@@ -188,11 +188,10 @@ const PLANNING_SERVED = new Set([
   '/clip/:token',
 ]);
 
-/** A page only the Solo world owns. Registered like any other — the router is
- *  built at import, long before the sidecar answers, and rebuilding it later
- *  would remount every provider — so the guard is on the element. While the
- *  answer is still owed it holds: a cold deep link into `/agents/usage` must
- *  survive the handshake rather than be eaten on the way. */
+/** A page only the Solo world owns. The guard is on the element, not the route
+ *  table, which is built at import — long before the sidecar answers. While the
+ *  answer is still owed it holds rather than redirecting, so a cold deep link
+ *  into `/agents/usage` survives the handshake. */
 function SoloOnly({ children }: { children: ReactElement }) {
   const { soloEnabled, soloKnown } = useAudience();
   if (!soloKnown) return null;

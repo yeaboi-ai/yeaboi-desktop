@@ -38,7 +38,7 @@ import {
   type PaletteHit,
 } from '@/lib/yeaboi/palette';
 import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
-import { shapeSessions } from '@/lib/yeaboi/sessions';
+import { shapeSessions, visibleSessions } from '@/lib/yeaboi/sessions';
 import { cn } from '@/lib/utils';
 
 export function GlobalPalette() {
@@ -64,7 +64,9 @@ export function GlobalPalette() {
   const now = useMemo(() => new Date(), [isOpen]);
   const hits = useMemo<PaletteHit[]>(() => {
     const cards = caps ? allCards(caps) : [];
-    const shaped = sessions ? shapeSessions(sessions, cards, now) : [];
+    const shaped = sessions
+      ? visibleSessions(shapeSessions(sessions, cards, now), soloEnabled)
+      : [];
     return [
       ...projectHits(projects ?? [], audience),
       ...sessionHits(shaped),

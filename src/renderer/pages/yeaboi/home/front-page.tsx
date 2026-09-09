@@ -12,7 +12,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useAudience } from '@/components/providers/audience-provider';
 import { Edition } from '@/components/news/edition';
 import { Masthead } from '@/components/news/masthead';
 import { fallbackPaper } from '@/lib/news/fallback';
@@ -33,7 +32,6 @@ import { getPref } from '@/lib/preferences';
 import { SHELL_ENTRIES } from '@/lib/yeaboi/shell-changelog';
 
 export function FrontPage() {
-  const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [failed, setFailed] = useState(false);
   const [notes, setNotes] = useState(false);

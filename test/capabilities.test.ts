@@ -6,7 +6,6 @@ import {
   categoryFor,
   menuFor,
   runModesFor,
-  soloEnabled,
   type Capabilities,
   type ModeCard,
 } from '../src/renderer/lib/yeaboi/capabilities';
@@ -66,11 +65,6 @@ describe('runModesFor', () => {
     expect(menuFor(caps, 'solo').map((c) => c.key)).toContain('agent-usage');
     expect(menuFor(caps, 'team')).toBe(caps.modes);
     expect(menuFor(caps, 'team').map((c) => c.key)).not.toContain('agent-usage');
-  });
-
-  it('reads the Solo gate as hidden unless the sidecar says otherwise', () => {
-    expect(soloEnabled(caps)).toBe(false);
-    expect(soloEnabled({ ...caps, solo_enabled: true })).toBe(true);
   });
 });
 

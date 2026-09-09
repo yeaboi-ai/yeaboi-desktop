@@ -27,9 +27,7 @@ export function DoorMascot({ door, size }: { door: Door; size: number }): ReactE
   return <PersonaDuckMark persona={currentPair()[door]} size={size} />;
 }
 
-/** The agentwatch screens keep their own mark: the family the Solo world
- *  absorbed still reads as the robo on its own pages, even though the robo is
- *  no longer a world's mascot. */
+/** The mark the agentwatch pages draw: the robo, in the current persona. */
 export function RoboDoorMascot({ size }: { size: number }): ReactElement {
   return <RoboMark persona={currentPair().projects} size={size} />;
 }

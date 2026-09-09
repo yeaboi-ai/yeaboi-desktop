@@ -33,8 +33,6 @@ export interface Capabilities {
   agents: ModeCard[];
 }
 
-export { soloEnabled } from '@shared/audience';
-
 /** The cards a one-off run can be: the run-modes alone. Planning is the
  *  project's whole world, and usage/settings are live views, not runs. */
 export const NOT_ONE_OFF: ReadonlySet<string> = new Set(['project-planning', 'usage', 'settings']);
