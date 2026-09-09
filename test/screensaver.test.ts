@@ -133,16 +133,25 @@ describe('style resolution', () => {
     expect(resolveScene('lava-lamp', () => 0)).toBe('duck-yard');
   });
 
-  it('shuffle reaches every style that draws', () => {
+  it('shuffle reaches every canvas scene', () => {
     const picked = new Set(
-      DRAWABLE_STYLES.map((_, i) => resolveScene('shuffle', () => i / DRAWABLE_STYLES.length)),
+      SCENE_STYLES.map((_, i) => resolveScene('shuffle', () => i / SCENE_STYLES.length)),
     );
-    expect(picked.size).toBe(DRAWABLE_STYLES.length);
+    expect(picked.size).toBe(SCENE_STYLES.length);
   });
 
   it('shuffle never falls off the end of the list', () => {
-    expect(DRAWABLE_STYLES).toContain(resolveScene('shuffle', () => 0.999999));
-    expect(DRAWABLE_STYLES).toContain(resolveScene('shuffle', () => 1));
+    expect(SCENE_STYLES).toContain(resolveScene('shuffle', () => 0.999999));
+    expect(SCENE_STYLES).toContain(resolveScene('shuffle', () => 1));
+  });
+
+  it('shuffle never lands on a scene that fetches', () => {
+    // It has always meant "a different one of these local canvases"; the front
+    // page loads the news, which is a choice rather than a surprise.
+    for (let i = 0; i <= 20; i += 1) {
+      expect(resolveScene('shuffle', () => i / 20)).not.toBe('front-page');
+    }
+    expect(DRAWABLE_STYLES).toContain('front-page');
   });
 
   it('recognises off and shuffle as preferences but not as scenes', () => {

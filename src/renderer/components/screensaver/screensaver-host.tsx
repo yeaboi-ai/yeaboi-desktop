@@ -155,6 +155,8 @@ export function ScreensaverHost() {
   useEffect(() => onPreviewRequest(activate), [activate]);
 
   // Only a DOM scene has anything to click, so only a DOM scene is reachable.
+  // A preview counts: it is the same saver, and trying the reach there is how
+  // anybody would find out what the hint means.
   const reachable = showing && isDomStyle(scene);
   useEffect(() => {
     reachableRef.current = reachable;

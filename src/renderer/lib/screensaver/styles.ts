@@ -63,8 +63,11 @@ export function isDomStyle(value: string): value is DomStyle {
  */
 export function resolveScene(stored: string, pick: () => number): DrawableStyle {
   if (stored === 'shuffle') {
-    return DRAWABLE_STYLES[
-      Math.min(DRAWABLE_STYLES.length - 1, Math.floor(pick() * DRAWABLE_STYLES.length))
+    // Canvas scenes only. Shuffle has always meant "a different one of these",
+    // and the front page fetches the news — not something to start doing on
+    // one idle activation in five because somebody once picked Shuffle.
+    return SCENE_STYLES[
+      Math.min(SCENE_STYLES.length - 1, Math.floor(pick() * SCENE_STYLES.length))
     ];
   }
   return (DRAWABLE_STYLES as readonly string[]).includes(stored)

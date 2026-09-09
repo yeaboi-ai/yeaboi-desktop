@@ -90,6 +90,8 @@ describe('a connection with no probe', () => {
     );
     expect(chip).toContain('probeable');
     expect(chip).toContain("label: 'key saved'");
+    // Re-testing is "Save & test" on the card, not a second control here.
+    expect(chip).not.toContain('onRetest');
   });
 });
 

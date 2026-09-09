@@ -56,6 +56,13 @@ function verifiedDetail(message: string): string {
   return tail?.[1] ? `Verified — ${tail[1]}` : 'Verified';
 }
 
+/** Actions a card draws itself, rather than a flow living somewhere else.
+ *
+ *  A field with an action is normally excluded — data-dir, allowed-paths and
+ *  signin all belong to their own surfaces — but the channel picker IS this
+ *  card, and excluding it took the Channel ID off the Slack card entirely. */
+const CARD_ACTIONS = new Set(['slack-channel']);
+
 /** The default "this connection is set up" test: some secret of its own is saved. */
 export function isConfigured(fields: SettingField[]): boolean {
   return fields.some((f) => f.secret && f.is_set);
@@ -292,7 +299,9 @@ export function groupConnections(
   const available = cards
     .map((card) => ({
       card,
-      fields: snapshot.fields.filter((f) => f.section === card.section && !f.action),
+      fields: snapshot.fields.filter(
+        (f) => f.section === card.section && (!f.action || CARD_ACTIONS.has(f.action)),
+      ),
     }))
     .filter(({ fields }) => fields.length)
     .filter(({ card, fields }) => keep(card, fields));

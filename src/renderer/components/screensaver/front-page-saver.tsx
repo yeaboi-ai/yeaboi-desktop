@@ -36,6 +36,9 @@ import { ScreensaverCanvas } from './screensaver-canvas';
 import { DEFAULT_SAVER_STYLE } from '@/lib/screensaver/styles';
 import { SHELL_ENTRIES } from '@/lib/yeaboi/shell-changelog';
 
+/** How often the bylines re-age. Coarse: nothing here is to the second. */
+const BYLINE_TICK_MS = 60_000;
+
 /** The same mark the home page draws. */
 const MARK: MarkKind = 'duck';
 
@@ -51,7 +54,13 @@ export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: 
   const [notes, setNotes] = useState(false);
   const [failed, setFailed] = useState(false);
   const speed = useMemo(saverSpeed, []);
-  const now = useMemo(() => new Date(), [paper]);
+  // Ticked rather than frozen: this is the surface most likely to be up for an
+  // hour, and a byline reading "2 minutes ago" all that time is a lie.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), BYLINE_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let gone = false;

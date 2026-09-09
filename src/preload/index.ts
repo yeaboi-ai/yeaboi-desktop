@@ -32,7 +32,6 @@ export interface YeaboiBridge {
   getAuthToken: () => Promise<AuthPayload | null>;
   getIdentity: () => Promise<Identity | null>;
   setIdentity: (identity: Identity) => Promise<Identity>;
-  /** Ask the OS for a folder. Returns '' when the person cancels. */
   /** Ask the OS for files or folders. Empty array when the person cancels. */
   pickPaths: (options: {
     title?: string;

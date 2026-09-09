@@ -2,14 +2,14 @@
 //
 // It never verifies on its own. Probing is a network round trip to a vendor
 // with the person's credentials, and doing that whenever a settings page opens
-// is a cost and a rate limit nobody asked for — so re-testing is a button.
+// is a cost and a rate limit nobody asked for. Re-testing is "Save & test" on
+// the card, which stays enabled with nothing typed for exactly that reason.
 //
 // It also never hides the age of an "ok". "verified 2m ago" is a fact about
 // the past; a token revoked since is still shown as verified, and showing when
 // is what keeps that honest.
 
-import { Check, RotateCw, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Check, X } from 'lucide-react';
 import { type ConnectionStatus, resolveStatus } from '@/lib/yeaboi/connection-status';
 import { cn } from '@/lib/utils';
 
@@ -23,9 +23,6 @@ export function ConnectionStatusChip({
   configured,
   status,
   now,
-  onRetest,
-  busy,
-  label,
   className,
   probeable = true,
 }: {
@@ -33,11 +30,6 @@ export function ConnectionStatusChip({
   status?: ConnectionStatus;
   /** Injectable so a test can pin the age. */
   now?: Date;
-  /** Given only when a probe exists — a kind with no probe gets no button. */
-  onRetest?: () => void;
-  busy?: boolean;
-  /** What the re-test button announces, e.g. "ElevenLabs". */
-  label?: string;
   className?: string;
   /** False when this connection has no live probe: it can never leave
    *  "not tested", and a grey chip saying so reads as a fault. */
@@ -66,18 +58,6 @@ export function ConnectionStatusChip({
         {copy.state === 'failed' && <X className="size-2.5" aria-hidden="true" />}
         {copy.label}
       </span>
-      {onRetest && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 px-1"
-          disabled={busy}
-          aria-label={label ? `Re-test ${label}` : 'Re-test this connection'}
-          onClick={onRetest}
-        >
-          <RotateCw className={cn('size-3', busy && 'animate-spin')} aria-hidden="true" />
-        </Button>
-      )}
     </span>
   );
 }

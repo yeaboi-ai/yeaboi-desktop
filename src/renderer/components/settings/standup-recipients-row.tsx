@@ -93,6 +93,7 @@ export function StandupRecipientsRow({
     new Promise<string>((resolve) => setAsking({ initial, resolve }));
 
   const persist = (next: EditableListItem[]) => {
+    const previous = items;
     setItems(next);
     setBusy(true);
     setError('');
@@ -105,6 +106,9 @@ export function StandupRecipientsRow({
         onSaved(result.message);
       },
       (e: Error) => {
+        // The engine validates each address, so a refusal is expected rather
+        // than exceptional — the rows must not keep one it rejected.
+        setItems(previous);
         setBusy(false);
         setError(e.message);
       },

@@ -153,7 +153,9 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     if (!wanted || !snapshot) return;
     setRevealed(wanted);
     setOpenCard(wanted);
-    setSearchParams({}, { replace: true });
+    const rest = new URLSearchParams(searchParams);
+    rest.delete('add');
+    setSearchParams(rest, { replace: true });
   }, [searchParams, snapshot, setSearchParams]);
 
   const save = async (key: string, value: string) => {

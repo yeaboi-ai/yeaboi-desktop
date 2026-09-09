@@ -422,9 +422,8 @@ if (!gotLock) {
       if (clamped) notifier.post(clamped);
     });
 
-    // A folder the user points at, for the settings paths. The renderer never
-    // gets to browse — it asks, the OS asks the person, and one chosen path
-    // comes back. Cancelling returns '' rather than throwing.
+    // Files or folders, one or many. The renderer's request is clamped before
+    // Electron sees it; cancelling comes back as an empty list.
     ipcMain.handle('dialog:pick-paths', async (_event, options: unknown) => {
       const picked = clampPickOptions(options);
       const opts = {

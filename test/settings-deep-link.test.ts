@@ -39,7 +39,11 @@ describe('the credentials page answers it', () => {
   });
 
   it('consumes the parameter, so a bookmark does not pin the card open', () => {
-    expect(page).toContain('setSearchParams({}, { replace: true })');
+    // Deletes the one key rather than clearing the query string, so the next
+    // parameter added to these routes does not vanish with it.
+    expect(page).toContain("rest.delete('add')");
+    expect(page).toContain('setSearchParams(rest, { replace: true })');
+    expect(page).not.toContain('setSearchParams({}');
   });
 });
 

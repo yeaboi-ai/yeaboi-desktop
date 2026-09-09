@@ -70,15 +70,21 @@ export function EditableList({
   error?: string;
 }) {
   const [running, setRunning] = useState('');
+  const [failure, setFailure] = useState('');
 
   const runAction = async (action: EditableListAction) => {
     setRunning(action.key);
+    setFailure('');
     try {
       const added = await action.run();
       if (!added.length) return;
       const seen = new Set(items.map((i) => i.id));
       const fresh = added.filter((i) => i.id && !seen.has(i.id));
       if (fresh.length) onChange([...items, ...fresh]);
+    } catch (e) {
+      // A picker that throws has to say so somewhere; the alternative is an
+      // unhandled rejection and a button that quietly did nothing.
+      setFailure((e as Error).message);
     } finally {
       setRunning('');
     }
@@ -98,7 +104,7 @@ export function EditableList({
 
   return (
     <div className="w-full space-y-2">
-      {error && <SettingsInlineError message={error} />}
+      {(error || failure) && <SettingsInlineError message={error || failure} />}
       {items.length === 0 && empty && (
         <div className="px-4 py-3 text-[12px] text-muted-foreground font-body">{empty}</div>
       )}

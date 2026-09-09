@@ -94,6 +94,29 @@ describe('groupConnections', () => {
   });
 });
 
+describe('a field the card draws itself', () => {
+  it('survives the action filter, so the Slack picker can render', () => {
+    // An action normally means the flow lives elsewhere and the field is not
+    // the card's to draw. slack-channel is the exception: the card IS the
+    // picker, and filtering it out took Channel ID off the Slack card.
+    const snapshot: SettingsSnapshot = {
+      ...SNAPSHOT,
+      fields: [
+        field('SLACK_BOT_TOKEN', 'slack', { secret: true, is_set: true }),
+        field('SLACK_CHANNEL_ID', 'slack', { action: 'slack-channel' }),
+        field('YEABOI_HOME', 'slack', { action: 'data-dir' }),
+      ],
+    };
+    const slack = groupConnections(snapshot, CONNECTION_CARDS, GROUPS).flatMap((g) =>
+      g.items.filter((i) => i.card.section === 'slack'),
+    )[0];
+    const envs = slack?.fields.map((f) => f.env) ?? [];
+    expect(envs).toContain('SLACK_CHANNEL_ID');
+    // Everything else with a flow of its own still stays out.
+    expect(envs).not.toContain('YEABOI_HOME');
+  });
+});
+
 describe('the surfaces that call it', () => {
   it('onboarding passes no keep, so it keeps showing everything', () => {
     const step = read(

@@ -80,6 +80,12 @@ describe('the saver', () => {
     expect(edition).toContain('!(engageable && engaged)');
   });
 
+  it('re-ages its bylines instead of freezing them', () => {
+    // It is the surface most likely to be up for an hour.
+    expect(saver).toContain('BYLINE_TICK_MS');
+    expect(saver).toMatch(/setInterval[\s\S]{0,80}setNow/);
+  });
+
   it('holds its page while the reach is open, and only there', () => {
     // A story must not turn away from under someone deciding to click it.
     expect(saver).toContain('held={reaching}');
