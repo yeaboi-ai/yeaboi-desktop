@@ -57,6 +57,14 @@ describe('allowed paths is picked, never typed', () => {
     expect(allowedPaths).toContain('multi: true');
   });
 
+  it('shows what is saved as one entry per line, not a joined string', () => {
+    // Three paths joined by commas wrap into a paragraph nobody can read an
+    // entry out of, and each entry is a read-and-write grant worth counting.
+    expect(allowedPaths).toContain('field.items ?? splitCsv(field.value)');
+    expect(allowedPaths).toContain('<ul');
+    expect(allowedPaths).toContain('<li');
+  });
+
   it('saving stays explicit: granting read and write is not a side effect of picking', () => {
     expect(allowedPaths).toContain('saveAllowedPaths');
     expect(allowedPaths).toMatch(/>\s*Save\s*</);

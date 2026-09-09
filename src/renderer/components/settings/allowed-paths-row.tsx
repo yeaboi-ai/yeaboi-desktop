@@ -62,9 +62,28 @@ export function AllowedPathsRow({
   };
 
   if (!open) {
+    // One path per line. Joined, three of these wrap into a paragraph nobody
+    // can read an entry out of — and each one is a grant worth being able to
+    // count at a glance.
+    const saved = field.items ?? splitCsv(field.value);
     return (
       <SettingRow label={field.label}>
-        <RowValue value={field.value} fallback="none — sandboxed to the data directory" />
+        {saved.length === 0 ? (
+          <RowValue value="" fallback="none — sandboxed to the data directory" />
+        ) : (
+          <ul className="min-w-0 flex-1 space-y-1">
+            {saved.map((path) => (
+              <li key={path} className="flex min-w-0 items-baseline gap-2">
+                <span aria-hidden className="shrink-0 text-muted-foreground/50">
+                  •
+                </span>
+                <span className="min-w-0 font-mono text-[12px] break-all text-foreground">
+                  {path}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         <Button variant="ghost" size="sm" onClick={begin}>
           Edit
         </Button>
