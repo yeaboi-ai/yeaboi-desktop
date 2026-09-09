@@ -17,11 +17,7 @@ import { ScreensaverCanvas } from '@/components/screensaver/screensaver-canvas';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { logger } from '@/lib/logger';
 import { getAmbience, setAmbience } from '@/lib/yeaboi/ambience';
-import {
-  hoverScreensaver,
-  previewScreensaver,
-  saverPreferenceChanged,
-} from '@/lib/screensaver/preview';
+import { previewScreensaver, saverPreferenceChanged } from '@/lib/screensaver/preview';
 import { DEFAULT_IDLE_SECONDS } from '@/lib/screensaver/idle';
 import {
   DEFAULT_SAVER_STYLE,
@@ -83,6 +79,9 @@ export function ScreensaverSection() {
   const choose = (next: SaverStyle): void => {
     const previous = style;
     setStyle(next); // optimistic: the tile must light up on the click
+    // Choosing one is asking to see it. It leaves on the first movement or
+    // keypress, exactly as the Preview button and Ctrl+Y already do.
+    if (next !== 'off') previewScreensaver(next);
     setSaving(true);
     setAmbience({ saver_style: next }).then(
       () => {
@@ -171,24 +170,10 @@ function SaverTile({
   disabled: boolean;
   onClick: () => void;
 }) {
+  // Only the tile's own canvas: pointing at one animates its thumbnail, and
+  // seeing it full screen is what choosing it does.
   const [hovered, setHovered] = useState(false);
   const drawable = style !== 'off' && style !== 'shuffle';
-
-  // Pointing at a tile shows it full screen; moving off ends it. Also on
-  // focus, so the keyboard reaches the same thing the pointer does.
-  const show = () => {
-    // A disabled tile still receives pointerenter in some browsers, and
-    // previewing a style the backend cannot store is a promise it cannot keep.
-    if (disabled) return;
-    setHovered(true);
-    if (style !== 'off') hoverScreensaver(style);
-  };
-  const hide = () => {
-    setHovered(false);
-    hoverScreensaver(null);
-  };
-  // Leaving the page — or unmounting mid-hover — must not strand the overlay.
-  useEffect(() => () => hoverScreensaver(null), []);
 
   return (
     <button
@@ -197,10 +182,8 @@ function SaverTile({
       disabled={disabled}
       aria-pressed={active}
       title={blurb}
-      onPointerEnter={show}
-      onPointerLeave={hide}
-      onFocus={show}
-      onBlur={hide}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       className={cn(
         'group flex flex-col overflow-hidden rounded-lg border text-left transition-colors outline-none',
         'focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50',

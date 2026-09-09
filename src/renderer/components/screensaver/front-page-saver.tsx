@@ -9,7 +9,8 @@
 //
 // Three things make it behave as a screensaver rather than a page:
 //
-//  - pointer-events-none on the root. The pointer is usually resting over the
+//  - pointer-events-none on the root, unless the modifier is held. The pointer
+//    is usually resting over the
 //    overlay while the saver runs; without this the edition's hover pause
 //    would freeze the paper on story one, and a story link would be clickable
 //    under a cursor that is meant to be hidden. The overlay's own capture
@@ -28,6 +29,7 @@ import { fallbackPaper } from '@/lib/news/fallback';
 import { loadFallbackNotes, loadPaper, paperNow, rememberPaper } from '@/lib/news/load';
 import { editionOf } from '@/lib/news/masthead';
 import { markKind } from '@/lib/news/persona';
+import { cn } from '@/lib/utils';
 import type { Paper } from '@/lib/news/types';
 import type { TurnSpeedId } from '@/lib/news/turn';
 import { getPref } from '@/lib/preferences';
@@ -41,7 +43,7 @@ function saverSpeed(): TurnSpeedId {
   return stored === 'hand' ? 'slow' : stored;
 }
 
-export function FrontPageSaver({ still }: { still: boolean }) {
+export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: boolean }) {
   const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [notes, setNotes] = useState(false);
@@ -89,7 +91,9 @@ export function FrontPageSaver({ still }: { still: boolean }) {
   }
 
   return (
-    <div className="pointer-events-none h-full w-full overflow-hidden px-6 pt-10">
+    <div
+      className={cn('h-full w-full overflow-hidden px-6 pt-10', !reaching && 'pointer-events-none')}
+    >
       <FrontPageView
         paper={paper}
         now={now}
@@ -97,6 +101,7 @@ export function FrontPageSaver({ still }: { still: boolean }) {
         speed={speed}
         edition={editionOf(paper, failed, notes)}
         engageable={false}
+        held={reaching}
       />
     </div>
   );

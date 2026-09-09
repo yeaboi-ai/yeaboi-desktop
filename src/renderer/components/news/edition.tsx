@@ -45,6 +45,7 @@ export function Edition({
   now,
   speed,
   engageable = true,
+  held = false,
 }: {
   stories: NewsItem[];
   sources: readonly NewsSourceStatus[];
@@ -55,6 +56,9 @@ export function Edition({
    *  the pointer is usually resting over it, which would freeze the paper on
    *  story one for as long as nobody moved the mouse. */
   engageable?: boolean;
+  /** The reader is holding the page open. The screensaver's reach sets it: the
+   *  paper must not turn out from under a story someone is deciding to click. */
+  held?: boolean;
 }) {
   const reduced = useReducedMotion();
   const count = stories.length;
@@ -66,7 +70,7 @@ export function Edition({
   const elapsedRef = useRef(0);
   elapsedRef.current = elapsed;
 
-  const running = !(engageable && engaged) && !reduced && count > 1 && period > 0;
+  const running = !held && !(engageable && engaged) && !reduced && count > 1 && period > 0;
   useEffect(() => {
     if (!running) return;
     const from = elapsedRef.current;

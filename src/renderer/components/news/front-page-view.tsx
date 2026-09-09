@@ -32,6 +32,7 @@ export function FrontPageView({
   edition,
   onRefresh,
   engageable = true,
+  held = false,
   colophon,
 }: {
   paper: Paper | null;
@@ -43,6 +44,8 @@ export function FrontPageView({
   onRefresh?: () => void;
   /** False stops hover and focus pausing the turn; see the screensaver. */
   engageable?: boolean;
+  /** Holds the page where it is, whatever the pointer is doing. */
+  held?: boolean;
   /** The footer, which differs between the page and the saver. */
   colophon?: ReactNode;
 }) {
@@ -66,6 +69,7 @@ export function FrontPageView({
         now={now}
         speed={speed}
         engageable={engageable}
+        held={held}
       />
       {paper && isEmpty(paper) && (
         <p className="py-8 text-[14px] text-muted-foreground">Nothing to read yet.</p>

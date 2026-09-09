@@ -20,6 +20,7 @@ import {
   actionHits,
   groupHits,
   modGlyph,
+  modKeyName,
   pageHits,
   projectHits,
   rankHits,
@@ -397,6 +398,14 @@ describe('the palette copy', () => {
   it('draws the modifier the keycaps use', () => {
     expect(modGlyph('darwin')).toBe('⌘');
     expect(modGlyph('win32')).toBe('Ctrl+');
+  });
+
+  it('names the modifier on its own, for a hint about holding it', () => {
+    // modGlyph trails a '+' ready for a key to follow, which is wrong for
+    // "hold ⌘". The two are derived from each other so they cannot drift.
+    expect(modKeyName('darwin')).toBe('⌘');
+    expect(modKeyName('win32')).toBe('Ctrl');
+    expect(modGlyph('win32')).toBe(`${modKeyName('win32')}+`);
   });
 });
 

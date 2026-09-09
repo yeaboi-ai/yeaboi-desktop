@@ -66,9 +66,14 @@ export const PALETTE_PLACEHOLDER = 'Find anything';
 export const PALETTE_EMPTY = 'Nothing by that name.';
 export const PALETTE_UNAVAILABLE = 'not configured';
 
-/** The modifier's glyph as the keycaps draw it. */
+/** The modifier on its own, for a hint about holding it rather than a chord. */
+export function modKeyName(platform: string): string {
+  return platform === 'darwin' ? '⌘' : 'Ctrl';
+}
+
+/** The modifier's glyph as the keycaps draw it, ready for a key to follow. */
 export function modGlyph(platform: string): string {
-  return platform === 'darwin' ? '⌘' : 'Ctrl+';
+  return platform === 'darwin' ? '⌘' : `${modKeyName(platform)}+`;
 }
 
 const SYSTEM_TAB = '/settings/system';

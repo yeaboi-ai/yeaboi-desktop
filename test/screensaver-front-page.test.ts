@@ -29,14 +29,13 @@ const edition = read('src', 'renderer', 'components', 'news', 'edition.tsx');
 describe('the host', () => {
   it('never reaches the canvas without checking the style tier first', () => {
     // createScene is indexed by SCENE_STYLES and throws on anything else, so
-    // every canvas the host draws has to sit in the else of an isDomStyle
-    // branch. Counting the pairs survives new overlays being added; an index
-    // comparison did not.
-    expect(host).toContain('<ScreensaverScene');
-    const branches = host.match(/isDomStyle\(/g) ?? [];
-    const canvases = host.match(/<ScreensaverCanvas/g) ?? [];
-    expect(canvases.length).toBeGreaterThan(0);
-    expect(branches.length).toBe(canvases.length);
+    // the one canvas the host draws has to sit in the else of an isDomStyle
+    // branch. Pinning the shape rather than counting isDomStyle calls, which
+    // the reach also uses.
+    expect(host).toMatch(
+      /isDomStyle\(scene\)[\s\S]{0,300}<ScreensaverScene[\s\S]{0,400}<ScreensaverCanvas/,
+    );
+    expect(host.match(/<ScreensaverCanvas/g)).toHaveLength(1);
   });
 
   it('keeps the idle clock, the off switch and the preview bus untouched', () => {
@@ -64,14 +63,22 @@ describe('the saver', () => {
     expect(saver).not.toContain('visibilitychange');
   });
 
-  it('swallows pointer events, so the cursor stays hidden and no story is clickable', () => {
-    expect(saver).toContain('pointer-events-none');
+  it('takes no pointer events unless the paper is being reached into', () => {
+    expect(saver).toMatch(/reaching[\s\S]{0,140}pointer-events-none/);
   });
 
   it('turns on regardless of where the pointer is resting', () => {
     expect(saver).toContain('engageable={false}');
     expect(edition).toContain('engageable');
     expect(edition).toContain('!(engageable && engaged)');
+  });
+
+  it('holds its page while the reach is open, and only there', () => {
+    // A story must not turn away from under someone deciding to click it.
+    expect(saver).toContain('held={reaching}');
+    expect(edition).toContain('!held');
+    expect(view).toContain('held');
+    expect(home).not.toContain('held=');
   });
 
   it('never shows an error and never shows nothing', () => {
@@ -97,44 +104,27 @@ describe('the picker tile', () => {
   });
 });
 
-describe('the hover preview', () => {
+describe('preview follows selection', () => {
   const bus = read('src', 'renderer', 'lib', 'screensaver', 'preview.ts');
 
-  it('is a signal of its own, not the idle preview', () => {
-    // The idle path dismisses on any pointer movement — which is the movement
-    // that starts a hover, so reusing it would flicker out instantly.
-    expect(bus).toContain('hoverScreensaver');
-    expect(bus).toContain('onHoverPreview');
+  it('the hover channel is gone from the bus', () => {
+    expect(bus).not.toContain('hoverScreensaver');
+    expect(bus).not.toContain('onHoverPreview');
+    expect(host).not.toContain('onHoverPreview');
   });
 
-  it('draws an overlay that takes no pointer events', () => {
-    // This is what keeps the tile underneath receiving the hover that
-    // sustains it; without it the overlay steals the pointer and flickers.
-    expect(host).toMatch(/hovered[\s\S]{0,400}pointer-events-none/);
+  it('choosing a style shows it', () => {
+    expect(section).toMatch(/setStyle\(next\)[\s\S]{0,240}previewScreensaver\(next\)/);
   });
 
-  it('never touches the idle clock', () => {
-    const hoverBlock = host.slice(
-      host.indexOf('onHoverPreview'),
-      host.indexOf('onHoverPreview') + 400,
-    );
-    expect(hoverBlock).not.toContain('controller');
-    expect(hoverBlock).not.toContain('showNow');
+  it('off is chosen but never previewed', () => {
+    expect(section).toContain("if (next !== 'off') previewScreensaver(next)");
   });
 
-  it('yields to the real screensaver', () => {
-    expect(host).toContain('!showing && hovered');
-  });
-
-  it('the tile starts and ends it, and cleans up if it unmounts mid-hover', () => {
-    expect(section).toContain('hoverScreensaver(style)');
-    expect(section).toContain('hoverScreensaver(null)');
-    expect(section).toContain('useEffect(() => () => hoverScreensaver(null), [])');
-  });
-
-  it('the keyboard reaches it too', () => {
-    expect(section).toContain('onFocus={show}');
-    expect(section).toContain('onBlur={hide}');
+  it('pointing at a tile still animates its own thumbnail', () => {
+    // hovered survives for that alone — without it all six go static.
+    expect(section).toContain('still={!hovered}');
+    expect(section).toContain('setHovered(true)');
   });
 });
 
