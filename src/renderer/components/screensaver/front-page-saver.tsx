@@ -23,12 +23,11 @@
 //    chose this saver wants a front page, not an explanation.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAudience } from '@/components/providers/audience-provider';
 import { FrontPageView } from '@/components/news/front-page-view';
 import { fallbackPaper } from '@/lib/news/fallback';
 import { loadFallbackNotes, loadPaper, paperNow, rememberPaper } from '@/lib/news/load';
 import { editionOf } from '@/lib/news/masthead';
-import { markKind } from '@/lib/news/persona';
+import type { MarkKind } from '@/lib/news/persona';
 import { cn } from '@/lib/utils';
 import type { Paper } from '@/lib/news/types';
 import type { TurnSpeedId } from '@/lib/news/turn';
@@ -36,6 +35,9 @@ import { getPref } from '@/lib/preferences';
 import { ScreensaverCanvas } from './screensaver-canvas';
 import { DEFAULT_SAVER_STYLE } from '@/lib/screensaver/styles';
 import { SHELL_ENTRIES } from '@/lib/yeaboi/shell-changelog';
+
+/** The same mark the home page draws. */
+const MARK: MarkKind = 'duck';
 
 /** Nothing turns by hand on an idle screen. */
 function saverSpeed(): TurnSpeedId {
@@ -45,7 +47,6 @@ function saverSpeed(): TurnSpeedId {
 
 export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: boolean }) {
   const surface = useRef<HTMLDivElement>(null);
-  const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [notes, setNotes] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -106,7 +107,7 @@ export function FrontPageSaver({ still, reaching }: { still: boolean; reaching: 
       <FrontPageView
         paper={paper}
         now={now}
-        mark={markKind(audience)}
+        mark={MARK}
         speed={speed}
         edition={editionOf(paper, failed, notes)}
         engageable={false}
