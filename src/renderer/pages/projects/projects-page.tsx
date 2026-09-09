@@ -67,7 +67,7 @@ import { REFERENCE_COPY, type ProjectReference } from '@/lib/yeaboi/references';
 import { cn } from '@/lib/utils';
 import { fallbackFlowKeys, flowFor, type FlowStep } from '@/lib/yeaboi/reads';
 import { loadRecentSessions, relativeDay } from '@/lib/yeaboi/sessions';
-import { HIDE_SUGGESTIONS_LABEL, SUGGEST_LABEL, SUGGEST_PROMPT } from '@/lib/yeaboi/suggestions';
+import { HIDE_SUGGESTIONS_LABEL, SUGGEST_LABEL, suggestPrompt } from '@/lib/yeaboi/suggestions';
 import { logger } from '@/lib/logger';
 import { PageShell } from '@/components/page-shell';
 
@@ -244,11 +244,20 @@ function LedgerRow({
   );
 }
 
-/** The one line an empty sheet offers in place of rows; the button unfolds them. */
-function SuggestLine({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+/** The line that offers suggestions, under an empty sheet and a full one alike;
+ *  the button unfolds them, and nothing is read until it is pressed. */
+function SuggestLine({
+  empty,
+  open,
+  onToggle,
+}: {
+  empty: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
   return (
     <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-5 pb-3 text-[13px] font-body leading-snug text-muted-foreground">
-      <span>{SUGGEST_PROMPT}</span>
+      <span>{suggestPrompt(empty)}</span>
       <button
         type="button"
         onClick={onToggle}
@@ -558,18 +567,9 @@ export default function ProjectsPage() {
 
         {headed && <LedgerHead steps={steps} colors={colors} />}
 
-        {loading ? (
-          <GhostSkeleton steps={steps} />
-        ) : empty ? (
-          <>
-            <SuggestLine open={suggesting} onToggle={() => setSuggesting((open) => !open)} />
-            {suggesting && (
-              <div id="suggested-projects">
-                <SuggestedProjects steps={steps} colors={colors} onPick={pickExample} />
-              </div>
-            )}
-          </>
-        ) : (
+        {loading && <GhostSkeleton steps={steps} />}
+
+        {!loading && !empty && (
           <>
             {rows.length === 0 ? (
               <p className="py-3 text-[13px] font-body leading-relaxed text-muted-foreground">
@@ -591,6 +591,26 @@ export default function ProjectsPage() {
                   ))}
                 </ul>
               </>
+            )}
+          </>
+        )}
+
+        {!loading && (
+          <>
+            <SuggestLine
+              empty={empty}
+              open={suggesting}
+              onToggle={() => setSuggesting((open) => !open)}
+            />
+            {suggesting && (
+              <div id="suggested-projects">
+                <SuggestedProjects
+                  steps={steps}
+                  colors={colors}
+                  onPick={pickExample}
+                  showHead={empty}
+                />
+              </div>
             )}
           </>
         )}

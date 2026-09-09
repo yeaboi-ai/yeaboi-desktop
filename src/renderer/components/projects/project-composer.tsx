@@ -2,11 +2,12 @@
 
 // The New project form as the ledger's first ruled line: one borderless
 // serif field that asks what you are building, the world's hairline under it,
-// and, once there are words, AI rewrite and Create on the line beneath. The
-// page owns the text so an example row can fill it; yeaboi names the project
-// from it. Typing @ or / opens the reference menu under the field; a pick, a
-// pasted or dropped image, or the file picker becomes a chip in the row under
-// the text, and Create carries them with the words.
+// and beneath that a line saying what becomes of the words — joined by AI
+// rewrite and Create once there are some. The page owns the text so an example
+// row can fill it; yeaboi names the project from it. Typing @ or / opens the
+// reference menu under the field; a pick, a pasted or dropped image, or the
+// file picker becomes a chip in the row under the text, and Create carries
+// them with the words.
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { Sparkles } from 'lucide-react';
@@ -17,6 +18,7 @@ import { ReferenceChips, type PendingShot } from '@/components/projects/referenc
 import { ReferenceMenu, type ReferenceMenuHandle } from '@/components/projects/reference-menu';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { loadConnections } from '@/lib/yeaboi/connections';
+import { composerNote } from '@/lib/yeaboi/describe';
 import { createErrorMessage } from '@/lib/yeaboi/ledger';
 import {
   LINK_SOURCE,
@@ -227,10 +229,7 @@ export function ProjectComposer({
     }
   }
 
-  const hint =
-    text && !error
-      ? `yeaboi names it from this.${attached ? '' : ` ${REFERENCE_COPY.COMPOSER_HINT}`}`
-      : '';
+  const note = composerNote(Boolean(text), attached, REFERENCE_COPY.COMPOSER_HINT);
 
   return (
     <form onSubmit={handleSubmit} aria-label="New project">
@@ -318,10 +317,34 @@ export function ProjectComposer({
         }
         onRemovePending={removeShot}
       />
-      {(text || error || attached) && (
-        <div className="mt-2 flex items-center justify-between gap-4 animate-fade-in">
-          <p className="text-[12px] font-body text-muted-foreground">{hint}</p>
-          <div className="flex shrink-0 items-center gap-1">
+      <div className="mt-2 flex min-h-[2rem] items-center justify-between gap-4">
+        {/* The sheet's own two tones, one size down from SheetWord: the promise
+            in the ledger's serif, the consequence in body type beside it. A
+            failed create takes the slot instead — the alert says enough. */}
+        <p
+          hidden={Boolean(error)}
+          className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug"
+        >
+          <span
+            key={note.lead}
+            className="animate-fade-in font-display text-[15px] italic text-muted-foreground"
+          >
+            {note.lead}
+          </span>
+          {note.tail && (
+            <>
+              <span className="sr-only">. </span>
+              <span
+                key={note.tail}
+                className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
+              >
+                {note.tail}
+              </span>
+            </>
+          )}
+        </p>
+        {(text || attached) && (
+          <div className="flex shrink-0 items-center gap-1 animate-fade-in">
             {text && (
               <Button
                 type="button"
@@ -339,8 +362,8 @@ export function ProjectComposer({
               {loading ? 'Creating…' : 'Create project'}
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       {error && (
         <p
           role="alert"

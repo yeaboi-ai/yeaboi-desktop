@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { BlueprintLauncher, type FocusTarget } from '@/components/blueprint/blueprint-launcher';
 import { PageShell } from '@/components/page-shell';
+import { DESCRIBE_COPY, carriesDescription, openingLine } from '@/lib/yeaboi/describe';
 
 type Pace = 'fast' | 'balanced' | 'deep';
 type TechnicalComfort = 'non_technical' | 'comfortable' | 'expert';
@@ -220,14 +221,7 @@ export default function NewSessionPage() {
           // First session: default to "Large Feature" and combine with project description
           if (!data.has_blueprint) {
             setSelectedType('large_feature');
-            const desc = data.project_description
-              ? (
-                  data.project_description.charAt(0).toLowerCase() +
-                  data.project_description.slice(1)
-                ).replace(/\.$/, '')
-              : '';
-            const starter = TYPE_STARTERS['large_feature'] || '';
-            setIdea(desc ? `${starter}${desc}` : starter);
+            setIdea(openingLine(TYPE_STARTERS['large_feature'] || '', data.project_description));
           }
         }
       })
@@ -316,10 +310,9 @@ export default function NewSessionPage() {
     setLoading(true);
     setError(null);
     try {
-      // Check relevance if user provided an idea (skip if it contains the project description — auto-populated)
-      const descLower = projectDesc?.toLowerCase() || '';
-      const ideaContainsDesc = descLower && idea.toLowerCase().includes(descLower);
-      if (idea.trim() && !ideaContainsDesc) {
+      // Check relevance if user provided an idea (skip if it still carries the
+      // project description — those words were auto-populated, not typed here)
+      if (idea.trim() && !carriesDescription(idea, projectDesc)) {
         const checkResp = await authFetch(`/api/projects/${projectId}/sessions/check-relevance`, {
           method: 'POST',
           body: JSON.stringify({ initial_idea: idea }),
@@ -594,15 +587,7 @@ export default function NewSessionPage() {
                       setIdea(projectDesc || '');
                     } else {
                       setSelectedType(t.id);
-                      const starter = TYPE_STARTERS[t.id] || '';
-                      // Combine starter with project description for a natural sentence
-                      const desc = projectDesc
-                        ? (projectDesc.charAt(0).toLowerCase() + projectDesc.slice(1)).replace(
-                            /\.$/,
-                            '',
-                          )
-                        : '';
-                      const combined = desc ? `${starter}${desc}` : starter;
+                      const combined = openingLine(TYPE_STARTERS[t.id] || '', projectDesc);
                       setIdea(combined);
                       // Focus textarea and place cursor at end
                       setTimeout(() => {
@@ -788,6 +773,11 @@ export default function NewSessionPage() {
                 <span>{rewriting ? 'Rewriting…' : 'AI Rewrite'}</span>
               </button>
             </div>
+            {carriesDescription(idea, projectDesc) && (
+              <p className="text-[11px] font-body text-muted-foreground/60">
+                {DESCRIBE_COPY.CARRIED}
+              </p>
+            )}
             <Textarea
               ref={ideaRef}
               value={idea}

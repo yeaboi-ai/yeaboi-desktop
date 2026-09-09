@@ -44,7 +44,7 @@ export interface GuidePage {
 
 const FIRST_PAGE: GuidePage = {
   title: 'One piece of work',
-  body: 'Plan it once and keep coming back to it. Describe it below and yeaboi names it.',
+  body: 'Plan it once and keep coming back to it. Describe it below and yeaboi names it — a description is a start, not a commitment.',
 };
 
 const LAST_PAGE: GuidePage = {

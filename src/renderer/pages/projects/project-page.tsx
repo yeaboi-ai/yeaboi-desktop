@@ -11,12 +11,14 @@ import { stampLastViewedProject } from '@/lib/api/teams';
 import { X, Trash2, Pencil, ClipboardList, FileText, Check, RotateCcw } from 'lucide-react';
 import { EditProjectDialog } from '@/components/edit-project-dialog';
 import { DashboardGrid } from '@/components/project-layout-grid';
+import { FirstRunCard } from '@/components/projects/first-run-card';
 import { RunInsidePanel } from '@/components/projects/run-inside-panel';
 import { HiddenPanelsMenu } from '@/components/layout-toolbar';
 import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-layout';
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
 import { DemoTour } from '@/components/onboarding/demo-tour';
 import { PageShell } from '@/components/page-shell';
+import { isFirstRun } from '@/lib/yeaboi/describe';
 import { isDone, nextStatus, statusActionLabel, statusWord } from '@/lib/yeaboi/projects';
 import { ReferenceChips } from '@/components/projects/reference-chips';
 import { useApiUrl } from '@/hooks/use-api-url';
@@ -997,6 +999,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  // Undefined until the sessions fetch settles, the way run-inside-panel.tsx
+  // holds its list: a failed or slow read must not read as "none yet".
+  const [sessionsRead, setSessionsRead] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -1114,7 +1119,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
       setProject(await projectResp.json());
 
-      if (sessionsResp.ok) setSessions(await sessionsResp.json());
+      if (sessionsResp.ok) {
+        setSessions(await sessionsResp.json());
+        setSessionsRead(true);
+      }
 
       if (blueprintResp.ok) {
         const bp = await blueprintResp.json();
@@ -1415,6 +1423,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     (s) => s.status === 'live' || s.status === 'lobby' || s.status === 'paused',
   );
 
+  // Nothing has happened inside this project yet: every dashboard panel would
+  // be empty, so the page says what to do instead of showing them. Only once
+  // the sessions have actually been read — a failed fetch keeps the dashboard.
+  const firstRun = sessionsRead && isFirstRun(sessions);
+
   // Filter sections by active iteration type
   const activeIter = iterations.find((i) => i.id === activeIterationId);
   const isV2Plus = activeIter && activeIter.forked_from_id;
@@ -1533,7 +1546,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="flex items-center justify-between mb-10 animate-fade-in stagger-2 relative z-[100]">
           <div className="h-px bg-border flex-1" />
-          {hiddenPanelDefs.length > 0 && (
+          {!firstRun && hiddenPanelDefs.length > 0 && (
             <div className="ml-4">
               <HiddenPanelsMenu hiddenPanels={hiddenPanelDefs} onShow={showPanel} />
             </div>
@@ -1561,471 +1574,492 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {/* The engine's two columns: run a mode inside this project, and the
+        {/* Before the first session there is nothing for the grid to show, so
+            the page offers the one thing worth doing and keeps the engine
+            modes a line below it. */}
+        {firstRun ? (
+          <div className="mb-10">
+            <FirstRunCard projectId={project.id} canStart={project.is_own_team !== false}>
+              <RunInsidePanel project={project} />
+            </FirstRunCard>
+          </div>
+        ) : (
+          <>
+            {/* The engine's two columns: run a mode inside this project, and the
             runs already inside it. */}
-        <div className="mb-12 animate-slide-up stagger-3">
-          <RunInsidePanel project={project} />
-        </div>
-
-        {/* Customisable Dashboard grid */}
-        <div className="mb-10 animate-slide-up stagger-3">
-          <DashboardGrid
-            layouts={dashboardLayouts}
-            onLayoutChange={onLayoutChange}
-            visiblePanelIds={visiblePanels.map((p) => p.id)}
-            onHide={hidePanel}
-            onToggleExpand={toggleExpand}
-            isExpanded={isExpanded}
-          >
-            {/* Panel: Releases */}
-            <div key="sessions" className="h-full">
-              <DashboardPanel label="Releases">
-                {sessions.length === 0 ? (
-                  <p className="text-xs text-muted-foreground/50 font-body">No sessions yet.</p>
-                ) : sessionsLayout.w >= 12 ? (
-                  /* ── Full width: two-column with stats ─────────────── */
-                  <div className="grid grid-cols-[1fr_auto] gap-6 mb-3">
-                    <div className="space-y-1">
-                      {sessions.map((s) => {
-                        const boundIter = s.iteration_id
-                          ? iterations.find((i) => i.id === s.iteration_id)
-                          : null;
-                        const rName = boundIter ? releaseName(boundIter) : null;
-                        const isCompleting =
-                          boundIter?.status === 'locked' && s.status === 'completed';
-                        return (
-                          <SessionItem
-                            key={s.id}
-                            session={s}
-                            projectId={project.id}
-                            isAdmin={isAdmin}
-                            onDelete={handleDeleteSession}
-                            onRename={handleRenameSession}
-                            iterationLabel={rName}
-                            isCompletingSession={isCompleting}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="flex flex-col gap-3 pr-2 shrink-0 min-w-[140px]">
-                      <div className="border border-border/30 rounded-lg px-4 py-3">
-                        <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
-                          Total
-                        </p>
-                        <span className="font-display text-3xl italic text-foreground leading-none">
-                          {sessions.length}
-                        </span>
-                      </div>
-                      <div className="border border-border/30 rounded-lg px-4 py-3">
-                        <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
-                          Active
-                        </p>
-                        <span className="font-display text-3xl italic text-success leading-none">
-                          {
-                            sessions.filter((s) => s.status === 'live' || s.status === 'lobby')
-                              .length
-                          }
-                        </span>
-                      </div>
-                      <div className="border border-border/30 rounded-lg px-4 py-3">
-                        <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
-                          Completed
-                        </p>
-                        <span className="font-display text-3xl italic text-[#e5a630] leading-none">
-                          {sessions.filter((s) => s.status === 'completed').length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* ── Normal: compact list ──────────────────────────── */
-                  <div className="space-y-0.5 mb-3">
-                    {sessions.slice(0, sessionsLayout.h > 4 ? 12 : 8).map((s) => {
-                      const boundIter = s.iteration_id
-                        ? iterations.find((i) => i.id === s.iteration_id)
-                        : null;
-                      const rName = boundIter ? releaseName(boundIter) : null;
-                      const isCompleting =
-                        boundIter?.status === 'locked' && s.status === 'completed';
-                      return (
-                        <SessionItem
-                          key={s.id}
-                          session={s}
-                          projectId={project.id}
-                          isAdmin={isAdmin}
-                          onDelete={handleDeleteSession}
-                          onRename={handleRenameSession}
-                          iterationLabel={rName}
-                          isCompletingSession={isCompleting}
-                        />
-                      );
-                    })}
-                    {sessions.length > (sessionsLayout.h > 4 ? 12 : 8) && (
-                      <p className="text-[10px] font-body text-muted-foreground/40 px-3 pt-1">
-                        +{sessions.length - (sessionsLayout.h > 4 ? 12 : 8)} more
-                      </p>
-                    )}
-                  </div>
-                )}
-                {project.is_own_team !== false && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <Link
-                      href={`/projects/${project.id}/sessions/new`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
-                    >
-                      + New Release
-                    </Link>
-                  </div>
-                )}
-              </DashboardPanel>
+            <div className="mb-12 animate-slide-up stagger-3">
+              <RunInsidePanel project={project} />
             </div>
 
-            {/* Panel: Blueprint */}
-            <div key="blueprint" className="h-full">
-              <DashboardPanel label="Blueprint">
-                {blueprint === null ? (
-                  <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
-                ) : (
-                  <>
-                    {/* Release timeline + open-blueprint link. The link lives on
+            {/* Customisable Dashboard grid */}
+            <div className="mb-10 animate-slide-up stagger-3">
+              <DashboardGrid
+                layouts={dashboardLayouts}
+                onLayoutChange={onLayoutChange}
+                visiblePanelIds={visiblePanels.map((p) => p.id)}
+                onHide={hidePanel}
+                onToggleExpand={toggleExpand}
+                isExpanded={isExpanded}
+              >
+                {/* Panel: Releases */}
+                <div key="sessions" className="h-full">
+                  <DashboardPanel label="Releases">
+                    {sessions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/50 font-body">No sessions yet.</p>
+                    ) : sessionsLayout.w >= 12 ? (
+                      /* ── Full width: two-column with stats ─────────────── */
+                      <div className="grid grid-cols-[1fr_auto] gap-6 mb-3">
+                        <div className="space-y-1">
+                          {sessions.map((s) => {
+                            const boundIter = s.iteration_id
+                              ? iterations.find((i) => i.id === s.iteration_id)
+                              : null;
+                            const rName = boundIter ? releaseName(boundIter) : null;
+                            const isCompleting =
+                              boundIter?.status === 'locked' && s.status === 'completed';
+                            return (
+                              <SessionItem
+                                key={s.id}
+                                session={s}
+                                projectId={project.id}
+                                isAdmin={isAdmin}
+                                onDelete={handleDeleteSession}
+                                onRename={handleRenameSession}
+                                iterationLabel={rName}
+                                isCompletingSession={isCompleting}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex flex-col gap-3 pr-2 shrink-0 min-w-[140px]">
+                          <div className="border border-border/30 rounded-lg px-4 py-3">
+                            <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
+                              Total
+                            </p>
+                            <span className="font-display text-3xl italic text-foreground leading-none">
+                              {sessions.length}
+                            </span>
+                          </div>
+                          <div className="border border-border/30 rounded-lg px-4 py-3">
+                            <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
+                              Active
+                            </p>
+                            <span className="font-display text-3xl italic text-success leading-none">
+                              {
+                                sessions.filter((s) => s.status === 'live' || s.status === 'lobby')
+                                  .length
+                              }
+                            </span>
+                          </div>
+                          <div className="border border-border/30 rounded-lg px-4 py-3">
+                            <p className="text-[10px] font-body text-muted-foreground/50 uppercase tracking-wide mb-1">
+                              Completed
+                            </p>
+                            <span className="font-display text-3xl italic text-[#e5a630] leading-none">
+                              {sessions.filter((s) => s.status === 'completed').length}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── Normal: compact list ──────────────────────────── */
+                      <div className="space-y-0.5 mb-3">
+                        {sessions.slice(0, sessionsLayout.h > 4 ? 12 : 8).map((s) => {
+                          const boundIter = s.iteration_id
+                            ? iterations.find((i) => i.id === s.iteration_id)
+                            : null;
+                          const rName = boundIter ? releaseName(boundIter) : null;
+                          const isCompleting =
+                            boundIter?.status === 'locked' && s.status === 'completed';
+                          return (
+                            <SessionItem
+                              key={s.id}
+                              session={s}
+                              projectId={project.id}
+                              isAdmin={isAdmin}
+                              onDelete={handleDeleteSession}
+                              onRename={handleRenameSession}
+                              iterationLabel={rName}
+                              isCompletingSession={isCompleting}
+                            />
+                          );
+                        })}
+                        {sessions.length > (sessionsLayout.h > 4 ? 12 : 8) && (
+                          <p className="text-[10px] font-body text-muted-foreground/40 px-3 pt-1">
+                            +{sessions.length - (sessionsLayout.h > 4 ? 12 : 8)} more
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {project.is_own_team !== false && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <Link
+                          href={`/projects/${project.id}/sessions/new`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                        >
+                          + New Release
+                        </Link>
+                      </div>
+                    )}
+                  </DashboardPanel>
+                </div>
+
+                {/* Panel: Blueprint */}
+                <div key="blueprint" className="h-full">
+                  <DashboardPanel label="Blueprint">
+                    {blueprint === null ? (
+                      <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
+                    ) : (
+                      <>
+                        {/* Release timeline + open-blueprint link. The link lives on
                     the trailing edge of the same row so it shares vertical
                     space with the release pills (and avoids the panel's
                     expand/hide chrome icons in the panel corner). */}
-                    <div className="flex items-center gap-0 mb-4 overflow-x-auto">
-                      {iterations.map((iter, idx) => {
-                        const active = iter.id === activeIterationId;
-                        const isFinalized = iter.status === 'locked';
-                        const isReady = iter.status === 'ready';
-                        const name = releaseName(iter);
-                        return (
-                          <div key={iter.id} className="flex items-center shrink-0">
-                            {idx > 0 && <div className="w-4 h-px bg-border/40" />}
-                            <button
-                              onClick={async () => {
-                                setActiveIterationId(iter.id);
-                                const resp = await authFetch(
-                                  `/api/projects/${id}/blueprint?iteration_id=${iter.id}`,
-                                );
-                                if (resp.ok) {
-                                  const bp = await resp.json();
-                                  setBlueprint(bp.content || bp);
-                                }
-                              }}
-                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-body font-medium transition-all ${
-                                active
-                                  ? 'bg-primary/15 text-primary border border-primary/30'
-                                  : 'text-muted-foreground/50 hover:text-foreground/70 hover:bg-card/60'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  isFinalized
-                                    ? 'bg-success'
-                                    : isReady
-                                      ? 'bg-blue-400'
-                                      : 'bg-amber-400'
-                                }`}
-                              />
-                              {name}
-                              {isFinalized && (
-                                <span className="text-[8px] text-success/60">Finalized</span>
-                              )}
-                              {isReady && (
-                                <span className="text-[8px] text-blue-400/60">Ready</span>
-                              )}
-                            </button>
-                          </div>
-                        );
-                      })}
-                      <Link
-                        href={`/projects/${project.id}/blueprint`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="ml-auto shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-body font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
-                        title="Open the full blueprint document"
-                      >
-                        <FileText className="h-3 w-3" />
-                        Open
-                      </Link>
-                    </div>
-
-                    {/* v2+ without type chosen yet — show placeholder */}
-                    {v2NoType ? (
-                      <div className="py-6 text-center">
-                        <p className="text-[11px] font-body text-muted-foreground/50 mb-1">
-                          No release type selected yet
-                        </p>
-                        <p className="text-[10px] font-body text-muted-foreground/30">
-                          Start a new session and choose a type to see which sections this release
-                          will cover.
-                        </p>
-                        <Link
-                          href={`/projects/${project.id}/sessions/new`}
-                          className="inline-block mt-3 text-[10px] font-body font-medium text-primary/70 hover:text-primary transition-colors"
-                        >
-                          Start session →
-                        </Link>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Progress header — scales with layout */}
-                        <div className="flex items-center gap-4 mb-4">
-                          <div className={`relative shrink-0 ${'w-12 h-12'}`}>
-                            <svg className={`${'w-12 h-12'} -rotate-90`} viewBox="0 0 36 36">
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15"
-                                fill="none"
-                                stroke="currentColor"
-                                className="text-white/[0.06]"
-                                strokeWidth="3"
-                              />
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15"
-                                fill="none"
-                                stroke="currentColor"
-                                className={
-                                  filledSections === countSections.length
-                                    ? 'text-success'
-                                    : 'text-primary'
-                                }
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                strokeDasharray={`${(filledSections / countSections.length) * 94.2} 94.2`}
-                              />
-                            </svg>
-                            <span
-                              className={`absolute inset-0 flex items-center justify-center font-bold text-foreground/70 ${'text-xs'}`}
-                            >
-                              {filledSections}
-                            </span>
-                          </div>
-                          <div>
-                            <p className={`font-body font-medium text-foreground/80 ${'text-sm'}`}>
-                              {filledSections === countSections.length
-                                ? 'Blueprint complete'
-                                : filledSections === 0
-                                  ? 'No sections filled yet'
-                                  : `${filledSections} of ${countSections.length} sections`}
-                            </p>
-                            <p className={`font-body text-muted-foreground/40 ${'text-xs'}`}>
-                              {filledSections === countSections.length
-                                ? 'Ready to generate board'
-                                : `${countSections.length - filledSections} remaining`}
-                            </p>
-                          </div>
+                        <div className="flex items-center gap-0 mb-4 overflow-x-auto">
+                          {iterations.map((iter, idx) => {
+                            const active = iter.id === activeIterationId;
+                            const isFinalized = iter.status === 'locked';
+                            const isReady = iter.status === 'ready';
+                            const name = releaseName(iter);
+                            return (
+                              <div key={iter.id} className="flex items-center shrink-0">
+                                {idx > 0 && <div className="w-4 h-px bg-border/40" />}
+                                <button
+                                  onClick={async () => {
+                                    setActiveIterationId(iter.id);
+                                    const resp = await authFetch(
+                                      `/api/projects/${id}/blueprint?iteration_id=${iter.id}`,
+                                    );
+                                    if (resp.ok) {
+                                      const bp = await resp.json();
+                                      setBlueprint(bp.content || bp);
+                                    }
+                                  }}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-body font-medium transition-all ${
+                                    active
+                                      ? 'bg-primary/15 text-primary border border-primary/30'
+                                      : 'text-muted-foreground/50 hover:text-foreground/70 hover:bg-card/60'
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      isFinalized
+                                        ? 'bg-success'
+                                        : isReady
+                                          ? 'bg-blue-400'
+                                          : 'bg-amber-400'
+                                    }`}
+                                  />
+                                  {name}
+                                  {isFinalized && (
+                                    <span className="text-[8px] text-success/60">Finalized</span>
+                                  )}
+                                  {isReady && (
+                                    <span className="text-[8px] text-blue-400/60">Ready</span>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                          <Link
+                            href={`/projects/${project.id}/blueprint`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="ml-auto shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-body font-medium text-muted-foreground/60 hover:text-foreground hover:bg-foreground/[0.05] transition-colors"
+                            title="Open the full blueprint document"
+                          >
+                            <FileText className="h-3 w-3" />
+                            Open
+                          </Link>
                         </div>
 
-                        {/* Compact section list — expandable */}
-                        <BlueprintSectionList
-                          sections={visibleSections}
-                          blueprint={blueprint}
-                          projectId={project.id}
-                          sessions={sessions}
-                          filledSections={filledSections}
-                          focusSections={focusSectionKeys}
-                        />
+                        {/* v2+ without type chosen yet — show placeholder */}
+                        {v2NoType ? (
+                          <div className="py-6 text-center">
+                            <p className="text-[11px] font-body text-muted-foreground/50 mb-1">
+                              No release type selected yet
+                            </p>
+                            <p className="text-[10px] font-body text-muted-foreground/30">
+                              Start a new session and choose a type to see which sections this
+                              release will cover.
+                            </p>
+                            <Link
+                              href={`/projects/${project.id}/sessions/new`}
+                              className="inline-block mt-3 text-[10px] font-body font-medium text-primary/70 hover:text-primary transition-colors"
+                            >
+                              Start session →
+                            </Link>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Progress header — scales with layout */}
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className={`relative shrink-0 ${'w-12 h-12'}`}>
+                                <svg className={`${'w-12 h-12'} -rotate-90`} viewBox="0 0 36 36">
+                                  <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="15"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className="text-white/[0.06]"
+                                    strokeWidth="3"
+                                  />
+                                  <circle
+                                    cx="18"
+                                    cy="18"
+                                    r="15"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    className={
+                                      filledSections === countSections.length
+                                        ? 'text-success'
+                                        : 'text-primary'
+                                    }
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeDasharray={`${(filledSections / countSections.length) * 94.2} 94.2`}
+                                  />
+                                </svg>
+                                <span
+                                  className={`absolute inset-0 flex items-center justify-center font-bold text-foreground/70 ${'text-xs'}`}
+                                >
+                                  {filledSections}
+                                </span>
+                              </div>
+                              <div>
+                                <p
+                                  className={`font-body font-medium text-foreground/80 ${'text-sm'}`}
+                                >
+                                  {filledSections === countSections.length
+                                    ? 'Blueprint complete'
+                                    : filledSections === 0
+                                      ? 'No sections filled yet'
+                                      : `${filledSections} of ${countSections.length} sections`}
+                                </p>
+                                <p className={`font-body text-muted-foreground/40 ${'text-xs'}`}>
+                                  {filledSections === countSections.length
+                                    ? 'Ready to generate board'
+                                    : `${countSections.length - filledSections} remaining`}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Compact section list — expandable */}
+                            <BlueprintSectionList
+                              sections={visibleSections}
+                              blueprint={blueprint}
+                              projectId={project.id}
+                              sessions={sessions}
+                              filledSections={filledSections}
+                              focusSections={focusSectionKeys}
+                            />
+                          </>
+                        )}
+
+                        {/* Plan Next Release button */}
+                        {iterations.length > 0 &&
+                          iterations.every((i) => i.status === 'locked') && (
+                            <button
+                              onClick={async () => {
+                                const currentName = releaseName(iterations[iterations.length - 1]);
+                                const nextNum = iterations.length + 1;
+                                const ok = await confirm({
+                                  title: 'Plan Next Release',
+                                  message: `${currentName} is finalized. Create Release ${nextNum} based on it?`,
+                                  confirmLabel: `Create Release ${nextNum}`,
+                                  cancelLabel: 'Cancel',
+                                });
+                                if (!ok) return;
+
+                                const resp = await authFetch(
+                                  `/api/projects/${project.id}/iterations`,
+                                  {
+                                    method: 'POST',
+                                  },
+                                );
+                                if (resp.ok) {
+                                  const newIter = await resp.json();
+                                  setIterations((prev) => [...prev, newIter]);
+                                  setActiveIterationId(newIter.id);
+                                  const bpResp = await authFetch(
+                                    `/api/projects/${id}/blueprint?iteration_id=${newIter.id}`,
+                                  );
+                                  if (bpResp.ok) {
+                                    const bp = await bpResp.json();
+                                    setBlueprint(bp.content || bp);
+                                  }
+                                }
+                              }}
+                              className="mt-3 w-full text-xs font-body font-medium text-primary/80 hover:text-primary px-3 py-2 rounded-md border border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                            >
+                              + Plan Next Release
+                            </button>
+                          )}
                       </>
                     )}
+                  </DashboardPanel>
+                </div>
 
-                    {/* Plan Next Release button */}
-                    {iterations.length > 0 && iterations.every((i) => i.status === 'locked') && (
-                      <button
-                        onClick={async () => {
-                          const currentName = releaseName(iterations[iterations.length - 1]);
-                          const nextNum = iterations.length + 1;
-                          const ok = await confirm({
-                            title: 'Plan Next Release',
-                            message: `${currentName} is finalized. Create Release ${nextNum} based on it?`,
-                            confirmLabel: `Create Release ${nextNum}`,
-                            cancelLabel: 'Cancel',
-                          });
-                          if (!ok) return;
-
-                          const resp = await authFetch(`/api/projects/${project.id}/iterations`, {
-                            method: 'POST',
-                          });
-                          if (resp.ok) {
-                            const newIter = await resp.json();
-                            setIterations((prev) => [...prev, newIter]);
-                            setActiveIterationId(newIter.id);
-                            const bpResp = await authFetch(
-                              `/api/projects/${id}/blueprint?iteration_id=${newIter.id}`,
-                            );
-                            if (bpResp.ok) {
-                              const bp = await bpResp.json();
-                              setBlueprint(bp.content || bp);
-                            }
-                          }
-                        }}
-                        className="mt-3 w-full text-xs font-body font-medium text-primary/80 hover:text-primary px-3 py-2 rounded-md border border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-colors"
-                      >
-                        + Plan Next Release
-                      </button>
-                    )}
-                  </>
-                )}
-              </DashboardPanel>
-            </div>
-
-            {/* Panel: Plan — the yeaboi engine's plan for the current iteration */}
-            <div key="plan" className="h-full">
-              <DashboardPanel label="Plan">
-                {(() => {
-                  const current = iterations[iterations.length - 1];
-                  const generated = current?.yeaboi_session_id;
-                  return (
-                    <>
-                      {generated ? (
-                        <p className="text-xs text-muted-foreground/50 font-body mb-3">
-                          Plan generated
-                          {current?.plan_generated_at
-                            ? ` ${String(current.plan_generated_at).slice(0, 10)}`
-                            : ''}{' '}
-                          — epics, stories, tasks and sprints from the blueprint.
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground/50 font-body mb-3">
-                          No plan yet. Fill in the blueprint, then generate — stories land on the
-                          board.
-                        </p>
-                      )}
-                      <div className="mt-3 pt-3 border-t border-border">
-                        <Link
-                          href={`/projects/${project.id}/plan`}
-                          className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
-                        >
-                          {generated ? 'Open the plan →' : 'Generate a plan →'}
-                        </Link>
-                      </div>
-                    </>
-                  );
-                })()}
-              </DashboardPanel>
-            </div>
-
-            {/* Panel: Diagrams */}
-            <div key="diagrams" className="h-full">
-              <DashboardPanel label="Diagrams">
-                {diagrams.length === 0 ? (
-                  <p className="text-xs text-muted-foreground/50 font-body">
-                    No diagrams yet. Start a session and ask for a flow, architecture, or ERD
-                    diagram.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {diagrams.slice(0, 6).map((d) => {
-                      const typeLabels: Record<string, string> = {
-                        flow: 'User Flow',
-                        architecture: 'Architecture',
-                        erd: 'Data Model',
-                        wireframe: 'Wireframes',
-                      };
-                      const typeColors: Record<string, string> = {
-                        flow: 'text-blue-400',
-                        architecture: 'text-success',
-                        erd: 'text-violet-400',
-                        wireframe: 'text-amber-400',
-                      };
-                      const nodeCount =
-                        d.diagram.nodes?.length ??
-                        d.diagram.tables?.length ??
-                        d.diagram.screens?.length ??
-                        0;
+                {/* Panel: Plan — the yeaboi engine's plan for the current iteration */}
+                <div key="plan" className="h-full">
+                  <DashboardPanel label="Plan">
+                    {(() => {
+                      const current = iterations[iterations.length - 1];
+                      const generated = current?.yeaboi_session_id;
                       return (
-                        <Link
-                          key={d.session_id}
-                          href={`/projects/${project?.id}/sessions/${d.session_id}`}
-                          className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-white/[0.03] transition-colors group"
-                        >
-                          <div className="min-w-0">
-                            <span
-                              className={`text-[10px] font-body font-medium uppercase tracking-wide ${typeColors[d.diagram.type] ?? 'text-white/50'}`}
-                            >
-                              {typeLabels[d.diagram.type] ?? d.diagram.type}
-                            </span>
-                            <p className="text-xs font-body text-foreground/80 truncate">
-                              {d.diagram.title || d.session_title || 'Untitled'}
+                        <>
+                          {generated ? (
+                            <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                              Plan generated
+                              {current?.plan_generated_at
+                                ? ` ${String(current.plan_generated_at).slice(0, 10)}`
+                                : ''}{' '}
+                              — epics, stories, tasks and sprints from the blueprint.
                             </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                              No plan yet. Fill in the blueprint, then generate — stories land on
+                              the board.
+                            </p>
+                          )}
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <Link
+                              href={`/projects/${project.id}/plan`}
+                              className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
+                            >
+                              {generated ? 'Open the plan →' : 'Generate a plan →'}
+                            </Link>
                           </div>
-                          <span className="text-[10px] font-body text-muted-foreground/40 shrink-0 ml-2">
-                            {nodeCount} nodes
-                          </span>
-                        </Link>
+                        </>
                       );
-                    })}
-                    {diagrams.length > 6 && (
-                      <p className="text-[10px] font-body text-muted-foreground/40 px-3">
-                        +{diagrams.length - 6} more
+                    })()}
+                  </DashboardPanel>
+                </div>
+
+                {/* Panel: Diagrams */}
+                <div key="diagrams" className="h-full">
+                  <DashboardPanel label="Diagrams">
+                    {diagrams.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/50 font-body">
+                        No diagrams yet. Start a session and ask for a flow, architecture, or ERD
+                        diagram.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {diagrams.slice(0, 6).map((d) => {
+                          const typeLabels: Record<string, string> = {
+                            flow: 'User Flow',
+                            architecture: 'Architecture',
+                            erd: 'Data Model',
+                            wireframe: 'Wireframes',
+                          };
+                          const typeColors: Record<string, string> = {
+                            flow: 'text-blue-400',
+                            architecture: 'text-success',
+                            erd: 'text-violet-400',
+                            wireframe: 'text-amber-400',
+                          };
+                          const nodeCount =
+                            d.diagram.nodes?.length ??
+                            d.diagram.tables?.length ??
+                            d.diagram.screens?.length ??
+                            0;
+                          return (
+                            <Link
+                              key={d.session_id}
+                              href={`/projects/${project?.id}/sessions/${d.session_id}`}
+                              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-white/[0.03] transition-colors group"
+                            >
+                              <div className="min-w-0">
+                                <span
+                                  className={`text-[10px] font-body font-medium uppercase tracking-wide ${typeColors[d.diagram.type] ?? 'text-white/50'}`}
+                                >
+                                  {typeLabels[d.diagram.type] ?? d.diagram.type}
+                                </span>
+                                <p className="text-xs font-body text-foreground/80 truncate">
+                                  {d.diagram.title || d.session_title || 'Untitled'}
+                                </p>
+                              </div>
+                              <span className="text-[10px] font-body text-muted-foreground/40 shrink-0 ml-2">
+                                {nodeCount} nodes
+                              </span>
+                            </Link>
+                          );
+                        })}
+                        {diagrams.length > 6 && (
+                          <p className="text-[10px] font-body text-muted-foreground/40 px-3">
+                            +{diagrams.length - 6} more
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </DashboardPanel>
+                </div>
+
+                {/* Panel: Board */}
+                <div key="board" className="h-full">
+                  <DashboardPanel label="Board">
+                    {boardSummary === null ? (
+                      <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
+                    ) : boardSummary.columns?.length > 0 ? (
+                      <BoardPanelContent
+                        columns={boardSummary.columns}
+                        projectId={project.id}
+                        layout={boardLayout}
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                        No tasks yet.
                       </p>
                     )}
-                  </div>
-                )}
-              </DashboardPanel>
-            </div>
-
-            {/* Panel: Board */}
-            <div key="board" className="h-full">
-              <DashboardPanel label="Board">
-                {boardSummary === null ? (
-                  <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
-                ) : boardSummary.columns?.length > 0 ? (
-                  <BoardPanelContent
-                    columns={boardSummary.columns}
-                    projectId={project.id}
-                    layout={boardLayout}
-                  />
-                ) : (
-                  <p className="text-xs text-muted-foreground/50 font-body mb-3">No tasks yet.</p>
-                )}
-                <div className="mt-3 pt-3 border-t border-border">
-                  <Link
-                    href={`/projects/${project.id}/board`}
-                    className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
-                  >
-                    Open in board →
-                  </Link>
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <Link
+                        href={`/projects/${project.id}/board`}
+                        className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
+                      >
+                        Open in board →
+                      </Link>
+                    </div>
+                  </DashboardPanel>
                 </div>
-              </DashboardPanel>
-            </div>
 
-            {/* Panel: Analytics */}
-            <div key="analytics" className="h-full">
-              <DashboardPanel label="Analytics">
-                {analyticsMetrics === null ? (
-                  <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
-                ) : analyticsMetrics.total_sessions === 0 ? (
-                  <p className="text-xs text-muted-foreground/50 font-body mb-3">
-                    No session data yet.
-                  </p>
-                ) : (
-                  <AnalyticsPanelContent
-                    metrics={analyticsMetrics}
-                    layout={analyticsLayout}
-                    eng={engMetrics}
-                  />
-                )}
-                <div className="mt-3 pt-3 border-t border-border">
-                  <Link
-                    href={`/projects/${project.id}/analytics`}
-                    className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
-                  >
-                    Open analytics →
-                  </Link>
+                {/* Panel: Analytics */}
+                <div key="analytics" className="h-full">
+                  <DashboardPanel label="Analytics">
+                    {analyticsMetrics === null ? (
+                      <p className="text-xs text-muted-foreground/50 font-body">Loading…</p>
+                    ) : analyticsMetrics.total_sessions === 0 ? (
+                      <p className="text-xs text-muted-foreground/50 font-body mb-3">
+                        No session data yet.
+                      </p>
+                    ) : (
+                      <AnalyticsPanelContent
+                        metrics={analyticsMetrics}
+                        layout={analyticsLayout}
+                        eng={engMetrics}
+                      />
+                    )}
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <Link
+                        href={`/projects/${project.id}/analytics`}
+                        className="text-xs font-body text-muted-foreground/60 hover:text-foreground transition-colors"
+                      >
+                        Open analytics →
+                      </Link>
+                    </div>
+                  </DashboardPanel>
                 </div>
-              </DashboardPanel>
-            </div>
 
-            {/* Panel: Repository */}
-            <div key="repository" className="h-full">
-              <DashboardPanel label="Repository">
-                <DeliverablesPanel projectId={id} />
-              </DashboardPanel>
+                {/* Panel: Repository */}
+                <div key="repository" className="h-full">
+                  <DashboardPanel label="Repository">
+                    <DeliverablesPanel projectId={id} />
+                  </DashboardPanel>
+                </div>
+              </DashboardGrid>
             </div>
-          </DashboardGrid>
-        </div>
+          </>
+        )}
       </PageShell>
 
       {project && (

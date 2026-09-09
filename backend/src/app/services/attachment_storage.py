@@ -1,6 +1,6 @@
 """Pluggable storage backend for card attachments.
 
-The Protocol exposes the minimal surface the router needs (put, get_url, delete).
+The Protocol exposes the minimal surface the router needs (put, get, get_url, delete).
 Two concrete implementations:
 
 * ``LocalDiskStorage`` — wraps the same UPLOAD_DIR the existing chat-attachment
@@ -38,6 +38,10 @@ class AttachmentStorage(Protocol):
         """Return a URL the client can fetch within ``ttl`` seconds."""
         ...
 
+    async def get(self, key: str) -> bytes:
+        """The stored bytes. Raises if the key is gone."""
+        ...
+
     async def delete(self, key: str) -> None:
         """Best-effort delete; storage drift never breaks the DB delete."""
         ...
@@ -68,6 +72,9 @@ class LocalDiskStorage:
     async def get_url(self, key: str, *, ttl: int = 3600) -> str:
         del ttl
         return f"/uploads/{key}"
+
+    async def get(self, key: str) -> bytes:
+        return (self.base_dir / key).read_bytes()
 
     async def delete(self, key: str) -> None:
         path = self.base_dir / key
@@ -121,6 +128,10 @@ class S3Storage:
             Params={"Bucket": self.bucket, "Key": key},
             ExpiresIn=ttl,
         )
+
+    async def get(self, key: str) -> bytes:
+        # boto3 is sync — same inline tradeoff `put` accepts.
+        return self._client.get_object(Bucket=self.bucket, Key=key)["Body"].read()
 
     async def delete(self, key: str) -> None:
         try:

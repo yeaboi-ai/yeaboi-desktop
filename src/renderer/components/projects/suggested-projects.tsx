@@ -111,15 +111,18 @@ export function SuggestedProjects({
   steps,
   colors,
   onPick,
+  showHead = true,
 }: {
   steps: FlowStep[];
   colors: Record<string, string>;
   onPick: (from: HTMLElement, text: string) => void;
+  /** False when the sheet above already carries a head row for its own rows. */
+  showHead?: boolean;
 }) {
   const { sheet, exhausted, failed, refreshing, retry } = useProjectSuggestions();
   const ghost = ghostState(sheet, exhausted, failed);
   // The column heads label rows; a note has none to head.
-  const headed = ghost === 'loading' || ghost === 'rows';
+  const headed = showHead && (ghost === 'loading' || ghost === 'rows');
   return (
     <div className="animate-fade-in" aria-label="Suggested projects">
       {headed && <LedgerHead steps={steps} colors={colors} />}

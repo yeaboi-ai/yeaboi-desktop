@@ -2,6 +2,26 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.5.0",
+      "date": "2026-09-07",
+      "headline": "Descriptions guide your project from the start",
+      "summary": "Your project description now shows in the workspace and seeds the first session, letting the AI reference your goals from the start. Attached screenshots and references reach the AI for more specific opening questions.",
+      "highlights": [
+        {
+          "text": "Your project description appears throughout the workspace, from composer to session",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Screenshots and references attached to a project seed the first planning session",
+          "areas": ["shell"]
+        },
+        {
+          "text": "New projects show one action card instead of seven empty dashboard panels",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.4.0",
       "date": "2026-09-06",
       "headline": "Projects have a status and carry references",
