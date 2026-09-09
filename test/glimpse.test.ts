@@ -6,7 +6,7 @@ import {
   agentGlimpse,
   sessionLabel,
   sessionRows,
-  sessionsEmpty,
+  SESSIONS_EMPTY,
 } from '../src/renderer/lib/yeaboi/glimpse';
 import { shapeSessions, type RecentSession } from '../src/renderer/lib/yeaboi/sessions';
 
@@ -107,11 +107,9 @@ describe('agentGlimpse', () => {
 
 describe('the empty sentences', () => {
   it('invite an action and carry no templated tells', () => {
-    for (const text of [sessionsEmpty('team'), sessionsEmpty('agents'), SESSIONS_UNSUPPORTED]) {
+    for (const text of [SESSIONS_EMPTY, SESSIONS_UNSUPPORTED]) {
       expect(text).toMatch(/\.$/);
       expect(text).not.toMatch(/[·→—]/);
     }
-    expect(sessionsEmpty('solo')).toBe(sessionsEmpty('team'));
-    expect(sessionsEmpty('agents')).not.toBe(sessionsEmpty('team'));
   });
 });

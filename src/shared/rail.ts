@@ -152,7 +152,6 @@ export function railDefaultsFor(audience: Audience): RailItem[] {
 export const RAIL_DEFAULTS: RailPrefs = {
   solo: railDefaultsFor('solo'),
   team: railDefaultsFor('team'),
-  agents: railDefaultsFor('agents'),
 };
 
 function railRoute(value: unknown, known?: ReadonlySet<string>): string | null {
@@ -232,8 +231,20 @@ export function normalizeRailItems(
 }
 
 /** Read a stored blob into a rail per world that will draw. */
+/** The Agents world merged into Solo, so a rail arranged there is Solo's now —
+ *  unless Solo already has one, since two arranged rails cannot become one
+ *  without guessing. `/agents/*` is Solo-owned after the merge, so an adopted
+ *  list still validates. */
+function foldAgentsRail(source: Record<string, unknown>): Record<string, unknown> {
+  if (!('agents' in source) || 'solo' in source) return source;
+  const { agents, ...rest } = source;
+  return { ...rest, solo: agents };
+}
+
 export function normalizeRailPrefs(raw: unknown, known?: ReadonlySet<string>): RailPrefs {
-  const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const source = foldAgentsRail(
+    (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>,
+  );
   const prefs = {} as RailPrefs;
   for (const audience of AUDIENCES) {
     prefs[audience] = normalizeRailItems(source[audience], audience, known);

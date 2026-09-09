@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { PERSONA_IDS } from '../src/shared/personas';
-import { TOPIC_PERSONA, markKind, personaFor } from '../src/renderer/lib/news/persona';
+import { TOPIC_PERSONA, personaFor } from '../src/renderer/lib/news/persona';
 import type { NewsTopic } from '../src/renderer/lib/news/types';
 
 describe('personaFor', () => {
@@ -36,13 +36,5 @@ describe('personaFor', () => {
 
   it('spreads an unknown topic too', () => {
     expect(PERSONA_IDS).toContain(personaFor({ id: 'y', topic: 'weather', persona: undefined }));
-  });
-});
-
-describe('markKind', () => {
-  it('draws the robo in the Agents world and the duck elsewhere', () => {
-    expect(markKind('agents')).toBe('robo');
-    expect(markKind('team')).toBe('duck');
-    expect(markKind('solo')).toBe('duck');
   });
 });

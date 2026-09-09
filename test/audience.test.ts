@@ -6,23 +6,29 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   audiencesForRoute,
+  audiencesShown,
   AUDIENCES,
+  isSoloOnlyRoute,
   normalizeAudience,
   resolveAudience,
+  soloEnabled,
   WORLD_COPY,
 } from '../src/shared/audience';
 
 const ROOT = resolve(import.meta.dirname, '..');
 
 describe('normalizeAudience', () => {
-  it('passes the three worlds through', () => {
+  it('passes both worlds through', () => {
     expect(normalizeAudience('solo')).toBe('solo');
     expect(normalizeAudience('team')).toBe('team');
-    expect(normalizeAudience('agents')).toBe('agents');
   });
 
   it('migrates the pre-split name to team', () => {
     expect(normalizeAudience('humans')).toBe('team');
+  });
+
+  it('migrates the pre-merge agents world to solo', () => {
+    expect(normalizeAudience('agents')).toBe('solo');
   });
 
   it('clamps anything else to "never asked"', () => {
@@ -45,7 +51,7 @@ describe('normalizeAudience', () => {
 });
 
 describe('audiencesForRoute', () => {
-  it('claims every agentwatch route for agents alone', () => {
+  it('claims every agentwatch route for solo alone', () => {
     for (const path of [
       '/agents/usage',
       '/agents/advisor',
@@ -53,7 +59,7 @@ describe('audiencesForRoute', () => {
       '/agents/projects',
       '/agents/projects/p1',
     ]) {
-      expect(audiencesForRoute(path)).toEqual(['agents']);
+      expect(audiencesForRoute(path)).toEqual(['solo']);
     }
   });
 
@@ -141,22 +147,59 @@ describe('resolveAudience', () => {
 
   it('switches team into solo for the weekly review', () => {
     expect(resolveAudience('/solo/review', 'team')).toBe('solo');
-    expect(resolveAudience('/solo/review', 'agents')).toBe('solo');
+    expect(resolveAudience('/solo/review', 'team')).toBe('solo');
     expect(resolveAudience('/solo/review/report', 'solo')).toBeNull();
   });
 
-  it('switches agents to the canonical workspace owner', () => {
-    expect(resolveAudience('/projects', 'agents')).toBe('team');
-  });
-
-  it('switches anyone into agents for an agentwatch route', () => {
-    expect(resolveAudience('/agents/usage', 'team')).toBe('agents');
-    expect(resolveAudience('/agents/usage', 'solo')).toBe('agents');
+  it('switches team into solo for an agentwatch route', () => {
+    expect(resolveAudience('/agents/usage', 'team')).toBe('solo');
+    expect(resolveAudience('/agents/usage', 'solo')).toBeNull();
   });
 
   it('stays put on shared chrome', () => {
     expect(resolveAudience('/home', 'solo')).toBeNull();
-    expect(resolveAudience('/settings', 'agents')).toBeNull();
+    expect(resolveAudience('/settings', 'team')).toBeNull();
+  });
+});
+
+describe('audiencesShown', () => {
+  it('offers both worlds when Solo is on', () => {
+    expect(audiencesShown(true)).toEqual([...AUDIENCES]);
+  });
+
+  it('is Team alone when Solo is hidden — one world, so no chooser', () => {
+    expect(audiencesShown(false)).toEqual(['team']);
+    expect(audiencesShown(false)).toHaveLength(1);
+  });
+});
+
+describe('soloEnabled', () => {
+  it('is true only for an explicit true — anything else fails closed', () => {
+    expect(soloEnabled({ solo_enabled: true })).toBe(true);
+    expect(soloEnabled({ solo_enabled: false })).toBe(false);
+    expect(soloEnabled({ solo_enabled: 'true' })).toBe(false);
+    expect(soloEnabled({})).toBe(false);
+    expect(soloEnabled(null)).toBe(false);
+    expect(soloEnabled(undefined)).toBe(false);
+  });
+});
+
+describe('isSoloOnlyRoute', () => {
+  it('names the pages the Solo world alone owns', () => {
+    for (const path of [
+      '/solo/review',
+      '/solo/review/report',
+      '/agents/usage',
+      '/agents/projects/p1',
+    ]) {
+      expect(isSoloOnlyRoute(path)).toBe(true);
+    }
+  });
+
+  it('leaves the shared workspace and the chrome alone', () => {
+    for (const path of ['/projects', '/team/retro', '/home', '/sessions', '/settings']) {
+      expect(isSoloOnlyRoute(path)).toBe(false);
+    }
   });
 });
 
@@ -171,9 +214,8 @@ describe('WORLD_COPY', () => {
     }
   });
 
-  it('marks the beta worlds and only those', () => {
+  it('marks the beta world and only it', () => {
     expect(WORLD_COPY.solo.beta).toBe(true);
-    expect(WORLD_COPY.agents.beta).toBe(true);
     expect(WORLD_COPY.team.beta).toBeUndefined();
   });
 

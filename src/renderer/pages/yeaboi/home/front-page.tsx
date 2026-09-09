@@ -27,7 +27,7 @@ import {
 } from '@/lib/news/load';
 import { dateline, editionLine, editionOf, refreshLabel, volumeLine } from '@/lib/news/masthead';
 import { isEmpty, sourcesLine, storiesOf } from '@/lib/news/paper';
-import { markKind } from '@/lib/news/persona';
+import type { MarkKind } from '@/lib/news/persona';
 import type { Paper } from '@/lib/news/types';
 import { getPref } from '@/lib/preferences';
 import { SHELL_ENTRIES } from '@/lib/yeaboi/shell-changelog';
@@ -125,7 +125,7 @@ export function FrontPage() {
   };
 
   const stories = useMemo(() => (paper ? storiesOf(paper) : []), [paper]);
-  const mark = markKind(audience);
+  const mark: MarkKind = 'duck';
   const edition = editionOf(paper, failed, notes);
   const colophon = paper ? sourcesLine(paper.sources) : '';
 

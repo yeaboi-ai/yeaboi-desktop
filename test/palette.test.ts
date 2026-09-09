@@ -99,10 +99,10 @@ describe('worldOf', () => {
   it("names the world a route belongs to only when it is not the reader's", () => {
     expect(worldOf('/solo/review', 'team')).toBe('solo');
     expect(worldOf('/team/retro', 'solo')).toBe('team');
-    expect(worldOf('/agents/projects', 'team')).toBe('agents');
+    expect(worldOf('/agents/projects', 'team')).toBe('solo');
     expect(worldOf('/team/retro', 'team')).toBeNull();
     expect(worldOf('/projects', 'solo')).toBeNull();
-    expect(worldOf('/whats-new', 'agents')).toBeNull();
+    expect(worldOf('/whats-new', 'solo')).toBeNull();
   });
 });
 
@@ -184,7 +184,6 @@ describe('projectHits', () => {
     const projects = [{ id: 'p1', name: 'Pond' }];
     expect(projectHits(projects, 'team')[0]!.href).toBe('/projects/p1');
     expect(projectHits(projects, 'solo')[0]!.href).toBe('/projects/p1');
-    expect(projectHits(projects, 'agents')[0]!.href).toBe('/agents/projects/p1');
     expect(projectHits(projects, 'team')[0]!.title).toBe('Pond');
     expect(projectHits(projects, 'team')[0]!.group).toBe('projects');
   });
@@ -254,10 +253,9 @@ describe('settingHits', () => {
 });
 
 describe('actionHits', () => {
-  it('offers the two other worlds, never the current one', () => {
+  it('offers the other world, never the current one', () => {
     const titles = actionHits('team', null).map((hit) => hit.title);
     expect(titles).toContain('Switch to Solo');
-    expect(titles).toContain('Switch to Agents');
     expect(titles).not.toContain('Switch to Team');
   });
 
@@ -265,9 +263,14 @@ describe('actionHits', () => {
     expect(actionHits('team', null).find((hit) => hit.title === 'New project')?.href).toBe(
       '/projects?new=1',
     );
-    expect(actionHits('agents', null).find((hit) => hit.title === 'New project')?.href).toBe(
-      '/agents/projects?new=1',
+    expect(actionHits('solo', null).find((hit) => hit.title === 'New project')?.href).toBe(
+      '/projects?new=1',
     );
+  });
+
+  it('offers no world switch when only one world is on offer', () => {
+    const titles = actionHits('team', null, ['team']).map((hit) => hit.title);
+    expect(titles.some((title) => title.startsWith('Switch to'))).toBe(false);
   });
 
   it('drops the update check where updates cannot happen', () => {

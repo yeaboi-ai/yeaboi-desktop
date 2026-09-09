@@ -2,12 +2,14 @@
 // here verbatim; some take Next's `params: Promise<{...}>` prop, which the
 // small wrappers below supply from react-router params.
 
-import { useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Navigate, Outlet, createHashRouter, useParams } from 'react-router';
 import { Providers } from '@/components/providers';
 import { TitleBar } from '@/components/title-bar';
 import { WindowTitle } from '@/components/window-title';
-import { APP_ROUTES } from '@/lib/yeaboi/routes';
+import { APP_ROUTES, DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
+import { isSoloOnlyRoute } from '@shared/audience';
+import { useAudience } from '@/components/providers/audience-provider';
 import GlobalBoardPage from '@/pages/board-page';
 import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
@@ -186,12 +188,27 @@ const PLANNING_SERVED = new Set([
   '/clip/:token',
 ]);
 
+/** A page only the Solo world owns. Registered like any other — the router is
+ *  built at import, long before the sidecar answers, and rebuilding it later
+ *  would remount every provider — so the guard is on the element. While the
+ *  answer is still owed it holds: a cold deep link into `/agents/usage` must
+ *  survive the handshake rather than be eaten on the way. */
+function SoloOnly({ children }: { children: ReactElement }) {
+  const { soloEnabled, soloKnown } = useAudience();
+  if (!soloKnown) return null;
+  if (!soloEnabled) return <Navigate to={DEFAULT_ROUTE} replace />;
+  return children;
+}
+
 const yeaboiRoutes = APP_ROUTES.filter(
   (route) => !NON_PAGE(route.path) && !PLANNING_SERVED.has(route.path),
-).map((route) => ({
-  path: route.path,
-  element: YEABOI_PAGES[route.path] ?? <PlaceholderPage />,
-}));
+).map((route) => {
+  const element = YEABOI_PAGES[route.path] ?? <PlaceholderPage />;
+  return {
+    path: route.path,
+    element: isSoloOnlyRoute(route.path) ? <SoloOnly>{element}</SoloOnly> : element,
+  };
+});
 
 export const router = createHashRouter([
   {
@@ -210,8 +227,15 @@ export const router = createHashRouter([
       { path: '/team/planning', element: <Navigate to="/projects" replace /> },
       { path: '/humans/*', element: <LegacyHumansRedirect /> },
       { path: '/humans', element: <LegacyHumansRedirect /> },
-      // The Agents world's first door: its projects, scoped by linked repo.
-      { path: '/agents', element: <Navigate to="/agents/projects" replace /> },
+      // The agentwatch family's first door: its projects, scoped by linked repo.
+      {
+        path: '/agents',
+        element: (
+          <SoloOnly>
+            <Navigate to="/agents/projects" replace />
+          </SoloOnly>
+        ),
+      },
       { path: '/projects', element: <ProjectsPage /> },
       { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/projects/:id', element: <ProjectRoute /> },

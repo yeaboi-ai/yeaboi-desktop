@@ -29,7 +29,7 @@ import {
   SESSIONS_UNSUPPORTED,
   agentGlimpse,
   sessionRows,
-  sessionsEmpty,
+  SESSIONS_EMPTY,
 } from '@/lib/yeaboi/glimpse';
 import { loadCeremonies, type CeremonyRow } from '@/lib/yeaboi/ops';
 import { loadRecentSessions, shapeSessions, type RecentSession } from '@/lib/yeaboi/sessions';
@@ -45,7 +45,6 @@ function SessionsBody() {
   const [tips, setTips] = useState<Tip[]>([]);
   const [sessions, setSessions] = useState<RecentSession[] | null | 'error'>([]);
   const [ceremonies, setCeremonies] = useState<CeremonyRow[]>([]);
-  const workspace = audience !== 'agents';
   const Mascot = DOOR_MASCOT[audience].sessions;
   const now = new Date();
 
@@ -58,16 +57,12 @@ function SessionsBody() {
   }, []);
 
   useEffect(() => {
-    if (!workspace) return;
     loadRecentSessions({ limit: RECENT_LIMIT }).then(setSessions, () => setSessions('error'));
     loadCeremonies().then(
       (page) => setCeremonies(page.ceremonies.filter((row) => row.enabled)),
       () => setCeremonies([]),
     );
-  }, [workspace]);
-
-  const agentCards = workspace ? [] : (caps?.agents ?? []);
-  const stamps = useAgentStamps(agentCards.map((card) => card.key));
+  }, []);
 
   if (error) {
     return (
@@ -79,17 +74,13 @@ function SessionsBody() {
   if (!caps) return <p className="text-[13px] text-muted-foreground">Loading…</p>;
 
   const cards = allCards(caps);
-  const recent = workspace
-    ? Array.isArray(sessions)
-      ? sessionRows(shapeSessions(sessions, cards, now))
-      : []
-    : agentGlimpse(agentCards, stamps, MODE_ROUTES, now);
+  const recent = Array.isArray(sessions) ? sessionRows(shapeSessions(sessions, cards, now)) : [];
   const recentEmpty =
     sessions === null
       ? SESSIONS_UNSUPPORTED
       : sessions === 'error'
         ? 'The recent runs could not be read.'
-        : sessionsEmpty(audience);
+        : SESSIONS_EMPTY;
 
   return (
     <>
@@ -126,19 +117,17 @@ function SessionsBody() {
         </section>
       </div>
 
-      {workspace && (
-        <footer className="mt-14 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-body">
-          {SESSIONS_FOOT_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </footer>
-      )}
+      <footer className="mt-14 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-body">
+        {SESSIONS_FOOT_LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </footer>
 
       <TipCompanion
         tips={tipsForAudience(tips, audience)}

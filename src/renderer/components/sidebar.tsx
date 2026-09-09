@@ -51,7 +51,7 @@ export function Sidebar() {
   const pathname = usePathname() ?? '';
   const { search } = useLocation();
   const router = useRouter();
-  const { audience, setAudience } = useAudience();
+  const { audience, soloEnabled, setAudience } = useAudience();
   const { items, loaded, removeItem, moveItem, resetWorld } = useRail();
   const confirm = useConfirm();
   const active = activeRailRoute(items, pathname, search, audience);
@@ -142,7 +142,8 @@ export function Sidebar() {
         // padding cannot move a fixed element — this reads both heights.
         style={{ top: 'calc(var(--titlebar-h, 0px) + var(--banner-h, 0px))' }}
       >
-        {/* The mascot names the world and goes home; its menu flips the world. */}
+        {/* The mascot names the world and goes home; its menu flips the world
+            when there is more than one. */}
         <div className="relative pt-3 pb-2">
           <RailButton
             label={`Home · ${WORLD_COPY[audience].title}`}
@@ -151,6 +152,7 @@ export function Sidebar() {
             ring={cmdHeld}
             onClick={() => router.push(DEFAULT_ROUTE)}
             onContextMenu={(event) => {
+              if (!soloEnabled) return;
               event.preventDefault();
               setWorldOpen(true);
             }}
@@ -163,21 +165,25 @@ export function Sidebar() {
               />
             )}
           </RailButton>
-          <WorldPopover
-            open={worldOpen}
-            onOpenChange={setWorldOpen}
-            onSwitch={flipAudience}
-            trigger={
-              <button
-                type="button"
-                aria-label={`Switch world (now ${WORLD_COPY[audience].title})`}
-                title="Switch world"
-                className="absolute -right-1 bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border/60 opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-ring"
-              >
-                <ChevronsUpDown className="h-3 w-3" />
-              </button>
-            }
-          />
+          {/* One world means nothing to switch to, so the chip goes rather
+              than opening a popover with a single row. */}
+          {soloEnabled && (
+            <WorldPopover
+              open={worldOpen}
+              onOpenChange={setWorldOpen}
+              onSwitch={flipAudience}
+              trigger={
+                <button
+                  type="button"
+                  aria-label={`Switch world (now ${WORLD_COPY[audience].title})`}
+                  title="Switch world"
+                  className="absolute -right-1 bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border/60 opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-ring"
+                >
+                  <ChevronsUpDown className="h-3 w-3" />
+                </button>
+              }
+            />
+          )}
         </div>
 
         <Separator className="w-8" />

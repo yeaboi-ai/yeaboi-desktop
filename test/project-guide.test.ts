@@ -52,8 +52,8 @@ describe('guidePages', () => {
     expect(keys).not.toContain('retro');
   });
 
-  it('says the Agents world scopes by repository, which has no flow', () => {
-    const page = guidePages(flowFor('agents', fallbackFlowKeys('team')))[1]!;
+  it('says a project with no flow at all scopes by repository', () => {
+    const page = guidePages([])[1]!;
     expect(page.title).toBe(AGENTS_RELATED_TITLE);
     expect(page.body).toBe(AGENTS_RELATED_LINE);
     expect(page.items).toBeUndefined();

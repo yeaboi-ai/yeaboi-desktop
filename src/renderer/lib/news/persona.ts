@@ -35,9 +35,7 @@ export function personaFor(item: Pick<NewsItem, 'id' | 'topic' | 'persona'>): Pe
   return PERSONA_IDS[hash(item.id) % PERSONA_IDS.length]!;
 }
 
+/** Kept as a union, and still threaded through the paper's components, so a
+ *  robo edition is one line away — no world picks it now that Agents merged
+ *  into Solo. */
 export type MarkKind = 'duck' | 'robo';
-
-/** The Agents world reads its paper as the robo, in the same personas. */
-export function markKind(audience: Audience): MarkKind {
-  return audience === 'agents' ? 'robo' : 'duck';
-}

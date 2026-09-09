@@ -44,7 +44,7 @@ export function useRoster(audience: Audience) {
   );
 
   useEffect(() => {
-    if (!ready || audience === 'agents') return;
+    if (!ready) return;
     const storedOrg = getStoredOrgId();
     const storedTeam = getStoredTeamId();
     setCurrentOrgId(storedOrg);

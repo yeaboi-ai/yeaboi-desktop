@@ -18,6 +18,7 @@ import {
   railDestinations,
   railGroupFor,
   railRouteSet,
+  visibleRailDestinations,
 } from '../src/renderer/lib/nav/rail-catalogue';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -64,9 +65,9 @@ describe('railCatalogue', () => {
         if (worlds.length > 0) expect(worlds, `${entry.route} in ${audience}`).toContain(audience);
       }
     }
-    const agents = railCatalogue('agents').map((entry) => entry.route);
-    expect(agents).toContain('/agents/projects');
-    expect(agents).not.toContain('/projects');
+    const solo = railCatalogue('solo').map((entry) => entry.route);
+    expect(solo).toContain('/agents/projects');
+    expect(solo).toContain('/projects');
     expect(railCatalogue('team').map((e) => e.route)).not.toContain('/agents/projects');
     expect(railCatalogue('solo').map((e) => e.route)).not.toContain('/team/retro');
     expect(railCatalogue('team').map((e) => e.route)).toContain('/team/retro');
@@ -152,5 +153,20 @@ describe('defaults for a page', () => {
   it('finds a destination by route within the world', () => {
     expect(railDestinationFor('/team/standup', 'team')?.label).toBe('Standup');
     expect(railDestinationFor('/team/retro', 'solo')).toBeUndefined();
+  });
+});
+
+describe('visibleRailDestinations', () => {
+  it('drops the Solo world pages when the build does not offer it', () => {
+    const hidden = visibleRailDestinations(false).map((entry) => entry.route);
+    expect(hidden.some((route) => route.startsWith('/agents'))).toBe(false);
+    expect(hidden.some((route) => route.startsWith('/solo'))).toBe(false);
+    expect(hidden).toContain('/projects');
+  });
+
+  it('offers everything when it does', () => {
+    const shown = visibleRailDestinations(true).map((entry) => entry.route);
+    expect(shown).toContain('/agents/projects');
+    expect(shown).toEqual(railDestinations().map((entry) => entry.route));
   });
 });

@@ -45,6 +45,7 @@ import { normalizeAudience } from '../shared/audience';
 import { loadMachineSecrets, loadSharedEnv } from './secrets';
 import { Settings, type Identity } from './settings';
 import { Sidecar } from './sidecar';
+import { SoloWorld } from './solo';
 import { routeWindowOpen } from '../shared/window-open';
 import { AppTray } from './tray';
 import { Updater } from './updater';
@@ -52,6 +53,7 @@ import { VoiceAgentSidecar, registerVoicePack, voicePackInstalled } from './voic
 
 const settings = new Settings();
 const sidecar = new Sidecar();
+const solo = new SoloWorld(sidecar);
 const planning = new PlanningSidecar();
 const livekit = new LivekitSidecar();
 const voiceAgent = new VoiceAgentSidecar();
@@ -354,7 +356,7 @@ if (!gotLock) {
       }
     });
 
-    // The audience world (Solo, Team or Agents). Unlike onboarding there is no
+    // The audience world (Solo or Team). Unlike onboarding there is no
     // migration write: absent stays absent, so existing installs meet the
     // chooser once too.
     ipcMain.handle('audience:get', () => settings.audience ?? null);
@@ -365,6 +367,16 @@ if (!gotLock) {
         appMenu?.setAudience(audience);
       }
       return settings.audience ?? null;
+    });
+
+    // Whether the Solo world is on offer at all. Null until the sidecar has
+    // answered; the renderer holds rather than redirects while it is.
+    ipcMain.handle('solo:get', () => solo.current);
+    solo.onChange((enabled) => {
+      appMenu?.setSoloEnabled(enabled);
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send('app:solo', enabled);
+      }
     });
 
     // The desktop duck. The renderer forwards app moments (a suggestion

@@ -62,11 +62,7 @@ export function agentGlimpse(
 }
 
 /** What a Sessions list says when nothing has run. */
-export function sessionsEmpty(audience: Audience): string {
-  return audience === 'agents'
-    ? 'No report yet. Open one to run the first pass.'
-    : 'Nothing has run on its own yet.';
-}
+export const SESSIONS_EMPTY = 'Nothing has run on its own yet.';
 
 /** What the list says when the sidecar predates the recent-sessions route. */
 export const SESSIONS_UNSUPPORTED =

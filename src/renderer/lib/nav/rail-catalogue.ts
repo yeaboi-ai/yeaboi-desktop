@@ -4,7 +4,7 @@
 // dialog draws it and the rail provider uses its route set to drop an item
 // pointing at a page this build no longer has.
 
-import { audiencesForRoute, type Audience } from '@shared/audience';
+import { audiencesForRoute, isSoloOnlyRoute, type Audience } from '@shared/audience';
 import { ABOUT_PAGES } from '@shared/menu';
 import type { RailLucideName } from '@shared/rail';
 import { APP_ROUTES, type AppRoute } from '@/lib/yeaboi/routes';
@@ -127,6 +127,13 @@ function destination(route: AppRoute): RailDestination {
 export function railDestinations(routes: readonly AppRoute[] = APP_ROUTES): RailDestination[] {
   const all = routes.filter(isRailDestination).map(destination);
   return RAIL_GROUPS.flatMap((group) => all.filter((entry) => entry.group === group.key));
+}
+
+/** The destinations the palette and the rail's `+` may offer, minus the pages
+ *  of a world this build does not have. */
+export function visibleRailDestinations(soloEnabled: boolean): RailDestination[] {
+  const all = railDestinations();
+  return soloEnabled ? all : all.filter((entry) => !isSoloOnlyRoute(entry.route));
 }
 
 /** The pages a world's rail can hold. */

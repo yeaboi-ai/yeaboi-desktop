@@ -12,13 +12,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
-import { WORLD_COPY, audiencesForRoute, type Audience } from '@shared/audience';
+import { WORLD_COPY, audiencesForRoute, audiencesShown, type Audience } from '@shared/audience';
 import { useNikoContext } from '@/components/niko/niko-provider';
 import { useAudience } from '@/components/providers/audience-provider';
 import { usePalette } from '@/components/providers/palette-provider';
 import { useUpdateState } from '@/hooks/use-update-state';
 import { usePaletteSources } from '@/hooks/yeaboi/use-palette-sources';
-import { railDestinations } from '@/lib/nav/rail-catalogue';
+import { visibleRailDestinations } from '@/lib/nav/rail-catalogue';
 import { railLucideIcon } from '@/lib/nav/rail-icons';
 import { checkForUpdate } from '@/lib/yeaboi/api';
 import { allCards } from '@/lib/yeaboi/capabilities';
@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils';
 
 export function GlobalPalette() {
   const { isOpen, query, open, close } = usePalette();
-  const { audience, setAudience } = useAudience();
+  const { audience, soloEnabled, setAudience } = useAudience();
   const { setIsOpen: setNikoOpen } = useNikoContext();
   const update = useUpdateState();
   const navigate = useNavigate();
@@ -68,11 +68,11 @@ export function GlobalPalette() {
     return [
       ...projectHits(projects ?? [], audience),
       ...sessionHits(shaped),
-      ...pageHits(railDestinations(), caps, audience),
+      ...pageHits(visibleRailDestinations(soloEnabled), caps, audience),
       ...settingHits(settings ?? []),
-      ...actionHits(audience, update),
+      ...actionHits(audience, update, audiencesShown(soloEnabled)),
     ];
-  }, [caps, projects, sessions, settings, audience, update, now]);
+  }, [caps, projects, sessions, settings, audience, soloEnabled, update, now]);
 
   const shown = useMemo(() => rankHits(hits, text), [hits, text]);
   const sections = useMemo(() => groupHits(shown), [shown]);

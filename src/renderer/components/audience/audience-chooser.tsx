@@ -17,6 +17,8 @@ import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { WORLD_MASCOT } from '@/lib/audience/worlds';
 import { AUDIENCES, WORLD_COPY, type Audience } from '@shared/audience';
 
+// The chooser only ever renders when more than one world is on offer
+// (AudienceGate), so this is the full list by definition.
 const WORLDS = AUDIENCES.map((key) => ({ key, ...WORLD_COPY[key] }));
 
 export function AudienceChooser({ onChoose }: { onChoose: (audience: Audience) => void }) {
@@ -60,7 +62,7 @@ export function AudienceChooser({ onChoose }: { onChoose: (audience: Audience) =
       <div
         role="radiogroup"
         aria-label="Audience"
-        className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-5 w-full max-w-5xl"
+        className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-3xl"
       >
         {WORLDS.map((world) => {
           const active = world.key === selected;

@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocation, useParams } from 'react-router';
-import { DOOR_MASCOT } from '@/lib/audience/worlds';
+import { RoboDoorMascot } from '@/lib/audience/worlds';
 import { Notice, ReportView, ScanProgress, type Report } from '@/components/agents/agent-report';
 import { useSecurityActions } from '@/components/agents/use-security-actions';
 import { PageShell } from '@/components/page-shell';
@@ -236,7 +236,7 @@ function ScopedReport({
 }
 
 function AgentsProjectBody({ projectId }: { projectId: string }) {
-  const Mascot = DOOR_MASCOT.agents.projects;
+  const Mascot = RoboDoorMascot;
   const { authFetch, ready } = useAuthFetch();
   const [project, setProject] = useState<Project | null>(null);
   const [engineId, setEngineId] = useState('');
