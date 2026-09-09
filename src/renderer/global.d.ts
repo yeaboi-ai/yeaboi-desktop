@@ -20,9 +20,11 @@ interface YeaboiBridge {
   revealPath: (path: string) => Promise<{ revealed: boolean }>;
   getOnboarding: () => Promise<{ needed: boolean }>;
   completeOnboarding: () => Promise<void>;
-  getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
-  setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
-  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
+  getAudience: () => Promise<'solo' | 'team' | null>;
+  setAudience: (audience: 'solo' | 'team') => Promise<'solo' | 'team' | null>;
+  onAudience: (callback: (audience: 'solo' | 'team') => void) => void;
+  getSolo: () => Promise<boolean | null>;
+  onSolo: (callback: (enabled: boolean) => void) => void;
   api: (
     path: string,
     init?: { method?: string; body?: unknown },

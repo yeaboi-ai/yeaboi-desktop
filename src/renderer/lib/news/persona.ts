@@ -35,9 +35,5 @@ export function personaFor(item: Pick<NewsItem, 'id' | 'topic' | 'persona'>): Pe
   return PERSONA_IDS[hash(item.id) % PERSONA_IDS.length]!;
 }
 
+/** Which mark the paper's components draw. Every edition is a duck today. */
 export type MarkKind = 'duck' | 'robo';
-
-/** The Agents world reads its paper as the robo, in the same personas. */
-export function markKind(audience: Audience): MarkKind {
-  return audience === 'agents' ? 'robo' : 'duck';
-}

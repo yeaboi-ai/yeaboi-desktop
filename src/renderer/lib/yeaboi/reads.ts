@@ -56,8 +56,7 @@ export const FLOW: readonly FlowStep[] = [
 /** The steps a world's menu covers, in flow order. `available` is the world's
  *  card keys as the sidecar serves them (its whole menu, not the one-off runs:
  *  planning is a step and never a one-off run). */
-export function flowFor(audience: Audience, available: Iterable<string>): FlowStep[] {
-  if (audience === 'agents') return [];
+export function flowFor(_audience: Audience, available: Iterable<string>): FlowStep[] {
   const keys = new Set(available);
   return FLOW.filter((step) => keys.has(step.key));
 }

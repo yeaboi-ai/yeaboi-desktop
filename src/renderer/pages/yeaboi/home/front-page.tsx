@@ -12,7 +12,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useAudience } from '@/components/providers/audience-provider';
 import { Edition } from '@/components/news/edition';
 import { Masthead } from '@/components/news/masthead';
 import { fallbackPaper } from '@/lib/news/fallback';
@@ -27,13 +26,12 @@ import {
 } from '@/lib/news/load';
 import { dateline, editionLine, editionOf, refreshLabel, volumeLine } from '@/lib/news/masthead';
 import { isEmpty, sourcesLine, storiesOf } from '@/lib/news/paper';
-import { markKind } from '@/lib/news/persona';
+import type { MarkKind } from '@/lib/news/persona';
 import type { Paper } from '@/lib/news/types';
 import { getPref } from '@/lib/preferences';
 import { SHELL_ENTRIES } from '@/lib/yeaboi/shell-changelog';
 
 export function FrontPage() {
-  const { audience } = useAudience();
   const [paper, setPaper] = useState<Paper | null>(paperNow);
   const [failed, setFailed] = useState(false);
   const [notes, setNotes] = useState(false);
@@ -125,7 +123,7 @@ export function FrontPage() {
   };
 
   const stories = useMemo(() => (paper ? storiesOf(paper) : []), [paper]);
-  const mark = markKind(audience);
+  const mark: MarkKind = 'duck';
   const edition = editionOf(paper, failed, notes);
   const colophon = paper ? sourcesLine(paper.sources) : '';
 

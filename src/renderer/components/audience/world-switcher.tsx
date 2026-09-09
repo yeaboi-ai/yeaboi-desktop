@@ -15,7 +15,7 @@ import { UpdateCard } from '@/components/system/update-card';
 import { WORLD_MASCOT } from '@/lib/audience/worlds';
 import { useAudience } from '@/components/providers/audience-provider';
 import { useRoster } from '@/hooks/use-roster';
-import { AUDIENCES, WORLD_COPY, type Audience } from '@shared/audience';
+import { audiencesShown, WORLD_COPY, type Audience } from '@shared/audience';
 
 const SELECT =
   'w-full appearance-none cursor-pointer text-[11px] font-body bg-transparent border border-border/40 rounded-md pl-2 pr-6 py-1 text-muted-foreground hover:border-border focus:outline-none focus:ring-1 focus:ring-ring';
@@ -63,7 +63,7 @@ export function WorldPopover({
   /** The element the popover hangs off; it receives the trigger's handlers. */
   trigger: ReactElement;
 }) {
-  const { audience } = useAudience();
+  const { audience, soloEnabled } = useAudience();
   const roster = useRoster(audience);
 
   const choose = (next: Audience) => {
@@ -79,7 +79,7 @@ export function WorldPopover({
       <PopoverTrigger render={trigger} />
       <PopoverContent side="right" align="start" sideOffset={12} className="w-64 p-1.5">
         <div role="menu" aria-label="World" className="flex flex-col gap-0.5">
-          {AUDIENCES.map((key) => {
+          {audiencesShown(soloEnabled).map((key) => {
             const world = WORLD_COPY[key];
             const active = key === audience;
             const RowMascot = WORLD_MASCOT[key];

@@ -220,7 +220,11 @@ export function settingHits(
 }
 
 /** What the palette can do besides open a page. */
-export function actionHits(audience: Audience, update: UpdateState | null): PaletteHit[] {
+export function actionHits(
+  audience: Audience,
+  update: UpdateState | null,
+  worlds: readonly Audience[] = AUDIENCES,
+): PaletteHit[] {
   const hits: PaletteHit[] = [
     {
       id: 'action:new-project',
@@ -247,7 +251,9 @@ export function actionHits(audience: Audience, update: UpdateState | null): Pale
       href: '/sessions',
     },
   ];
-  for (const world of AUDIENCES) {
+  // `worlds` is what the build offers, so a one-world launch emits no
+  // switch-world action at all.
+  for (const world of worlds) {
     if (world === audience) continue;
     hits.push({
       id: `action:switch-world:${world}`,

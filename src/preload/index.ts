@@ -43,10 +43,13 @@ export interface YeaboiBridge {
   completeOnboarding: () => Promise<void>;
   /** The audience world the shell lives in. null means never chosen — the
    *  chooser gates the window once, like onboarding. */
-  getAudience: () => Promise<'solo' | 'team' | 'agents' | null>;
-  setAudience: (audience: 'solo' | 'team' | 'agents') => Promise<'solo' | 'team' | 'agents' | null>;
+  getAudience: () => Promise<'solo' | 'team' | null>;
+  setAudience: (audience: 'solo' | 'team') => Promise<'solo' | 'team' | null>;
   /** The menu bar's World menu flipped the world. */
-  onAudience: (callback: (audience: 'solo' | 'team' | 'agents') => void) => void;
+  onAudience: (callback: (audience: 'solo' | 'team') => void) => void;
+  /** Whether the Solo world is on offer; null until the sidecar has answered. */
+  getSolo: () => Promise<boolean | null>;
+  onSolo: (callback: (enabled: boolean) => void) => void;
   /** One authed call to the yeaboi app backend, relayed through main. */
   api: (
     path: string,
@@ -137,9 +140,11 @@ const bridge: YeaboiBridge = {
   getAudience: () => ipcRenderer.invoke('audience:get'),
   setAudience: (audience) => ipcRenderer.invoke('audience:set', audience),
   onAudience: (callback) => {
-    ipcRenderer.on('app:audience', (_event, audience: 'solo' | 'team' | 'agents') =>
-      callback(audience),
-    );
+    ipcRenderer.on('app:audience', (_event, audience: 'solo' | 'team') => callback(audience));
+  },
+  getSolo: () => ipcRenderer.invoke('solo:get'),
+  onSolo: (callback) => {
+    ipcRenderer.on('app:solo', (_event, enabled: boolean) => callback(enabled));
   },
   api: (path, init) => ipcRenderer.invoke('api:request', path, init),
   apiStream: (path, body, onLine) => {

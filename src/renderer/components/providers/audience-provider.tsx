@@ -1,12 +1,16 @@
 'use client';
 
-// The audience world the shell lives in: Solo, Team or Agents. Main holds the
+// The audience world the shell lives in: Solo or Team. Main holds the
 // persisted answer; this provider mirrors it, flips it instantly on switch,
 // and keeps `data-audience` on <html> so the world's accent tokens (globals
 // .css) follow. A deep link into a route the current world does not own
 // switches the world — a link the user clicked is an expressed intent, and
 // the sidebar switcher makes flipping back one click. Solo and Team share the
 // workspace routes, so a Solo user opening a shared page stays Solo.
+//
+// Whether Solo is on offer at all comes from the sidecar (main asks). With it
+// off the effective world is Team whatever is stored — the stored answer is
+// never erased, so turning the world back on restores it.
 
 import {
   createContext,
@@ -18,7 +22,12 @@ import {
   type ReactNode,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { audiencesForRoute, resolveAudience, type Audience } from '@shared/audience';
+import {
+  audiencesForRoute,
+  audiencesShown,
+  resolveAudience,
+  type Audience,
+} from '@shared/audience';
 import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 
 interface AudienceContextValue {
@@ -26,12 +35,18 @@ interface AudienceContextValue {
   audience: Audience;
   /** False while the chooser is still owed (never asked). */
   chosen: boolean;
+  /** Whether the build offers the Solo world at all. */
+  soloEnabled: boolean;
+  /** False until the sidecar has answered — hold, do not redirect. */
+  soloKnown: boolean;
   setAudience: (audience: Audience) => void;
 }
 
 const AudienceContext = createContext<AudienceContextValue>({
   audience: 'team',
   chosen: true,
+  soloEnabled: false,
+  soloKnown: false,
   setAudience: () => {},
 });
 
@@ -41,7 +56,23 @@ export function useAudience(): AudienceContextValue {
 
 export function AudienceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<'loading' | Audience | null>('loading');
+  const [solo, setSolo] = useState<boolean | null>(null);
   const pathname = usePathname();
+
+  useEffect(() => {
+    // A dev renderer can hot-reload under a preload built before this bridge
+    // method existed. Treat that as a resolved "no": the world stays hidden and
+    // the router redirects rather than hanging on a page it cannot decide.
+    if (typeof window.yeaboi?.getSolo !== 'function') {
+      setSolo(false);
+      return;
+    }
+    window.yeaboi.getSolo().then(
+      (enabled) => setSolo(enabled),
+      () => setSolo(false),
+    );
+    window.yeaboi.onSolo(setSolo);
+  }, []);
 
   useEffect(() => {
     // A dev session hot-reloads the renderer under a preload built before
@@ -83,8 +114,13 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
     });
   }, [router]);
 
+  const soloEnabled = solo === true;
+  const soloKnown = solo !== null;
   const chosen = state !== 'loading' && state !== null;
-  const audience: Audience = chosen ? (state as Audience) : 'team';
+  const stored: Audience = chosen ? (state as Audience) : 'team';
+  // Clamped, not erased: settings.json keeps `solo` and the world comes back
+  // whole the moment the sidecar offers it again.
+  const audience: Audience = audiencesShown(soloEnabled).includes(stored) ? stored : 'team';
 
   // The world's accent tokens key off this attribute (globals.css).
   useEffect(() => {
@@ -96,16 +132,20 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
   // standing on the other world's route must not be fought back.
   const lastPathname = useRef<string | null>(null);
   useEffect(() => {
+    // The sidecar answers after the audience does, so the guard comes before
+    // the stamp: stamping first would consume a cold deep link on the pass
+    // where Solo was still unknown, and the re-run would find nothing to do.
+    if (!soloEnabled) return; // one world — nothing to switch into
     if (!chosen || !pathname || lastPathname.current === pathname) return;
     lastPathname.current = pathname;
     const next = resolveAudience(pathname, audience);
     if (next) setAudience(next);
-  }, [pathname, audience, chosen, setAudience]);
+  }, [pathname, audience, chosen, soloEnabled, setAudience]);
 
   if (state === 'loading') return null;
 
   return (
-    <AudienceContext.Provider value={{ audience, chosen, setAudience }}>
+    <AudienceContext.Provider value={{ audience, chosen, soloEnabled, soloKnown, setAudience }}>
       {children}
     </AudienceContext.Provider>
   );

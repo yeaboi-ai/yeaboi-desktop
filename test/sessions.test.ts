@@ -8,6 +8,7 @@ import {
   loadRecentSessions,
   relativeDay,
   shapeSessions,
+  visibleSessions,
   type RecentSession,
 } from '../src/renderer/lib/yeaboi/sessions';
 import { MODE_ROUTES } from '../src/renderer/lib/yeaboi/tips';
@@ -144,5 +145,55 @@ describe('loadRecentSessions', () => {
     expect(apiGetOptional).toHaveBeenLastCalledWith(
       '/api/sessions/recent?limit=3&project_id=proj-1',
     );
+  });
+});
+
+describe('visibleSessions', () => {
+  const cards = [
+    { key: 'daily-standup', title: 'Daily Standup' },
+    { key: 'weekly-review', title: 'Weekly Review' },
+    { key: 'agent-security', title: 'Agent Security' },
+  ];
+  const rows: RecentSession[] = [
+    {
+      session_id: 's1',
+      run_id: 1,
+      mode: 'standup',
+      title: '',
+      created_at: '',
+      last_modified: '',
+      project_id: '',
+    },
+    {
+      session_id: 's2',
+      run_id: 1,
+      mode: 'weekly-review',
+      title: '',
+      created_at: '',
+      last_modified: '',
+      project_id: '',
+    },
+    {
+      session_id: 's3',
+      run_id: 1,
+      mode: 'agent-security',
+      title: '',
+      created_at: '',
+      last_modified: '',
+      project_id: '',
+    },
+  ];
+
+  it('drops runs whose mode lives in a world this build hides', () => {
+    // A run recorded in the terminal, or by a build that had the world, must
+    // not name it back to a Team user.
+    const shaped = shapeSessions(rows, cards, NOW);
+    const modes = visibleSessions(shaped, false).map((row) => row.session.mode);
+    expect(modes).toEqual(['standup']);
+  });
+
+  it('keeps them all when the world is on offer', () => {
+    const shaped = shapeSessions(rows, cards, NOW);
+    expect(visibleSessions(shaped, true)).toHaveLength(3);
   });
 });

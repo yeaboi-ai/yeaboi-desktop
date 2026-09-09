@@ -5,6 +5,7 @@
 // 404, and null is how a page knows to say so in one sentence rather than
 // fail. The shaping is pure (test/sessions.test.ts).
 
+import { isSoloOnlyRoute } from '@shared/audience';
 import { apiGetOptional } from './api';
 import { MODE_ROUTES } from './tips';
 
@@ -73,6 +74,16 @@ function routeFor(row: RecentSession, cardKey: string): string {
 const stamp = (row: RecentSession): string => row.last_modified || row.created_at;
 
 /** Rows ready to draw, newest first, titled from the capability cards. */
+/** Drop the runs whose mode lives in a world this build does not offer.
+ *  Both the Sessions list and the palette shape their rows here, so this is the
+ *  one place a hidden world could still be named by a run that predates it. */
+export function visibleSessions(
+  rows: readonly ShapedSession[],
+  soloEnabled: boolean,
+): ShapedSession[] {
+  return rows.filter((row) => soloEnabled || !isSoloOnlyRoute(row.route));
+}
+
 export function shapeSessions(
   rows: RecentSession[],
   cards: { key: string; title: string }[],

@@ -27,11 +27,7 @@ export function RailItemIcon({
     }
     case 'persona': {
       const width = Math.round(size * 1.4);
-      return audience === 'agents' ? (
-        <RoboMark persona={icon.id} size={width} className={className} />
-      ) : (
-        <PersonaDuckMark persona={icon.id} size={width} className={className} />
-      );
+      return <PersonaDuckMark persona={icon.id} size={width} className={className} />;
     }
     case 'image':
       return (

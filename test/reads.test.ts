@@ -49,10 +49,6 @@ describe('FLOW', () => {
 });
 
 describe('flowFor', () => {
-  it('is empty for the Agents world', () => {
-    expect(flowFor('agents', TEAM_KEYS)).toEqual([]);
-  });
-
   it('covers the whole flow for a Team card set, in flow order', () => {
     expect(flowFor('team', TEAM_KEYS).map((s) => s.key)).toEqual(FLOW.map((s) => s.key));
   });

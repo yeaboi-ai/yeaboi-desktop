@@ -64,8 +64,28 @@ describe('normalizeRailPrefs', () => {
   it('touches only the world that is malformed', () => {
     const prefs = normalizeRailPrefs({ team: 'x', solo: [item()] });
     expect(prefs.team).toEqual(RAIL_DEFAULTS.team);
-    expect(prefs.agents).toEqual(RAIL_DEFAULTS.agents);
     expect(prefs.solo).toEqual([item()]);
+  });
+
+  it('adopts a rail arranged in the retired Agents world into Solo', () => {
+    const agents = [item({ id: 'usage', route: '/agents/usage', label: 'Agent Usage' })];
+    expect(normalizeRailPrefs({ agents }).solo).toEqual(agents);
+  });
+
+  it('adopts it even though every world is written back, so Solo is never absent', () => {
+    // normalizeRailPrefs fills every key, so a real settings.json always has a
+    // `solo` entry. "Solo has no arrangement" is the defaults, not a missing key.
+    const agents = [item({ id: 'usage', route: '/agents/usage', label: 'Agent Usage' })];
+    const stored = { ...RAIL_DEFAULTS, agents };
+    expect(normalizeRailPrefs(stored).solo).toEqual(agents);
+  });
+
+  it('keeps Solo own arrangement when both are stored — two rails cannot merge', () => {
+    const agents = [item({ id: 'usage', route: '/agents/usage', label: 'Agent Usage' })];
+    const solo = [item()];
+    const prefs = normalizeRailPrefs({ solo, agents });
+    expect(prefs.solo).toEqual(solo);
+    expect(prefs).not.toHaveProperty('agents');
   });
 
   it('keeps an empty rail empty', () => {
@@ -178,7 +198,6 @@ describe('mergeRailPrefs', () => {
     const next = mergeRailPrefs(RAIL_DEFAULTS, { team: [item()] });
     expect(next.team).toEqual([item()]);
     expect(next.solo).toBe(RAIL_DEFAULTS.solo);
-    expect(next.agents).toBe(RAIL_DEFAULTS.agents);
   });
 
   it('normalises what arrives', () => {

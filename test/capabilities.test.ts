@@ -37,23 +37,34 @@ describe('runModesFor', () => {
   });
 
   it('serves the sidecar Solo menu when there is one', () => {
-    const withSolo = { ...caps, solo: ['daily-standup', 'weekly-review', 'usage'].map(card) };
+    // A current sidecar already carries the Agents family in `solo`, so the
+    // fold-in dedupes rather than repeating it.
+    const withSolo = {
+      ...caps,
+      solo: ['daily-standup', 'weekly-review', 'usage', 'agent-usage', 'agent-security'].map(card),
+    };
     expect(runModesFor(withSolo, 'solo').map((c) => c.key)).toEqual([
       'daily-standup',
       'weekly-review',
+      'agent-usage',
+      'agent-security',
     ]);
   });
 
   it('trims the room-only modes for Solo on an older sidecar', () => {
-    expect(runModesFor(caps, 'solo').map((c) => c.key)).toEqual(['daily-standup']);
-  });
-
-  it('offers the agentwatch family to Agents whole', () => {
-    expect(runModesFor(caps, 'agents').map((c) => c.key)).toEqual([
+    // An older sidecar's `solo` predates the merge, so the Agents family is
+    // added rather than assumed present.
+    expect(runModesFor(caps, 'solo').map((c) => c.key)).toEqual([
+      'daily-standup',
       'agent-usage',
       'agent-security',
     ]);
-    expect(menuFor(caps, 'agents')).toBe(caps.agents);
+  });
+
+  it('gives the Agents family to Solo, and never to Team', () => {
+    expect(menuFor(caps, 'solo').map((c) => c.key)).toContain('agent-usage');
+    expect(menuFor(caps, 'team')).toBe(caps.modes);
+    expect(menuFor(caps, 'team').map((c) => c.key)).not.toContain('agent-usage');
   });
 });
 

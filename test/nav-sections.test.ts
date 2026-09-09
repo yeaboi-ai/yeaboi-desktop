@@ -100,11 +100,10 @@ describe('the rail as it starts', () => {
     }
   });
 
-  it('sends Agents to its own projects list and everyone else to the workspace', () => {
-    expect(projectsHref('agents')).toBe('/agents/projects');
+  it('sends both worlds to the workspace projects list', () => {
     expect(projectsHref('team')).toBe('/projects');
     expect(projectsHref('solo')).toBe('/projects');
-    expect(RAIL_DEFAULTS.agents[0]!.route).toBe('/agents/projects');
+    expect(RAIL_DEFAULTS.solo[0]!.route).toBe('/projects');
   });
 
   it('orphans nothing the old rail listed', () => {
@@ -162,19 +161,19 @@ describe('activeRailRoute over the default rail', () => {
     expect(activeRailRoute(team, pathname, search, 'team')).toBe(expected);
   });
 
-  it('lights the agents projects list on its own pages', () => {
-    const agents = RAIL_DEFAULTS.agents;
-    expect(activeRailRoute(agents, '/agents/projects', '', 'agents')).toBe('/agents/projects');
-    expect(activeRailRoute(agents, '/agents/projects/p1', '', 'agents')).toBe('/agents/projects');
-    expect(activeRailRoute(agents, '/agents/usage', '', 'agents')).toBe('/sessions');
-    expect(activeRailRoute(agents, '/agents/security', '', 'agents')).toBe('/sessions');
+  it('lights the agentwatch pages under Solo', () => {
+    const solo = RAIL_DEFAULTS.solo;
+    expect(activeRailRoute(solo, '/agents/projects', '', 'solo')).toBe('/projects');
+    expect(activeRailRoute(solo, '/agents/projects/p1', '', 'solo')).toBe('/projects');
+    expect(activeRailRoute(solo, '/agents/usage', '', 'solo')).toBe('/sessions');
+    expect(activeRailRoute(solo, '/agents/security', '', 'solo')).toBe('/sessions');
   });
 
   it('keeps a mode page opened inside a project under Projects', () => {
     expect(activeRailRoute(team, '/team/reporting/new', '?project=p1', 'team')).toBe('/projects');
     expect(activeRailRoute(team, '/team/standup', '?project=p1&run=3', 'team')).toBe('/projects');
-    expect(activeRailRoute(RAIL_DEFAULTS.agents, '/agents/usage', '?project=p1', 'agents')).toBe(
-      '/agents/projects',
+    expect(activeRailRoute(RAIL_DEFAULTS.solo, '/agents/usage', '?project=p1', 'solo')).toBe(
+      '/projects',
     );
   });
 

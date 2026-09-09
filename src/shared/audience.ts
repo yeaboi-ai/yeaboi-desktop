@@ -1,26 +1,48 @@
 // The audience worlds. The desktop, like the TUI's landing split, works with
-// one audience at a time: Solo (your own delivery), Team (the scrum ceremonies
-// and the planning workspace, run for a roster) or Agents (the agentwatch
-// family). Pure — main clamps the persisted value through here and the
-// renderer classifies routes through here, so both halves of the split are
-// testable in the node lane.
+// one audience at a time: Solo (your own delivery, and the agentwatch family
+// that watches the agents working alongside you) or Team (the scrum ceremonies
+// and the planning workspace, run for a roster). Pure — main clamps the
+// persisted value through here and the renderer classifies routes through here,
+// so both halves of the split are testable in the node lane.
+//
+// Solo is hidden at launch: the sidecar's `solo_enabled` decides, and with it
+// off there is one world, so every affordance that switches worlds disappears
+// rather than offering a list of one (see `audiencesShown`).
 
-export type Audience = 'solo' | 'team' | 'agents';
+export type Audience = 'solo' | 'team';
 
-export const AUDIENCES: readonly Audience[] = ['solo', 'team', 'agents'];
+export const AUDIENCES: readonly Audience[] = ['solo', 'team'];
 
-/** The projects list for a world: Agents scopes the same projects by repo. */
-export function projectsHref(audience: Audience): string {
-  return audience === 'agents' ? '/agents/projects' : '/projects';
+/** The projects list for a world. Both doors land on the workspace ledger;
+ *  `/agents/projects` is the same projects seen through the agents' sessions,
+ *  reachable from the rail catalogue rather than from here. */
+export function projectsHref(_audience: Audience): string {
+  return '/projects';
 }
 
 /** Clamp whatever settings.json holds. `humans` is the pre-split name for the
- *  Team world and migrates on read (the file rewrites itself on the next
- *  set). Anything else means the question was never asked (or the file
- *  predates it) — the chooser's cue. */
+ *  Team world and `agents` the pre-merge name for Solo; both migrate on read
+ *  (the file rewrites itself on the next set). Anything else means the question
+ *  was never asked (or the file predates it) — the chooser's cue. */
 export function normalizeAudience(value: unknown): Audience | undefined {
   if (value === 'humans') return 'team';
-  return value === 'solo' || value === 'team' || value === 'agents' ? value : undefined;
+  if (value === 'agents') return 'solo';
+  return value === 'solo' || value === 'team' ? value : undefined;
+}
+
+/** The worlds actually on offer. With Solo hidden there is one world, so every
+ *  affordance that switches worlds must disappear rather than offer a list of
+ *  one — `audiencesShown(x).length > 1` is that condition, in one place. */
+export function audiencesShown(soloEnabled: boolean): readonly Audience[] {
+  return soloEnabled ? AUDIENCES : ['team'];
+}
+
+/** The sidecar's answer to "does this build offer the Solo world?" — one
+ *  switch, $YEABOI_SOLO, owned by the Python side. Anything that is not an
+ *  explicit `true` means hidden: an older sidecar, a failed fetch, a string
+ *  "true". The default can only ever fail closed. */
+export function soloEnabled(caps: { solo_enabled?: unknown } | null | undefined): boolean {
+  return caps?.solo_enabled === true;
 }
 
 /** How a world names itself wherever it is offered — the chooser's cards and
@@ -41,7 +63,7 @@ export const WORLD_COPY: Record<Audience, WorldCopy> = {
   solo: {
     title: 'Solo',
     verb: 'Run your own show',
-    capabilities: ['planning', 'standups', 'analysis', 'reports'],
+    capabilities: ['planning', 'standups', 'reports', 'agent cost', 'agent security'],
     beta: true,
     accent: 'rgb(210, 168, 80)',
     accentBright: 'rgb(245, 200, 110)',
@@ -52,14 +74,6 @@ export const WORLD_COPY: Record<Audience, WorldCopy> = {
     capabilities: ['planning', 'standups', 'retros', 'poker', 'reviews'],
     accent: 'rgb(100, 180, 100)',
     accentBright: 'rgb(80, 220, 120)',
-  },
-  agents: {
-    title: 'Agents',
-    verb: 'Watch your AI agents work',
-    capabilities: ['cost', 'recoverable spend', 'security posture'],
-    beta: true,
-    accent: 'rgb(90, 160, 210)',
-    accentBright: 'rgb(130, 200, 255)',
   },
 };
 
@@ -72,9 +86,10 @@ export const WORLD_COPY: Record<Audience, WorldCopy> = {
 // in the room — retro, poker, performance — belong to Team alone.
 const TEAM_ONLY_PREFIXES = ['/team/retro', '/team/poker', '/team/performance'];
 
-// The one mode with no team counterpart: a review of your own week has no
-// roster to review, so its pages live under their own prefix.
-const SOLO_ONLY_PREFIXES = ['/solo'];
+// The modes with no team counterpart: a review of your own week has no roster
+// to review, and the agentwatch family watches *your* agents. `/agents` keeps
+// its paths — the routes manifest is a contract — and changed owner only.
+const SOLO_ONLY_PREFIXES = ['/solo', '/agents'];
 
 const SHARED_WORKSPACE_PREFIXES = [
   '/team',
@@ -96,11 +111,10 @@ function matches(pathname: string, prefix: string): boolean {
 /** The worlds a pathname belongs to, canonical owner first; `[]` for shared
  *  chrome (`/home`, `/sessions`, `/settings*`, `/whats-new`, `/feedback`,
  *  `/setup`). `/sessions` is every world's second door, so it belongs to none.
- *  `/agents/projects*` is agents-only through the `/agents` prefix. Note
- *  `/usage` is the app's own LLM spend for scrum runs — workspace-side; the
- *  agentwatch usage report is `/agents/usage`. */
+ *  `/agents/projects*` is Solo-only through the `/agents` prefix. Note `/usage`
+ *  is the app's own LLM spend for scrum runs — workspace-side; the agentwatch
+ *  usage report is `/agents/usage`. */
 export function audiencesForRoute(pathname: string): readonly Audience[] {
-  if (matches(pathname, '/agents')) return ['agents'];
   if (SOLO_ONLY_PREFIXES.some((prefix) => matches(pathname, prefix))) return ['solo'];
   if (TEAM_ONLY_PREFIXES.some((prefix) => matches(pathname, prefix))) return ['team'];
   if (SHARED_WORKSPACE_PREFIXES.some((prefix) => matches(pathname, prefix)))
@@ -116,4 +130,12 @@ export function resolveAudience(pathname: string, current: Audience): Audience |
   const worlds = audiencesForRoute(pathname);
   if (worlds.length === 0 || worlds.includes(current)) return null;
   return worlds[0];
+}
+
+/** A route only the Solo world owns — `/solo/*` and, since the merge,
+ *  `/agents/*`. The router's guard and the palette's filter both key off this,
+ *  so a page cannot be reachable in a world the build does not offer. */
+export function isSoloOnlyRoute(pathname: string): boolean {
+  const worlds = audiencesForRoute(pathname);
+  return worlds.length === 1 && worlds[0] === 'solo';
 }

@@ -18,24 +18,18 @@ export const WORLD_MASCOT: Record<
 > = {
   solo: ({ size, jamming }) => <DuckMark state="idle" size={size} jamming={jamming} />,
   team: ({ size }) => <TeamMark size={size} />,
-  agents: ({ size }) => <RoboMark size={size} />,
 };
 
 /** A door's own duck: the persona the home's duck for that door wore on the
  *  last visit, feathered or steel, so it follows the reader onto the door's
  *  screens. */
-export function DoorMascot({
-  audience,
-  door,
-  size,
-}: {
-  audience: Audience;
-  door: Door;
-  size: number;
-}): ReactElement {
-  const persona = currentPair()[door];
-  if (audience === 'agents') return <RoboMark persona={persona} size={size} />;
-  return <PersonaDuckMark persona={persona} size={size} />;
+export function DoorMascot({ door, size }: { door: Door; size: number }): ReactElement {
+  return <PersonaDuckMark persona={currentPair()[door]} size={size} />;
+}
+
+/** The mark the agentwatch pages draw: the robo, in the current persona. */
+export function RoboDoorMascot({ size }: { size: number }): ReactElement {
+  return <RoboMark persona={currentPair().projects} size={size} />;
 }
 
 export const DOOR_MASCOT: Record<
@@ -43,15 +37,11 @@ export const DOOR_MASCOT: Record<
   Record<Door, (props: { size: number }) => ReactElement>
 > = {
   solo: {
-    projects: ({ size }) => <DoorMascot audience="solo" door="projects" size={size} />,
-    sessions: ({ size }) => <DoorMascot audience="solo" door="sessions" size={size} />,
+    projects: ({ size }) => <DoorMascot door="projects" size={size} />,
+    sessions: ({ size }) => <DoorMascot door="sessions" size={size} />,
   },
   team: {
-    projects: ({ size }) => <DoorMascot audience="team" door="projects" size={size} />,
-    sessions: ({ size }) => <DoorMascot audience="team" door="sessions" size={size} />,
-  },
-  agents: {
-    projects: ({ size }) => <DoorMascot audience="agents" door="projects" size={size} />,
-    sessions: ({ size }) => <DoorMascot audience="agents" door="sessions" size={size} />,
+    projects: ({ size }) => <DoorMascot door="projects" size={size} />,
+    sessions: ({ size }) => <DoorMascot door="sessions" size={size} />,
   },
 };

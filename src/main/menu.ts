@@ -5,7 +5,7 @@
 // re-rendered whenever their state changes, the way the tray menu is.
 
 import { Menu, app, type MenuItemConstructorOptions } from 'electron';
-import { AUDIENCES, WORLD_COPY, type Audience } from '../shared/audience';
+import { audiencesShown, WORLD_COPY, type Audience } from '../shared/audience';
 import {
   FEEDBACK_PAGES,
   FILE_PAGES,
@@ -36,20 +36,34 @@ const separator: MenuItemConstructorOptions = { type: 'separator' };
 
 export class AppMenu {
   private audience: Audience = 'team';
+  // The Solo world is off until the sidecar says otherwise, so a menu built
+  // before the handshake never names a world the build does not have.
+  private solo = false;
   private petEnabled = false;
   private update: UpdateState = { kind: 'idle' };
 
   constructor(private readonly actions: MenuActions) {}
 
-  install(state: { audience: Audience | undefined; petEnabled: boolean }): void {
+  install(state: {
+    audience: Audience | undefined;
+    petEnabled: boolean;
+    soloEnabled?: boolean;
+  }): void {
     this.audience = state.audience ?? 'team';
     this.petEnabled = state.petEnabled;
+    this.solo = state.soloEnabled ?? false;
     this.render();
   }
 
   setAudience(audience: Audience): void {
     if (audience === this.audience) return;
     this.audience = audience;
+    this.render();
+  }
+
+  setSoloEnabled(enabled: boolean): void {
+    if (enabled === this.solo) return;
+    this.solo = enabled;
     this.render();
   }
 
@@ -118,15 +132,23 @@ export class AppMenu {
       ],
     };
 
-    const world: MenuItemConstructorOptions = {
-      label: 'World',
-      submenu: AUDIENCES.map((audience) => ({
-        label: WORLD_COPY[audience].title,
-        type: 'radio',
-        checked: audience === this.audience,
-        click: () => this.actions.setAudience(audience),
-      })),
-    };
+    // One world is not a choice, so the menu goes rather than offering a radio
+    // group of one.
+    const worlds = audiencesShown(this.solo);
+    const world: MenuItemConstructorOptions[] =
+      worlds.length > 1
+        ? [
+            {
+              label: 'World',
+              submenu: worlds.map((audience) => ({
+                label: WORLD_COPY[audience].title,
+                type: 'radio',
+                checked: audience === this.audience,
+                click: () => this.actions.setAudience(audience),
+              })),
+            },
+          ]
+        : [];
 
     const duck: MenuItemConstructorOptions = {
       label: 'Duck',
@@ -200,7 +222,7 @@ export class AppMenu {
           ...goPages(this.audience).map((page) => this.page(page)),
         ],
       },
-      world,
+      ...world,
       duck,
       music,
       updates,

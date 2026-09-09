@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DOOR_MASCOT } from '@/lib/audience/worlds';
+import { RoboDoorMascot } from '@/lib/audience/worlds';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { repoHost } from '@/lib/yeaboi/project-scope';
 import { splitProjects } from '@/lib/yeaboi/projects';
@@ -54,7 +54,7 @@ function ProjectRows({ projects, now }: { projects: Project[]; now: Date }) {
 }
 
 export default function AgentsProjectsPage() {
-  const Mascot = DOOR_MASCOT.agents.projects;
+  const Mascot = RoboDoorMascot;
   const { authFetch, ready, teamVersion } = useAuthFetch();
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState('');
