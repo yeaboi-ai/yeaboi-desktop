@@ -60,15 +60,16 @@ const OPS: NavSectionSpec = {
   ],
 };
 
-// Projects and Board are registered routes with no nav door: Niko navigates to
-// them and a deep link opens them, but the sidebar stops offering them. Guarded
-// by test/nav-sections.test.ts, so restoring one is a deliberate act.
+// Board is a registered route with no nav door: Niko navigates to it and a deep
+// link opens it, but the sidebar stops offering it. Guarded by
+// test/nav-sections.test.ts, so restoring it is a deliberate act.
 const TEAM_SECTIONS: NavSectionSpec[] = [
   HOME,
   {
     label: 'Team',
     items: [
-      // Planning lives in the Workspace: project → blueprint → plan.
+      // Where planning happens: a project holds the blueprint and the plan.
+      { href: '/projects', label: 'Planning', icon: 'projects' },
       { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: 'roadmap' },
       { href: '/team/analysis', label: 'Analysis', icon: 'analysis' },
       { href: '/team/standup', label: 'Standup', icon: 'standup' },
@@ -89,6 +90,7 @@ const SOLO_SECTIONS: NavSectionSpec[] = [
   {
     label: 'Solo',
     items: [
+      { href: '/projects', label: 'Planning', icon: 'projects' },
       { href: '/projects/new/from-roadmap', label: 'Roadmap', icon: 'roadmap' },
       { href: '/team/analysis', label: 'Analysis', icon: 'analysis' },
       { href: '/team/standup', label: 'Standup', icon: 'standup' },

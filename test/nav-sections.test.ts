@@ -22,7 +22,7 @@ const REGISTERED = new Set(registry.routes.map((route) => route.path));
 /** Routes the sidebar deliberately stopped listing. They are still registered
  *  and still reachable — Niko navigates to them, and so does a deep link — the
  *  nav simply no longer carries a door to them. */
-const UNLISTED = ['/projects', '/board'];
+const UNLISTED = ['/board'];
 
 /** Everything the one-nav sidebar listed before the audience split, plus the
  *  one route the split added: the Solo world's own Weekly Review, less
@@ -30,6 +30,7 @@ const UNLISTED = ['/projects', '/board'];
 const FULL_INVENTORY = [
   '/solo/review',
   '/home',
+  '/projects',
   '/projects/new/from-roadmap',
   '/team/analysis',
   '/team/standup',
