@@ -21,18 +21,93 @@ export function isWidgetId(value: unknown): value is WidgetId {
   return typeof value === 'string' && (WIDGET_IDS as readonly string[]).includes(value);
 }
 
+/** A widget's footprint, in grid tracks. `w` is clamped against however many
+ *  columns the window is showing; `h` is rows of {@link WIDGET_ROW}. */
+export interface WidgetSize {
+  w: number;
+  h: number;
+}
+
+/** Height of one row track, in px, and the gap between them. The renderer sets
+ *  the grid from these; they live here so the clamps and the CSS agree. */
+export const WIDGET_ROW = 24;
+export const WIDGET_GAP = 12;
+
+export const MIN_SIZE: WidgetSize = { w: 1, h: 3 };
+export const MAX_SIZE: WidgetSize = { w: 4, h: 12 };
+
 export interface WidgetPrefs {
   /** The widgets on the dashboard, in the order they are drawn. */
   order: WidgetId[];
   /** Widgets switched off. Kept rather than removed from `order`, so turning
    *  one back on returns it to where it was rather than to the end. */
   hidden: WidgetId[];
+  /** How much room each one takes. A widget with no entry gets its default. */
+  sizes: Partial<Record<WidgetId, WidgetSize>>;
 }
+
+/** What each widget asks for before anyone has resized it. */
+export const WIDGET_SIZES: Record<WidgetId, WidgetSize> = {
+  boards: { w: 1, h: 4 },
+  shared: { w: 1, h: 3 },
+  'whats-new': { w: 1, h: 6 },
+  usage: { w: 1, h: 5 },
+  'coming-up': { w: 1, h: 4 },
+  'retro-actions': { w: 1, h: 4 },
+};
 
 export const WIDGET_DEFAULTS: WidgetPrefs = {
   order: [...WIDGET_IDS],
   hidden: [],
+  sizes: {},
 };
+
+/** One widget's footprint: what was stored, else what it asks for, clamped.
+ *  `columns` is what the window can actually show — a 3-wide widget in a
+ *  2-column window is 2 wide, without the stored preference being rewritten. */
+export function widgetSize(prefs: WidgetPrefs, id: WidgetId, columns = MAX_SIZE.w): WidgetSize {
+  const stored = prefs.sizes[id] ?? WIDGET_SIZES[id];
+  return {
+    w: clamp(stored.w, MIN_SIZE.w, Math.min(MAX_SIZE.w, Math.max(1, columns))),
+    h: clamp(stored.h, MIN_SIZE.h, MAX_SIZE.h),
+  };
+}
+
+function clamp(value: number, low: number, high: number): number {
+  if (!Number.isFinite(value)) return low;
+  return Math.min(high, Math.max(low, Math.round(value)));
+}
+
+/** `id` moved to `index` in the drawn order, as a patch. The index counts
+ *  visible widgets, which is what the dashboard hands out; hidden ones keep
+ *  their place around the move. */
+export function moveWidget(prefs: WidgetPrefs, id: WidgetId, index: number): Partial<WidgetPrefs> {
+  const shown = visibleWidgets(prefs).filter((other) => other !== id);
+  const at = clamp(index, 0, shown.length);
+  const target = shown[at];
+  const rest = prefs.order.filter((other) => other !== id);
+  const seam = target === undefined ? rest.length : rest.indexOf(target);
+  return { order: [...rest.slice(0, seam), id, ...rest.slice(seam)] };
+}
+
+export function resizeWidget(
+  prefs: WidgetPrefs,
+  id: WidgetId,
+  size: WidgetSize,
+): Partial<WidgetPrefs> {
+  return {
+    sizes: {
+      ...prefs.sizes,
+      [id]: { w: clamp(size.w, MIN_SIZE.w, MAX_SIZE.w), h: clamp(size.h, MIN_SIZE.h, MAX_SIZE.h) },
+    },
+  };
+}
+
+/** Switch one widget on or off. Turning it on returns it to where it was. */
+export function toggleWidget(prefs: WidgetPrefs, id: WidgetId, on: boolean): Partial<WidgetPrefs> {
+  const off = prefs.hidden.filter((other) => other !== id);
+  return { hidden: on ? off : [...off, id] };
+}
 
 /** The widgets to draw, in order: everything in `order` that is not hidden,
  *  then any widget the stored order predates. */
@@ -60,7 +135,20 @@ export function normalizeWidgetPrefs(raw: unknown): WidgetPrefs {
     // going undrawn.
     order: [...order, ...WIDGET_IDS.filter((id) => !order.includes(id))],
     hidden: ids(data['hidden']),
+    sizes: sizes(data['sizes']),
   };
+}
+
+function sizes(value: unknown): Partial<Record<WidgetId, WidgetSize>> {
+  const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const out: Partial<Record<WidgetId, WidgetSize>> = {};
+  for (const [id, size] of Object.entries(raw)) {
+    if (!isWidgetId(id) || !size || typeof size !== 'object') continue;
+    const { w, h } = size as { w?: unknown; h?: unknown };
+    if (typeof w !== 'number' || typeof h !== 'number') continue;
+    out[id] = { w: clamp(w, MIN_SIZE.w, MAX_SIZE.w), h: clamp(h, MIN_SIZE.h, MAX_SIZE.h) };
+  }
+  return out;
 }
 
 export function mergeWidgetPrefs(current: WidgetPrefs, patch: unknown): WidgetPrefs {

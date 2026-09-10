@@ -9,34 +9,53 @@
 // a dashboard of invented numbers is worse than an honest gap, because you
 // cannot tell by looking which half you are allowed to believe.
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { carriedTransform } from '@board/motion/useCarry';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
   CalendarClock,
+  Check,
   Columns3,
   Gauge,
   LayoutGrid,
+  Plus,
   RotateCcw,
   Share2,
-  SlidersHorizontal,
   Sparkles,
+  X,
 } from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { RetroActionsWidget } from './retro-actions-widget';
-import { WidgetDrawer } from './widget-drawer';
 import {
+  HOLD_TO_ARRANGE_MS,
+  useGridColumns,
+  useHoldToArrange,
+  useWidgetMove,
+  useWidgetResize,
+} from './arrange';
+import {
+  MIN_SIZE,
   WIDGET_DEFAULTS,
+  WIDGET_GAP,
   WIDGET_IDS,
+  WIDGET_ROW,
   mergeWidgetPrefs,
+  moveWidget,
   normalizeWidgetPrefs,
+  resizeWidget,
+  toggleWidget,
   visibleWidgets,
+  widgetSize,
   type WidgetId,
   type WidgetPrefs,
+  type WidgetSize,
 } from '@shared/widgets';
 import { apiGet, callTool } from '@/lib/yeaboi/api';
 
@@ -70,7 +89,7 @@ interface ChangelogEntry {
  *  contract asks for. */
 const KNOWN_WIDGETS = new Set<string>(WIDGET_IDS);
 
-/** What each widget is called, for the drawer that lists them. */
+/** What each widget is called, for the dotted box that offers it back. */
 const WIDGET_TITLES: Record<WidgetId, string> = {
   boards: 'Recent boards',
   shared: 'Shared out',
@@ -82,7 +101,10 @@ const WIDGET_TITLES: Record<WidgetId, string> = {
 
 function AwaitingTile({ title, wants }: { title: string; wants: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border/50 bg-card/30 p-4">
+    <div
+      style={{ gridColumn: 'span 1', gridRow: `span ${MIN_SIZE.h}` }}
+      className="rounded-2xl border border-dashed border-border/50 bg-card/30 p-4"
+    >
       <p className="font-body text-[12px] font-medium text-muted-foreground">{title}</p>
       <p className="mt-2 font-body text-[11px] leading-relaxed text-muted-foreground/60">
         Waiting on <span className="font-code">{wants}</span>
@@ -95,24 +117,47 @@ function AwaitingTile({ title, wants }: { title: string; wants: string }) {
  *
  *  A tile that summarises a page is the door to it: the nav used to carry a
  *  row for each of those pages as well, which is two ways in for one screen
- *  and a drawer of seven icons to hold them. */
+ *  and a drawer of seven icons to hold them.
+ *
+ *  While the dashboard is being arranged it stops being a door — a press is a
+ *  grab, and the whole surface is the handle. */
 function Tile({
+  id,
   title,
   icon: Icon,
   href,
+  size,
+  arranging,
+  ripening,
+  carried,
+  onPointerDown,
+  onResize,
+  onRemove,
   children,
 }: {
+  id?: WidgetId;
   title: string;
   icon: typeof LayoutGrid;
   href?: string;
+  size: WidgetSize;
+  arranging?: boolean;
+  /** Under a press that is on its way to opening the arrange mode. */
+  ripening?: boolean;
+  /** In the air: the copy under the pointer is drawn instead of this. */
+  carried?: boolean;
+  onPointerDown?: (event: React.PointerEvent) => void;
+  onResize?: (event: React.PointerEvent) => void;
+  onRemove?: () => void;
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const opens = Boolean(href);
+  const opens = Boolean(href) && !arranging;
   return (
     <div
+      {...(id ? { 'data-widget-id': id } : {})}
       role={opens ? 'link' : undefined}
       tabIndex={opens ? 0 : undefined}
+      onPointerDown={onPointerDown}
       onClick={opens ? () => router.push(href!) : undefined}
       onKeyDown={
         opens
@@ -124,17 +169,129 @@ function Tile({
             }
           : undefined
       }
-      className={`rounded-2xl bg-card p-4 ring-1 ring-border/60 ${
-        opens
-          ? 'cursor-pointer transition-colors hover:bg-secondary/30 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-          : ''
-      }`}
+      style={{
+        gridColumn: `span ${size.w}`,
+        gridRow: `span ${size.h}`,
+        // The ramp is as long as the press it is describing, so the widget
+        // arrives at its lifted state exactly as the mode opens. Written here
+        // rather than as classes so the three channels are one statement.
+        ...(ripening
+          ? {
+              transitionDuration: `${HOLD_TO_ARRANGE_MS}ms`,
+              boxShadow: '0 0 0 2px var(--muted-foreground)',
+              backgroundColor: 'var(--secondary)',
+              scale: '1.02',
+            }
+          : arranging
+            ? {
+                boxShadow:
+                  '0 0 0 1px color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
+              }
+            : {}),
+      }}
+      className={cn(
+        'group/tile relative flex min-h-0 flex-col rounded-2xl bg-card p-4 ring-1 ring-border/60',
+        'transition-[box-shadow,background-color,scale,opacity] duration-200 ease-out',
+        arranging && 'cursor-grab touch-none select-none',
+        carried && 'opacity-0',
+        opens &&
+          'cursor-pointer hover:bg-secondary/30 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+      )}
     >
-      <p className="flex items-center gap-2 font-body text-[12px] font-medium text-foreground">
+      <p className="flex flex-none items-center gap-2 font-body text-[12px] font-medium text-foreground">
         <Icon className="h-3.5 w-3.5 text-primary" />
         {title}
       </p>
-      <div className="mt-3">{children}</div>
+      <div className="quiet-scroll mt-3 min-h-0 flex-1 overflow-y-auto">{children}</div>
+
+      {arranging && onRemove && (
+        <button
+          type="button"
+          aria-label={`Remove ${title}`}
+          onClick={onRemove}
+          className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-border transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <X className="size-3" aria-hidden />
+        </button>
+      )}
+      {arranging && onResize && (
+        // The corner is the handle. Bigger than it looks: the visible mark is
+        // three pixels, the target it carries is a fingertip.
+        <span
+          role="separator"
+          aria-label={`Resize ${title}`}
+          onPointerDown={onResize}
+          className="absolute right-0 bottom-0 size-6 cursor-nwse-resize touch-none"
+        >
+          <span className="absolute right-1.5 bottom-1.5 size-2 rounded-[2px] border-r-2 border-b-2 border-foreground/30" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Where the carried widget is going. The dotted box is the drop, and — at the
+ *  end of the grid while arranging — the way to put one back. */
+function DropSlot({ size }: { size: WidgetSize }) {
+  return (
+    <div
+      data-drop-slot
+      style={{ gridColumn: `span ${size.w}`, gridRow: `span ${size.h}` }}
+      className="rounded-2xl border-2 border-dashed border-foreground/25 bg-foreground/[0.02]"
+    />
+  );
+}
+
+/** The dotted box that puts a widget back. Closed it is a plus; open it lists
+ *  whatever is off the dashboard. */
+function AddSlot({
+  options,
+  onAdd,
+}: {
+  options: { id: WidgetId; title: string }[];
+  onAdd: (id: WidgetId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const none = options.length === 0;
+  return (
+    <div
+      style={{ gridColumn: 'span 1', gridRow: `span ${MIN_SIZE.h}` }}
+      className="quiet-scroll flex min-h-0 flex-col overflow-y-auto rounded-2xl border-2 border-dashed border-foreground/20 p-2"
+    >
+      {open && !none ? (
+        <ul className="flex flex-col gap-1">
+          {options.map((option) => (
+            <li key={option.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  onAdd(option.id);
+                  setOpen(false);
+                }}
+                className="w-full rounded-lg px-2 py-1.5 text-left font-body text-[12px] text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
+              >
+                {option.title}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <button
+          type="button"
+          disabled={none}
+          onClick={() => setOpen(true)}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl font-body text-[12px] text-muted-foreground/70 transition-colors enabled:hover:bg-secondary/30 enabled:hover:text-foreground disabled:cursor-default"
+        >
+          {none ? (
+            'Everything is on the dashboard'
+          ) : (
+            <>
+              <Plus className="size-3.5" aria-hidden />
+              Add a widget
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
@@ -161,6 +318,8 @@ export function HomeDashboard() {
   const [monthView, setMonthView] = useState(false);
   const [widgets, setWidgets] = useState<WidgetPrefs>(WIDGET_DEFAULTS);
   const [arranging, setArranging] = useState(false);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const columns = useGridColumns(gridRef);
 
   useEffect(() => {
     apiGet<{ boards?: Board[] }>('/api/boards').then(
@@ -185,12 +344,37 @@ export function HomeDashboard() {
       .catch(() => undefined);
   }, []);
 
-  // Drawn from what is stored and saved back at once: the dashboard behind the
-  // drawer is what the drawer is describing.
+  // Drawn from what is stored and saved back at once: what you are looking at
+  // while you arrange it is the thing being saved.
   const arrange = (patch: Partial<WidgetPrefs>) => {
     setWidgets((current) => mergeWidgetPrefs(current, patch));
     void window.yeaboi?.setWidgetPrefs?.(patch);
   };
+
+  const hold = useHoldToArrange(() => setArranging(true), !arranging);
+  const move = useWidgetMove((id, index) => arrange(moveWidget(widgets, id, index)), arranging);
+  const resize = useWidgetResize((id, size) => arrange(resizeWidget(widgets, id, size)), arranging);
+
+  // Leaving the mode is Escape or Done; a click anywhere else is one of the
+  // arranging gestures, so the surface cannot close it.
+  useEffect(() => {
+    if (!arranging) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !move.carry && !resize.carry) setArranging(false);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [arranging, move.carry, resize.carry]);
+
+  const shown = visibleWidgets(widgets, KNOWN_WIDGETS);
+  const carriedId = move.carry ? (move.carry.itemId as WidgetId) : null;
+  /** The pending size while a corner is being dragged, else the stored one. */
+  const sizeOf = (id: WidgetId): WidgetSize =>
+    resize.carry?.itemId === id && resize.carry.target
+      ? resize.carry.target
+      : widgetSize(widgets, id, columns);
+  const flow = carriedId ? shown.filter((id) => id !== carriedId) : shown;
+  const dropAt = carriedId ? (move.carry?.target ?? flow.length) : null;
 
   /** Every widget the dashboard can draw. Keyed by the shared contract's ids,
    *  so a widget that exists here and not there fails the type check. */
@@ -339,19 +523,17 @@ export function HomeDashboard() {
           <h1 className="font-display text-2xl text-foreground">
             Welcome{first && first !== 'You' ? `, ${first}` : ''}
           </h1>
-          <Button variant="ghost" size="sm" onClick={() => setArranging(true)}>
-            <SlidersHorizontal className="size-3.5" aria-hidden />
-            Arrange
-          </Button>
+          {arranging ? (
+            <Button variant="ghost" size="sm" onClick={() => setArranging(false)}>
+              <Check className="size-3.5" aria-hidden />
+              Done
+            </Button>
+          ) : (
+            <p className="font-body text-[11px] text-muted-foreground/50">
+              Hold a widget to rearrange
+            </p>
+          )}
         </div>
-
-        <WidgetDrawer
-          open={arranging}
-          onOpenChange={setArranging}
-          prefs={widgets}
-          titles={WIDGET_TITLES}
-          onChange={arrange}
-        />
 
         {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
@@ -361,7 +543,7 @@ export function HomeDashboard() {
             of a surface, and a transform is a stacking context — so the
             calendar's own order counted for nothing against a sibling that
             came later in the tree. This is the box that has to carry it. */}
-        <div className="relative z-10 mb-6 mt-3">
+        <div className="relative z-10 mt-3 mb-6">
           <Schedule
             ceremonies={schedule.ceremonies}
             page={schedule.page}
@@ -371,26 +553,106 @@ export function HomeDashboard() {
         </div>
 
         <Displaced away={monthView}>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {visibleWidgets(widgets, KNOWN_WIDGETS).map((id) => {
+          <div
+            ref={gridRef}
+            data-widget-grid
+            style={{ gridAutoRows: `${WIDGET_ROW}px`, gap: `${WIDGET_GAP}px` }}
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {flow.map((id, index) => {
               const widget = WIDGETS[id];
+              const slot =
+                dropAt === index && carriedId ? (
+                  <DropSlot key="drop" size={sizeOf(carriedId)} />
+                ) : null;
               return (
-                <Tile
-                  key={id}
-                  title={widget.title}
-                  icon={widget.icon}
-                  {...(widget.href ? { href: widget.href } : {})}
-                >
-                  {widget.body}
-                </Tile>
+                <Fragment key={id}>
+                  {slot}
+                  <Tile
+                    id={id}
+                    title={widget.title}
+                    icon={widget.icon}
+                    size={sizeOf(id)}
+                    arranging={arranging}
+                    ripening={hold.holding === id}
+                    {...(widget.href ? { href: widget.href } : {})}
+                    onPointerDown={(event) =>
+                      arranging
+                        ? move.onBodyPointerDown(id, asPointer(event))
+                        : hold.onPointerDown(id, asPointer(event))
+                    }
+                    onResize={(event) => {
+                      // The corner is inside the widget, so without this the
+                      // press starts a move as well as a resize.
+                      event.stopPropagation();
+                      resize.onHandlePointerDown(id, asPointer(event));
+                    }}
+                    onRemove={() => arrange(toggleWidget(widgets, id, false))}
+                  >
+                    {widget.body}
+                  </Tile>
+                </Fragment>
               );
             })}
+            {dropAt === flow.length && carriedId && <DropSlot size={sizeOf(carriedId)} />}
+
+            {arranging && (
+              <AddSlot
+                options={WIDGET_IDS.filter((id) => !shown.includes(id)).map((id) => ({
+                  id,
+                  title: WIDGET_TITLES[id],
+                }))}
+                onAdd={(id) => arrange(toggleWidget(widgets, id, true))}
+              />
+            )}
 
             <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
             <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
           </div>
         </Displaced>
       </div>
+
+      {carriedId &&
+        move.carry &&
+        createPortal(
+          <div className="pointer-events-none fixed inset-0 z-[70]">
+            <div
+              ref={move.previewRef as React.RefObject<HTMLDivElement>}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: `${move.carry.width}px`,
+                height: `${rowsToPx(sizeOf(carriedId).h)}px`,
+                transform: carriedTransform(move.carry),
+                rotate: `${move.carry.tilt}deg`,
+                transformOrigin: '50% 0%',
+              }}
+              className="flex flex-col rounded-2xl bg-card p-4 shadow-2xl ring-1 ring-border transition-[rotate] duration-200 ease-out"
+            >
+              <p className="flex flex-none items-center gap-2 font-body text-[12px] font-medium text-foreground">
+                {(() => {
+                  const Icon = WIDGETS[carriedId].icon;
+                  return <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />;
+                })()}
+                {WIDGETS[carriedId].title}
+              </p>
+              <div className="mt-3 min-h-0 flex-1 overflow-hidden">{WIDGETS[carriedId].body}</div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </Surface>
   );
+}
+
+/** React's own event, which still knows what it was dispatched on — the native
+ *  one has had its `currentTarget` cleared by the time a handler reads it. */
+function asPointer(event: React.PointerEvent): PointerEvent {
+  return event as unknown as PointerEvent;
+}
+
+/** The pixel height of a widget that many rows tall. */
+function rowsToPx(rows: number): number {
+  return rows * WIDGET_ROW + (rows - 1) * WIDGET_GAP;
 }
