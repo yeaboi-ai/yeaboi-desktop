@@ -42,6 +42,10 @@ import { NikoMessage } from './niko-message';
 import { useNikoContext } from './niko-provider';
 import { SLASH_COMMANDS, isPrefill, isSlashQuery, matchSlash, slashWindow } from './niko-slash';
 
+/** How the row leaves when a board takes the window. Matches the dock's own,
+ *  so the two go together rather than one after the other. */
+const RETREAT = 'translate 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease';
+
 /** The gap left between the panel and the window when it steps aside. */
 const ASIDE_MARGIN = 16;
 
@@ -565,14 +569,16 @@ export function NikoBar() {
         // them at the same time is the second animation nobody asked for. It
         // still eases for the sizes that are the panel's own — settling to fit
         // a reply, or a drag on the grip.
-        // `bottom` is on both branches: the deck holds everything off the
-        // window's edge while it is being turned, and an inline transition
-        // replaces the property list rather than adding to it — named nowhere
-        // here, the bar jumped its 10px while the row beside it slid.
+        // `bottom` and `RETREAT` are on both branches: an inline transition
+        // replaces the property list rather than adding to it, so anything the
+        // stylesheet animates has to be named here too or it snaps. The deck
+        // holds everything off the window's edge while it is being turned, and
+        // a board staged in the window sends the whole row off the bottom —
+        // named nowhere here, the bar vanished while the dock beside it slid.
         transition:
           dragging || opening || state === 'collapsed'
-            ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out`
-            : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out`,
+            ? `width ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out, ${RETREAT}`
+            : `width ${HEIGHT_MS}ms ${MORPH}, height ${HEIGHT_MS}ms ${MORPH}, transform 420ms ${MORPH}, bottom 300ms ease-out, ${RETREAT}`,
       }}
     >
       {showChips && state === 'input' && (
