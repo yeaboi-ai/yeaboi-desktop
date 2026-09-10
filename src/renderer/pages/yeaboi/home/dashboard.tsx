@@ -22,6 +22,7 @@ import {
   LayoutGrid,
   Plus,
   RotateCcw,
+  Music,
   Share2,
   Sparkles,
   X,
@@ -32,10 +33,13 @@ import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { MusicWidget } from './music-widget';
 import { RetroActionsWidget } from './retro-actions-widget';
 import {
   HOLD_TO_ARRANGE_MS,
+  LEAVE_MS,
   useGridColumns,
+  useGridFlip,
   useHoldToArrange,
   useWidgetMove,
   useWidgetResize,
@@ -97,11 +101,13 @@ const WIDGET_TITLES: Record<WidgetId, string> = {
   usage: 'Usage',
   'coming-up': 'Coming up',
   'retro-actions': 'Open actions',
+  music: 'Music',
 };
 
-function AwaitingTile({ title, wants }: { title: string; wants: string }) {
+function AwaitingTile({ title, wants, tile }: { title: string; wants: string; tile: string }) {
   return (
     <div
+      data-tile={tile}
       style={{ gridColumn: 'span 1', gridRow: `span ${MIN_SIZE.h}` }}
       className="rounded-2xl border border-dashed border-border/50 bg-card/30 p-4"
     >
@@ -130,6 +136,8 @@ function Tile({
   arranging,
   ripening,
   carried,
+  leaving,
+  flush,
   onPointerDown,
   onResize,
   onRemove,
@@ -145,6 +153,11 @@ function Tile({
   ripening?: boolean;
   /** In the air: the copy under the pointer is drawn instead of this. */
   carried?: boolean;
+  /** On its way off the dashboard: it fades before its place closes up. */
+  leaving?: boolean;
+  /** The body is a picture rather than a list: no scroller, so what it draws
+   *  can run out past the card's padding to its edges. */
+  flush?: boolean;
   onPointerDown?: (event: React.PointerEvent) => void;
   onResize?: (event: React.PointerEvent) => void;
   onRemove?: () => void;
@@ -154,7 +167,7 @@ function Tile({
   const opens = Boolean(href) && !arranging;
   return (
     <div
-      {...(id ? { 'data-widget-id': id } : {})}
+      {...(id ? { 'data-widget-id': id, 'data-tile': id } : {})}
       role={opens ? 'link' : undefined}
       tabIndex={opens ? 0 : undefined}
       onPointerDown={onPointerDown}
@@ -173,14 +186,18 @@ function Tile({
         gridColumn: `span ${size.w}`,
         gridRow: `span ${size.h}`,
         // The ramp is as long as the press it is describing, so the widget
-        // arrives at its lifted state exactly as the mode opens. Written here
+        // arrives at its pressed state exactly as the mode opens. Written here
         // rather than as classes so the three channels are one statement.
+        //
+        // Inward, not outward: the surface is a scroller with four pixels of
+        // padding, so a widget that grew under the press would be clipped at
+        // the edge columns.
         ...(ripening
           ? {
               transitionDuration: `${HOLD_TO_ARRANGE_MS}ms`,
               boxShadow: '0 0 0 2px var(--muted-foreground)',
               backgroundColor: 'var(--secondary)',
-              scale: '1.02',
+              scale: '0.98',
             }
           : arranging
             ? {
@@ -188,12 +205,14 @@ function Tile({
                   '0 0 0 1px color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
               }
             : {}),
+        ...(leaving ? { transitionDuration: `${LEAVE_MS}ms` } : {}),
       }}
       className={cn(
         'group/tile relative flex min-h-0 flex-col rounded-2xl bg-card p-4 ring-1 ring-border/60',
         'transition-[box-shadow,background-color,scale,opacity] duration-200 ease-out',
         arranging && 'cursor-grab touch-none select-none',
         carried && 'opacity-0',
+        leaving && 'pointer-events-none scale-[0.96] opacity-0',
         opens &&
           'cursor-pointer hover:bg-secondary/30 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
       )}
@@ -202,14 +221,16 @@ function Tile({
         <Icon className="h-3.5 w-3.5 text-primary" />
         {title}
       </p>
-      <div className="quiet-scroll mt-3 min-h-0 flex-1 overflow-y-auto">{children}</div>
+      <div className={cn('mt-3 min-h-0 flex-1', !flush && 'quiet-scroll overflow-y-auto')}>
+        {children}
+      </div>
 
       {arranging && onRemove && (
         <button
           type="button"
           aria-label={`Remove ${title}`}
           onClick={onRemove}
-          className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-secondary text-muted-foreground ring-1 ring-border transition-colors hover:bg-secondary hover:text-foreground"
+          className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-secondary/90 text-muted-foreground ring-1 ring-border transition-colors hover:text-foreground"
         >
           <X className="size-3" aria-hidden />
         </button>
@@ -255,6 +276,7 @@ function AddSlot({
   const none = options.length === 0;
   return (
     <div
+      data-tile="add"
       style={{ gridColumn: 'span 1', gridRow: `span ${MIN_SIZE.h}` }}
       className="quiet-scroll flex min-h-0 flex-col overflow-y-auto rounded-2xl border-2 border-dashed border-foreground/20 p-2"
     >
@@ -351,19 +373,30 @@ export function HomeDashboard() {
     void window.yeaboi?.setWidgetPrefs?.(patch);
   };
 
+  const [leaving, setLeaving] = useState<WidgetId | null>(null);
   const hold = useHoldToArrange(() => setArranging(true), !arranging);
   const move = useWidgetMove((id, index) => arrange(moveWidget(widgets, id, index)), arranging);
   const resize = useWidgetResize((id, size) => arrange(resizeWidget(widgets, id, size)), arranging);
 
-  // Leaving the mode is Escape or Done; a click anywhere else is one of the
-  // arranging gestures, so the surface cannot close it.
+  // Escape, Done, or a press outside the widgets: inside them every press is
+  // one of the arranging gestures, so only the room around them can close it.
   useEffect(() => {
     if (!arranging) return;
+    const busy = () => Boolean(move.carry || resize.carry);
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !move.carry && !resize.carry) setArranging(false);
+      if (event.key === 'Escape' && !busy()) setArranging(false);
+    };
+    const away = (event: PointerEvent) => {
+      const from = event.target;
+      if (from instanceof Element && from.closest('[data-widget-grid]')) return;
+      if (!busy()) setArranging(false);
     };
     window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    document.addEventListener('pointerdown', away, true);
+    return () => {
+      window.removeEventListener('keydown', key);
+      document.removeEventListener('pointerdown', away, true);
+    };
   }, [arranging, move.carry, resize.carry]);
 
   const shown = visibleWidgets(widgets, KNOWN_WIDGETS);
@@ -376,11 +409,27 @@ export function HomeDashboard() {
   const flow = carriedId ? shown.filter((id) => id !== carriedId) : shown;
   const dropAt = carriedId ? (move.carry?.target ?? flow.length) : null;
 
+  // It fades where it stands, and only then does its place close up — so the
+  // slide that follows is the others moving in, not a scramble around it.
+  const remove = (id: WidgetId) => {
+    setLeaving(id);
+    setTimeout(() => {
+      setLeaving(null);
+      arrange(toggleWidget(widgets, id, false));
+    }, LEAVE_MS);
+  };
+
+  useGridFlip(
+    gridRef,
+    flow.map((id) => `${id}:${sizeOf(id).w}x${sizeOf(id).h}`).join(),
+    Boolean(move.carry || resize.carry),
+  );
+
   /** Every widget the dashboard can draw. Keyed by the shared contract's ids,
    *  so a widget that exists here and not there fails the type check. */
   const WIDGETS: Record<
     WidgetId,
-    { title: string; icon: typeof Gauge; href?: string; body: React.ReactNode }
+    { title: string; icon: typeof Gauge; href?: string; flush?: boolean; body: React.ReactNode }
   > = {
     boards: {
       title: 'Recent boards',
@@ -513,6 +562,13 @@ export function HomeDashboard() {
         </>
       ),
     },
+    music: {
+      title: 'Music',
+      icon: Music,
+      href: '/music',
+      flush: true,
+      body: <MusicWidget />,
+    },
   };
 
   return (
@@ -587,7 +643,9 @@ export function HomeDashboard() {
                       event.stopPropagation();
                       resize.onHandlePointerDown(id, asPointer(event));
                     }}
-                    onRemove={() => arrange(toggleWidget(widgets, id, false))}
+                    leaving={leaving === id}
+                    {...(widget.flush ? { flush: true } : {})}
+                    onRemove={() => remove(id)}
                   >
                     {widget.body}
                   </Tile>
@@ -606,8 +664,8 @@ export function HomeDashboard() {
               />
             )}
 
-            <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
-            <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
+            <AwaitingTile tile="velocity" title="Velocity" wants="/api/analysis/velocity" />
+            <AwaitingTile tile="sprint" title="Sprint progress" wants="/api/analysis/sprint" />
           </div>
         </Displaced>
       </div>

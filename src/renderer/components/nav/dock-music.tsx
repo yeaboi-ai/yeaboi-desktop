@@ -15,7 +15,9 @@ import { ArrowLeft, ArrowUpRight, Music, Pause, Play, SkipBack, SkipForward } fr
 
 import { cameFrom } from '@/lib/nav/came-from';
 
+import { Drift } from '@/components/music/drift';
 import { ServiceMark } from '@/components/music/service-mark';
+import { VolumeRail } from '@/components/music/volume-rail';
 import { Visualizer } from '@/components/music/visualizer';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import {
@@ -25,8 +27,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { STATUS_WORDS } from '@/lib/music/state';
-import { stationNote } from '@/lib/music/stations';
+import { nowLine } from '@/lib/music/now-line';
 import { NATIVE_APPS } from '@shared/music-native';
 
 import { BUTTON, CONTROL, FLOAT } from './dock-float';
@@ -55,103 +56,9 @@ const IDLE_MS = 60_000;
 const TAP =
   'rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
-/** A line that walks its own length when it does not fit, and rests at both
- *  ends. An ellipsis says there is more; this says what it is. */
-function Drift({ text, className }: { text: string; className?: string }) {
-  const box = useRef<HTMLSpanElement>(null);
-  const [over, setOver] = useState(0);
-
-  useLayoutEffect(() => {
-    const outer = box.current;
-    const inner = outer?.firstElementChild;
-    if (!outer || !inner) return;
-    const take = () => setOver(Math.max(0, inner.scrollWidth - outer.clientWidth));
-    take();
-    const watch = new ResizeObserver(take);
-    watch.observe(outer);
-    watch.observe(inner);
-    return () => watch.disconnect();
-  }, [text]);
-
-  return (
-    <span ref={box} className={`block overflow-hidden whitespace-nowrap ${className ?? ''}`}>
-      <span
-        className={`inline-block ${over > 0 ? 'music-drift' : ''}`}
-        style={over > 0 ? ({ '--drift': `-${over}px` } as CSSProperties) : undefined}
-      >
-        {text}
-      </span>
-    </span>
-  );
-}
-
-/** The groove inside the opened volume: the scroll rail's thumb, lying down.
- *  The whole track takes the pointer, so there is no 3px target to hit. */
-function VolumeRail({ percent, onChange }: { percent: number; onChange: (next: number) => void }) {
-  const track = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const fromPointer = (clientX: number) => {
-    const box = track.current?.getBoundingClientRect();
-    if (!box || box.width === 0) return;
-    onChange(Math.round(Math.min(1, Math.max(0, (clientX - box.left) / box.width)) * 100));
-  };
-
-  return (
-    <div
-      ref={track}
-      role="slider"
-      aria-label="Volume"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percent}
-      tabIndex={0}
-      onPointerDown={(event) => {
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        setDragging(true);
-        fromPointer(event.clientX);
-      }}
-      onPointerMove={(event) => dragging && fromPointer(event.clientX)}
-      onPointerUp={(event) => {
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-        setDragging(false);
-      }}
-      onKeyDown={(event) => {
-        const by = event.key === 'ArrowRight' ? 5 : event.key === 'ArrowLeft' ? -5 : 0;
-        if (!by) return;
-        event.preventDefault();
-        onChange(Math.min(100, Math.max(0, percent + by)));
-      }}
-      className={`group/rail relative h-[10px] w-full rounded-full bg-secondary/70 ring-1 ring-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
-        dragging ? 'cursor-grabbing' : 'cursor-grab'
-      }`}
-    >
-      <span
-        aria-hidden
-        className={`absolute top-1/2 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rail-thumb transition-[height] duration-300 ease-out ${
-          dragging ? 'h-4' : 'h-2.5 group-hover/rail:h-4'
-        }`}
-        style={{ left: `${percent}%` }}
-      />
-    </div>
-  );
-}
-
 export function MusicPocket() {
-  const {
-    radio,
-    channels,
-    mood,
-    native,
-    nativeApp,
-    embed,
-    nowPlaying,
-    prefs,
-    clearEmbed,
-    toggle,
-    next,
-  } = useMusicPlayer();
+  const player = useMusicPlayer();
+  const { radio, channels, mood, embed, prefs, clearEmbed, toggle, next } = player;
   const pathname = usePathname();
   const router = useRouter();
   const here = Boolean(pathname?.startsWith('/music'));
@@ -164,44 +71,10 @@ export function MusicPocket() {
   const volume_ = useRef<HTMLDivElement>(null);
   const level = useRef(0);
   const { state } = radio;
-  const station = channels[state.channel]?.name ?? 'Radio';
+  const { station, label, badge, playing, now, under } = nowLine(player);
 
-  const label =
-    mood === 'embed' && nowPlaying
-      ? `${nowPlaying.title} · ${nowPlaying.status === 'paused' ? 'paused' : 'playing'} here`
-      : mood === 'native' && native.nowPlaying
-        ? `${native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name} · in ${NATIVE_APPS[native.nowPlaying.app].name}`
-        : mood === 'off'
-          ? 'Music'
-          : `${station} · ${state.status === 'failed' ? 'stream unavailable' : STATUS_WORDS[state.status]}`;
-
-  const badge = mood === 'embed' && embed ? embed.service : mood === 'native' ? nativeApp : null;
-  // Sounding, rather than merely chosen: stopping folds him back to the note.
-  const playing =
-    state.status === 'playing' ||
-    state.status === 'connecting' ||
-    native.nowPlaying?.status === 'playing' ||
-    (mood === 'embed' && nowPlaying?.status === 'playing');
   // On the Music page it is one button and one job, whatever is sounding.
   const shut = here || !playing ? BUTTON : PILL;
-  // What is on, over what there is to say about it: the artist where the
-  // source knows one, and what the Music page says about the station where it
-  // does not — its genre and who carries it, rather than a count.
-  const note = stationNote(station);
-  const now =
-    mood === 'embed' && nowPlaying
-      ? nowPlaying.title
-      : mood === 'native' && native.nowPlaying
-        ? native.nowPlaying.title || NATIVE_APPS[native.nowPlaying.app].name
-        : (note?.title ?? station);
-  const under =
-    nowPlaying && (mood === 'embed' || mood === 'native')
-      ? nowPlaying.artist || nowPlaying.where
-      : state.status === 'failed'
-        ? state.error
-        : note
-          ? `${station} · ${note.note} · ${note.source}`
-          : STATUS_WORDS[state.status];
   const volume = open && wide ? VOL_OPEN : BUTTON;
   const percent = Math.round(state.volume * 100);
 

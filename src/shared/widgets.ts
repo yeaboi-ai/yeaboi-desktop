@@ -13,6 +13,7 @@ export const WIDGET_IDS = [
   'usage',
   'coming-up',
   'retro-actions',
+  'music',
 ] as const;
 
 export type WidgetId = (typeof WIDGET_IDS)[number];
@@ -54,6 +55,7 @@ export const WIDGET_SIZES: Record<WidgetId, WidgetSize> = {
   usage: { w: 1, h: 5 },
   'coming-up': { w: 1, h: 4 },
   'retro-actions': { w: 1, h: 4 },
+  music: { w: 1, h: 5 },
 };
 
 export const WIDGET_DEFAULTS: WidgetPrefs = {

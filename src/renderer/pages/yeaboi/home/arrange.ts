@@ -8,7 +8,7 @@
 // pointer: a slot in the flow for a move, a footprint in grid tracks for a
 // resize.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { useCarry, type Carry } from '@board/motion/useCarry';
 import {
@@ -215,4 +215,71 @@ export function useGridColumns(ref: React.RefObject<HTMLElement | null>): number
     return () => observer.disconnect();
   }, [ref]);
   return columns;
+}
+
+/** How long a widget takes to fade out when it is taken off. */
+export const LEAVE_MS = 180;
+/** And how long whatever moves into its place takes to get there. */
+const SLIDE_MS = 260;
+const SLIDE = `transform ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+
+/**
+ * Slide whatever moved into a new place, rather than letting it jump.
+ *
+ * A FLIP over the grid: every tile is measured after each layout, and one that
+ * has moved since the last is put back where it was and then let go. New tiles
+ * fade up instead, since they have nowhere to come from.
+ *
+ * `key` is whatever change should be animated — the drawn order and the sizes.
+ * Tiles are keyed by `data-tile`; the drop placeholder deliberately carries
+ * none, because smoothing it would make the drop indicator lag the pointer.
+ * Held still during a carry: the widget in the air is already following the
+ * pointer, and the placeholder moving is the answer, not something to smooth.
+ */
+export function useGridFlip(
+  ref: React.RefObject<HTMLElement | null>,
+  key: string,
+  still: boolean,
+): void {
+  const boxes = useRef(new Map<string, DOMRect>());
+  useLayoutEffect(() => {
+    const grid = ref.current;
+    if (!grid) return;
+    const before = boxes.current;
+    const after = new Map<string, DOMRect>();
+
+    // Every tile in the grid, not only the widgets: the placeholders move
+    // when a widget leaves too, and one that jumps while its neighbours slide
+    // is worse than none of them sliding.
+    for (const tile of grid.querySelectorAll<HTMLElement>('[data-tile]')) {
+      const id = tile.dataset['tile'] as string;
+      const box = tile.getBoundingClientRect();
+      after.set(id, box);
+      if (still) continue;
+
+      const was = before.get(id);
+      if (!was) {
+        if (before.size === 0) continue; // the first paint is not an arrival
+        tile.style.transition = 'none';
+        tile.style.opacity = '0';
+        requestAnimationFrame(() => {
+          tile.style.transition = `opacity ${SLIDE_MS}ms ease-out`;
+          tile.style.opacity = '';
+        });
+        continue;
+      }
+
+      const dx = was.left - box.left;
+      const dy = was.top - box.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+      tile.style.transition = 'none';
+      tile.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        tile.style.transition = SLIDE;
+        tile.style.transform = '';
+      });
+    }
+
+    boxes.current = after;
+  }, [key, ref, still]);
 }

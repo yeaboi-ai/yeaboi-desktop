@@ -5,7 +5,7 @@
 // is the one place the page spends.
 
 import { useEffect, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
+import { Pause, Play, Settings2, SlidersHorizontal } from 'lucide-react';
 import { PageShell } from '@/components/ui/page-shell';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { Browser } from '@/components/music/browser';
@@ -16,8 +16,16 @@ import { NowPlayingBlock } from '@/components/music/now-playing';
 import { ServiceOff } from '@/components/music/service-off';
 import { SourceTabs } from '@/components/music/source-tabs';
 import { Visualizer } from '@/components/music/visualizer';
+import { VisualizerControls } from '@/components/music/visualizer-controls';
 import { VisualizerStyleButton } from '@/components/music/visualizer-style-button';
-import { Slider } from '@/components/ui/slider';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { VolumeRail } from '@/components/music/volume-rail';
 import { Switch } from '@/components/ui/switch';
 import { SERVICE_APPS, SERVICE_LABELS, type MusicService } from '@shared/music-links';
 import { STATUS_WORDS, formatElapsed } from '@/lib/music/state';
@@ -34,7 +42,7 @@ function useClock(startedAt: number | null): string {
   return startedAt === null ? '' : formatElapsed((now - startedAt) / 1000);
 }
 
-function RadioPanel() {
+function RadioScreen({ onSettings }: { onSettings: () => void }) {
   const { radio, channels, backend } = useMusicPlayer();
   const { state } = radio;
   const live = state.status === 'playing' || state.status === 'connecting';
@@ -44,16 +52,37 @@ function RadioPanel() {
   const empty = channels.length === 0;
 
   return (
-    <div>
-      <div className="mt-8 flex items-start gap-5">
+    <>
+      <div className="flex flex-none items-start justify-between gap-6">
+        <div>
+          <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
+          <div className="mt-5">
+            <SourceTabs />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onSettings}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          <SlidersHorizontal className="size-3.5" aria-hidden />
+          Settings
+        </button>
+      </div>
+
+      {/* Everything the window has left over. The spectrum is what the page is
+          for, so it takes the room rather than a fixed slice of it. */}
+      <Visualizer size="page" bare className="my-6 block min-h-0 w-full flex-1" />
+
+      <div className="flex flex-none items-start gap-5">
         <button
           type="button"
           aria-label={live ? 'Pause' : 'Play'}
           disabled={empty}
           onClick={radio.toggle}
           className={cn(
-            'mt-2 shrink-0 rounded-full p-3 ring-1 transition-colors disabled:opacity-40',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+            'mt-1 shrink-0 rounded-full p-3 ring-1 transition-colors disabled:opacity-40',
+            'focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
             live
               ? 'text-primary ring-primary/50'
               : 'text-foreground ring-border hover:bg-secondary',
@@ -92,7 +121,7 @@ function RadioPanel() {
                 {meta && (
                   <>
                     {' · '}
-                    <span className="font-display italic text-[14px]">{meta.note}</span>
+                    <span className="font-display text-[14px] italic">{meta.note}</span>
                     {' · '}
                     {meta.source}
                   </>
@@ -107,7 +136,7 @@ function RadioPanel() {
         </div>
       </div>
 
-      <div className="mt-10 flex items-center gap-8 pl-[68px]">
+      <div className="mt-6 flex flex-none items-center gap-8 pl-[68px]">
         <div role="radiogroup" aria-label="Station" className="flex items-center gap-6">
           {channels.map((item, index) => {
             const active = index === state.channel;
@@ -119,7 +148,7 @@ function RadioPanel() {
                 aria-checked={active}
                 onClick={() => radio.setChannel(index)}
                 className={cn(
-                  'text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-sm',
+                  'rounded-sm text-[14px] transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
                   active
                     ? 'text-foreground underline underline-offset-[6px]'
                     : 'text-muted-foreground hover:text-foreground',
@@ -130,38 +159,42 @@ function RadioPanel() {
             );
           })}
         </div>
-        <div className="ml-auto flex w-56 items-center gap-3">
-          <Slider
-            aria-label="Volume"
-            min={0}
-            max={100}
-            value={Math.round(state.volume * 100)}
-            onValueChange={(value) =>
-              radio.setVolume((Array.isArray(value) ? value[0]! : value) / 100)
-            }
-            className="flex-1"
-          />
-          <span className="w-9 text-right font-mono text-[12px] text-muted-foreground">
-            {Math.round(state.volume * 100)}%
-          </span>
+        <div className="ml-auto flex w-64 flex-col items-end gap-2">
+          <div className="flex w-full items-center gap-3">
+            <VolumeRail
+              tall
+              percent={Math.round(state.volume * 100)}
+              onChange={(next) => radio.setVolume(next / 100)}
+            />
+            <span className="w-9 shrink-0 text-right font-mono text-[12px] text-muted-foreground">
+              {Math.round(state.volume * 100)}%
+            </span>
+          </div>
+          <button
+            type="button"
+            aria-label="Music settings"
+            title="Music settings"
+            onClick={onSettings}
+            className="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <Settings2 className="size-4" aria-hidden />
+          </button>
         </div>
       </div>
-
-      <RadioHabits />
-    </div>
+    </>
   );
 }
 
-/** How the radio behaves, on the page it belongs to rather than in a settings
- *  tab that said the same things a second time. */
+/** How the radio behaves. In the drawer rather than on the page: it is a thing
+ *  you set once, and the page is for listening. */
 function RadioHabits() {
   const { prefs, updatePrefs } = useMusicPlayer();
   return (
-    <div className="mt-14 border-t border-border/50 pt-6 pl-[68px]">
+    <div>
       <h3 className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
         Habits
       </h3>
-      <div className="mt-4 grid gap-x-12 gap-y-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-y-5">
         <label className="flex items-start justify-between gap-6">
           <span className="min-w-0">
             <span className="block text-[13px] text-foreground">Pause during calls</span>
@@ -198,17 +231,35 @@ function RadioHabits() {
   );
 }
 
-/** The spectrum and the style button. Drawn as part of the heading rather
- *  than as the top of the page, so it does not move at all while the page
- *  scrolls under it. */
-function RadioStage() {
+/** Everything you set rather than press. Slides in from the right, so the
+ *  spectrum it is describing stays on screen behind it. */
+function MusicDrawer({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (n: boolean) => void;
+}) {
   return (
-    <>
-      <div className="mt-6 flex items-center justify-end">
-        <VisualizerStyleButton />
-      </div>
-      <Visualizer size="page" bare className="mt-2 block h-[min(30vh,240px)] w-full" />
-    </>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex flex-col gap-0">
+        <SheetHeader>
+          <SheetTitle>Music settings</SheetTitle>
+          <SheetDescription>How the spectrum draws, and how the radio behaves.</SheetDescription>
+        </SheetHeader>
+        <div className="quiet-scroll flex-1 space-y-8 overflow-y-auto px-4 pb-6">
+          <div>
+            <h3 className="text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              Spectrum
+            </h3>
+            <div className="mt-4">
+              <VisualizerControls compact />
+            </div>
+          </div>
+          <RadioHabits />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -261,23 +312,35 @@ function ServicePanel({ service }: { service: MusicService }) {
 
 export default function MusicPage() {
   const { source } = useMusicPlayer();
+  const [settings, setSettings] = useState(false);
+
+  // The radio is a screen, not a document: it fills the window and nothing on
+  // it scrolls. The services carry a shelf and a library, which do.
+  if (source === 'radio') {
+    return (
+      <div className="relative -mb-[var(--dock-clear)] flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full max-w-[1360px] flex-1 flex-col px-6 pt-10 pb-[calc(var(--dock-clear)+0.5rem)]">
+          <RadioScreen onSettings={() => setSettings(true)} />
+        </div>
+        <MusicDrawer open={settings} onOpenChange={setSettings} />
+        <p className="sr-only">Radio</p>
+      </div>
+    );
+  }
+
   return (
     <PageShell
       header={
         <>
           <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
-          <p className="mt-2 text-[14px] text-muted-foreground">
-            Something to work to. Nothing plays until you press play.
-          </p>
           <div className="mt-6">
             <SourceTabs />
           </div>
-          {source === 'radio' && <RadioStage />}
         </>
       }
     >
-      {source === 'radio' ? <RadioPanel /> : <ServicePanel key={source} service={source} />}
-      <p className="sr-only">{source === 'radio' ? 'Radio' : SERVICE_LABELS[source]}</p>
+      <ServicePanel key={source} service={source} />
+      <p className="sr-only">{SERVICE_LABELS[source]}</p>
     </PageShell>
   );
 }
