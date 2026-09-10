@@ -25,7 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { VolumeRail } from '@/components/music/volume-rail';
+import { VolumeColumn } from '@/components/music/volume-rail';
 import { Switch } from '@/components/ui/switch';
 import { SERVICE_APPS, SERVICE_LABELS, type MusicService } from '@shared/music-links';
 import { STATUS_WORDS, formatElapsed } from '@/lib/music/state';
@@ -159,17 +159,12 @@ function RadioScreen({ onSettings }: { onSettings: () => void }) {
             );
           })}
         </div>
-        <div className="ml-auto flex w-64 flex-col items-end gap-2">
-          <div className="flex w-full items-center gap-3">
-            <VolumeRail
-              tall
-              percent={Math.round(state.volume * 100)}
-              onChange={(next) => radio.setVolume(next / 100)}
-            />
-            <span className="w-9 shrink-0 text-right font-mono text-[12px] text-muted-foreground">
-              {Math.round(state.volume * 100)}%
-            </span>
-          </div>
+        {/* The volume is not on this row: it stands down the right edge,
+            where the scroll rail would be on a screen that scrolled. */}
+        <VolumeColumn
+          percent={Math.round(state.volume * 100)}
+          onChange={(next) => radio.setVolume(next / 100)}
+        >
           <button
             type="button"
             aria-label="Music settings"
@@ -179,7 +174,7 @@ function RadioScreen({ onSettings }: { onSettings: () => void }) {
           >
             <Settings2 className="size-4" aria-hidden />
           </button>
-        </div>
+        </VolumeColumn>
       </div>
     </>
   );
