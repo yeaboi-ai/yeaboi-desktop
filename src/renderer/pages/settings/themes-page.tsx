@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/providers/theme-provider';
 import { SettingsPageShell } from '@/components/settings/settings-page-shell';
-import { BUILTIN_PRESETS } from '@/lib/theme/presets';
+import { BUILTIN_ORDER, BUILTIN_PRESETS } from '@/lib/theme/presets';
 import type { BuiltInPresetId, ColorScheme, ThemeId, TokenMap } from '@/lib/theme/types';
 import { useAuthFetch, getStoredOrgId } from '@/hooks/use-auth-fetch';
 import { logger } from '@/lib/logger';
@@ -32,19 +32,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-
-const BUILTIN_ORDER: BuiltInPresetId[] = [
-  'preset:light',
-  'preset:dark',
-  'preset:midnight',
-  'preset:high-contrast',
-  'preset:sepia',
-  'preset:ocean',
-  'preset:rose',
-  'preset:sunshine',
-  'preset:ember',
-  'preset:forest',
-];
 
 interface CustomPresetSummary {
   id: string;
@@ -182,7 +169,7 @@ export default function ThemesSettingsPage() {
 
   return (
     <>
-      <SettingsPageShell active="/settings/themes">
+      <SettingsPageShell active="/settings/appearance">
         <p className="mb-8 max-w-2xl text-sm font-body text-muted-foreground">
           Pick a built-in theme, follow your organization's default, build a custom theme, brand the
           app from a website, or follow your system's light/dark setting — all in one place.

@@ -716,6 +716,20 @@ export const BUILTIN_PRESETS: Record<BuiltInPresetId, ThemeDoc> = {
   },
 };
 
+/** The order every picker shows the built-ins in. */
+export const BUILTIN_ORDER: BuiltInPresetId[] = [
+  'preset:light',
+  'preset:dark',
+  'preset:midnight',
+  'preset:high-contrast',
+  'preset:sepia',
+  'preset:ocean',
+  'preset:rose',
+  'preset:sunshine',
+  'preset:ember',
+  'preset:forest',
+];
+
 export const DEFAULT_THEME_ID: BuiltInPresetId = 'preset:dark';
 
 export function getBuiltInPreset(id: BuiltInPresetId): ThemeDoc {

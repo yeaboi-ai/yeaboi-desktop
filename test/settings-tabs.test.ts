@@ -45,9 +45,24 @@ describe('settings tabs', () => {
     }
   });
 
-  it('themes is chrome, not an engine tab', () => {
-    expect(CHROME_TABS.map((t) => t.route)).toContain('/settings/themes');
+  it('themes is reached from Appearance, not the section list', () => {
+    // It stays a route — deep links and the editor still resolve — but the
+    // row is gone: the theme is chosen where the rest of this window's look is.
+    expect(CHROME_TABS.map((t) => t.route)).not.toContain('/settings/themes');
     expect(SETTINGS_TABS.map((t) => t.route)).not.toContain('/settings/themes');
+    expect(PATHS.has('/settings/themes')).toBe(true);
+    expect(ROUTES_TSX).toContain('/settings/themes');
+  });
+
+  it('the Appearance card is what keeps the themes page reachable', () => {
+    const card = readFileSync(
+      new URL(
+        '../src/renderer/components/settings/tabs/general/themes-section.tsx',
+        import.meta.url,
+      ),
+      'utf8',
+    );
+    expect(card).toContain('/settings/themes');
   });
 
   it('chrome tabs carry no engine sections', () => {
@@ -55,6 +70,27 @@ describe('settings tabs', () => {
     for (const tab of CHROME_TABS) {
       expect(engineRoutes.has(tab.route)).toBe(false);
     }
+  });
+});
+
+describe('one setting, one place', () => {
+  const read = (...parts: string[]) =>
+    readFileSync(new URL(`../${parts.join('/')}`, import.meta.url), 'utf8');
+
+  it('the persona picker lives with the duck and nowhere else', () => {
+    // It was on Appearance as well, which is two places to change one thing.
+    const duck = read('src', 'renderer', 'components', 'settings', 'tabs', 'duck-tab.tsx');
+    const appearance = read(
+      'src',
+      'renderer',
+      'components',
+      'settings',
+      'tabs',
+      'general',
+      'screensaver-section.tsx',
+    );
+    expect(duck).toContain('<PersonaPicker');
+    expect(appearance).not.toContain('PersonaPicker');
   });
 });
 

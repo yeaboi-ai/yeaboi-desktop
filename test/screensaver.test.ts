@@ -18,7 +18,14 @@ import {
 } from '../src/renderer/lib/screensaver/scenes/duck-yard';
 import { seeded } from '../src/renderer/lib/screensaver/scene';
 import { FALLBACK_PALETTE } from '../src/renderer/lib/screensaver/palette';
-import { resolveScene, SCENE_STYLES, isSaverStyle } from '../src/renderer/lib/screensaver/styles';
+import {
+  DEFAULT_SAVER_STYLE,
+  DRAWABLE_STYLES,
+  SCENE_STYLES,
+  isDomStyle,
+  isSaverStyle,
+  resolveScene,
+} from '../src/renderer/lib/screensaver/styles';
 import {
   onPreviewRequest,
   onSaverPreferenceChange,
@@ -126,7 +133,7 @@ describe('style resolution', () => {
     expect(resolveScene('lava-lamp', () => 0)).toBe('duck-yard');
   });
 
-  it('shuffle reaches every scene', () => {
+  it('shuffle reaches every canvas scene', () => {
     const picked = new Set(
       SCENE_STYLES.map((_, i) => resolveScene('shuffle', () => i / SCENE_STYLES.length)),
     );
@@ -138,11 +145,37 @@ describe('style resolution', () => {
     expect(SCENE_STYLES).toContain(resolveScene('shuffle', () => 1));
   });
 
+  it('shuffle never lands on a scene that fetches', () => {
+    // It has always meant "a different one of these local canvases"; the front
+    // page loads the news, which is a choice rather than a surprise.
+    for (let i = 0; i <= 20; i += 1) {
+      expect(resolveScene('shuffle', () => i / 20)).not.toBe('front-page');
+    }
+    expect(DRAWABLE_STYLES).toContain('front-page');
+  });
+
   it('recognises off and shuffle as preferences but not as scenes', () => {
     expect(isSaverStyle('off')).toBe(true);
     expect(isSaverStyle('shuffle')).toBe(true);
     expect(isSaverStyle('lava-lamp')).toBe(false);
     expect(SCENE_STYLES).not.toContain('off');
+  });
+
+  it('the front page is a style, and deliberately not a canvas scene', () => {
+    // SCENE_STYLES is what createScene is indexed by; front-page reaching it
+    // would be a runtime throw rather than a wrong-looking screensaver.
+    expect(isSaverStyle('front-page')).toBe(true);
+    expect(SCENE_STYLES).not.toContain('front-page');
+    expect(isDomStyle('front-page')).toBe(true);
+    expect(isDomStyle('aurora')).toBe(false);
+  });
+
+  it('a stored front-page preference resolves to itself', () => {
+    expect(resolveScene('front-page', () => 0)).toBe('front-page');
+  });
+
+  it('a style this build has never heard of still draws the default', () => {
+    expect(resolveScene('lava-lamp', () => 0)).toBe(DEFAULT_SAVER_STYLE);
   });
 });
 

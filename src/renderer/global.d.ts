@@ -16,6 +16,13 @@ interface YeaboiBridge {
   getAuthToken: () => Promise<YeaboiAuthPayload | null>;
   getIdentity: () => Promise<YeaboiIdentity | null>;
   setIdentity: (identity: YeaboiIdentity) => Promise<YeaboiIdentity>;
+  pickPaths: (options: {
+    title?: string;
+    defaultPath?: string;
+    kind: 'file' | 'folder';
+    multi?: boolean;
+    filters?: { name: string; extensions: string[] }[];
+  }) => Promise<{ paths: string[] }>;
   pickDirectory: (options?: { title?: string; defaultPath?: string }) => Promise<{ path: string }>;
   revealPath: (path: string) => Promise<{ revealed: boolean }>;
   getOnboarding: () => Promise<{ needed: boolean }>;

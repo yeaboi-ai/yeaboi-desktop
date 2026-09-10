@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import type { SettingField, SettingsSnapshot } from '@/lib/yeaboi/settings';
 import { saveSetting, verifyConnection } from '@/lib/yeaboi/settings';
+import type { ConnectionStatus } from '@/lib/yeaboi/connection-status';
+import { ConnectionStatusChip } from '@/components/settings/primitives/connection-status-chip';
 import { GuideLink } from '@/components/onboarding/guide-link';
 import { ProviderIcon } from '@/components/yeaboi/provider-icon';
 import { Button } from '@/components/ui/button';
@@ -54,6 +56,18 @@ function verifiedDetail(message: string): string {
   return tail?.[1] ? `Verified — ${tail[1]}` : 'Verified';
 }
 
+/** Actions a card draws itself, rather than a flow living somewhere else.
+ *
+ *  A field with an action is normally excluded — data-dir, allowed-paths and
+ *  signin all belong to their own surfaces — but the channel picker IS this
+ *  card, and excluding it took the Channel ID off the Slack card entirely. */
+const CARD_ACTIONS = new Set(['slack-channel']);
+
+/** The default "this connection is set up" test: some secret of its own is saved. */
+export function isConfigured(fields: SettingField[]): boolean {
+  return fields.some((f) => f.secret && f.is_set);
+}
+
 export function ConnectionCard({
   card,
   fields,
@@ -68,6 +82,8 @@ export function ConnectionCard({
   onSaved,
   headerRef,
   onHeaderKeyDown,
+  status,
+  renderField,
 }: {
   card: ConnectionCardSpec;
   fields: SettingField[];
@@ -90,12 +106,17 @@ export function ConnectionCard({
   onSaved: (title: string) => void;
   headerRef?: (el: HTMLButtonElement | null) => void;
   onHeaderKeyDown?: (event: React.KeyboardEvent) => void;
+  /** What the last live probe of this connection found. */
+  status?: ConnectionStatus;
+  /** Draw one field yourself; returning null falls through to the input. */
+  renderField?: (field: SettingField) => React.ReactNode | null;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [probed, setProbed] = useState<ConnectionStatus | null>(null);
 
-  const configured = configuredProp ?? fields.some((f) => f.secret && f.is_set);
+  const configured = configuredProp ?? isConfigured(fields);
   // A prefilled field counts as touched only once it differs from what is saved.
   const typed = (field: SettingField) => values[field.env];
   // What the box actually shows. Validation judges this, not just what was
@@ -111,6 +132,8 @@ export function ConnectionCard({
   const touched = fields.some(changed);
 
   const canProbe = Boolean(onVerify ?? card.verify);
+  // A probe that just ran is newer than the snapshot this card was handed.
+  const shownStatus = probed ?? status;
   const invalid = fields.map((f) => validate?.(f, shown(f)) ?? '').find(Boolean) ?? '';
 
   const saveAndTest = async () => {
@@ -127,6 +150,11 @@ export function ConnectionCard({
         try {
           const r = await probe();
           setResult({ ok: r.ok, message: r.ok ? verifiedDetail(r.message) : r.message });
+          setProbed({
+            outcome: r.ok ? 'ok' : 'failed',
+            message: r.message,
+            checked_at: new Date().toISOString(),
+          });
         } catch (e) {
           const message = (e as Error).message;
           setResult({
@@ -170,11 +198,9 @@ export function ConnectionCard({
             {(configured && summary) || card.blurb}
           </span>
         </span>
-        {configured && (
-          <span className="shrink-0 rounded-full bg-success/10 px-2 py-0.5 text-[10px] text-success">
-            connected
-          </span>
-        )}
+        <span className="shrink-0">
+          <ConnectionStatusChip configured={configured} status={shownStatus} probeable={canProbe} />
+        </span>
         <ChevronRight
           aria-hidden
           className={`h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:text-muted-foreground ${
@@ -186,37 +212,51 @@ export function ConnectionCard({
         <div className="border-t border-border/40 px-5 py-4">
           {intro}
           <div className="space-y-3">
-            {fields.map((field) => (
-              <label key={field.env} className="block">
-                <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
-                  {field.label}
-                </span>
-                <input
-                  type={field.secret ? 'password' : 'text'}
-                  value={shown(field)}
-                  placeholder={
-                    field.is_set && field.secret
-                      ? 'saved — type to replace'
-                      : (card.placeholders?.[field.env] ?? '')
-                  }
-                  onChange={(event) =>
-                    setValues((current) => ({ ...current, [field.env]: event.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
-                />
-                {card.hints?.[field.env] && (
-                  <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/80">
-                    {card.hints[field.env]}
-                  </p>
-                )}
-                {validate?.(field, shown(field)) && (
-                  <p role="alert" className="mt-1 text-[11px] text-destructive">
-                    {validate(field, shown(field))}
-                  </p>
-                )}
-                <GuideLink url={field.help_url} scope={field.help_scope} />
-              </label>
-            ))}
+            {fields.map((field) => {
+              // A field a picker can serve draws itself; the rest are inputs.
+              const custom = renderField?.(field);
+              if (custom) {
+                return (
+                  <div key={field.env} className="block">
+                    <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
+                      {field.label}
+                    </span>
+                    {custom}
+                  </div>
+                );
+              }
+              return (
+                <label key={field.env} className="block">
+                  <span className="text-[11px] font-body tracking-wide text-muted-foreground uppercase">
+                    {field.label}
+                  </span>
+                  <input
+                    type={field.secret ? 'password' : 'text'}
+                    value={shown(field)}
+                    placeholder={
+                      field.is_set && field.secret
+                        ? 'saved — type to replace'
+                        : (card.placeholders?.[field.env] ?? '')
+                    }
+                    onChange={(event) =>
+                      setValues((current) => ({ ...current, [field.env]: event.target.value }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-primary/40 focus:outline-none"
+                  />
+                  {card.hints?.[field.env] && (
+                    <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground/80">
+                      {card.hints[field.env]}
+                    </p>
+                  )}
+                  {validate?.(field, shown(field)) && (
+                    <p role="alert" className="mt-1 text-[11px] text-destructive">
+                      {validate(field, shown(field))}
+                    </p>
+                  )}
+                  <GuideLink url={field.help_url} scope={field.help_scope} />
+                </label>
+              );
+            })}
           </div>
           {result && (
             <p
@@ -248,13 +288,23 @@ export function groupConnections(
   snapshot: SettingsSnapshot,
   cards: readonly ConnectionCardSpec[],
   groups: readonly { label: string; sections: string[] }[],
+  opts: {
+    /** Which cards survive. The default keeps every card the engine has fields
+     *  for — which is what onboarding needs, since its whole job is to show
+     *  connections nobody has set up yet. Credentials passes a narrower one. */
+    keep?: (card: ConnectionCardSpec, fields: SettingField[]) => boolean;
+  } = {},
 ): { label: string; items: { card: ConnectionCardSpec; fields: SettingField[] }[] }[] {
+  const keep = opts.keep ?? (() => true);
   const available = cards
     .map((card) => ({
       card,
-      fields: snapshot.fields.filter((f) => f.section === card.section && !f.action),
+      fields: snapshot.fields.filter(
+        (f) => f.section === card.section && (!f.action || CARD_ACTIONS.has(f.action)),
+      ),
     }))
-    .filter(({ fields }) => fields.length);
+    .filter(({ fields }) => fields.length)
+    .filter(({ card, fields }) => keep(card, fields));
 
   const grouped = groups
     .map((group) => ({

@@ -91,7 +91,7 @@ export function DuckTab() {
               <DuckSprite
                 width={BASE_WIDTH * prefs.scale}
                 filter={tint.filter}
-                persona={resolvePersona(prefs.persona, Date.now())}
+                persona={resolvePersona(prefs.persona, Date.now()) ?? undefined}
               />
             </div>
           </div>

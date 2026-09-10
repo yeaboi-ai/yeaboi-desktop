@@ -181,14 +181,14 @@ export default function ThemeEditorPage() {
 
   if (loading || !initial) {
     return (
-      <SettingsPageShell active="/settings/themes">
+      <SettingsPageShell active="/settings/appearance">
         <p className="py-14 text-xs font-body text-muted-foreground">Loading…</p>
       </SettingsPageShell>
     );
   }
 
   return (
-    <SettingsPageShell active="/settings/themes">
+    <SettingsPageShell active="/settings/appearance">
       <Link
         href="/settings/themes"
         className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-6"

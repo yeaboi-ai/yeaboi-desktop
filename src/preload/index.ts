@@ -32,7 +32,15 @@ export interface YeaboiBridge {
   getAuthToken: () => Promise<AuthPayload | null>;
   getIdentity: () => Promise<Identity | null>;
   setIdentity: (identity: Identity) => Promise<Identity>;
-  /** Ask the OS for a folder. Returns '' when the person cancels. */
+  /** Ask the OS for files or folders. Empty array when the person cancels. */
+  pickPaths: (options: {
+    title?: string;
+    defaultPath?: string;
+    kind: 'file' | 'folder';
+    multi?: boolean;
+    filters?: { name: string; extensions: string[] }[];
+  }) => Promise<{ paths: string[] }>;
+  /** The single-folder shorthand, over the same channel. '' when cancelled. */
   pickDirectory: (options?: { title?: string; defaultPath?: string }) => Promise<{ path: string }>;
   /** Show a file in Finder/Explorer. False when it is no longer there. */
   revealPath: (path: string) => Promise<{ revealed: boolean }>;
@@ -133,7 +141,15 @@ const bridge: YeaboiBridge = {
   getAuthToken: () => ipcRenderer.invoke('auth:get-token'),
   getIdentity: () => ipcRenderer.invoke('auth:get-identity'),
   setIdentity: (identity) => ipcRenderer.invoke('auth:set-identity', identity),
-  pickDirectory: (options) => ipcRenderer.invoke('dialog:pick-directory', options),
+  pickPaths: (options) => ipcRenderer.invoke('dialog:pick-paths', options),
+  pickDirectory: async (options) => {
+    const { paths } = await ipcRenderer.invoke('dialog:pick-paths', {
+      ...options,
+      kind: 'folder',
+      multi: false,
+    });
+    return { path: paths[0] ?? '' };
+  },
   revealPath: (path) => ipcRenderer.invoke('shell:reveal-path', path),
   getOnboarding: () => ipcRenderer.invoke('onboarding:get'),
   completeOnboarding: () => ipcRenderer.invoke('onboarding:complete'),

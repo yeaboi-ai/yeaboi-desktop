@@ -12,8 +12,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Edition } from '@/components/news/edition';
-import { Masthead } from '@/components/news/masthead';
+import { FrontPageView, sourcesColophon } from '@/components/news/front-page-view';
 import { fallbackPaper } from '@/lib/news/fallback';
 import { nextVisit } from '@/lib/home/wardrobe';
 import {
@@ -24,8 +23,7 @@ import {
   rememberPaper,
   shouldRefetch,
 } from '@/lib/news/load';
-import { dateline, editionLine, editionOf, refreshLabel, volumeLine } from '@/lib/news/masthead';
-import { isEmpty, sourcesLine, storiesOf } from '@/lib/news/paper';
+import { editionOf } from '@/lib/news/masthead';
 import type { MarkKind } from '@/lib/news/persona';
 import type { Paper } from '@/lib/news/types';
 import { getPref } from '@/lib/preferences';
@@ -122,38 +120,26 @@ export function FrontPage() {
       });
   };
 
-  const stories = useMemo(() => (paper ? storiesOf(paper) : []), [paper]);
   const mark: MarkKind = 'duck';
-  const edition = editionOf(paper, failed, notes);
-  const colophon = paper ? sourcesLine(paper.sources) : '';
+  const colophon = sourcesColophon(paper);
 
   return (
-    <div className="paper">
-      <div className="paper-grain" aria-hidden />
-      <Masthead
-        dateline={dateline(now)}
-        volume={volumeLine(SHELL_ENTRIES[0]?.version ?? '')}
-        edition={editionLine(edition, now)}
-        refreshLabel={refreshLabel(edition)}
-        onRefresh={refresh}
-      />
-      <Edition
-        stories={stories}
-        sources={paper?.sources ?? []}
-        mark={mark}
-        now={now}
-        speed={speed}
-      />
-      {paper && isEmpty(paper) && (
-        <p className="py-8 text-[14px] text-muted-foreground">Nothing to read yet.</p>
-      )}
-      <p className="paper-colophon">
-        {colophon}
-        {colophon && ' '}
-        <Link href="/settings/news" className="paper-colophon-link">
-          Choose the outlets.
-        </Link>
-      </p>
-    </div>
+    <FrontPageView
+      paper={paper}
+      now={now}
+      mark={mark}
+      speed={speed}
+      edition={editionOf(paper, failed, notes)}
+      onRefresh={refresh}
+      colophon={
+        <p className="paper-colophon">
+          {colophon}
+          {colophon && ' '}
+          <Link href="/settings/news" className="paper-colophon-link">
+            Choose the outlets.
+          </Link>
+        </p>
+      }
+    />
   );
 }

@@ -15,7 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useLocation } from 'react-router';
+import { Link as RouterLink, useLocation, useSearchParams } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
 import { DuckMark } from '@/components/brand/duck';
 import {
@@ -36,11 +36,15 @@ import {
   ConnectionCard,
   GROUPS,
   groupConnections,
+  isConfigured,
 } from '@/components/yeaboi/connection-card';
 import { IntegrationsCatalog } from '@/components/yeaboi/integrations-catalog';
 import { MicTest } from '@/components/yeaboi/mic-test';
 import { SignInPanel } from '@/components/yeaboi/sign-in-panel';
 import { VoiceSetup } from '@/components/yeaboi/voice-setup';
+import { AllowedPathsRow } from '@/components/settings/allowed-paths-row';
+import { SlackChannelRow } from '@/components/settings/slack-channel-row';
+import { ThemesSection } from '@/components/settings/tabs/general/themes-section';
 import { ConnectedIntegrations } from '@/components/settings/connected-integrations';
 import { ProviderPanel } from '@/components/settings/provider-panel';
 import { AccessCard, ShareModeChoice } from '@/components/settings/sharing-panel';
@@ -127,6 +131,11 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
   const [signingIn, setSigningIn] = useState(false);
   const [moveAsk, setMoveAsk] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The Catalog sends people here for a connection Credentials owns. The card
+  // stays revealed after the parameter is consumed: it must not vanish from
+  // under someone who saves a non-secret field first.
+  const [revealed, setRevealed] = useState(() => searchParams.get('add') ?? '');
   const headerRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const refresh = () => loadSettings().then(setSnapshot, (e: Error) => setError(e.message));
@@ -134,6 +143,20 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     void refresh();
     loadProviders().then(setCatalog, () => undefined);
   }, []);
+
+  // Arriving from the Catalog: open the card that was asked for, then drop the
+  // parameter, so a bookmarked ?add= does not reveal it forever. An unknown
+  // section is ignored — the catalog is backend-driven and may name one this
+  // build has no card for.
+  useEffect(() => {
+    const wanted = searchParams.get('add');
+    if (!wanted || !snapshot) return;
+    setRevealed(wanted);
+    setOpenCard(wanted);
+    const rest = new URLSearchParams(searchParams);
+    rest.delete('add');
+    setSearchParams(rest, { replace: true });
+  }, [searchParams, snapshot, setSearchParams]);
 
   const save = async (key: string, value: string) => {
     try {
@@ -372,7 +395,11 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
     const providerFields = sectionFields('provider');
     const provider = activeChoice(snapshot.fields, 'LLM_PROVIDER');
     const card = catalog?.providers.find((p) => p.provider_val === provider) ?? null;
-    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS);
+    // Credentials lists what you actually use; the Catalog is where the rest
+    // is found. ProviderPanel renders above this and is never filtered.
+    const grouped = groupConnections(snapshot, CONNECTION_CARDS, GROUPS, {
+      keep: (spec, fields) => isConfigured(fields) || spec.section === revealed,
+    });
 
     let flat = -1;
     const headerKeyHandler = (index: number) => (event: React.KeyboardEvent) => {
@@ -392,6 +419,21 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           onSignIn={() => setSigningIn(true)}
         />
         <div className="mt-6 space-y-4">
+          {grouped.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-border/60 px-5 py-6 text-center">
+              <p className="text-[13px] font-body text-foreground">No credentials yet.</p>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                Connections start in the catalog.
+              </p>
+              <RouterLink
+                to="/settings/connections"
+                className="mt-3 inline-flex items-center gap-1 text-[12px] font-body text-primary hover:underline"
+              >
+                Add a connection
+                <ArrowUpRight className="size-3" aria-hidden="true" />
+              </RouterLink>
+            </div>
+          )}
           {grouped.map((group) => (
             <div key={group.label}>
               <h3 className="mb-1.5 font-mono text-[10px] tracking-widest text-muted-foreground/60 uppercase">
@@ -410,6 +452,18 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
                       summary={connectionSummary(spec.section, valueOf)}
                       open={openCard === spec.section}
                       onToggle={() => setOpenCard((s) => (s === spec.section ? '' : spec.section))}
+                      status={snapshot.connections?.[spec.verify ?? spec.section]}
+                      renderField={(field) =>
+                        field.env === 'SLACK_CHANNEL_ID' ? (
+                          <SlackChannelRow
+                            field={field}
+                            hasToken={Boolean(
+                              snapshot.fields.find((f) => f.env === 'SLACK_BOT_TOKEN')?.is_set,
+                            )}
+                            onPick={(id) => void save('SLACK_CHANNEL_ID', id)}
+                          />
+                        ) : null
+                      }
                       onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
                       headerRef={(el) => {
                         headerRefs.current[index] = el;
@@ -480,6 +534,8 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
           openCard={openCard}
           onToggle={(key) => setOpenCard((s) => (s === key ? '' : key))}
           onSaved={(title) => (setStatus(`${title} saved`), void refresh())}
+          connections={snapshot.connections}
+          reveal={revealed}
           /* A section the backend grows later still lands somewhere. */
           extras={snapshot.sections
             .filter((section) => !knownSections.has(section))
@@ -497,106 +553,6 @@ function EngineSettings({ tab }: { tab: (typeof SETTINGS_TABS)[number] }) {
 
   // Every tab in the contract is handled above.
   return null;
-}
-
-function AllowedPathsRow({
-  field,
-  onSaved,
-}: {
-  field: SettingField;
-  onSaved: (message: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [paths, setPaths] = useState<string[]>([]);
-  const [next, setNext] = useState('');
-
-  const begin = () => {
-    setPaths(field.value ? field.value.split(',').filter(Boolean) : []);
-    setOpen(true);
-  };
-
-  const add = (raw: string) => {
-    const value = raw.trim();
-    if (value && !paths.includes(value)) setPaths((current) => [...current, value]);
-  };
-
-  if (!open) {
-    return (
-      <SettingRow label={field.label}>
-        <RowValue value={field.value} fallback="none — sandboxed to the data directory" />
-        <Button variant="ghost" size="sm" onClick={begin}>
-          Edit
-        </Button>
-      </SettingRow>
-    );
-  }
-
-  return (
-    <SettingRow label={field.label}>
-      <div className="w-full space-y-1.5">
-        {paths.map((p) => (
-          <div key={p} className="flex items-center gap-2">
-            <code className="font-mono text-[12px] text-foreground">{p}</code>
-            <button
-              type="button"
-              aria-label={`Remove ${p}`}
-              onClick={() => setPaths(paths.filter((x) => x !== p))}
-              className="text-[12px] text-muted-foreground/60 hover:text-destructive"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            add(next);
-            setNext('');
-          }}
-        >
-          <input
-            value={next}
-            aria-label="Path to allow"
-            placeholder="/path/to/allow"
-            onChange={(event) => setNext(event.target.value)}
-            className={inputClass}
-          />
-          <Button variant="outline" size="sm" type="submit">
-            Add
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={() =>
-              void window.yeaboi
-                .pickDirectory({ title: 'Allow a folder' })
-                .then((picked) => add(picked.path))
-            }
-          >
-            Choose folder…
-          </Button>
-        </form>
-        <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={() => {
-              void saveAllowedPaths(paths).then(
-                (r) => (setOpen(false), onSaved(r.message)),
-                (e: Error) => onSaved(e.message),
-              );
-            }}
-          >
-            Save
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </SettingRow>
-  );
 }
 
 /** Whether dictation can run here, and the way in or out.
@@ -667,6 +623,12 @@ function AppearanceTab() {
         </div>
       </SettingsCard>
       <SettingsCard index={1}>
+        <SettingsSectionHeader title="Theme" subtitle="The palette this window wears" />
+        <div className="px-5 py-5">
+          <ThemesSection />
+        </div>
+      </SettingsCard>
+      <SettingsCard index={2}>
         <SettingsSectionHeader
           title="Screensaver"
           subtitle="What the window shows when you have been away"

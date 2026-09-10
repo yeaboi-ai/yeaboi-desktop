@@ -1,12 +1,12 @@
 'use client';
 
-// Who the duck is: one choice for the desktop duck and the screensaver, so
-// the Duck tab and the Screensaver section both show this and both write the
-// same preference. The doors' ducks change on each visit to the home.
+// Who the duck is: one choice for the desktop duck and the screensaver.
+// It lives on the Duck tab, where the duck lives — Appearance used to show a
+// second copy of it, which was two places to change one thing.
 
 import { DuckSprite } from '@/components/settings/tabs/duck-sprite';
 import { usePetPrefs } from '@/hooks/use-pet-prefs';
-import { PERSONAS, ROTATE, type PersonaChoice } from '@shared/personas';
+import { PERSONAS, PLAIN, ROTATE, type PersonaChoice } from '@shared/personas';
 import { cn } from '@/lib/utils';
 
 const SPRITE = 34;
@@ -14,6 +14,7 @@ const SPRITE = 34;
 export function PersonaPicker({ className }: { className?: string }) {
   const { prefs, update } = usePetPrefs();
   const options: { id: PersonaChoice; name: string; blurb: string }[] = [
+    { id: PLAIN, name: 'Just the duck', blurb: 'No hat, no props. The duck as drawn.' },
     { id: ROTATE, name: 'Changes on its own', blurb: 'A different persona every half hour.' },
     ...PERSONAS,
   ];
@@ -43,6 +44,8 @@ export function PersonaPicker({ className }: { className?: string }) {
                     ?
                   </span>
                 </span>
+              ) : option.id === PLAIN ? (
+                <DuckSprite width={SPRITE} />
               ) : (
                 <DuckSprite width={SPRITE} persona={option.id} />
               )}

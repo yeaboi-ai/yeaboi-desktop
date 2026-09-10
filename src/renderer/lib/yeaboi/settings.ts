@@ -2,7 +2,10 @@
 // Secrets are write-only over this wire: a secret field's `value` is a masked
 // preview, and writes send the raw value through the main-process proxy.
 
-import { apiGet, apiPost } from './api';
+import { apiGet, apiGetOptional, apiPost } from './api';
+import type { ConnectionStatus } from './connection-status';
+
+export type { ConnectionStatus };
 
 export interface SettingField {
   env: string;
@@ -18,6 +21,12 @@ export interface SettingField {
   action: string;
   help_url: string;
   help_scope: string;
+  /** 'text' or 'list'. Absent on a sidecar that predates list settings. */
+  kind?: string;
+  /** What one entry of a list is: 'email', 'path', or ''. */
+  item_kind?: string;
+  /** A list field's parsed entries. */
+  items?: string[];
 }
 
 export interface VoiceDevice {
@@ -33,6 +42,8 @@ export interface SettingsSnapshot {
   sections: string[];
   config_path: string;
   voice: { state: string; detail: string; devices: VoiceDevice[] };
+  /** What the last live probe of each connection found. Absent on an older sidecar. */
+  connections?: Record<string, ConnectionStatus>;
 }
 
 export interface ProviderCard {
@@ -79,6 +90,23 @@ export const saveSetting = (key: string, value: string) =>
   apiPost<WriteResult>('/api/settings/set', { key, value });
 export const saveAllowedPaths = (paths: string[]) =>
   apiPost<WriteResult>('/api/settings/allowed-paths', { paths });
+/** Replace a list setting's entries. Falls back to the joined write on a
+ *  sidecar that has no /api/settings/list, so this ships before the backend. */
+export const saveList = (field: SettingField, items: string[]) =>
+  field.kind === 'list'
+    ? apiPost<WriteResult>('/api/settings/list', { key: field.env, items })
+    : saveSetting(field.env, items.join(','));
+
+export interface SlackChannel {
+  id: string;
+  name: string;
+  is_private: boolean;
+}
+
+/** The workspace's channels, or null on a sidecar that cannot list them. */
+export const loadSlackChannels = () =>
+  apiGetOptional<{ channels: SlackChannel[]; reason: string }>('/api/settings/slack/channels');
+
 export const saveDataDir = (value: string, move: boolean) =>
   apiPost<WriteResult>('/api/settings/data-dir', { value, move });
 export const verifyProvider = (provider: string, credential: string, model = '') =>

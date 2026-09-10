@@ -71,12 +71,18 @@ describe('normalizePetPrefs', () => {
     expect(normalizePetPrefs({ notify: 'loud' }).notify).toEqual(PET_DEFAULTS.notify);
   });
 
-  it('takes a persona it knows, and rotates otherwise', () => {
-    expect(PET_DEFAULTS.persona).toBe('rotate');
+  it('takes a persona it knows, and falls back to the plain duck', () => {
+    expect(PET_DEFAULTS.persona).toBe('plain');
     expect(normalizePetPrefs({ persona: 'chef' }).persona).toBe('chef');
     expect(normalizePetPrefs({ persona: 'rotate' }).persona).toBe('rotate');
-    expect(normalizePetPrefs({ persona: 'pirate' }).persona).toBe('rotate');
-    expect(normalizePetPrefs({ persona: 4 }).persona).toBe('rotate');
+    expect(normalizePetPrefs({ persona: 'plain' }).persona).toBe('plain');
+    expect(normalizePetPrefs({ persona: 'pirate' }).persona).toBe('plain');
+    expect(normalizePetPrefs({ persona: 4 }).persona).toBe('plain');
+  });
+
+  it('keeps a persona somebody already chose', () => {
+    // Changing the default must not undress a duck that was dressed on purpose.
+    expect(normalizePetPrefs({ persona: 'rotate' }).persona).toBe('rotate');
   });
 
   it('drops keys that are not preferences', () => {
