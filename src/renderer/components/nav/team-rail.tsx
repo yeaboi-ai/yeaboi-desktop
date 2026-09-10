@@ -18,6 +18,7 @@ import { useAudience } from '@/components/providers/audience-provider';
 import { isSettingsPath, railRows } from '@/lib/nav/rail-rows';
 import { cameFrom, isAsidePath, rememberRoute } from '@/lib/nav/came-from';
 import { navAgain } from '@/lib/nav/nav-again';
+import { ownsWheelItself } from '@/lib/scroller';
 import { useActiveHref } from './use-nav-shortcuts';
 
 /** Collapsed and expanded widths. The icon column is the same in both. */
@@ -204,7 +205,9 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     let settle: ReturnType<typeof setTimeout> | null = null;
     let port: HTMLElement | null = null;
 
-    const stir = () => {
+    const stir = (event?: Event) => {
+      // A control that takes the wheel for itself is not asking to go anywhere.
+      if (event && ownsWheelItself(event.target as Element | null)) return;
       setScrolling(true);
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => setScrolling(false), SCROLL_SETTLE_MS);

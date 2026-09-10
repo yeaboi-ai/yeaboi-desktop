@@ -123,8 +123,50 @@ export interface PokerRun {
  * of it rather than a column on each row — so an artifact reference for one of
  * these takes its session from the envelope and its run from the row.
  */
+/** One action item, as a stored retro records it. `status` is a board word —
+ *  `pending` | `in_progress` | `carried_over` are still open. */
+export interface RetroActionItem {
+  id: string;
+  text: string;
+  author?: string;
+  status?: string;
+  created_at?: string;
+  origin?: string;
+}
+
+/** The last retro this session recorded: what it agreed, and what it inherited. */
+export interface RetroReportSummary {
+  date?: string;
+  sprint_name?: string;
+  cards?: RetroActionItem[];
+  carried_action_items?: RetroActionItem[];
+}
+
+const OPEN_STATUSES = ['pending', 'in_progress', 'carried_over'];
+
+/** The action items still waiting on somebody, newest first.
+ *
+ *  A retro's own actions and the ones it carried in are the same list to a
+ *  reader — what is outstanding — so they arrive as one, deduped by id. */
+export function openActions(report: RetroReportSummary | null | undefined): RetroActionItem[] {
+  if (!report) return [];
+  const seen = new Set<string>();
+  const rows: RetroActionItem[] = [];
+  for (const card of [...(report.cards ?? []), ...(report.carried_action_items ?? [])]) {
+    if (card.id && seen.has(card.id)) continue;
+    if (card.status && !OPEN_STATUSES.includes(card.status)) continue;
+    if (card.id) seen.add(card.id);
+    rows.push(card);
+  }
+  return rows;
+}
+
 export function retroHistory(limit = 30) {
-  return callTool<{ history: RetroRun[]; session_id: string }>('retro_history', { limit });
+  return callTool<{
+    history: RetroRun[];
+    session_id: string;
+    latest_report: RetroReportSummary | null;
+  }>('retro_history', { limit });
 }
 
 export function pokerHistory(limit = 30) {

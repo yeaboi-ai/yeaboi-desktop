@@ -13,13 +13,15 @@
 
 import { useEffect, useState } from 'react';
 
-import { DuckMark } from '@/components/brand/duck';
 import { quip } from '@/lib/yeaboi/ambience';
 import {
   type BoardSnapshot,
   type RetroBoardState,
+  type RetroActionItem,
+  type RetroReportSummary,
   type RetroRun,
   generateActionItems,
+  openActions,
   loadBoards,
   retroHistory,
   startRetroBoard,
@@ -31,6 +33,11 @@ import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { RetroBoard } from '@/components/yeaboi/retro-board';
 import { Panel, Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** How many past retros the ledger shows before it is asked for the rest. */
+const LEDGER_SHOWN = 4;
 
 const GRID_TITLES: Record<string, string> = {
   went_well: 'Went well',
@@ -75,8 +82,101 @@ function BoardState({ board }: { board: BoardSnapshot }) {
   );
 }
 
+/** Starting one, as the decision it is: what it will cover, what it inherits,
+ *  and the way in. */
+function StartPanel({
+  busy,
+  carried,
+  onStart,
+}: {
+  busy: boolean;
+  carried: number;
+  onStart: () => void;
+}) {
+  return (
+    <section className="flex flex-col rounded-2xl bg-card p-5 ring-1 ring-border/60">
+      <h2 className="font-display text-[19px] leading-none text-foreground">Start a retro</h2>
+      <p className="mt-2 font-body text-[13px] leading-relaxed text-muted-foreground">
+        A live board your team fills in from their own browsers. Send the invite and everyone adds
+        cards at once; yeaboi drafts the action items when you are done.
+      </p>
+      <ul className="mt-4 space-y-1.5 font-body text-[12px] text-muted-foreground">
+        <li className="flex gap-2">
+          <span aria-hidden className="text-muted-foreground/50">
+            ·
+          </span>
+          Four columns — went well, didn’t, actions, demos.
+        </li>
+        <li className="flex gap-2">
+          <span aria-hidden className="text-muted-foreground/50">
+            ·
+          </span>
+          {carried > 0
+            ? `${carried} open action${carried === 1 ? '' : 's'} carry in for review.`
+            : 'Last retro’s open actions carry in for review.'}
+        </li>
+        <li className="flex gap-2">
+          <span aria-hidden className="text-muted-foreground/50">
+            ·
+          </span>
+          Runs in this window, or in a browser for anyone you invite.
+        </li>
+      </ul>
+      <div className="mt-auto pt-5">
+        <Button disabled={busy} onClick={onStart}>
+          {busy ? 'Opening…' : 'Start a retro'}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+const STATUS_WORDS: Record<string, string> = {
+  pending: 'open',
+  in_progress: 'in progress',
+  carried_over: 'carried over',
+};
+
+/** What the last retro left behind. The point of a retro is what it changed,
+ *  so this is what a page about retros is read for. */
+function OpenActions({ rows }: { rows: RetroActionItem[] }) {
+  return (
+    <section className="flex flex-col rounded-2xl bg-card p-5 ring-1 ring-border/60">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-[19px] leading-none text-foreground">Open actions</h2>
+        {rows.length > 0 && (
+          <span className="font-code text-[11px] text-muted-foreground tabular-nums">
+            {rows.length}
+          </span>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <p className="mt-3 font-body text-[13px] leading-relaxed text-muted-foreground">
+          Nothing outstanding — the last retro closed everything it opened.
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-border/40">
+          {rows.map((row) => (
+            <li key={row.id} className="flex items-baseline gap-3 py-2 first:pt-0">
+              <span className="min-w-0 flex-1 font-body text-[13px] leading-snug text-foreground">
+                {row.text}
+              </span>
+              <span className="shrink-0 font-code text-[11px] text-muted-foreground/70">
+                {row.author}
+                {row.status && STATUS_WORDS[row.status] ? ` · ${STATUS_WORDS[row.status]}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function RetroBody() {
   const [runs, setRuns] = useState<RetroRun[] | null>(null);
+  const [report, setReport] = useState<RetroReportSummary | null>(null);
+  const [allRuns, setAllRuns] = useState(false);
   // The session the history belongs to is a sibling of the rows, not a column
   // on them — an artifact reference needs both halves.
   const [sessionId, setSessionId] = useState('');
@@ -90,12 +190,14 @@ function RetroBody() {
   const [message, setMessage] = useState('');
   const [mask, setMask] = useState<[string, string][]>([]);
   const [anonNote, setAnonNote] = useState('');
+  const actions = openActions(report);
 
   useEffect(() => {
     retroHistory().then(
       (envelope) => {
         setRuns(envelope.data?.history ?? []);
         setSessionId(envelope.data?.session_id ?? '');
+        setReport(envelope.data?.latest_report ?? null);
       },
       (e: Error) => setError(e.message),
     );
@@ -150,14 +252,9 @@ function RetroBody() {
           <div>
             <h1 className="font-display text-2xl text-foreground">Retro</h1>
             <p className="mt-1 font-body text-[13px] text-muted-foreground">
-              A live board your team fills in from their own browsers, and every retro before it.
+              What the last one changed, and the way into the next.
             </p>
           </div>
-          {!board && (
-            <Button size="sm" disabled={busy === 'start'} onClick={() => void start()}>
-              {busy === 'start' ? 'Opening…' : 'Start a retro'}
-            </Button>
-          )}
         </header>
 
         {error && <Notice title="Could not start the board" items={[error]} />}
@@ -185,10 +282,10 @@ function RetroBody() {
               onClosed={() => {
                 setLiveId('');
                 setStaged(false);
-                retroHistory().then(
-                  (envelope) => setRuns(envelope.data?.history ?? []),
-                  () => undefined,
-                );
+                retroHistory().then((envelope) => {
+                  setRuns(envelope.data?.history ?? []);
+                  setReport(envelope.data?.latest_report ?? null);
+                }, undefined);
               }}
               extras={
                 <>
@@ -221,6 +318,17 @@ function RetroBody() {
           </Panel>
         )}
 
+        {!board && runs && (
+          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+            <StartPanel
+              busy={busy === 'start'}
+              carried={actions.length}
+              onStart={() => void start()}
+            />
+            <OpenActions rows={actions} />
+          </div>
+        )}
+
         {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
         {/* A ledger, not a wall of tiles. Every past retro carried the same
@@ -229,36 +337,47 @@ function RetroBody() {
             line each, and the actions sit at the end of the line they belong
             to. */}
         {runs && runs.length > 0 && (
-          <div className="divide-y divide-border/40 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
-            {runs.map((run) => (
-              <div key={run.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
-                <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
-                  {run.sprint_name || run.retro_date}
-                  {run.sprint_name && (
-                    <span className="ml-2 font-code text-[11px] text-muted-foreground/70">
-                      {run.retro_date}
-                    </span>
-                  )}
-                </p>
-                <p className="shrink-0 font-code text-[11px] text-muted-foreground tabular-nums">
-                  {run.card_count ?? 0} cards · {run.action_count ?? 0} actions
-                </p>
-                <ResultActions
-                  refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
-                  mode="retro"
-                />
-              </div>
-            ))}
+          <div>
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-[15px] leading-none text-muted-foreground">
+                Recent retros
+              </h2>
+              {runs.length > LEDGER_SHOWN && (
+                <button
+                  type="button"
+                  onClick={() => setAllRuns((open) => !open)}
+                  className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  {allRuns ? 'Show fewer' : `Show all ${runs.length}`}
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-border/40 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+              {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
+                <div
+                  key={run.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5"
+                >
+                  <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
+                    {run.sprint_name || run.retro_date}
+                    {run.sprint_name && (
+                      <span className="ml-2 font-code text-[11px] text-muted-foreground/70">
+                        {run.retro_date}
+                      </span>
+                    )}
+                  </p>
+                  <p className="shrink-0 font-code text-[11px] text-muted-foreground tabular-nums">
+                    {plural(run.card_count ?? 0, 'card')} ·{' '}
+                    {plural(run.action_count ?? 0, 'action')}
+                  </p>
+                  <ResultActions
+                    refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
+                    mode="retro"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-
-        {runs && runs.length === 0 && !board && (
-          <Panel title="No retros yet">
-            <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
-              <DuckMark state="idle" size={28} /> Start a board and send the invite — everyone adds
-              cards from their own browser, and yeaboi drafts the action items when you are done.
-            </p>
-          </Panel>
         )}
       </div>
     </Surface>
