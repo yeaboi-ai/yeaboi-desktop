@@ -6,6 +6,7 @@
 
 import { App as RetroApp } from '@board/retro/App';
 
+import { useBoardChannels, useBoardMusic } from './board-music';
 import { StagedBoard } from './staged-board';
 
 /**
@@ -13,7 +14,7 @@ import { StagedBoard } from './staged-board';
  * (`retro/page.py`'s `board_config`). Static facts only — the cards, who is
  * here and the timer all arrive over the board's own state.
  */
-function boot(sprint: string) {
+function boot(sprint: string, musicChannels: { name: string; url: string }[]) {
   return {
     chrome: {
       mode: 'retro',
@@ -27,7 +28,9 @@ function boot(sprint: string) {
     sprint,
     adjectives: ['quick', 'quiet', 'bright', 'steady', 'clever', 'calm'],
     nouns: ['otter', 'heron', 'fox', 'moth', 'pike', 'wren'],
-    musicChannels: [],
+    // The window's own stations, so the board's station list and the dock's
+    // are the same list.
+    musicChannels,
   };
 }
 
@@ -40,9 +43,11 @@ export function RetroBoard({
   sprint: string;
   onLeave: () => void;
 }) {
+  const music = useBoardMusic();
+  const channels = useBoardChannels();
   return (
     <StagedBoard boardId={boardId} mode="retro" pidKey="retro_pid" onLeave={onLeave}>
-      <RetroApp boot={boot(sprint) as never} />
+      <RetroApp boot={boot(sprint, channels) as never} music={music} />
     </StagedBoard>
   );
 }

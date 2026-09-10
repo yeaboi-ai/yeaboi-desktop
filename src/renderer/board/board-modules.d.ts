@@ -7,12 +7,30 @@
 // the tree is left to its owner — the one thing this project must get right is
 // what it passes in, which is the boot payload.
 
+/** The player a staged board is handed, so the window keeps one set of
+ *  speakers. Mirrors `MusicApi` in the boards' own `hooks/useMusic`. */
+interface BoardMusicApi {
+  playing: boolean;
+  connecting: boolean;
+  channel: number;
+  volume: number;
+  toggle(): void;
+  play(): Promise<void>;
+  stop(): void;
+  setChannel(index: number): void;
+  setVolume(value: number): void;
+  cast(index: number, on: boolean): Promise<void>;
+  analyser: AnalyserNode | null;
+}
+
 declare module '@board/poker/App' {
-  export function App(props: { boot: unknown }): JSX.Element;
+  export type BoardMusic = BoardMusicApi;
+  export function App(props: { boot: unknown; music?: BoardMusicApi }): JSX.Element;
 }
 
 declare module '@board/retro/App' {
-  export function App(props: { boot: unknown }): JSX.Element;
+  export type BoardMusic = BoardMusicApi;
+  export function App(props: { boot: unknown; music?: BoardMusicApi }): JSX.Element;
 }
 
 declare module '@board/design/tokens.css';

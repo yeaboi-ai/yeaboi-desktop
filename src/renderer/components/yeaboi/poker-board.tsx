@@ -6,6 +6,7 @@
 
 import { App as PokerApp } from '@board/poker/App';
 
+import { useBoardChannels, useBoardMusic } from './board-music';
 import { StagedBoard } from './staged-board';
 
 /**
@@ -15,7 +16,7 @@ import { StagedBoard } from './staged-board';
  * `board_config`); here it is built for the same shape. Static facts only —
  * everything that moves during a session arrives over the board's own state.
  */
-function boot(scope: string) {
+function boot(scope: string, musicChannels: { name: string; url: string }[]) {
   return {
     chrome: {
       mode: 'poker',
@@ -29,7 +30,9 @@ function boot(scope: string) {
     scope,
     adjectives: ['quick', 'quiet', 'bright', 'steady', 'clever', 'calm'],
     nouns: ['otter', 'heron', 'fox', 'moth', 'pike', 'wren'],
-    musicChannels: [],
+    // The window's own stations, so the board's station list and the dock's
+    // are the same list.
+    musicChannels,
   };
 }
 
@@ -42,9 +45,11 @@ export function PokerBoard({
   scope: string;
   onLeave: () => void;
 }) {
+  const music = useBoardMusic();
+  const channels = useBoardChannels();
   return (
     <StagedBoard boardId={boardId} mode="poker" pidKey="poker_pid" onLeave={onLeave}>
-      <PokerApp boot={boot(scope) as never} />
+      <PokerApp boot={boot(scope, channels) as never} music={music} />
     </StagedBoard>
   );
 }
