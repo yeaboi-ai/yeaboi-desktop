@@ -20,7 +20,12 @@ export function Surface({ children }: { children: React.ReactNode }) {
       {/* The padding is the ring's: a focus or selection ring paints outside
           its element, and a scroll box clips at its edge — without this the
           highlight on the top row comes out with a flat side. */}
-      <div className="quiet-scroll mx-auto min-h-0 w-full max-w-[1360px] flex-1 overflow-y-auto overscroll-contain px-1 pb-8 pt-1">
+      {/* `data-scrollport`: the chrome's scroll rail follows whichever port the
+          page in front of it has marked. */}
+      <div
+        data-scrollport
+        className="quiet-scroll mx-auto min-h-0 w-full max-w-[1360px] flex-1 overflow-y-auto overscroll-contain px-1 pt-1 pb-8"
+      >
         <div className="h-full">{children}</div>
       </div>
     </div>

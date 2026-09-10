@@ -85,9 +85,14 @@ export function Deck({ children }: { children: React.ReactNode }) {
 
   const deal = useCallback(
     (step: 1 | -1) => {
-      const here = routes.findIndex(
-        (route) => pathname === route || pathname?.startsWith(`${route}/`),
-      );
+      // The most specific route that claims this path, never the first: a
+      // section route is a prefix of the pages under it, and matching that
+      // would step from a page to itself.
+      let here = -1;
+      for (const [index, route] of routes.entries()) {
+        if (pathname !== route && !pathname?.startsWith(`${route}/`)) continue;
+        if (here === -1 || route.length > routes[here]!.length) here = index;
+      }
       if (here === -1) return false;
       // The deck is a loop: past the last surface is the first one again, and
       // scrolling up off the top lands on the last. A dead end at either end

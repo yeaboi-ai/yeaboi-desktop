@@ -67,10 +67,11 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const aside = isAsidePath(pathname);
   const mode = isSettingsPath(pathname) ? 'settings' : aside ? 'aside' : audience;
   const settings = mode === 'settings';
-  // Reading down a page names the rows for as long as it lasts: a scroll is
-  // somebody looking for where to go next.
+  // Reading down a page brings the whole list out of the notch for as long as
+  // it lasts — the icons, at the width they already are. A scroll is somebody
+  // looking for where to go next, not asking to be read the names.
   const [scrolling, setScrolling] = useState(false);
-  const wide = (open && labelled) || settings || scrolling;
+  const wide = (open && labelled) || settings;
 
   // One list becoming another, a row at a time.
   //
@@ -114,7 +115,8 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // still here at no height, so the list grows back out of it on hover rather
   // than appearing beside it. Settings and a page you stepped aside to are the
   // exceptions — their rows are the only nav those pages have.
-  const notch = !settings && !aside && !open && Boolean(activeHref) && activeHref !== HOME_HREF;
+  const notch =
+    !settings && !aside && !open && !scrolling && Boolean(activeHref) && activeHref !== HOME_HREF;
 
   // The cascade is for one list handing over to another, a row at a time. A
   // slot that only one of the two lists has is not handing anything over — it
@@ -328,7 +330,7 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     };
     frame = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(frame);
-  }, [activeHref, open, wide, notch, revealed, slots]);
+  }, [activeHref, open, wide, notch, scrolling, revealed, slots]);
 
   return (
     <nav
