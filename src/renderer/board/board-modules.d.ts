@@ -26,3 +26,56 @@ declare module '@board/runtime/storage' {
   /** The board's participant id, minted once and kept in local storage. */
   export function participantId(key?: string): string;
 }
+
+declare module '@board/motion/useCarry' {
+  import type { MutableRefObject } from 'react';
+
+  /** Where the carried thing hangs. The lean is a separate `rotate` property. */
+  export function carriedTransform(carry: {
+    x: number;
+    y: number;
+    grabX: number;
+    grabY: number;
+  }): string;
+
+  /** Nudge a scroller the pointer is hovering near the top or bottom edge of. */
+  export function edgeScroll(el: HTMLElement, y: number, top: number, bottom: number): void;
+
+  export interface CarryState<Target> {
+    itemId: string;
+    x: number;
+    y: number;
+    grabX: number;
+    grabY: number;
+    width: number;
+    tilt: number;
+    target: Target | null;
+  }
+
+  export interface Landing {
+    left: number;
+    top: number;
+  }
+
+  export interface CarryOptions<Target, Survey> {
+    itemSelector: string;
+    survey(itemId: string): Survey;
+    hitTest(survey: Survey, x: number, y: number): Target | null;
+    sameTarget(a: Target, b: Target): boolean;
+    landingAt?(target: Target): Landing | null;
+    onPick?(itemId: string): void;
+    onDrop(itemId: string, target: Target): void;
+    onMiss?(itemId: string): void;
+    onCancel?(itemId: string): void;
+    enabled?: boolean;
+  }
+
+  export interface Carry<Target> {
+    carry: CarryState<Target> | null;
+    previewRef: MutableRefObject<HTMLElement | null>;
+    onHandlePointerDown(itemId: string, event: PointerEvent): void;
+    onBodyPointerDown(itemId: string, event: PointerEvent): void;
+  }
+
+  export function useCarry<Target, Survey>(options: CarryOptions<Target, Survey>): Carry<Target>;
+}
