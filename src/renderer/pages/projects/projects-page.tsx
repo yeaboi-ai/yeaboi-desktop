@@ -522,7 +522,7 @@ export default function ProjectsPage() {
   const sheetStyle = { '--ledger-cols': ledgerColumns(steps.length) } as CSSProperties;
 
   return (
-    <PageShell>
+    <PageShell width="full">
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5 animate-slide-up stagger-1">
         <div>
           <div className="flex items-center gap-4">
@@ -531,7 +531,7 @@ export default function ProjectsPage() {
               Projects
             </h1>
           </div>
-          <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-lg text-[14px] leading-relaxed text-muted-foreground">
             Every run inside a project reads what the runs before it left.
           </p>
         </div>

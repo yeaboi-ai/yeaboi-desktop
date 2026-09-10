@@ -1,5 +1,6 @@
 'use client';
 
+import { PageShell } from '@/components/page-shell';
 import { Surface } from '@/components/yeaboi/surface';
 
 // Roadmap intake — point yeaboi at the quarterly roadmap, pick a project,
@@ -143,7 +144,7 @@ function RoadmapBody() {
   }
 
   return (
-    <div className="space-y-4">
+    <PageShell className="space-y-4">
       <header>
         <h1 className="font-display text-2xl text-foreground">Roadmap intake</h1>
         <p className="text-[13px] text-muted-foreground mt-1">
@@ -269,7 +270,7 @@ function RoadmapBody() {
           </ul>
         </Section>
       )}
-    </div>
+    </PageShell>
   );
 }
 

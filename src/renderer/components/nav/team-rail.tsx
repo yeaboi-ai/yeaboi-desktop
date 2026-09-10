@@ -41,6 +41,8 @@ const OUT_MS = 120;
  *  the rows carry, and the beat the rail's own height needs before the slots a
  *  shorter list left empty can be taken away from under it. */
 const ROW_MS = 340;
+/** How long after the last scroll the rail settles back to its icons. */
+const SCROLL_SETTLE_MS = 900;
 
 export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const { audience } = useAudience();
@@ -65,7 +67,10 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const aside = isAsidePath(pathname);
   const mode = isSettingsPath(pathname) ? 'settings' : aside ? 'aside' : audience;
   const settings = mode === 'settings';
-  const wide = (open && labelled) || settings;
+  // Reading down a page names the rows for as long as it lasts: a scroll is
+  // somebody looking for where to go next.
+  const [scrolling, setScrolling] = useState(false);
+  const wide = (open && labelled) || settings || scrolling;
 
   // One list becoming another, a row at a time.
   //
@@ -188,6 +193,36 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   // far, which a lit row on its own never tells you.
   const listRef = useRef<HTMLDivElement>(null);
   const [markerTop, setMarkerTop] = useState<number | null>(null);
+
+  // The page in front of the rail marks its own scroller, and pages come and go
+  // under the chrome, so the rail follows whichever one is there now.
+  useEffect(() => {
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    let port: HTMLElement | null = null;
+
+    const scrolled = () => {
+      setScrolling(true);
+      if (settle) clearTimeout(settle);
+      settle = setTimeout(() => setScrolling(false), SCROLL_SETTLE_MS);
+    };
+
+    const follow = () => {
+      const found = document.querySelector<HTMLElement>('[data-scrollport]');
+      if (found === port) return;
+      port?.removeEventListener('scroll', scrolled);
+      port = found;
+      port?.addEventListener('scroll', scrolled, { passive: true });
+    };
+
+    follow();
+    const watch = new MutationObserver(follow);
+    watch.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      watch.disconnect();
+      port?.removeEventListener('scroll', scrolled);
+      if (settle) clearTimeout(settle);
+    };
+  }, []);
 
   const navRef = useRef<HTMLElement>(null);
 
