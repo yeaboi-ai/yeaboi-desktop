@@ -196,13 +196,15 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [markerTop, setMarkerTop] = useState<number | null>(null);
 
-  // The page in front of the rail marks its own scroller, and pages come and go
-  // under the chrome, so the rail follows whichever one is there now.
+  // Any wheel brings the list out of the notch, whether it scrolls the page,
+  // turns the deck, or finds nothing to move: reaching for the wheel is
+  // reaching to go somewhere. The port is watched as well, for the scrolling a
+  // wheel is not — a dragged scrollbar, a keyboard, a jump to an anchor.
   useEffect(() => {
     let settle: ReturnType<typeof setTimeout> | null = null;
     let port: HTMLElement | null = null;
 
-    const scrolled = () => {
+    const stir = () => {
       setScrolling(true);
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => setScrolling(false), SCROLL_SETTLE_MS);
@@ -211,17 +213,19 @@ export function TeamRail({ cmdHeld }: { cmdHeld: boolean }) {
     const follow = () => {
       const found = document.querySelector<HTMLElement>('[data-scrollport]');
       if (found === port) return;
-      port?.removeEventListener('scroll', scrolled);
+      port?.removeEventListener('scroll', stir);
       port = found;
-      port?.addEventListener('scroll', scrolled, { passive: true });
+      port?.addEventListener('scroll', stir, { passive: true });
     };
 
     follow();
     const watch = new MutationObserver(follow);
     watch.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('wheel', stir, { passive: true, capture: true });
     return () => {
       watch.disconnect();
-      port?.removeEventListener('scroll', scrolled);
+      window.removeEventListener('wheel', stir, { capture: true });
+      port?.removeEventListener('scroll', stir);
       if (settle) clearTimeout(settle);
     };
   }, []);
