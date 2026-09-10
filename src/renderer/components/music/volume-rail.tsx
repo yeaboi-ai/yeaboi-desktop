@@ -164,66 +164,84 @@ export function VolumeColumn({
   const width = held ? TRACK_W + 6 : moving ? 5 : 3;
 
   return createPortal(
+    // Centred on the window by a full-height flex box rather than by `top: 50%`
+    // and a transform: the slide-in needs the transform, and the two cannot
+    // share it. The box takes no pointer events; what is in it does.
     <div
-      data-wheel
-      className="fixed top-1/2 right-3 z-20 flex -translate-y-1/2 flex-col items-center gap-3 transition-transform duration-300 ease-out"
-      style={{ transform: `translate(${shown ? 0 : OFFSCREEN}px, -50%)` }}
+      className="pointer-events-none fixed inset-y-0 right-3 z-20 flex items-center transition-transform duration-300 ease-out"
+      style={{ transform: `translateX(${shown ? 0 : OFFSCREEN}px)` }}
     >
-      <span
-        className={cn(
-          'font-mono text-[11px] text-muted-foreground transition-opacity duration-200',
-          held || moving ? 'opacity-100' : 'opacity-0',
-        )}
-      >
-        {percent}%
-      </span>
       <div
-        ref={track}
-        role="slider"
-        aria-label="Volume"
-        aria-orientation="vertical"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-        tabIndex={0}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setDragging(true);
-          fromPointer(event.clientY);
-        }}
-        onPointerMove={(event) => dragging && fromPointer(event.clientY)}
-        onPointerUp={(event) => {
-          event.currentTarget.releasePointerCapture?.(event.pointerId);
-          setDragging(false);
-        }}
+        data-wheel
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
-        onKeyDown={(event) => {
-          const by = event.key === 'ArrowUp' ? 5 : event.key === 'ArrowDown' ? -5 : 0;
-          if (!by) return;
-          event.preventDefault();
-          onChange(Math.min(100, Math.max(0, percent + by)));
-          stir();
-        }}
-        className={cn(
-          'relative h-[min(18rem,45vh)] rounded-full bg-card ring-1 ring-border/60',
-          dragging ? 'cursor-grabbing' : 'cursor-grab',
-          'focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-        )}
-        style={{ width: TRACK_W }}
+        className="pointer-events-auto relative"
       >
         <span
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full bg-rail-thumb transition-[width] duration-150 ease-out"
-          style={{
-            top: `calc(${PAD}px + (100% - ${PAD * 2 + THUMB_H}px) * ${(100 - percent) / 100})`,
-            height: THUMB_H,
-            width,
+          className={cn(
+            'absolute bottom-full left-1/2 mb-2 -translate-x-1/2 font-mono text-[11px] text-muted-foreground transition-opacity duration-200',
+            held || moving ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          {percent}%
+        </span>
+        <div
+          ref={track}
+          role="slider"
+          aria-label="Volume"
+          aria-orientation="vertical"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          tabIndex={0}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setDragging(true);
+            fromPointer(event.clientY);
           }}
-        />
+          onPointerMove={(event) => dragging && fromPointer(event.clientY)}
+          onPointerUp={(event) => {
+            event.currentTarget.releasePointerCapture?.(event.pointerId);
+            setDragging(false);
+          }}
+          onKeyDown={(event) => {
+            const by = event.key === 'ArrowUp' ? 5 : event.key === 'ArrowDown' ? -5 : 0;
+            if (!by) return;
+            event.preventDefault();
+            onChange(Math.min(100, Math.max(0, percent + by)));
+            stir();
+          }}
+          className={cn(
+            'relative h-[min(18rem,45vh)] rounded-full bg-card ring-1 ring-border/60',
+            dragging ? 'cursor-grabbing' : 'cursor-grab',
+            'focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
+          )}
+          style={{ width: TRACK_W }}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full bg-rail-thumb transition-[width] duration-150 ease-out"
+            style={{
+              top: `calc(${PAD}px + (100% - ${PAD * 2 + THUMB_H}px) * ${(100 - percent) / 100})`,
+              height: THUMB_H,
+              width,
+            }}
+          />
+        </div>
+        {children && (
+          // Always there — it is the only way into the settings — but quiet
+          // until the rail is being used.
+          <div
+            className={cn(
+              'absolute top-full left-1/2 mt-3 -translate-x-1/2 transition-opacity duration-200',
+              held || moving ? 'opacity-100' : 'opacity-50',
+            )}
+          >
+            {children}
+          </div>
+        )}
       </div>
-      {children}
     </div>,
     document.body,
   );

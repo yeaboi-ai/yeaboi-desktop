@@ -5,7 +5,7 @@
 // is the one place the page spends.
 
 import { useEffect, useState } from 'react';
-import { Pause, Play, Settings2, SlidersHorizontal } from 'lucide-react';
+import { Pause, Play, Settings2 } from 'lucide-react';
 import { PageShell } from '@/components/ui/page-shell';
 import { useMusicPlayer } from '@/components/providers/music-provider';
 import { Browser } from '@/components/music/browser';
@@ -53,21 +53,11 @@ function RadioScreen({ onSettings }: { onSettings: () => void }) {
 
   return (
     <>
-      <div className="flex flex-none items-start justify-between gap-6">
-        <div>
-          <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
-          <div className="mt-5">
-            <SourceTabs />
-          </div>
+      <div className="flex-none">
+        <h1 className="font-display text-[34px] leading-none text-foreground">Music</h1>
+        <div className="mt-5">
+          <SourceTabs />
         </div>
-        <button
-          type="button"
-          onClick={onSettings}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
-        >
-          <SlidersHorizontal className="size-3.5" aria-hidden />
-          Settings
-        </button>
       </div>
 
       {/* Everything the window has left over. The spectrum is what the page is
