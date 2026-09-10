@@ -197,205 +197,218 @@ function StandupSetupBody() {
         </p>
       </div>
 
-      <Section
-        title="Team"
-        actions={
-          <Button size="sm" variant="outline" disabled={!!busy} onClick={() => void discoverTeam()}>
-            {busy === 'team' ? 'Looking…' : 'Find people'}
-          </Button>
-        }
-      >
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
-          {TRACKERS.map((source) => (
-            <label key={source} className={checkRow}>
-              <input
-                type="checkbox"
-                className={checkInput}
-                checked={config.tracker_sources.includes(source)}
-                onChange={() => set({ tracker_sources: toggle(config.tracker_sources, source) })}
-              />
-              <span className="text-[13px] text-foreground">{source}</span>
-            </label>
-          ))}
-        </div>
-        {candidates ? (
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {candidates.map((name) => (
-              <label key={name} className={checkRow}>
+      {/* Three source pickers asking the same question of three places: a row,
+          not a column of one-line cards down a narrow page. */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Section
+          title="Team"
+          actions={
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!!busy}
+              onClick={() => void discoverTeam()}
+            >
+              {busy === 'team' ? 'Looking…' : 'Find people'}
+            </Button>
+          }
+        >
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
+            {TRACKERS.map((source) => (
+              <label key={source} className={checkRow}>
                 <input
                   type="checkbox"
                   className={checkInput}
-                  checked={config.team_members.includes(name)}
-                  onChange={() => set({ team_members: toggle(config.team_members, name) })}
+                  checked={config.tracker_sources.includes(source)}
+                  onChange={() => set({ tracker_sources: toggle(config.tracker_sources, source) })}
                 />
-                <span className="text-[13px] text-foreground">{name}</span>
+                <span className="text-[13px] text-foreground">{source}</span>
               </label>
             ))}
-            {!candidates.length && (
-              <p className="text-[13px] text-muted-foreground">
-                No candidates came back — check the tracker credentials in Settings.
-              </p>
-            )}
           </div>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">
-            {config.team_members.length
-              ? `${config.team_members.length} selected: ${config.team_members.join(', ')}`
-              : 'Nobody selected yet — the standup runs self-only.'}
-          </p>
-        )}
-      </Section>
-
-      <Section
-        title="Code"
-        actions={
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!!busy}
-            onClick={() => void discoverRepos()}
-          >
-            {busy === 'repos' ? 'Looking…' : 'Find repositories'}
-          </Button>
-        }
-      >
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
-          {CODE_SOURCES.map((source) => (
-            <label key={source} className={checkRow}>
-              <input
-                type="checkbox"
-                className={checkInput}
-                checked={config.code_sources.includes(source)}
-                onChange={() => set({ code_sources: toggle(config.code_sources, source) })}
-              />
-              <span className="text-[13px] text-foreground">{source}</span>
-            </label>
-          ))}
-        </div>
-        {owners ? (
-          <>
-            <h3 className="text-[12px] font-medium text-foreground mb-1">GitHub owners</h3>
-            <p className="text-[11px] text-muted-foreground mb-2">
-              One owner covers every active repository inside it.
-            </p>
-            <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
-              {owners.github_owners.map((owner) => (
-                <label key={owner} className={checkRow}>
-                  <input
-                    type="checkbox"
-                    className={checkInput}
-                    checked={config.github_owners.includes(owner)}
-                    onChange={() => set({ github_owners: toggle(config.github_owners, owner) })}
-                  />
-                  <span className="text-[13px] text-foreground">{owner}</span>
-                </label>
-              ))}
-            </div>
-            <h3 className="text-[12px] font-medium text-foreground mb-2">Azure DevOps projects</h3>
+          {candidates ? (
             <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {owners.azdo_projects.map((project) => (
-                <label key={project} className={checkRow}>
+              {candidates.map((name) => (
+                <label key={name} className={checkRow}>
                   <input
                     type="checkbox"
                     className={checkInput}
-                    checked={config.azdo_projects.includes(project)}
-                    onChange={() => set({ azdo_projects: toggle(config.azdo_projects, project) })}
+                    checked={config.team_members.includes(name)}
+                    onChange={() => set({ team_members: toggle(config.team_members, name) })}
                   />
-                  <span className="text-[13px] text-foreground">{project}</span>
+                  <span className="text-[13px] text-foreground">{name}</span>
                 </label>
               ))}
+              {!candidates.length && (
+                <p className="text-[13px] text-muted-foreground">
+                  No candidates came back — check the tracker credentials in Settings.
+                </p>
+              )}
             </div>
-          </>
-        ) : (
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              {config.team_members.length
+                ? `${config.team_members.length} selected: ${config.team_members.join(', ')}`
+                : 'Nobody selected yet — the standup runs self-only.'}
+            </p>
+          )}
+        </Section>
+
+        <Section
+          title="Code"
+          actions={
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!!busy}
+              onClick={() => void discoverRepos()}
+            >
+              {busy === 'repos' ? 'Looking…' : 'Find repositories'}
+            </Button>
+          }
+        >
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
+            {CODE_SOURCES.map((source) => (
+              <label key={source} className={checkRow}>
+                <input
+                  type="checkbox"
+                  className={checkInput}
+                  checked={config.code_sources.includes(source)}
+                  onChange={() => set({ code_sources: toggle(config.code_sources, source) })}
+                />
+                <span className="text-[13px] text-foreground">{source}</span>
+              </label>
+            ))}
+          </div>
+          {owners ? (
+            <>
+              <h3 className="text-[12px] font-medium text-foreground mb-1">GitHub owners</h3>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                One owner covers every active repository inside it.
+              </p>
+              <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
+                {owners.github_owners.map((owner) => (
+                  <label key={owner} className={checkRow}>
+                    <input
+                      type="checkbox"
+                      className={checkInput}
+                      checked={config.github_owners.includes(owner)}
+                      onChange={() => set({ github_owners: toggle(config.github_owners, owner) })}
+                    />
+                    <span className="text-[13px] text-foreground">{owner}</span>
+                  </label>
+                ))}
+              </div>
+              <h3 className="text-[12px] font-medium text-foreground mb-2">
+                Azure DevOps projects
+              </h3>
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                {owners.azdo_projects.map((project) => (
+                  <label key={project} className={checkRow}>
+                    <input
+                      type="checkbox"
+                      className={checkInput}
+                      checked={config.azdo_projects.includes(project)}
+                      onChange={() => set({ azdo_projects: toggle(config.azdo_projects, project) })}
+                    />
+                    <span className="text-[13px] text-foreground">{project}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              {config.github_owners.length || config.azdo_projects.length
+                ? [...config.github_owners, ...config.azdo_projects].join(', ')
+                : 'No code scope yet.'}
+            </p>
+          )}
+        </Section>
+
+        <Section title="Documentation">
+          <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
+            {DOC_SOURCES.map((source) => (
+              <label key={source} className={checkRow}>
+                <input
+                  type="checkbox"
+                  className={checkInput}
+                  checked={config.documentation_sources.includes(source)}
+                  onChange={() =>
+                    set({ documentation_sources: toggle(config.documentation_sources, source) })
+                  }
+                />
+                <span className="text-[13px] text-foreground">{source}</span>
+              </label>
+            ))}
+          </div>
           <p className="text-[11px] text-muted-foreground">
-            {config.github_owners.length || config.azdo_projects.length
-              ? [...config.github_owners, ...config.azdo_projects].join(', ')
-              : 'No code scope yet.'}
+            Repository documentation follows the code repositories selected above.
           </p>
-        )}
-      </Section>
+        </Section>
+      </div>
 
-      <Section title="Documentation">
-        <div className="flex flex-wrap gap-x-5 gap-y-2 mb-3">
-          {DOC_SOURCES.map((source) => (
-            <label key={source} className={checkRow}>
-              <input
-                type="checkbox"
-                className={checkInput}
-                checked={config.documentation_sources.includes(source)}
-                onChange={() =>
-                  set({ documentation_sources: toggle(config.documentation_sources, source) })
-                }
-              />
-              <span className="text-[13px] text-foreground">{source}</span>
-            </label>
-          ))}
-        </div>
-        <p className="text-[11px] text-muted-foreground">
-          Repository documentation follows the code repositories selected above.
-        </p>
-      </Section>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Section title="You">
+          <label className="block mb-3">
+            <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
+              Local repository
+            </span>
+            <input
+              type="text"
+              value={config.repo_path}
+              placeholder="/Users/you/code/project"
+              onChange={(e) => set({ repo_path: e.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <label className="block mb-2">
+            <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
+              Your other names
+            </span>
+            <input
+              type="text"
+              value={config.my_aliases}
+              placeholder="ana, ana.dev, a.smith@work.com"
+              onChange={(e) => set({ my_aliases: e.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Commit authors and tracker names that are also you, so your activity lands on your card.
+          </p>
+          <label className="block mb-3">
+            <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
+              Transcript folder
+            </span>
+            <input
+              type="text"
+              value={config.transcript_dir}
+              placeholder="~/.yeaboi/transcripts"
+              onChange={(e) => set({ transcript_dir: e.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <label className={checkRow}>
+            <input
+              type="checkbox"
+              className={checkInput}
+              checked={config.transcript_review_enabled}
+              onChange={() => set({ transcript_review_enabled: !config.transcript_review_enabled })}
+            />
+            <span className="text-[13px] text-foreground">
+              Review yesterday&apos;s meeting before today&apos;s standup
+            </span>
+          </label>
+        </Section>
 
-      <Section title="You">
-        <label className="block mb-3">
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Local repository
-          </span>
-          <input
-            type="text"
-            value={config.repo_path}
-            placeholder="/Users/you/code/project"
-            onChange={(e) => set({ repo_path: e.target.value })}
-            className={inputClass}
+        <Section title="Context">
+          <ContextSourcesPanel
+            value={contextDeps}
+            onChange={setContextDeps}
+            note="Saved with the setup — every standup run for this session reads it."
           />
-        </label>
-        <label className="block mb-2">
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Your other names
-          </span>
-          <input
-            type="text"
-            value={config.my_aliases}
-            placeholder="ana, ana.dev, a.smith@work.com"
-            onChange={(e) => set({ my_aliases: e.target.value })}
-            className={inputClass}
-          />
-        </label>
-        <p className="text-[11px] text-muted-foreground mb-3">
-          Commit authors and tracker names that are also you, so your activity lands on your card.
-        </p>
-        <label className="block mb-3">
-          <span className="text-[11px] font-body text-muted-foreground uppercase tracking-wide">
-            Transcript folder
-          </span>
-          <input
-            type="text"
-            value={config.transcript_dir}
-            placeholder="~/.yeaboi/transcripts"
-            onChange={(e) => set({ transcript_dir: e.target.value })}
-            className={inputClass}
-          />
-        </label>
-        <label className={checkRow}>
-          <input
-            type="checkbox"
-            className={checkInput}
-            checked={config.transcript_review_enabled}
-            onChange={() => set({ transcript_review_enabled: !config.transcript_review_enabled })}
-          />
-          <span className="text-[13px] text-foreground">
-            Review yesterday&apos;s meeting before today&apos;s standup
-          </span>
-        </label>
-      </Section>
-
-      <Section title="Context">
-        <ContextSourcesPanel
-          value={contextDeps}
-          onChange={setContextDeps}
-          note="Saved with the setup — every standup run for this session reads it."
-        />
-      </Section>
+        </Section>
+      </div>
 
       {error && <Notice title="Could not save" items={[error]} />}
       {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
@@ -417,7 +430,7 @@ function StandupSetupBody() {
 
 export default function StandupSetupPage() {
   return (
-    <PageShell width="narrow">
+    <PageShell>
       <BackendGate>
         <StandupSetupBody />
       </BackendGate>
