@@ -68,6 +68,8 @@ interface YeaboiBridge {
   onPetReturned: (fn: () => void) => void;
   onPetTookOver: (fn: () => void) => void;
   getRailPrefs: () => Promise<unknown>;
+  getWidgetPrefs: () => Promise<unknown>;
+  setWidgetPrefs: (patch: unknown) => Promise<unknown>;
   setRailPrefs: (patch: unknown) => Promise<unknown>;
   getMusicPrefs: () => Promise<unknown>;
   setMusicPrefs: (patch: unknown) => Promise<unknown>;

@@ -127,6 +127,8 @@ export interface YeaboiBridge {
   onPetTookOver: (fn: () => void) => void;
   /** The rail's icons per world; a patch names the worlds it replaces. */
   getRailPrefs: () => Promise<unknown>;
+  getWidgetPrefs: () => Promise<unknown>;
+  setWidgetPrefs: (patch: unknown) => Promise<unknown>;
   setRailPrefs: (patch: unknown) => Promise<unknown>;
   /** Music: the shelf and volume live in main; the native apps are driven there. */
   getMusicPrefs: () => Promise<unknown>;
@@ -232,6 +234,8 @@ const bridge: YeaboiBridge = {
   },
   getRailPrefs: () => ipcRenderer.invoke('rail:get-prefs'),
   setRailPrefs: (patch) => ipcRenderer.invoke('rail:set-prefs', patch),
+  getWidgetPrefs: () => ipcRenderer.invoke('widgets:get-prefs'),
+  setWidgetPrefs: (patch) => ipcRenderer.invoke('widgets:set-prefs', patch),
   getMusicPrefs: () => ipcRenderer.invoke('music:get-prefs'),
   setMusicPrefs: (patch) => ipcRenderer.invoke('music:set-prefs', patch),
   onMusicCommand: (callback) => {

@@ -182,9 +182,11 @@ describe('navSections', () => {
         new URL('../src/renderer/pages/yeaboi/home/dashboard.tsx', import.meta.url),
         'utf8',
       );
-      // What's New opens from its tile; Usage has no page left, so its tile
-      // carries the figures the page used to draw.
-      expect(dashboard.includes('href="/whats-new"'), 'no tile opens /whats-new').toBe(true);
+      // What's New opens from its widget; Usage has no page left, so its
+      // widget carries the figures the page used to draw. Matched either way a
+      // widget can name its route — as a prop or as a registry field — so the
+      // rule survives the dashboard being rearranged.
+      expect(/\/whats-new['"]/.test(dashboard), 'no widget opens /whats-new').toBe(true);
       expect(dashboard.includes('usage_get'), 'no tile reads the usage figures').toBe(true);
       const tabs = readFileSync(
         new URL('../src/renderer/lib/yeaboi/settings-tabs.ts', import.meta.url),

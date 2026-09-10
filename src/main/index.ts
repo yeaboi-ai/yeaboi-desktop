@@ -499,6 +499,8 @@ if (!gotLock) {
     });
     ipcMain.handle('rail:get-prefs', () => settings.rail);
     ipcMain.handle('rail:set-prefs', (_event, patch: unknown) => settings.setRail(patch));
+    ipcMain.handle('widgets:get-prefs', () => settings.widgets);
+    ipcMain.handle('widgets:set-prefs', (_event, patch: unknown) => settings.setWidgets(patch));
     ipcMain.handle('music:get-prefs', () => settings.music);
     ipcMain.handle('music:set-prefs', (_event, patch: unknown) => settings.setMusic(patch));
     registerMusicNative();

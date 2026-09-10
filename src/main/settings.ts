@@ -10,6 +10,7 @@ import { app } from 'electron';
 import { type PetPrefs, mergePetPrefs, normalizePetPrefs } from '../shared/pet-prefs';
 import { type Audience, normalizeAudience } from '../shared/audience';
 import { type RailPrefs, mergeRailPrefs, normalizeRailPrefs } from '../shared/rail';
+import { type WidgetPrefs, mergeWidgetPrefs, normalizeWidgetPrefs } from '../shared/widgets';
 import { type MusicPrefs, mergeMusicPrefs, normalizeMusicPrefs } from '../shared/music';
 
 export interface Identity {
@@ -31,6 +32,8 @@ interface SettingsFile {
   pet?: unknown;
   /** The rail's icons, one list per world. Absent means never arranged. */
   rail?: unknown;
+  /** The home dashboard's widgets. Absent means never arranged. */
+  widgets?: unknown;
   /** Volume, source tab and the saved playlist shelf. The radio's station
    *  and on/off flag are the backend's (/api/ambience), shared with the terminal. */
   music?: unknown;
@@ -139,6 +142,19 @@ export class Settings {
   setRail(patch: unknown): RailPrefs {
     const next = mergeRailPrefs(this.rail, patch);
     this.data.rail = next;
+    this.save();
+    return next;
+  }
+
+  /** The dashboard's widgets, clamped. The renderer clamps again against the
+   *  widgets it knows how to draw. */
+  get widgets(): WidgetPrefs {
+    return normalizeWidgetPrefs(this.data.widgets);
+  }
+
+  setWidgets(patch: unknown): WidgetPrefs {
+    const next = mergeWidgetPrefs(this.widgets, patch);
+    this.data.widgets = next;
     this.save();
     return next;
   }

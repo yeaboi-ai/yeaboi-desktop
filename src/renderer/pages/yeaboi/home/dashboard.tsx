@@ -12,11 +12,32 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { CalendarClock, Columns3, Gauge, LayoutGrid, Share2, Sparkles } from 'lucide-react';
+import {
+  CalendarClock,
+  Columns3,
+  Gauge,
+  LayoutGrid,
+  RotateCcw,
+  Share2,
+  SlidersHorizontal,
+  Sparkles,
+} from 'lucide-react';
 
 import { Schedule, Upcoming, useSchedule } from '@/components/yeaboi/calendar';
 import { Displaced } from '@/components/yeaboi/displaced';
 import { Surface } from '@/components/yeaboi/surface';
+import { Button } from '@/components/ui/button';
+import { RetroActionsWidget } from './retro-actions-widget';
+import { WidgetDrawer } from './widget-drawer';
+import {
+  WIDGET_DEFAULTS,
+  WIDGET_IDS,
+  mergeWidgetPrefs,
+  normalizeWidgetPrefs,
+  visibleWidgets,
+  type WidgetId,
+  type WidgetPrefs,
+} from '@shared/widgets';
 import { apiGet, callTool } from '@/lib/yeaboi/api';
 
 interface Board {
@@ -45,6 +66,20 @@ interface ChangelogEntry {
 
 /** A tile with no endpoint behind it yet. Said plainly rather than filled with
  *  a plausible number, so nothing here has to be second-guessed. */
+/** The widgets this build knows how to draw — the second clamp the shared
+ *  contract asks for. */
+const KNOWN_WIDGETS = new Set<string>(WIDGET_IDS);
+
+/** What each widget is called, for the drawer that lists them. */
+const WIDGET_TITLES: Record<WidgetId, string> = {
+  boards: 'Recent boards',
+  shared: 'Shared out',
+  'whats-new': "What's new",
+  usage: 'Usage',
+  'coming-up': 'Coming up',
+  'retro-actions': 'Open actions',
+};
+
 function AwaitingTile({ title, wants }: { title: string; wants: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-border/50 bg-card/30 p-4">
@@ -124,6 +159,8 @@ export function HomeDashboard() {
   // with the week — mounted through their own exit, or there is nothing to
   // animate.
   const [monthView, setMonthView] = useState(false);
+  const [widgets, setWidgets] = useState<WidgetPrefs>(WIDGET_DEFAULTS);
+  const [arranging, setArranging] = useState(false);
 
   useEffect(() => {
     apiGet<{ boards?: Board[] }>('/api/boards').then(
@@ -142,15 +179,179 @@ export function HomeDashboard() {
       (envelope) => setUsage(envelope.ok ? (envelope.data ?? null) : null),
       () => setUsage(null),
     );
+    window.yeaboi
+      ?.getWidgetPrefs?.()
+      .then((stored) => setWidgets(normalizeWidgetPrefs(stored)))
+      .catch(() => undefined);
   }, []);
+
+  // Drawn from what is stored and saved back at once: the dashboard behind the
+  // drawer is what the drawer is describing.
+  const arrange = (patch: Partial<WidgetPrefs>) => {
+    setWidgets((current) => mergeWidgetPrefs(current, patch));
+    void window.yeaboi?.setWidgetPrefs?.(patch);
+  };
+
+  /** Every widget the dashboard can draw. Keyed by the shared contract's ids,
+   *  so a widget that exists here and not there fails the type check. */
+  const WIDGETS: Record<
+    WidgetId,
+    { title: string; icon: typeof Gauge; href?: string; body: React.ReactNode }
+  > = {
+    boards: {
+      title: 'Recent boards',
+      icon: Columns3,
+
+      body: (
+        <>
+          {boards.length === 0 ? (
+            <Empty>No boards run yet.</Empty>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {boards.map((board) => (
+                <li
+                  key={board.id}
+                  className="truncate px-2 font-body text-[12px] text-muted-foreground"
+                >
+                  {board.title ?? board.name ?? board.mode ?? board.id}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ),
+    },
+    shared: {
+      title: 'Shared out',
+      icon: Share2,
+
+      body: (
+        <>
+          {shares.length === 0 ? (
+            <Empty>Nothing shared yet.</Empty>
+          ) : (
+            <p className="font-body text-[26px] leading-none text-foreground">{shares.length}</p>
+          )}
+        </>
+      ),
+    },
+    'whats-new': {
+      title: "What's new",
+      icon: Sparkles,
+      href: '/whats-new',
+      body: (
+        <>
+          {changelog.length === 0 ? (
+            <Empty>Up to date.</Empty>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {changelog.map((entry, index) => (
+                <li key={entry.version ?? index}>
+                  <p className="font-body text-[12px] leading-snug text-muted-foreground">
+                    {entry.headline ?? entry.version}
+                  </p>
+                  {entry.headline && entry.date && (
+                    <p className="mt-0.5 font-code text-[10px] text-muted-foreground/50">
+                      {entry.date}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ),
+    },
+    usage: {
+      title: 'Usage',
+      icon: Gauge,
+
+      body: (
+        <>
+          {usage ? (
+            <>
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+                {(
+                  [
+                    ['LLM calls', usage.call_count],
+                    ['Total tokens', usage.total_tokens],
+                    ['In', usage.input_tokens],
+                    ['Out', usage.output_tokens],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
+                      {label}
+                    </dt>
+                    <dd className="font-code text-[13px] text-foreground">
+                      {value.toLocaleString('en-US')}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {usage.note && (
+                <p className="mt-3 font-body text-[11px] leading-relaxed text-muted-foreground/70">
+                  {usage.note}
+                </p>
+              )}
+            </>
+          ) : (
+            <Empty>Nothing counted yet.</Empty>
+          )}
+        </>
+      ),
+    },
+    'coming-up': {
+      title: 'Coming up',
+      icon: CalendarClock,
+
+      body: (
+        <>
+          <Upcoming
+            ceremonies={schedule.ceremonies}
+            count={4}
+            empty={
+              schedule.error
+                ? 'The schedule could not be read.'
+                : 'Nothing scheduled — declare a ceremony and it appears here.'
+            }
+          />
+        </>
+      ),
+    },
+    'retro-actions': {
+      title: 'Open actions',
+      icon: RotateCcw,
+      href: '/team/retro',
+      body: (
+        <>
+          <RetroActionsWidget empty={Empty} />
+        </>
+      ),
+    },
+  };
 
   return (
     <Surface>
       {/* Positioned, because what leaves is pinned against it. */}
       <div className="relative">
-        <h1 className="font-display text-2xl text-foreground">
-          Welcome{first && first !== 'You' ? `, ${first}` : ''}
-        </h1>
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="font-display text-2xl text-foreground">
+            Welcome{first && first !== 'You' ? `, ${first}` : ''}
+          </h1>
+          <Button variant="ghost" size="sm" onClick={() => setArranging(true)}>
+            <SlidersHorizontal className="size-3.5" aria-hidden />
+            Arrange
+          </Button>
+        </div>
+
+        <WidgetDrawer
+          open={arranging}
+          onOpenChange={setArranging}
+          prefs={widgets}
+          titles={WIDGET_TITLES}
+          onChange={arrange}
+        />
 
         {/* What is coming, before what has happened: the calendar leads the
           surface rather than closing it. */}
@@ -171,104 +372,21 @@ export function HomeDashboard() {
 
         <Displaced away={monthView}>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Tile title="Recent boards" icon={Columns3}>
-              {boards.length === 0 ? (
-                <Empty>No boards run yet.</Empty>
-              ) : (
-                <ul className="flex flex-col gap-1.5">
-                  {boards.map((board) => (
-                    <li
-                      key={board.id}
-                      className="truncate px-2 font-body text-[12px] text-muted-foreground"
-                    >
-                      {board.title ?? board.name ?? board.mode ?? board.id}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Tile>
-
-            <Tile title="Shared out" icon={Share2}>
-              {shares.length === 0 ? (
-                <Empty>Nothing shared yet.</Empty>
-              ) : (
-                <p className="font-body text-[26px] leading-none text-foreground">
-                  {shares.length}
-                </p>
-              )}
-            </Tile>
-
-            <Tile title="What's new" icon={Sparkles} href="/whats-new">
-              {changelog.length === 0 ? (
-                <Empty>Up to date.</Empty>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {changelog.map((entry, index) => (
-                    <li key={entry.version ?? index}>
-                      <p className="font-body text-[12px] leading-snug text-muted-foreground">
-                        {entry.headline ?? entry.version}
-                      </p>
-                      {entry.headline && entry.date && (
-                        <p className="mt-0.5 font-code text-[10px] text-muted-foreground/50">
-                          {entry.date}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Tile>
-
-            {/* All four figures, which is the whole of what the Usage page
-                was. A screen to say four numbers is a screen you have to go to
-                and come back from. */}
-            <Tile title="Usage" icon={Gauge}>
-              {usage ? (
-                <>
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
-                    {(
-                      [
-                        ['LLM calls', usage.call_count],
-                        ['Total tokens', usage.total_tokens],
-                        ['In', usage.input_tokens],
-                        ['Out', usage.output_tokens],
-                      ] as const
-                    ).map(([label, value]) => (
-                      <div key={label}>
-                        <dt className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
-                          {label}
-                        </dt>
-                        <dd className="font-code text-[13px] text-foreground">
-                          {value.toLocaleString('en-US')}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {usage.note && (
-                    <p className="mt-3 font-body text-[11px] leading-relaxed text-muted-foreground/70">
-                      {usage.note}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <Empty>Nothing counted yet.</Empty>
-              )}
-            </Tile>
-
-            <Tile title="Coming up" icon={CalendarClock}>
-              <Upcoming
-                ceremonies={schedule.ceremonies}
-                count={4}
-                empty={
-                  schedule.error
-                    ? 'The schedule could not be read.'
-                    : 'Nothing scheduled — declare a ceremony and it appears here.'
-                }
-              />
-            </Tile>
+            {visibleWidgets(widgets, KNOWN_WIDGETS).map((id) => {
+              const widget = WIDGETS[id];
+              return (
+                <Tile
+                  key={id}
+                  title={widget.title}
+                  icon={widget.icon}
+                  {...(widget.href ? { href: widget.href } : {})}
+                >
+                  {widget.body}
+                </Tile>
+              );
+            })}
 
             <AwaitingTile title="Velocity" wants="/api/analysis/velocity" />
-            <AwaitingTile title="Last retro" wants="/api/retro/recent" />
             <AwaitingTile title="Sprint progress" wants="/api/analysis/sprint" />
           </div>
         </Displaced>
