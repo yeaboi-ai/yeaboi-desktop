@@ -38,6 +38,7 @@ import { RetroActionsWidget } from './retro-actions-widget';
 import {
   HOLD_TO_ARRANGE_MS,
   LEAVE_MS,
+  SETTLE_MS,
   useGridColumns,
   useGridFlip,
   useHoldToArrange,
@@ -195,24 +196,35 @@ function Tile({
         ...(ripening
           ? {
               transitionDuration: `${HOLD_TO_ARRANGE_MS}ms`,
+              // Eased in, so the press builds towards the moment it opens the
+              // mode. Eased out it would do almost all of it in the first
+              // eighth of a second and then crawl, which reads as a snap.
+              transitionTimingFunction: 'cubic-bezier(0.5, 0, 0.9, 0.55)',
               boxShadow: '0 0 0 2px var(--muted-foreground)',
               backgroundColor: 'var(--secondary)',
               scale: '0.98',
             }
-          : arranging
-            ? {
-                boxShadow:
-                  '0 0 0 1px color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
-              }
-            : {}),
-        ...(leaving ? { transitionDuration: `${LEAVE_MS}ms` } : {}),
+          : {
+              // Stated rather than dropped: `scale: none` has no number to
+              // interpolate from, so letting it fall back is what snapped.
+              transitionDuration: `${SETTLE_MS}ms`,
+              scale: '1',
+              ...(arranging
+                ? {
+                    boxShadow:
+                      '0 0 0 1px color-mix(in oklch, var(--muted-foreground) 55%, transparent)',
+                  }
+                : {}),
+            }),
+        // Inline, because the inline `scale` above would outrank the class.
+        ...(leaving ? { transitionDuration: `${LEAVE_MS}ms`, scale: '0.96' } : {}),
       }}
       className={cn(
         'group/tile relative flex min-h-0 flex-col rounded-2xl bg-card p-4 ring-1 ring-border/60',
-        'transition-[box-shadow,background-color,scale,opacity] duration-200 ease-out',
+        'transition-[box-shadow,background-color,scale,opacity] ease-out',
         arranging && 'cursor-grab touch-none select-none',
         carried && 'opacity-0',
-        leaving && 'pointer-events-none scale-[0.96] opacity-0',
+        leaving && 'pointer-events-none opacity-0',
         opens &&
           'cursor-pointer hover:bg-secondary/30 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
       )}

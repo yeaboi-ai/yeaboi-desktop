@@ -24,6 +24,9 @@ import {
 export const HOLD_TO_ARRANGE_MS = 550;
 /** How far it may stray in that time, in px. */
 const HOLD_SLOP = 8;
+/** How long a widget takes to come back up once the press has done its work,
+ *  or been let go of. */
+export const SETTLE_MS = 320;
 
 /**
  * Press and hold any widget to start arranging.
@@ -221,14 +224,18 @@ export function useGridColumns(ref: React.RefObject<HTMLElement | null>): number
 export const LEAVE_MS = 180;
 /** And how long whatever moves into its place takes to get there. */
 const SLIDE_MS = 260;
-const SLIDE = `transform ${SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+const SLIDE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /**
  * Slide whatever moved into a new place, rather than letting it jump.
  *
  * A FLIP over the grid: every tile is measured after each layout, and one that
- * has moved since the last is put back where it was and then let go. New tiles
- * fade up instead, since they have nowhere to come from.
+ * has moved since the last is walked back to where it was and let go. New
+ * tiles fade up instead, since they have nowhere to come from.
+ *
+ * Animations rather than inline transitions: a `style.transition` left on the
+ * tile would go on overriding the transition its own stylesheet declares, and
+ * the press that opens this mode would stop animating.
  *
  * `key` is whatever change should be animated — the drawn order and the sizes.
  * Tiles are keyed by `data-tile`; the drop placeholder deliberately carries
@@ -257,26 +264,21 @@ export function useGridFlip(
       after.set(id, box);
       if (still) continue;
 
+      if (typeof tile.animate !== 'function') continue;
+
       const was = before.get(id);
       if (!was) {
         if (before.size === 0) continue; // the first paint is not an arrival
-        tile.style.transition = 'none';
-        tile.style.opacity = '0';
-        requestAnimationFrame(() => {
-          tile.style.transition = `opacity ${SLIDE_MS}ms ease-out`;
-          tile.style.opacity = '';
-        });
+        tile.animate([{ opacity: 0 }, { opacity: 1 }], { duration: SLIDE_MS, easing: 'ease-out' });
         continue;
       }
 
       const dx = was.left - box.left;
       const dy = was.top - box.top;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-      tile.style.transition = 'none';
-      tile.style.transform = `translate(${dx}px, ${dy}px)`;
-      requestAnimationFrame(() => {
-        tile.style.transition = SLIDE;
-        tile.style.transform = '';
+      tile.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
+        duration: SLIDE_MS,
+        easing: SLIDE_EASE,
       });
     }
 
