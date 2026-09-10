@@ -2,6 +2,26 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "4.7.0",
+      "date": "2026-09-10",
+      "headline": "See which credentials work and pick your settings",
+      "summary": "The app now shows which keys you've saved versus which ones work. Settings let you pick folders and channels, and the front page is a screensaver you can interact with by holding your modifier key.",
+      "highlights": [
+        {
+          "text": "Your saved API keys now show whether vendors accept them",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Pick folders and channels from your system instead of typing",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The home is a screensaver you can reach into by holding command",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.6.0",
       "date": "2026-09-09",
       "headline": "Solo becomes the center of the app",
