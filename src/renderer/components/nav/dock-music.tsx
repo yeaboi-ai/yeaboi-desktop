@@ -10,7 +10,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { ArrowLeft, ArrowUpRight, Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 
 import { cameFrom } from '@/lib/nav/came-from';
@@ -56,7 +63,14 @@ const IDLE_MS = 60_000;
 const TAP =
   'rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50';
 
-export function MusicPocket() {
+export function MusicPocket({
+  trailing,
+}: {
+  /** What sits at the right end of the open pill, in place of the way through
+   *  to the Music page. A board staged in the window puts the host's "play it
+   *  for everyone" there — the page is not reachable from inside one. */
+  trailing?: ReactNode;
+} = {}) {
   const player = useMusicPlayer();
   const { radio, channels, mood, embed, prefs, clearEmbed, toggle, next } = player;
   const pathname = usePathname();
@@ -289,9 +303,11 @@ export function MusicPocket() {
                 open ? 'opacity-100 delay-100' : 'pointer-events-none opacity-0'
               }`}
             >
-              <Link href="/music" title="Open Music" aria-label="Open Music" className={TAP}>
-                <ArrowUpRight className="size-3.5" aria-hidden />
-              </Link>
+              {trailing ?? (
+                <Link href="/music" title="Open Music" aria-label="Open Music" className={TAP}>
+                  <ArrowUpRight className="size-3.5" aria-hidden />
+                </Link>
+              )}
             </div>
           </div>
         </div>

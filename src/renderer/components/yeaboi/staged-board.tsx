@@ -914,7 +914,14 @@ export function StagedBoard({
       // Two roots: the board in the window, and whatever it hangs off body.
       // The card being dragged is a portal, and with no tokens on it, it came
       // out with no ground, no rule and no text colour — invisible in the air.
-      `@scope (.${HOST}, body > [class^='_']) {\n${rest.replaceAll(':root', ':scope')}\n}`,
+      //
+      // And one limit. Where the app puts a control of its own inside the
+      // board — the music panel — the board's reset must stop at it. Not a
+      // specificity question: a scoped rule wins over an unscoped one by
+      // proximity whatever their selectors are, so the board's `* { padding:
+      // 0 }` was beating the app's own `.p-1` and every button in the panel
+      // came out 14px square.
+      `@scope (.${HOST}, body > [class^='_']) to ([data-app-chrome]) {\n${rest.replaceAll(':root', ':scope')}\n}`,
       INHERIT,
     ].join('\n');
     document.head.append(style);

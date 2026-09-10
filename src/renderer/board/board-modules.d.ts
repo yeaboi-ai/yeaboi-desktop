@@ -23,14 +23,27 @@ interface BoardMusicApi {
   analyser: AnalyserNode | null;
 }
 
+/** What a staged board is given in place of its own music control. It hands
+ *  back `cast` — putting a station on for everyone in the room is the board's
+ *  business, not the window's — and undefined for a guest. */
+type BoardMusicControlFn = (parts: { cast?: (() => void) | undefined }) => React.ReactNode;
+
 declare module '@board/poker/App' {
   export type BoardMusic = BoardMusicApi;
-  export function App(props: { boot: unknown; music?: BoardMusicApi }): JSX.Element;
+  export function App(props: {
+    boot: unknown;
+    music?: BoardMusicApi;
+    musicControl?: BoardMusicControlFn;
+  }): JSX.Element;
 }
 
 declare module '@board/retro/App' {
   export type BoardMusic = BoardMusicApi;
-  export function App(props: { boot: unknown; music?: BoardMusicApi }): JSX.Element;
+  export function App(props: {
+    boot: unknown;
+    music?: BoardMusicApi;
+    musicControl?: BoardMusicControlFn;
+  }): JSX.Element;
 }
 
 declare module '@board/design/tokens.css';

@@ -7,6 +7,7 @@
 import { App as RetroApp } from '@board/retro/App';
 
 import { useBoardChannels, useBoardMusic } from './board-music';
+import { BoardMusicControl } from './board-music-control';
 import { StagedBoard } from './staged-board';
 
 /**
@@ -47,7 +48,11 @@ export function RetroBoard({
   const channels = useBoardChannels();
   return (
     <StagedBoard boardId={boardId} mode="retro" pidKey="retro_pid" onLeave={onLeave}>
-      <RetroApp boot={boot(sprint, channels) as never} music={music} />
+      <RetroApp
+        boot={boot(sprint, channels) as never}
+        music={music}
+        musicControl={({ cast }) => <BoardMusicControl cast={cast} />}
+      />
     </StagedBoard>
   );
 }
