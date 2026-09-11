@@ -8,13 +8,7 @@
 // each source becomes hits from data handed in, and ranking is a function of
 // the hits and the text; the dialog is a list and a keydown handler over it.
 
-import {
-  AUDIENCES,
-  WORLD_COPY,
-  audiencesForRoute,
-  sessionsHref,
-  type Audience,
-} from '@shared/audience';
+import { AUDIENCES, WORLD_COPY, audiencesForRoute, type Audience } from '@shared/audience';
 import type { RailLucideName } from '@shared/rail';
 import type { UpdateState } from '@shared/update';
 import type { RailDestination } from '@/lib/nav/rail-catalogue';
@@ -24,14 +18,13 @@ import type { SettingField } from './settings';
 import { SETTINGS_TABS, type SettingsTab } from './settings-tabs';
 import { MODE_ROUTES } from './tips';
 
-export type HitKind = 'page' | 'mode' | 'session' | 'run' | 'setting' | 'action';
+export type HitKind = 'page' | 'mode' | 'plan' | 'run' | 'setting' | 'action';
 
-export type PaletteGroup =
-  'sessions' | 'runs' | 'modes' | 'work' | 'settings' | 'about' | 'actions';
+export type PaletteGroup = 'plans' | 'runs' | 'modes' | 'work' | 'settings' | 'about' | 'actions';
 
 /** The headings, in the order the list shows them. */
 export const PALETTE_GROUPS: readonly { key: PaletteGroup; title: string }[] = [
-  { key: 'sessions', title: 'Sessions' },
+  { key: 'plans', title: 'Plans' },
   { key: 'runs', title: 'Runs' },
   { key: 'modes', title: 'Modes' },
   { key: 'work', title: 'Work' },
@@ -138,24 +131,24 @@ export function pageHits(
   });
 }
 
-export interface PaletteSession {
+export interface PalettePlan {
   id: string;
   name: string;
 }
 
-export function workspaceHits(rows: readonly PaletteSession[], audience: Audience): PaletteHit[] {
-  const base = sessionsHref(audience);
+/** Every plan, opening on its room. Both worlds share the one hub. */
+export function planHits(rows: readonly PalettePlan[]): PaletteHit[] {
   return rows.map((row) => ({
-    id: `workspace:${row.id}`,
-    kind: 'session',
+    id: `plan:${row.id}`,
+    kind: 'plan',
     title: row.name,
     detail: '',
-    group: 'sessions',
+    group: 'plans',
     world: null,
     icon: 'NotebookPen',
-    keywords: ['session', 'workspace'],
+    keywords: ['plan', 'planning', 'session'],
     available: true,
-    href: `${base}/${row.id}`,
+    href: `/planning/${encodeURIComponent(row.id)}`,
   }));
 }
 
@@ -232,16 +225,16 @@ export function actionHits(
 ): PaletteHit[] {
   const hits: PaletteHit[] = [
     {
-      id: 'action:new-session',
+      id: 'action:new-plan',
       kind: 'action',
-      title: 'New session',
+      title: 'New plan',
       detail: '',
       group: 'actions',
       world: null,
       icon: 'NotebookPen',
-      keywords: ['create', 'add', 'session'],
+      keywords: ['create', 'add', 'plan', 'session'],
       available: true,
-      href: `${sessionsHref(audience)}?new=1`,
+      href: '/planning/new',
     },
   ];
   // `worlds` is what the build offers, so a one-world launch emits no

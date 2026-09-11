@@ -40,8 +40,8 @@ export const FADE_FRACTION = 0.16;
  */
 export const MODE_ROUTES: Record<string, string> = {
   'team-analysis': '/team/analysis',
-  // Planning is the session workspace: session → blueprint → plan.
-  'project-planning': '/sessions',
+  // Planning is the plan hub; a plan opens as a room under it.
+  'project-planning': '/planning',
   'daily-standup': '/team/standup',
   retro: '/team/retro',
   poker: '/team/poker',
@@ -64,6 +64,7 @@ export function tipRoute(tip: Pick<Tip, 'mode_key'>): string | null {
 /** Where starting a session lands, for the modes whose hub is not the start.
  *  Every other mode starts on its hub. */
 export const MODE_START_ROUTES: Record<string, string> = {
+  'project-planning': '/planning/new',
   reporting: '/team/reporting/new',
   'team-analysis': '/team/analysis/new',
   poker: '/team/poker/new',

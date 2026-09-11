@@ -18,7 +18,7 @@ import {
   type RefObject,
 } from 'react';
 import { Input } from '@/components/ui/input';
-import { ProviderMark } from '@/components/projects/provider-mark';
+import { ProviderMark } from '@/components/planning/provider-mark';
 import { useDismissOnOutside } from '@/hooks/use-dismiss-on-outside';
 import { moveSelection } from '@/lib/yeaboi/palette';
 import {

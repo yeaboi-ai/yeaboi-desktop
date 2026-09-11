@@ -123,7 +123,7 @@ export function Sidebar() {
   const reset = async () => {
     const ok = await confirm({
       title: 'Reset this rail?',
-      message: 'Back to Sessions and Board. Icons and images you added here are forgotten.',
+      message: 'Back to Planning and Board. Icons and images you added here are forgotten.',
       confirmLabel: 'Reset',
       variant: 'warning',
     });

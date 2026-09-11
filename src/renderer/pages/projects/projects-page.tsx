@@ -35,7 +35,7 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useAudience } from '@/components/providers/audience-provider';
 import { PersonaMascot } from '@/lib/audience/worlds';
 import { glideText } from '@/lib/motion/glide';
-import { SESSIONS_HEADER_LINKS, type PageLink } from '@/lib/nav/sections';
+import { PLANNING_HUB_LINKS, type PageLink } from '@/lib/nav/sections';
 import { allCards, loadCapabilities, menuFor, type Capabilities } from '@/lib/yeaboi/capabilities';
 import {
   ALL_DONE_LINE,
@@ -521,7 +521,7 @@ export default function ProjectsPage() {
         <div className="mt-5 border-t border-border">
           <SheetWord>{OTHER_WAYS_WORD}</SheetWord>
           <ul className="divide-y divide-border/50">
-            {SESSIONS_HEADER_LINKS.map((link) => (
+            {PLANNING_HUB_LINKS.map((link) => (
               <WayInRow key={link.href} link={link} />
             ))}
           </ul>

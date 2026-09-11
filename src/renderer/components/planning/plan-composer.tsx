@@ -1,25 +1,21 @@
 'use client';
 
-// The New session form as the ledger's first ruled line: one borderless
-// serif field that asks what you are building, the world's hairline under it,
-// and beneath that a line saying what becomes of the words — joined by AI
-// rewrite and Create once there are some. The page owns the text so an example
-// row can fill it; yeaboi names the project from it. Typing @ or / opens the
-// reference menu under the field; a pick, a pasted or dropped image, or the
-// file picker becomes a chip in the row under the text, and Create carries
-// them with the words.
+// The New plan form: one borderless serif field that asks what you are
+// building, the world's hairline under it, and beneath that a line saying
+// what becomes of the words, joined by Start once there are some. Typing @
+// or / opens the reference menu under the field; a pick, a pasted or dropped
+// image, or the file picker becomes a chip in the row under the text, and
+// Start carries them with the words. The engine's intake reshapes the
+// description itself, so there is no rewrite here.
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DropVeil, filesFrom } from '@/components/feedback/attachment-tray';
 import { ReferenceChips, type PendingShot } from '@/components/planning/reference-chips';
 import { ReferenceMenu, type ReferenceMenuHandle } from '@/components/planning/reference-menu';
-import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { loadConnections } from '@/lib/yeaboi/connections';
-import { composerNote } from '@/lib/yeaboi/describe';
-import { createErrorMessage } from '@/lib/yeaboi/ledger';
+import { COMPOSER_COPY, composerNote, createErrorMessage } from '@/lib/planning/composer';
 import {
   LINK_SOURCE,
   REFERENCE_COPY,
@@ -36,36 +32,38 @@ import {
   type TriggerHit,
 } from '@/lib/yeaboi/references';
 
-/** What Create hands the page: the words, the references, the screenshots. */
-export interface ProjectDraft {
+/** What Start hands the page: the words, the references, the screenshots. */
+export interface PlanDraft {
   description: string;
   references: ProjectReference[];
   files: File[];
 }
 
-export interface ProjectComposerProps {
+export interface PlanComposerProps {
   value: string;
   onChange: (value: string) => void;
-  onCreate: (draft: ProjectDraft) => Promise<{ id: string }>;
-  /** The created row, so the caller can open it. */
+  onCreate: (draft: PlanDraft) => Promise<{ id: string }>;
+  /** The created plan, so the caller can open it. */
   onCreated?: (created: { id: string }) => void;
-  /** Take focus on mount: the menu bar's New session… lands here with ?new,
-   *  and an empty page has nothing else to offer. */
+  /** Take focus on mount: the menu bar's New plan… lands here, and an empty
+   *  page has nothing else to offer. */
   autoFocus?: boolean;
   /** The field itself, for a caller that moves words into it. */
   fieldRef?: RefObject<HTMLTextAreaElement | null>;
+  /** Drawn between the note and the Start button: the picker, the profile. */
+  children?: React.ReactNode;
 }
 
-export function ProjectComposer({
+export function PlanComposer({
   value,
   onChange,
   onCreate,
   onCreated,
   autoFocus = false,
   fieldRef,
-}: ProjectComposerProps) {
+  children,
+}: PlanComposerProps) {
   const [loading, setLoading] = useState(false);
-  const [rewriting, setRewriting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [references, setReferences] = useState<ProjectReference[]>([]);
   const [shots, setShots] = useState<PendingShot[]>([]);
@@ -81,7 +79,6 @@ export function ProjectComposer({
   // whether it is open: the trigger word is gone from the text by then.
   const pinned = useRef(false);
   const shotKey = useRef(0);
-  const { authFetch } = useAuthFetch();
   const text = value.trim();
   const attached = references.length > 0 || shots.length > 0;
 
@@ -206,33 +203,10 @@ export function ProjectComposer({
     }
   }
 
-  async function handleRewrite() {
-    if (!text || rewriting) return;
-    setRewriting(true);
-    setError(null);
-    try {
-      const resp = await authFetch('/api/sessions/rewrite-idea', {
-        method: 'POST',
-        body: JSON.stringify({ text }),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.rewritten) onChange(data.rewritten);
-      } else {
-        const data = await resp.json().catch(() => ({}));
-        setError(data.detail || 'AI rewrite failed. Please try again.');
-      }
-    } catch {
-      setError('Network error. Please check your connection.');
-    } finally {
-      setRewriting(false);
-    }
-  }
-
   const note = composerNote(Boolean(text), attached, REFERENCE_COPY.COMPOSER_HINT);
 
   return (
-    <form onSubmit={handleSubmit} aria-label="New session">
+    <form onSubmit={handleSubmit} aria-label="New plan">
       <div
         ref={wrapper}
         data-audience-accented
@@ -317,53 +291,28 @@ export function ProjectComposer({
         }
         onRemovePending={removeShot}
       />
-      <div className="mt-2 flex min-h-[2rem] items-center justify-between gap-4">
-        {/* The sheet's own two tones, one size down from SheetWord: the promise
-            in the ledger's serif, the consequence in body type beside it. A
-            failed create takes the slot instead — the alert says enough. */}
-        <p
-          hidden={Boolean(error)}
-          className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug"
+      <p
+        hidden={Boolean(error)}
+        className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug"
+      >
+        <span
+          key={note.lead}
+          className="animate-fade-in font-display text-[15px] italic text-muted-foreground"
         >
-          <span
-            key={note.lead}
-            className="animate-fade-in font-display text-[15px] italic text-muted-foreground"
-          >
-            {note.lead}
-          </span>
-          {note.tail && (
-            <>
-              <span className="sr-only">. </span>
-              <span
-                key={note.tail}
-                className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
-              >
-                {note.tail}
-              </span>
-            </>
-          )}
-        </p>
-        {(text || attached) && (
-          <div className="flex shrink-0 items-center gap-1 animate-fade-in">
-            {text && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleRewrite}
-                disabled={rewriting || loading}
-                className="font-body text-muted-foreground hover:text-foreground"
-              >
-                <Sparkles className={rewriting ? 'animate-spin' : ''} />
-                {rewriting ? 'Rewriting…' : 'AI rewrite'}
-              </Button>
-            )}
-            <Button type="submit" size="sm" disabled={loading || !text} className="font-body">
-              {loading ? 'Creating…' : 'Create session'}
-            </Button>
-          </div>
+          {note.lead}
+        </span>
+        {note.tail && (
+          <>
+            <span className="sr-only">. </span>
+            <span
+              key={note.tail}
+              className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
+            >
+              {note.tail}
+            </span>
+          </>
         )}
-      </div>
+      </p>
       {error && (
         <p
           role="alert"
@@ -371,6 +320,14 @@ export function ProjectComposer({
         >
           {error}
         </p>
+      )}
+      {children && <div className="mt-6 space-y-4">{children}</div>}
+      {(text || attached) && (
+        <div className="mt-6 flex justify-end animate-fade-in">
+          <Button type="submit" size="sm" disabled={loading || !text} className="font-body">
+            {loading ? COMPOSER_COPY.CREATING : COMPOSER_COPY.CREATE}
+          </Button>
+        </div>
       )}
     </form>
   );

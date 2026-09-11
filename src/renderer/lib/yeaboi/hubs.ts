@@ -32,7 +32,7 @@ export interface HubDescriptor {
 }
 
 /** The planning hub's rows: a plan's name, where it stands, its labels, when it last moved. */
-export function hubRows(sessions: readonly ChatSummary[], now: Date, base = '/sessions'): HubRow[] {
+export function hubRows(sessions: readonly ChatSummary[], now: Date, base = '/planning'): HubRow[] {
   return [...sessions]
     .sort((a, b) => stamp(b).localeCompare(stamp(a)))
     .map((session) => ({
@@ -50,11 +50,11 @@ const stamp = (session: ChatSummary): string => session.last_modified || session
 
 export const PLANNING_HUB: HubDescriptor = {
   key: 'project-planning',
-  route: '/sessions',
+  route: '/planning',
   title: 'Planning',
   subtitle: 'Every plan the engine has drafted, newest first.',
   newLabel: 'New plan',
-  newRoute: '/sessions',
+  newRoute: '/planning/new',
   emptyLine: 'No plans yet.',
   load: async () => hubRows(await listChats(), new Date()),
   remove: async (id) => {

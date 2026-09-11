@@ -22,6 +22,9 @@ import CeremoniesPage from '@/pages/yeaboi/ceremonies/ceremonies-page';
 import CeremoniesSlackPage from '@/pages/yeaboi/ceremonies/ceremonies-slack-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
 import HomePage from '@/pages/home/home-page';
+import ModeHubPage from '@/pages/hub/mode-hub-page';
+import NewPlanPage from '@/pages/planning/new-plan-page';
+import PlanningFromRoadmapPage from '@/pages/planning/from-roadmap-page';
 import NewsPage from '@/pages/news/news-page';
 import MusicPage from '@/pages/yeaboi/music-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
@@ -134,6 +137,9 @@ function Root() {
 // not named here mounts the placeholder so nav, palette and manifest agree.
 const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
+  '/planning': <ModeHubPage />,
+  '/planning/new': <NewPlanPage />,
+  '/planning/from-roadmap': <PlanningFromRoadmapPage />,
   '/news': <NewsPage />,
   '/music': <MusicPage />,
   '/whats-new': <WhatsNewPage />,
@@ -231,15 +237,15 @@ export const router = createHashRouter([
       // The run list folded into the home, which lists every mode and what has run.
       { path: '/runs', element: <Navigate to="/home" replace /> },
       ...yeaboiRoutes,
-      // The standalone planning pages folded into the session flow; anything
-      // that still links to them (an old tray notice, muscle memory) lands on
-      // the workspace rather than a placeholder.
+      // The standalone planning pages became the planning hub; anything that
+      // still links to them (an old tray notice, muscle memory) lands there
+      // rather than on a placeholder.
       {
         path: '/team/planning/roadmap',
-        element: <Navigate to="/sessions/new/from-roadmap" replace />,
+        element: <Navigate to="/planning/from-roadmap" replace />,
       },
-      { path: '/team/planning/*', element: <Navigate to="/sessions" replace /> },
-      { path: '/team/planning', element: <Navigate to="/sessions" replace /> },
+      { path: '/team/planning/*', element: <Navigate to="/planning" replace /> },
+      { path: '/team/planning', element: <Navigate to="/planning" replace /> },
       { path: '/humans/*', element: <LegacyHumansRedirect /> },
       { path: '/humans', element: <LegacyHumansRedirect /> },
       {

@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { ProviderMark } from '@/components/projects/provider-mark';
+import { ProviderMark } from '@/components/planning/provider-mark';
 import {
   REFERENCE_COPY,
   attachmentSrc,

@@ -227,6 +227,36 @@
       "title": "Correct a shared artifact"
     },
     {
+      "path": "dialog:context-scope",
+      "capability": "context",
+      "title": "Context"
+    },
+    {
+      "path": "/planning",
+      "capability": "planning",
+      "title": "Planning"
+    },
+    {
+      "path": "/planning/new",
+      "capability": "planning",
+      "title": "Planning · New plan"
+    },
+    {
+      "path": "/planning/from-roadmap",
+      "capability": "roadmap",
+      "title": "Planning · From roadmap"
+    },
+    {
+      "path": "/planning/:id",
+      "capability": "planning",
+      "title": "Plan"
+    },
+    {
+      "path": "/planning/:id/completed",
+      "capability": null,
+      "title": "Plan · Recap"
+    },
+    {
       "path": "/sessions",
       "capability": "planning",
       "title": "Sessions"

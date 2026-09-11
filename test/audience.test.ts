@@ -92,8 +92,9 @@ describe('audiencesForRoute', () => {
       '/team/standup',
       '/team/reporting/style',
       '/team/ship/run',
+      '/planning',
+      '/planning/p1',
       '/sessions',
-      '/sessions/p1/blueprint',
       '/board',
       '/tickets/t1',
       '/ceremonies',
@@ -196,7 +197,7 @@ describe('isSoloOnlyRoute', () => {
   });
 
   it('leaves the shared workspace and the chrome alone', () => {
-    for (const path of ['/projects', '/team/retro', '/home', '/sessions', '/settings']) {
+    for (const path of ['/projects', '/team/retro', '/home', '/planning', '/settings']) {
       expect(isSoloOnlyRoute(path)).toBe(false);
     }
   });

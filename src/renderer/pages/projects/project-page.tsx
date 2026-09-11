@@ -17,7 +17,7 @@ import { DemoTour } from '@/components/onboarding/demo-tour';
 import { PageShell } from '@/components/page-shell';
 import { isFirstRun } from '@/lib/yeaboi/describe';
 import { isDone, nextStatus, statusActionLabel, statusWord } from '@/lib/yeaboi/projects';
-import { ReferenceChips } from '@/components/projects/reference-chips';
+import { ReferenceChips } from '@/components/planning/reference-chips';
 import { useApiUrl } from '@/hooks/use-api-url';
 import type { ProjectAttachment, ProjectReference } from '@/lib/yeaboi/references';
 

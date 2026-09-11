@@ -31,7 +31,7 @@ describe('the composer', () => {
 });
 
 describe('the menu', () => {
-  const src = read('components/projects/reference-menu.tsx');
+  const src = read('components/planning/reference-menu.tsx');
 
   it('is a list of options driven by the field on its first level', () => {
     expect(src).toContain('role="option"');

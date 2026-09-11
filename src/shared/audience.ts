@@ -13,9 +13,9 @@ export type Audience = 'solo' | 'team';
 
 export const AUDIENCES: readonly Audience[] = ['solo', 'team'];
 
-/** The sessions ledger for a world. Both worlds land on the same one. */
-export function sessionsHref(_audience: Audience): string {
-  return '/sessions';
+/** The planning hub for a world. Both worlds land on the same one. */
+export function planningHref(_audience: Audience): string {
+  return '/planning';
 }
 
 /** Clamp whatever settings.json holds. `humans` is the pre-split name for the
@@ -91,6 +91,7 @@ const SOLO_ONLY_PREFIXES = ['/solo', '/agents'];
 
 const SHARED_WORKSPACE_PREFIXES = [
   '/team',
+  '/planning',
   '/sessions',
   '/board',
   '/tickets',

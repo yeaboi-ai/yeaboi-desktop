@@ -37,7 +37,7 @@ describe('hubRows', () => {
       title: 'Barber booking',
       detail: 'Refine, Atlas, q3',
       when: 'yesterday',
-      href: '/sessions/new',
+      href: '/planning/new',
     });
     expect(rows[1]!.detail).toBe('Review');
   });
@@ -45,7 +45,7 @@ describe('hubRows', () => {
   it('names an untitled plan and escapes the id in its link', () => {
     const [row] = hubRows([summary({ session_id: 'a b', title: '' })], NOW);
     expect(row!.title).toBe('Untitled plan');
-    expect(row!.href).toBe('/sessions/a%20b');
+    expect(row!.href).toBe('/planning/a%20b');
   });
 });
 
@@ -67,5 +67,7 @@ describe('the descriptors', () => {
       expect(hub.title).not.toMatch(/[·→]/);
     }
     expect(PLANNING_HUB.key).toBe('project-planning');
+    expect(PLANNING_HUB.route).toBe('/planning');
+    expect(PLANNING_HUB.newRoute).toBe('/planning/new');
   });
 });

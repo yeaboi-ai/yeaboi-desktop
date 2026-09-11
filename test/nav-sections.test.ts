@@ -1,4 +1,4 @@
-// The rail: every world starts with Sessions and Board plus Settings,
+// The rail: every world starts with Planning and Board plus Settings,
 // every href a registered route, the active rule table-driven over the
 // arranged items, and nothing the old nineteen-row rail listed left
 // unreachable (the About pages live in the menu bar and the "+").
@@ -9,11 +9,12 @@ import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
 import { RAIL_DEFAULTS, type RailItem } from '../src/shared/rail';
 import {
-  SESSIONS_HEADER_LINKS,
+  PLANNING_HUB_LINKS,
   HOME_FOOT_LINKS,
   SETTINGS_ITEM,
   activeRailRoute,
-  sessionsHref,
+  isBareRoom,
+  planningHref,
 } from '../src/renderer/lib/nav/sections';
 import { railCatalogue } from '../src/renderer/lib/nav/rail-catalogue';
 import { MODE_ROUTES, MODE_START_ROUTES } from '../src/renderer/lib/yeaboi/tips';
@@ -31,9 +32,9 @@ const REGISTERED = new Set(registry.routes.map((route) => route.path));
 const OLD_INVENTORY = [
   '/solo/review',
   '/home',
-  '/sessions',
+  '/planning',
   '/board',
-  '/sessions/new/from-roadmap',
+  '/planning/from-roadmap',
   '/team/analysis',
   '/team/standup',
   '/team/retro',
@@ -61,9 +62,9 @@ const item = (route: string): RailItem => ({
 });
 
 describe('the rail as it starts', () => {
-  it('draws Sessions and Board in every world', () => {
+  it('draws Planning and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Board']);
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Planning', 'Board']);
     }
   });
 
@@ -74,14 +75,14 @@ describe('the rail as it starts', () => {
       }
     }
     expect(REGISTERED).toContain(SETTINGS_ITEM.href);
-    const pageLinks = [...SESSIONS_HEADER_LINKS, ...HOME_FOOT_LINKS].map((link) => link.href);
+    const pageLinks = [...PLANNING_HUB_LINKS, ...HOME_FOOT_LINKS].map((link) => link.href);
     for (const href of pageLinks) {
       expect(REGISTERED, `${href} is not in routes.json`).toContain(href);
     }
   });
 
   it('gives every other way in one short fact for its row', () => {
-    for (const link of SESSIONS_HEADER_LINKS) {
+    for (const link of PLANNING_HUB_LINKS) {
       expect(link.fact, `${link.label} has no fact`).toBeTruthy();
       expect(link.fact!.length).toBeLessThan(90);
       expect(link.fact!.endsWith('.')).toBe(true);
@@ -100,10 +101,10 @@ describe('the rail as it starts', () => {
     }
   });
 
-  it('sends both worlds to the same sessions ledger', () => {
-    expect(sessionsHref('team')).toBe('/sessions');
-    expect(sessionsHref('solo')).toBe('/sessions');
-    expect(RAIL_DEFAULTS.solo[0]!.route).toBe('/sessions');
+  it('sends both worlds to the same planning hub', () => {
+    expect(planningHref('team')).toBe('/planning');
+    expect(planningHref('solo')).toBe('/planning');
+    expect(RAIL_DEFAULTS.solo[0]!.route).toBe('/planning');
   });
 
   it('orphans nothing the old rail listed', () => {
@@ -112,7 +113,7 @@ describe('the rail as it starts', () => {
       SETTINGS_ITEM.href,
       ...AUDIENCES.flatMap((a) => RAIL_DEFAULTS[a].map((i) => i.route)),
       ...AUDIENCES.flatMap((a) => railCatalogue(a).map((entry) => entry.route)),
-      ...SESSIONS_HEADER_LINKS.map((link: { href: string }) => link.href),
+      ...PLANNING_HUB_LINKS.map((link: { href: string }) => link.href),
       ...HOME_FOOT_LINKS.map((link: { href: string }) => link.href),
       ...AUDIENCES.flatMap((a) => menuPathnames(a)),
       ...Object.values(MODE_ROUTES),
@@ -130,12 +131,14 @@ describe('activeRailRoute over the default rail', () => {
     ['/home', '/home'],
     ['/', '/home'],
     ['/news', '/home'],
-    ['/sessions', '/sessions'],
-    ['/sessions/p1', '/sessions'],
-    ['/sessions/p1/blueprint', '/sessions'],
-    ['/sessions/new/from-roadmap', '/sessions'],
+    ['/planning', '/planning'],
+    ['/planning/p1', '/planning'],
+    ['/planning/p1/completed', '/planning'],
+    ['/planning/new', '/planning'],
+    ['/planning/from-roadmap', '/planning'],
+    ['/sessions/p1', '/planning'],
     ['/board', '/board'],
-    ['/tickets/t1', '/sessions'],
+    ['/tickets/t1', '/planning'],
     ['/team/standup', '/home'],
     ['/team/reporting/new', '/home'],
     ['/solo/review', '/home'],
@@ -193,8 +196,28 @@ describe('activeRailRoute over an arranged rail', () => {
   });
 
   it('lights nothing but the foot on an empty rail', () => {
-    expect(activeRailRoute([], '/sessions/p1', 'team')).toBeNull();
+    expect(activeRailRoute([], '/planning/p1', 'team')).toBeNull();
     expect(activeRailRoute([], '/team/standup', 'team')).toBe('/home');
     expect(activeRailRoute([], '/settings/duck', 'team')).toBe('/settings');
+  });
+});
+
+describe('isBareRoom', () => {
+  it('is the plan room alone', () => {
+    expect(isBareRoom('/planning/p1')).toBe(true);
+    expect(isBareRoom('/planning/new-a3f9-2026-09-11')).toBe(true);
+  });
+
+  it('keeps the frame on the hub, the composer, the intake and the recap', () => {
+    for (const path of [
+      '/planning',
+      '/planning/new',
+      '/planning/from-roadmap',
+      '/planning/p1/completed',
+      '/sessions/p1',
+      '/home',
+    ]) {
+      expect(isBareRoom(path), path).toBe(false);
+    }
   });
 });

@@ -22,7 +22,7 @@ import {
   modGlyph,
   modKeyName,
   pageHits,
-  workspaceHits,
+  planHits,
   rankHits,
   runHits,
   settingHits,
@@ -180,13 +180,13 @@ describe('pageHits', () => {
   });
 });
 
-describe('workspaceHits', () => {
-  it("opens a session in the world's own list", () => {
-    const rows = [{ id: 'p1', name: 'Pond' }];
-    expect(workspaceHits(rows, 'team')[0]!.href).toBe('/sessions/p1');
-    expect(workspaceHits(rows, 'solo')[0]!.href).toBe('/sessions/p1');
-    expect(workspaceHits(rows, 'team')[0]!.title).toBe('Pond');
-    expect(workspaceHits(rows, 'team')[0]!.group).toBe('sessions');
+describe('planHits', () => {
+  it('opens a plan on its room, the id escaped', () => {
+    const rows = [{ id: 'p 1', name: 'Pond' }];
+    expect(planHits(rows)[0]!.href).toBe('/planning/p%201');
+    expect(planHits(rows)[0]!.title).toBe('Pond');
+    expect(planHits(rows)[0]!.group).toBe('plans');
+    expect(planHits(rows)[0]!.kind).toBe('plan');
   });
 });
 
@@ -260,12 +260,12 @@ describe('actionHits', () => {
     expect(titles).not.toContain('Switch to Team');
   });
 
-  it("starts a session in the world's own list", () => {
-    expect(actionHits('team', null).find((hit) => hit.title === 'New session')?.href).toBe(
-      '/sessions?new=1',
+  it('starts a plan on the composer in every world', () => {
+    expect(actionHits('team', null).find((hit) => hit.title === 'New plan')?.href).toBe(
+      '/planning/new',
     );
-    expect(actionHits('solo', null).find((hit) => hit.title === 'New session')?.href).toBe(
-      '/sessions?new=1',
+    expect(actionHits('solo', null).find((hit) => hit.title === 'New plan')?.href).toBe(
+      '/planning/new',
     );
   });
 
@@ -294,7 +294,7 @@ describe('rankHits', () => {
     ...pageHits(DESTINATIONS, CAPS, 'team'),
     ...settingHits([field({})]),
     ...actionHits('team', { kind: 'idle' }),
-    ...workspaceHits([{ id: 'p1', name: 'Pond' }], 'team'),
+    ...planHits([{ id: 'p1', name: 'Pond' }]),
   ];
   const titles = (query: string) => rankHits(hits, query).map((hit) => hit.title);
 
@@ -374,10 +374,10 @@ describe('groupHits', () => {
     const order = PALETTE_GROUPS.map((group) => group.key);
     const hits: PaletteHit[] = [
       ...actionHits('team', null),
-      ...workspaceHits([{ id: 'p1', name: 'Pond' }], 'team'),
+      ...planHits([{ id: 'p1', name: 'Pond' }]),
     ];
     const sections = groupHits(hits);
-    expect(sections.map((section) => section.key)).toEqual(['sessions', 'actions']);
+    expect(sections.map((section) => section.key)).toEqual(['plans', 'actions']);
     for (const section of sections) expect(order).toContain(section.key);
     expect(groupHits([])).toEqual([]);
   });
