@@ -333,15 +333,6 @@ function RetroBody() {
     setBusy('');
   }
 
-  /** Put one of the past retros on the board. Opening a board first if there
-   *  is none: reading last sprint's should not mean starting this sprint's by
-   *  hand before it can be read. */
-  async function open(runId: number) {
-    setShowRun(runId);
-    if (board) setStaged(true);
-    else await start();
-  }
-
   // The board is the window, not a panel on it. Rendered outside the surface —
   // no page padding, no centred column, no title above it — because a board
   // inside the box the rest of the page is drawn in is a screen within a
@@ -475,15 +466,22 @@ function RetroBody() {
                     {plural(run.card_count ?? 0, 'card')} ·{' '}
                     {plural(run.action_count ?? 0, 'action')}
                   </p>
-                  {/* The board already steps back through these; this points
-                      it at one. It needs a board to do it on, so it is offered
-                      only while there is one. */}
+                  {/* The board steps back through these; this points it at
+                      one. Shown either way rather than appearing with the
+                      board — a control that comes and goes is a control
+                      nobody learns — but it never starts one: reading a
+                      retro that already happened is not a reason to open a
+                      room and invite the team into it. */}
                   {canPlayBoards() && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={busy === 'start'}
-                      onClick={() => void open(run.id)}
+                      disabled={!board}
+                      title={board ? undefined : 'Needs a board — start one above'}
+                      onClick={() => {
+                        setShowRun(run.id);
+                        setStaged(true);
+                      }}
                     >
                       <Columns3 data-icon="inline-start" />
                       Open
