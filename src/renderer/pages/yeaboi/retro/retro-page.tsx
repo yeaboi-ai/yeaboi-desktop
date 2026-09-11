@@ -41,6 +41,10 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** How many past retros the ledger shows before it is asked for the rest. */
 const LEDGER_SHOWN = 5;
 
+/** And how many there are to ask for. Stated here rather than left to the
+ *  tool's own default: how far back the ledger reaches is this page's decision. */
+const LEDGER_LIMIT = 30;
+
 /** One ledger row, in px. Asking for the rest scrolls that many rows rather
  *  than growing the box, so the ledger is the same size either way. */
 const LEDGER_ROW = 49;
@@ -110,7 +114,9 @@ function LivePanel({
   onAnonymize: (replacements: [string, string][], note: string) => void;
 }) {
   return (
-    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
+    // No frame, like the wall beside it. The grids inside are already boxes,
+    // and a box around four boxes is the screen saying the same thing twice.
+    <section className="flex flex-col py-5">
       <h2 className="font-display text-[19px] leading-none text-foreground">On the board</h2>
 
       <div className="mt-4">
@@ -295,7 +301,7 @@ function RetroBody() {
       if (result.refused?.length) {
         setError({ title: 'The correction was refused', message: result.refused[0]!.reason });
       }
-      const next = await retroHistory();
+      const next = await retroHistory(LEDGER_LIMIT);
       setReport(next.data?.latest_report ?? null);
     } catch (e) {
       setError({ title: 'Could not change the action', message: (e as Error).message });
@@ -304,7 +310,7 @@ function RetroBody() {
   }
 
   useEffect(() => {
-    retroHistory().then(
+    retroHistory(LEDGER_LIMIT).then(
       (envelope) => {
         setRuns(envelope.data?.history ?? []);
         setSessionId(envelope.data?.session_id ?? '');
@@ -403,7 +409,7 @@ function RetroBody() {
                 onClosed={() => {
                   setLiveId('');
                   setStaged(false);
-                  retroHistory().then((envelope) => {
+                  retroHistory(LEDGER_LIMIT).then((envelope) => {
                     setRuns(envelope.data?.history ?? []);
                     setReport(envelope.data?.latest_report ?? null);
                   }, undefined);
