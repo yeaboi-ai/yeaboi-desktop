@@ -293,9 +293,13 @@ export function NikoBar() {
   // growing when it appears rather than jumping ahead of it.
   useEffect(() => {
     if (state === 'collapsed') return;
+    // Not when a page opened it: nobody asked to type, the turn is offering
+    // answers to press, and a caret in the composer is an editable element
+    // holding the keyboard — which stops the deck turning the page.
+    if (scripted) return;
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state, scripted]);
 
   useEffect(() => {
     if (dragging) return;
