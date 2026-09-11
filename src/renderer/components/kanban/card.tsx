@@ -82,7 +82,7 @@ export function KanbanCard({
 
   const friendly =
     card.friendly_id ??
-    formatTicketKey({ key: card.project_key ?? null, number: card.number ?? null }) ??
+    formatTicketKey({ key: card.session_key ?? null, number: card.number ?? null }) ??
     null;
   const execLabel = formatExecLabel(card);
 
@@ -243,9 +243,9 @@ export function KanbanCard({
             {friendly ?? card.id.slice(0, 8)}
           </span>
         </div>
-        {card.project_name && !compact && (
+        {card.session_name && !compact && (
           <span className="truncate max-w-[40%] text-[10px] text-muted-foreground/70">
-            {card.project_name}
+            {card.session_name}
           </span>
         )}
       </div>

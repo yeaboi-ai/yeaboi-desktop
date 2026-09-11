@@ -39,7 +39,7 @@ export function DeliverablesPanel({ projectId }: DeliverablesPanelProps) {
         <div>
           <div className="text-[11px] uppercase tracking-wide text-white/40">Deliverables</div>
           <div className="text-xs text-white/50">
-            Generate artifacts from this project&rsquo;s blueprint.
+            Generate artifacts from this session&rsquo;s blueprint.
           </div>
         </div>
       </div>

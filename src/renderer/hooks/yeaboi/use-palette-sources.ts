@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { loadCapabilities, type Capabilities } from '@/lib/yeaboi/capabilities';
-import type { PaletteProject } from '@/lib/yeaboi/palette';
+import type { PaletteSession } from '@/lib/yeaboi/palette';
 import { loadRecentSessions, type RecentSession } from '@/lib/yeaboi/sessions';
 import { loadSettings, type SettingField } from '@/lib/yeaboi/settings';
 
@@ -15,7 +15,7 @@ const RECENT_LIMIT = 40;
 
 export interface PaletteSources {
   caps: Capabilities | null;
-  projects: PaletteProject[] | null;
+  projects: PaletteSession[] | null;
   sessions: RecentSession[] | null;
   settings: SettingField[] | null;
 }
@@ -24,7 +24,7 @@ export function usePaletteSources(active: boolean): PaletteSources {
   const backend = useYeaboiBackend();
   const { authFetch, ready } = useAuthFetch();
   const [caps, setCaps] = useState<Capabilities | null>(null);
-  const [projects, setProjects] = useState<PaletteProject[] | null>(null);
+  const [projects, setProjects] = useState<PaletteSession[] | null>(null);
   const [sessions, setSessions] = useState<RecentSession[] | null>(null);
   const [settings, setSettings] = useState<SettingField[] | null>(null);
 
@@ -46,7 +46,7 @@ export function usePaletteSources(active: boolean): PaletteSources {
       );
     }
     if (ready) {
-      authFetch('/api/projects')
+      authFetch('/api/sessions')
         .then((r) => (r.ok ? r.json() : null))
         .then((data: { id: string; name: string }[] | null) => {
           if (stale || !Array.isArray(data)) return;

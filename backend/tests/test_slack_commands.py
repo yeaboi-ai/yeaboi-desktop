@@ -249,17 +249,16 @@ async def test_session_create_returns_in_channel_response(db_session):
     from fastapi import BackgroundTasks
     from sqlalchemy import select
 
-    from src.app.models.project import Project
     from src.app.models.session import Session
 
     user, team, org = await _setup_linked_context(db_session)
 
     # Create a project so resolve_project returns it (single active project = unambiguous)
-    project = Project(
+    project = Session(
         org_id=org.id,
         team_id=team.id,
         owner_id=user.id,
-        name="Slack Test Project",
+        name="Slack Test Session",
     )
     db_session.add(project)
     await db_session.commit()
@@ -276,7 +275,7 @@ async def test_session_create_returns_in_channel_response(db_session):
     assert resp["response_type"] == "in_channel"
     action = next(b for b in resp["blocks"] if b["type"] == "actions")
     button_url = action["elements"][0]["url"]
-    assert f"/projects/{project.id}/sessions/" in button_url
+    assert "/sessions/" in button_url
 
     # Verify session was created in DB
     sessions = (

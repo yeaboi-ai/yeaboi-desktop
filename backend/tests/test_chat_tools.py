@@ -3,13 +3,13 @@ from unittest.mock import patch
 
 import pytest
 
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.services.chat_tools import _create_session, execute_tool
 
 
 @pytest.mark.asyncio
 async def test_create_session_uses_team_last_viewed_when_no_project_name(db_session, sample_team, sample_user):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -17,7 +17,7 @@ async def test_create_session_uses_team_last_viewed_when_no_project_name(db_sess
     )
     db_session.add(project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = project.id
+    sample_team.last_viewed_session_id = project.id
     await db_session.commit()
 
     result = await _create_session(
@@ -29,15 +29,15 @@ async def test_create_session_uses_team_last_viewed_when_no_project_name(db_sess
     )
 
     assert "id" in result
-    assert result["project"] == "Preferred"
-    assert result["project_id"] == project.id
+    assert result["continues_from"] == "Preferred"
+    assert result["continued_from_id"] == project.id
 
 
 @pytest.mark.asyncio
 async def test_create_session_needs_project_choice_when_ambiguous(db_session, sample_team, sample_user):
     for nm in ("Alpha", "Beta"):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id,
                 team_id=sample_team.id,
                 owner_id=sample_user.id,
@@ -76,7 +76,7 @@ async def test_create_session_returns_no_projects_when_org_empty(db_session, sam
 async def test_create_session_explicit_project_name_unchanged(db_session, sample_team, sample_user):
     """Backwards-compat: explicit project_name still resolves by name."""
     db_session.add(
-        Project(
+        Session(
             org_id=sample_team.org_id,
             team_id=sample_team.id,
             owner_id=sample_user.id,
@@ -93,9 +93,9 @@ async def test_create_session_explicit_project_name_unchanged(db_session, sample
         user_id=sample_user.id,
     )
 
-    assert result["project"] == "Explicit"
+    assert result["continues_from"] == "Explicit"
     assert "id" in result
-    assert "project_id" in result  # new field returned on success
+    assert "continued_from_id" in result
 
 
 @pytest.mark.asyncio
@@ -112,7 +112,7 @@ async def test_create_session_explicit_project_name_not_found_falls_through_to_p
     # Seed the org with two projects so the picker has something to show
     for nm in ("Alpha", "Beta"):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id,
                 team_id=sample_team.id,
                 owner_id=sample_user.id,

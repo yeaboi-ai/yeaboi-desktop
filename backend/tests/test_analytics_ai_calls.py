@@ -12,13 +12,12 @@ import pytest
 
 from src.app.models.base import gen_uuid
 from src.app.models.organization import Organization, Team
-from src.app.models.project import Project
 from src.app.models.session import Session
 from src.app.models.usage_event import UsageEvent
 
 
 async def _bootstrap_auth_org(client, auth_headers, db_session) -> Organization:
-    resp = await client.get("/api/projects", headers=auth_headers)
+    resp = await client.get("/api/sessions", headers=auth_headers)
     assert resp.status_code == 200, resp.text
     from sqlalchemy import select
 
@@ -50,17 +49,13 @@ async def session_in_org(db_session, auth_for_org):
     db_session.add(team)
     await db_session.flush()
 
-    project = Project(
+    session = Session(
         id=gen_uuid(),
-        name="AI Inspector Test Project",
+        name="AI Inspector Test Session",
         owner_id=user.id,
         org_id=auth_for_org.id,
         team_id=team.id,
     )
-    db_session.add(project)
-    await db_session.flush()
-
-    session = Session(id=gen_uuid(), project_id=project.id, org_id=auth_for_org.id)
     db_session.add(session)
     await db_session.commit()
     return session
@@ -77,7 +72,6 @@ async def seeded_calls(db_session, auth_for_org, session_in_org):
         UsageEvent(
             org_id=auth_for_org.id,
             session_id=session_in_org.id,
-            project_id=session_in_org.project_id,
             provider="anthropic",
             operation="chat",
             model="claude-opus-4-7",
@@ -90,7 +84,6 @@ async def seeded_calls(db_session, auth_for_org, session_in_org):
         UsageEvent(
             org_id=auth_for_org.id,
             session_id=session_in_org.id,
-            project_id=session_in_org.project_id,
             provider="anthropic",
             operation="chat",
             model="claude-opus-4-7",
@@ -103,7 +96,6 @@ async def seeded_calls(db_session, auth_for_org, session_in_org):
         UsageEvent(
             org_id=auth_for_org.id,
             session_id=session_in_org.id,
-            project_id=session_in_org.project_id,
             provider="openai",
             operation="chat",
             model="gpt-4o-mini",
@@ -196,7 +188,6 @@ class TestSessionAiCallsEndpoint:
         other_org = Organization(id=gen_uuid(), name="Other Org", slug=gen_uuid()[:8])
         db_session.add(other_org)
         await db_session.flush()
-        # Project + Session in the other org.
         from sqlalchemy import select
 
         from src.app.models.user import User as U
@@ -206,16 +197,13 @@ class TestSessionAiCallsEndpoint:
         other_team = Team(id=gen_uuid(), org_id=other_org.id, name="Other Team", slug=gen_uuid()[:8])
         db_session.add(other_team)
         await db_session.flush()
-        other_project = Project(
+        other_session = Session(
             id=gen_uuid(),
-            name="Other proj",
+            name="Other session",
             owner_id=user.id,
             org_id=other_org.id,
             team_id=other_team.id,
         )
-        db_session.add(other_project)
-        await db_session.flush()
-        other_session = Session(id=gen_uuid(), project_id=other_project.id, org_id=other_org.id)
         db_session.add(other_session)
         await db_session.commit()
 

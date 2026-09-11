@@ -12,7 +12,7 @@ import {
   AUDIENCES,
   WORLD_COPY,
   audiencesForRoute,
-  projectsHref,
+  sessionsHref,
   type Audience,
 } from '@shared/audience';
 import type { RailLucideName } from '@shared/rail';
@@ -24,15 +24,15 @@ import type { SettingField } from './settings';
 import { SETTINGS_TABS, type SettingsTab } from './settings-tabs';
 import { MODE_ROUTES } from './tips';
 
-export type HitKind = 'page' | 'mode' | 'project' | 'session' | 'setting' | 'action';
+export type HitKind = 'page' | 'mode' | 'session' | 'run' | 'setting' | 'action';
 
 export type PaletteGroup =
-  'projects' | 'sessions' | 'modes' | 'work' | 'settings' | 'about' | 'actions';
+  'sessions' | 'runs' | 'modes' | 'work' | 'settings' | 'about' | 'actions';
 
 /** The headings, in the order the list shows them. */
 export const PALETTE_GROUPS: readonly { key: PaletteGroup; title: string }[] = [
-  { key: 'projects', title: 'Projects' },
   { key: 'sessions', title: 'Sessions' },
+  { key: 'runs', title: 'Runs' },
   { key: 'modes', title: 'Modes' },
   { key: 'work', title: 'Work' },
   { key: 'settings', title: 'Settings' },
@@ -138,35 +138,35 @@ export function pageHits(
   });
 }
 
-export interface PaletteProject {
+export interface PaletteSession {
   id: string;
   name: string;
 }
 
-export function projectHits(projects: readonly PaletteProject[], audience: Audience): PaletteHit[] {
-  const base = projectsHref(audience);
-  return projects.map((project) => ({
-    id: `project:${project.id}`,
-    kind: 'project',
-    title: project.name,
+export function workspaceHits(rows: readonly PaletteSession[], audience: Audience): PaletteHit[] {
+  const base = sessionsHref(audience);
+  return rows.map((row) => ({
+    id: `workspace:${row.id}`,
+    kind: 'session',
+    title: row.name,
     detail: '',
-    group: 'projects',
+    group: 'sessions',
     world: null,
-    icon: 'LayoutGrid',
-    keywords: ['project'],
+    icon: 'NotebookPen',
+    keywords: ['session', 'workspace'],
     available: true,
-    href: `${base}/${project.id}`,
+    href: `${base}/${row.id}`,
   }));
 }
 
 /** Saved runs, newest first as shaped. A row lands where its mode lists it. */
-export function sessionHits(rows: readonly ShapedSession[]): PaletteHit[] {
+export function runHits(rows: readonly ShapedSession[]): PaletteHit[] {
   return rows.map((row) => ({
-    id: `session:${row.key}`,
-    kind: 'session',
+    id: `run:${row.key}`,
+    kind: 'run',
     title: row.title,
     detail: row.title === row.modeTitle ? row.when : `${row.modeTitle}, ${row.when}`,
-    group: 'sessions',
+    group: 'runs',
     world: null,
     icon: SESSION_ICONS[row.session.mode] ?? 'Sunrise',
     keywords: [lower(row.modeTitle), lower(row.session.mode), 'session', 'run'],
@@ -232,28 +232,28 @@ export function actionHits(
 ): PaletteHit[] {
   const hits: PaletteHit[] = [
     {
-      id: 'action:new-project',
-      kind: 'action',
-      title: 'New project',
-      detail: '',
-      group: 'actions',
-      world: null,
-      icon: 'LayoutGrid',
-      keywords: ['create', 'add', 'project'],
-      available: true,
-      href: `${projectsHref(audience)}?new=1`,
-    },
-    {
       id: 'action:new-session',
       kind: 'action',
       title: 'New session',
       detail: '',
       group: 'actions',
       world: null,
-      icon: 'Sunrise',
-      keywords: ['create', 'start', 'run', 'session'],
+      icon: 'NotebookPen',
+      keywords: ['create', 'add', 'session'],
       available: true,
-      href: '/sessions',
+      href: `${sessionsHref(audience)}?new=1`,
+    },
+    {
+      id: 'action:new-run',
+      kind: 'action',
+      title: 'New run',
+      detail: '',
+      group: 'actions',
+      world: null,
+      icon: 'Sunrise',
+      keywords: ['create', 'start', 'run'],
+      available: true,
+      href: '/runs',
     },
   ];
   // `worlds` is what the build offers, so a one-world launch emits no

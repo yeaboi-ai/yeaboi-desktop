@@ -21,9 +21,9 @@ def upload_dir(tmp_path, monkeypatch):
     get_settings.cache_clear()
 
 
-async def _make_card(client, auth_headers, name: str = "Attach Project") -> dict:
-    proj = (await client.post("/api/projects", json={"name": name}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+async def _make_card(client, auth_headers, name: str = "Attach Session") -> dict:
+    proj = (await client.post("/api/sessions", json={"name": name}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     backlog = board["columns"][0]["id"]
     card = (
         await client.post(

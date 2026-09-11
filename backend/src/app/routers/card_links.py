@@ -19,7 +19,7 @@ from ..deps import get_current_org, get_current_user
 from ..models.board import Board, BoardColumn, Card
 from ..models.card_link import CardLink
 from ..models.organization import Organization
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..schemas.board import TicketLinkOther, TicketLinkResponse
 from ..services.card_link_service import (
@@ -42,10 +42,10 @@ class CreateLinkBody(BaseModel):
 async def _load_card_in_org(card_id: str, org_id: str, db: AsyncSession) -> Card:
     row = (
         await db.execute(
-            select(Card, Project.org_id)
+            select(Card, Session.org_id)
             .join(BoardColumn, BoardColumn.id == Card.column_id)
             .join(Board, Board.id == BoardColumn.board_id)
-            .join(Project, Project.id == Board.project_id)
+            .join(Session, Session.id == Board.session_id)
             .where(Card.id == card_id)
         )
     ).first()
@@ -66,10 +66,10 @@ async def _resolve_card(id_or_key: str, org_id: str, db: AsyncSession) -> Card:
 
     row = (
         await db.execute(
-            select(Card, Project.org_id)
+            select(Card, Session.org_id)
             .join(BoardColumn, BoardColumn.id == Card.column_id)
             .join(Board, Board.id == BoardColumn.board_id)
-            .join(Project, Project.id == Board.project_id)
+            .join(Session, Session.id == Board.session_id)
             .where((Card.friendly_id == upper) | (Card.id == raw) | (Card.id == raw.lower()))
         )
     ).first()

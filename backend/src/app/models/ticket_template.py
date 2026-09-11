@@ -11,7 +11,7 @@ from .base import Base, TimestampMixin, gen_uuid
 class TicketTemplate(TimestampMixin, Base):
     """User-customisable template for AI-generated tickets.
 
-    Lives at the org level (project_id null) or scoped to a project. Composes into the
+    Lives at the org level (session_id null) or scoped to a project. Composes into the
     task_generator prompt via prompt_fragment, and shapes the resulting card via
     default_priority / default_labels / default_story_points / acceptance_criteria_template
     / field_schema (custom fields rendered on the card).
@@ -19,12 +19,12 @@ class TicketTemplate(TimestampMixin, Base):
 
     __tablename__ = "ticket_templates"
     __table_args__ = (
-        UniqueConstraint("org_id", "project_id", "slug", "deleted_at", name="uq_ticket_templates_scope_slug"),
+        UniqueConstraint("org_id", "session_id", "slug", "deleted_at", name="uq_ticket_templates_scope_slug"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False, index=True)
-    project_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
+    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"), index=True)
 
     slug: Mapped[str] = mapped_column(String(60), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)

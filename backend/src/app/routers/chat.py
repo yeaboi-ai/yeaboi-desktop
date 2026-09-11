@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db import get_db
 from ..deps import get_current_org, get_current_team, get_current_user
 from ..models.organization import Organization, Team
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..services.ai_provider import get_ai_client
 from ..services.chat_tools import TOOL_SCHEMAS, execute_tool
@@ -89,9 +89,9 @@ async def chat(
         context_lines: list[str] = []
         if ctx.get("page"):
             context_lines.append(f"The user is currently on: {ctx['page']}")
-        if ctx.get("project_id"):
+        if ctx.get("session_id"):
             proj_result = await db.execute(
-                select(Project).where(Project.id == ctx["project_id"], Project.deleted_at.is_(None))
+                select(Session).where(Session.id == ctx["session_id"], Session.deleted_at.is_(None))
             )
             proj = proj_result.scalar_one_or_none()
             if proj:

@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from src.app.models.board import Board, BoardColumn, Card
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.services.card_numbering import (
     assign_friendly_id,
     derive_unique_key,
@@ -16,7 +16,7 @@ from src.app.services.card_numbering import (
 
 @pytest.fixture
 async def sample_project(db_session, sample_user, sample_org, sample_team):
-    proj = Project(
+    proj = Session(
         name="Acme Storefront",
         owner_id=sample_user.id,
         org_id=sample_org.id,
@@ -26,7 +26,7 @@ async def sample_project(db_session, sample_user, sample_org, sample_team):
     )
     db_session.add(proj)
     await db_session.flush()
-    board = Board(project_id=proj.id, org_id=sample_org.id)
+    board = Board(session_id=proj.id, org_id=sample_org.id)
     db_session.add(board)
     await db_session.flush()
     col = BoardColumn(board_id=board.id, name="Backlog", position=0)
@@ -55,7 +55,7 @@ async def test_assign_friendly_id_sequential(db_session, sample_project):
     assert [fid for _, fid in assigned_in_order] == [
         "ACME-1", "ACME-2", "ACME-3", "ACME-4", "ACME-5",
     ]
-    proj_after = (await db_session.execute(select(Project).where(Project.id == proj.id))).scalar_one()
+    proj_after = (await db_session.execute(select(Session).where(Session.id == proj.id))).scalar_one()
     assert proj_after.card_counter == 5
 
 
@@ -83,7 +83,7 @@ async def test_assign_friendly_id_concurrent_no_gaps(db_engine, sample_project):
 
 @pytest.mark.asyncio
 async def test_assign_friendly_id_falls_back_when_key_missing(db_session, sample_user, sample_org, sample_team):
-    proj = Project(
+    proj = Session(
         name="MyApp",
         owner_id=sample_user.id,
         org_id=sample_org.id,
@@ -93,7 +93,7 @@ async def test_assign_friendly_id_falls_back_when_key_missing(db_session, sample
     )
     db_session.add(proj)
     await db_session.flush()
-    board = Board(project_id=proj.id, org_id=sample_org.id)
+    board = Board(session_id=proj.id, org_id=sample_org.id)
     db_session.add(board)
     await db_session.flush()
     col = BoardColumn(board_id=board.id, name="Backlog", position=0)
@@ -108,13 +108,13 @@ async def test_assign_friendly_id_falls_back_when_key_missing(db_session, sample
 
     refreshed = (await db_session.execute(select(Card).where(Card.id == card.id))).scalar_one()
     assert refreshed.friendly_id == "MYAP-1"
-    refreshed_proj = (await db_session.execute(select(Project).where(Project.id == proj.id))).scalar_one()
+    refreshed_proj = (await db_session.execute(select(Session).where(Session.id == proj.id))).scalar_one()
     assert refreshed_proj.key == "MYAP"
 
 
 @pytest.mark.asyncio
 async def test_derive_unique_key_dedupes_within_org(db_session, sample_user, sample_org, sample_team):
-    p1 = Project(
+    p1 = Session(
         name="Acme", owner_id=sample_user.id, org_id=sample_org.id, team_id=sample_team.id, key="ACME"
     )
     db_session.add(p1)

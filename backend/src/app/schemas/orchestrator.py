@@ -9,7 +9,7 @@ class OrchestratorStartRequest(BaseModel):
 
 class OrchestratorStatusResponse(BaseModel):
     running: bool
-    project_id: str
+    session_id: str
 
 
 class AgentApprovalRequest(BaseModel):

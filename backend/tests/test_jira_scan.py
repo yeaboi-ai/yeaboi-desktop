@@ -5,7 +5,6 @@ from src.app.services.connectors.jira_scan import (
     _build_project_prompt,
 )
 
-
 # ---------------------------------------------------------------------------
 # _build_project_prompt
 # ---------------------------------------------------------------------------

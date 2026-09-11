@@ -38,9 +38,9 @@ export default function ProjectPlanPage() {
 
   const load = useCallback(async () => {
     const [projResp, itersResp, blueprintResp] = await Promise.all([
-      authFetch(`/api/projects/${projectId}`),
-      authFetch(`/api/projects/${projectId}/iterations`),
-      authFetch(`/api/projects/${projectId}/blueprint`),
+      authFetch(`/api/sessions/${projectId}`),
+      authFetch(`/api/sessions/${projectId}/iterations`),
+      authFetch(`/api/sessions/${projectId}/blueprint`),
     ]);
     if (!projResp.ok) throw new Error(`project → ${projResp.status}`);
     const project = (await projResp.json()) as { name: string };
@@ -78,7 +78,7 @@ export default function ProjectPlanPage() {
       <BackendGate>
         <div className="flex items-center gap-3">
           <Link
-            href={`/projects/${projectId}`}
+            href={`/sessions/${projectId}`}
             className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />

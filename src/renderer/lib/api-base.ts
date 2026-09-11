@@ -42,14 +42,12 @@ export function mapApiPath(url: string, method = 'GET'): string {
   const keepQuery = (p: string) => (query ? `${p}?${query}` : p);
 
   // Query-param proxies.
-  if (path === '/api/board-proxy') return `/api/projects/${q.get('projectId')}/board`;
+  if (path === '/api/board-proxy') return `/api/sessions/${q.get('sessionId')}/board`;
   if (path === '/api/global-board-proxy') return keepQuery('/api/board');
   if (path === '/api/analytics-proxy') {
     const endpoint = q.get('endpoint') ?? 'aggregate';
     const p = new URLSearchParams();
-    const projectId = q.get('projectId');
     const sessionId = q.get('sessionId');
-    if (projectId) p.set('project_id', projectId);
     if (sessionId) p.set('session_id', sessionId);
     const qs = p.toString();
     return `/api/analytics/${endpoint}${qs ? `?${qs}` : ''}`;
@@ -80,9 +78,9 @@ export function mapApiPath(url: string, method = 'GET'): string {
   if ((m = seg(/^\/api\/agent-approve-proxy\/(.+)$/))) return `/api/cards/${m[1]}/agent/approve`;
   if ((m = seg(/^\/api\/sync-push-proxy\/(.+)$/))) return `/api/sync/cards/${m[1]}/push`;
   if ((m = seg(/^\/api\/sync-resolve-proxy\/(.+)$/))) return `/api/sync/links/${m[1]}/resolve`;
-  if ((m = seg(/^\/api\/outputs-proxy\/([^/]+)$/))) return `/api/projects/${m[1]}/outputs`;
+  if ((m = seg(/^\/api\/outputs-proxy\/([^/]+)$/))) return `/api/sessions/${m[1]}/outputs`;
   if ((m = seg(/^\/api\/outputs-proxy\/([^/]+)\/([^/]+)$/))) {
-    const base = `/api/projects/${m[1]}/outputs/${m[2]}`;
+    const base = `/api/sessions/${m[1]}/outputs/${m[2]}`;
     return method.toUpperCase() === 'POST' ? `${base}/generate` : base;
   }
   if (path === '/api/team-proxy') return keepQuery('/api/team');

@@ -5,11 +5,9 @@ import { ArrowLeft, ChevronDown, Layers, Loader2 } from 'lucide-react';
 import { use, useEffect, useState } from 'react';
 
 import { BoardSettingsContent } from '@/components/kanban/board-settings-content';
-import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useBoard } from '@/hooks/use-board';
 import { callTool } from '@/lib/yeaboi/api';
-import { ensureEngineProject, type EngineLinkable } from '@/lib/yeaboi/engine-project';
 import { PageShell } from '@/components/page-shell';
 import {
   BUILTIN_PRESETS,
@@ -182,10 +180,6 @@ export default function BoardSettingsPage({ params }: PageProps) {
 
   const [projectName, setProjectName] = useState<string | null>(null);
   const [projectRepoUrl, setProjectRepoUrl] = useState<string | null>(null);
-  const [engineProject, setEngineProject] = useState<EngineLinkable | null>(null);
-  const [defaultContextDeps, setDefaultContextDeps] = useState<ContextDeps>(null);
-  const [savingContext, setSavingContext] = useState(false);
-  const [contextError, setContextError] = useState<string | null>(null);
   const [defaultGranularity, setDefaultGranularity] = useState<string | null>(null);
   const [defaultModifiers, setDefaultModifiers] = useState<string[]>([]);
   const [savingStyle, setSavingStyle] = useState(false);
@@ -217,33 +211,12 @@ export default function BoardSettingsPage({ params }: PageProps) {
     let cancelled = false;
     (async () => {
       try {
-        const resp = await authFetch(`/api/projects/${projectId}`);
+        const resp = await authFetch(`/api/sessions/${projectId}`);
         if (!resp.ok) return;
         const proj = await resp.json();
         if (cancelled) return;
         setProjectName(proj.name ?? null);
         setProjectRepoUrl((proj.repo_url ?? null) as string | null);
-        setEngineProject({
-          id: projectId,
-          name: proj.name ?? '',
-          description: (proj.description ?? null) as string | null,
-          yeaboi_project_id: (proj.yeaboi_project_id ?? null) as string | null,
-        });
-        // The engine-side default (settings_json.default_context_deps); only
-        // readable once a run has minted the engine project.
-        if (proj.yeaboi_project_id) {
-          try {
-            const envelope = await callTool<{ settings?: { default_context_deps?: string[] } }>(
-              'project_get',
-              { project_id: proj.yeaboi_project_id },
-            );
-            if (!cancelled && envelope.ok) {
-              setDefaultContextDeps(envelope.data?.settings?.default_context_deps ?? null);
-            }
-          } catch {
-            // best-effort — the panel just shows "inherited"
-          }
-        }
         const gran = (proj.default_generation_style ?? null) as string | null;
         const mods = (proj.default_modifiers ?? []) as string[];
         setDefaultGranularity(gran);
@@ -272,7 +245,7 @@ export default function BoardSettingsPage({ params }: PageProps) {
     setSavingStyle(true);
     setStyleError(null);
     try {
-      const resp = await authFetch(`/api/projects/${projectId}`, {
+      const resp = await authFetch(`/api/sessions/${projectId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(partial),
@@ -288,30 +261,6 @@ export default function BoardSettingsPage({ params }: PageProps) {
       setStyleError(e instanceof Error ? e.message : String(e));
     } finally {
       setSavingStyle(false);
-    }
-  }
-
-  async function saveContextDefault(next: ContextDeps) {
-    setDefaultContextDeps(next);
-    if (!engineProject) return;
-    setSavingContext(true);
-    setContextError(null);
-    try {
-      // Lazy mint, same as Generate plan: the engine project appears on the
-      // first engine-touching action rather than at platform-project creation.
-      const engineId = await ensureEngineProject(authFetch, engineProject);
-      if (engineProject.yeaboi_project_id !== engineId) {
-        setEngineProject({ ...engineProject, yeaboi_project_id: engineId });
-      }
-      const envelope = await callTool('project_set_defaults', {
-        project_id: engineId,
-        defaults: { default_context_deps: next },
-      });
-      if (!envelope.ok) throw new Error(envelope.error?.message ?? 'project_set_defaults failed');
-    } catch (e) {
-      setContextError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSavingContext(false);
     }
   }
 
@@ -399,7 +348,7 @@ export default function BoardSettingsPage({ params }: PageProps) {
               Ticket generation defaults
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pre-select what the Completion Wizard starts with on this project. Users can still
+              Pre-select what the Completion Wizard starts with on this session. Users can still
               override per generation.
             </p>
           </div>
@@ -584,30 +533,6 @@ export default function BoardSettingsPage({ params }: PageProps) {
           {styleError && (
             <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
               {styleError}
-            </div>
-          )}
-        </section>
-
-        {/* Engine context-sources default — stored on the engine-side project
-            (settings_json.default_context_deps) and inherited by every scoped
-            run that doesn't pick its own toggles. */}
-        <section className="mt-10 rounded-lg border border-border/60 bg-card/40 p-6 space-y-5">
-          <div>
-            <h2 className="text-base font-semibold text-foreground/90">Context sources default</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Which cross-mode context runs on this project read by default — plans, standups,
-              retros and reports. A run can still pick its own sources.
-            </p>
-          </div>
-          <ContextSourcesPanel
-            value={defaultContextDeps}
-            onChange={(next) => void saveContextDefault(next)}
-            disabled={savingContext || !engineProject}
-            note="Saved on the engine project; applies the next time a run inherits."
-          />
-          {contextError && (
-            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-              {contextError}
             </div>
           )}
         </section>

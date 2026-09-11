@@ -3,7 +3,7 @@
 // survive their own normalisation unchanged.
 
 import { describe, expect, it } from 'vitest';
-import { AUDIENCES, projectsHref } from '../src/shared/audience';
+import { AUDIENCES, sessionsHref } from '../src/shared/audience';
 import {
   RAIL_DEFAULTS,
   RAIL_LIMITS,
@@ -30,11 +30,12 @@ const item = (over: Partial<RailItem> = {}): RailItem => ({
 const PNG = `data:image/png;base64,${'A'.repeat(64)}`;
 
 describe('RAIL_DEFAULTS', () => {
-  it('draws Projects and Sessions in every world', () => {
+  it('draws Sessions, Runs and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Projects', 'Sessions']);
-      expect(RAIL_DEFAULTS[audience][0]!.route).toBe(projectsHref(audience));
-      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/sessions');
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Runs', 'Board']);
+      expect(RAIL_DEFAULTS[audience][0]!.route).toBe(sessionsHref(audience));
+      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/runs');
+      expect(RAIL_DEFAULTS[audience][2]!.route).toBe('/board');
     }
   });
 
@@ -187,7 +188,7 @@ describe('normalizeRailItems', () => {
   });
 
   it('applies the known set to the defaults too', () => {
-    expect(normalizeRailItems(undefined, 'team', new Set(['/sessions']))).toEqual([
+    expect(normalizeRailItems(undefined, 'team', new Set(['/runs']))).toEqual([
       RAIL_DEFAULTS.team[1],
     ]);
   });

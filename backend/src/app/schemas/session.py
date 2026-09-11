@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .session_workspace import MAX_REFERENCES, SessionReference
 
 
 class SessionCreate(BaseModel):
@@ -32,6 +34,16 @@ class SessionUpdate(BaseModel):
     status: str | None = None
     title: str | None = None
     ai_config: dict | None = None
+    # ── The workspace half ──
+    name: str | None = None
+    description: str | None = None
+    repo_url: str | None = None
+    # Granularity + modifier slugs are validated by the router against the org's
+    # editable rows (so admin-created customs are first-class), not a static enum.
+    default_generation_style: str | None = None
+    default_modifiers: list[str] | None = Field(default=None)
+    # Replaces the whole list; deduped on (source, subject) by the router.
+    references: list[SessionReference] | None = Field(default=None, max_length=MAX_REFERENCES)
 
 
 class ParticipantResponse(BaseModel):
@@ -100,11 +112,25 @@ class AIEditElementRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     id: str
-    project_id: str
     org_id: str | None = None
     status: str
     title: str | None
     initial_idea: str | None
+    # ── The workspace half, absorbed from the project a session used to live in ──
+    name: str | None = None
+    description: str | None = None
+    repo_url: str | None = None
+    owner_id: str | None = None
+    team_id: str | None = None
+    is_demo: bool = False
+    key: str | None = None
+    is_own_team: bool = False
+    default_generation_style: str | None = None
+    default_modifiers: list[str] = Field(default_factory=list)
+    references: list[SessionReference] = Field(default_factory=list)
+    # Only the detail GET fills this; None elsewhere means "not loaded", not "none".
+    attachments: list[dict] | None = None
+    continued_from_id: str | None = None
     join_code: str
     ai_config: dict
     iteration_id: str | None = None

@@ -124,18 +124,3 @@ export async function loadRecentSessions(query: RecentQuery = {}): Promise<Recen
   );
   return body ? body.sessions : null;
 }
-
-/** Every run inside an engine project (`proj-<8hex>`); null on an older sidecar. */
-export async function loadEngineProjectSessions(
-  engineId: string,
-  query: { mode?: string; limit?: number } = {},
-): Promise<RecentSession[] | null> {
-  const params = new URLSearchParams();
-  if (query.limit !== undefined) params.set('limit', String(query.limit));
-  if (query.mode) params.set('mode', query.mode);
-  const suffix = params.toString();
-  const body = await apiGetOptional<{ sessions: RecentSession[] }>(
-    `/api/projects/${encodeURIComponent(engineId)}/sessions${suffix ? `?${suffix}` : ''}`,
-  );
-  return body ? body.sessions : null;
-}

@@ -3,7 +3,7 @@
 Each handler:
   1. Reads the blueprint.
   2. Runs type-specific generation.
-  3. Upserts a project_outputs row with status + artifacts.
+  3. Upserts a session_outputs row with status + artifacts.
 
 Slot-only handlers (design_bundle, terraform_stack, decision_doc) raise
 OutputServiceError("not implemented") — the routes map this to HTTP 501.
@@ -17,9 +17,9 @@ from collections.abc import Awaitable, Callable
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.project import Project
-from ..models.project_output import ProjectOutput
-from ..schemas.project_output import OutputCatalogueEntry
+from ..models.session import Session
+from ..models.session_output import SessionOutput
+from ..schemas.session_output import OutputCatalogueEntry
 from ..services.blueprint_service import get_or_create_blueprint
 from ..services.harness_service import create_github_repo, generate_scaffold
 from ..services.output_maturity import maturity_for
@@ -40,11 +40,11 @@ class OutputServiceError(Exception):
 # state. If a handler writes to the DB and then raises, it MUST roll back internally
 # first. The dispatcher commits the 'failed' status after an exception; a dirty
 # session would turn that commit into a secondary error and lose the failure record.
-Handler = Callable[[Project, dict, dict, AsyncSession], Awaitable[dict]]
+Handler = Callable[[Session, dict, dict, AsyncSession], Awaitable[dict]]
 # (project, blueprint_content, payload, db) -> artifacts dict
 
 
-async def _handle_code_scaffold(project: Project, blueprint_content: dict, payload: dict, db: AsyncSession) -> dict:
+async def _handle_code_scaffold(project: Session, blueprint_content: dict, payload: dict, db: AsyncSession) -> dict:
     """Wraps harness_service.generate_scaffold + optional repo creation."""
     from ..config import get_settings
 
@@ -84,26 +84,26 @@ _HANDLERS: dict[str, Handler] = {
 IMPLEMENTED_TYPES = {name for name, h in _HANDLERS.items() if h is not _slot_only}
 
 
-async def generate_output(project_id: str, output_type: str, payload: dict, db: AsyncSession) -> ProjectOutput:
-    """Generate or regenerate an output. Upserts the project_outputs row."""
+async def generate_output(session_id: str, output_type: str, payload: dict, db: AsyncSession) -> SessionOutput:
+    """Generate or regenerate an output. Upserts the session_outputs row."""
     handler = _HANDLERS.get(output_type)
     if handler is None:
         raise OutputServiceError(f"unknown output_type: {output_type}", status_code=400)
 
-    project = (await db.execute(select(Project).where(Project.id == project_id))).scalar_one_or_none()
+    project = (await db.execute(select(Session).where(Session.id == session_id))).scalar_one_or_none()
     if project is None:
-        raise OutputServiceError(f"project {project_id} not found", status_code=404)
+        raise OutputServiceError(f"project {session_id} not found", status_code=404)
 
     row = (
         await db.execute(
-            select(ProjectOutput).where(
-                ProjectOutput.project_id == project_id,
-                ProjectOutput.output_type == output_type,
+            select(SessionOutput).where(
+                SessionOutput.session_id == session_id,
+                SessionOutput.output_type == output_type,
             )
         )
     ).scalar_one_or_none()
     if row is None:
-        row = ProjectOutput(project_id=project_id, output_type=output_type, status="not_generated")
+        row = SessionOutput(session_id=session_id, output_type=output_type, status="not_generated")
         db.add(row)
         await db.flush()
 
@@ -112,7 +112,7 @@ async def generate_output(project_id: str, output_type: str, payload: dict, db: 
     row.error = None
     await db.flush()
 
-    blueprint = await get_or_create_blueprint(project_id, db)
+    blueprint = await get_or_create_blueprint(session_id, db)
     try:
         artifacts = await handler(project, blueprint.content, payload, db)
     except OutputServiceError as exc:
@@ -134,15 +134,15 @@ async def generate_output(project_id: str, output_type: str, payload: dict, db: 
     return row
 
 
-async def get_output_catalogue(project_id: str, db: AsyncSession) -> list[OutputCatalogueEntry]:
+async def get_output_catalogue(session_id: str, db: AsyncSession) -> list[OutputCatalogueEntry]:
     """Return one catalogue entry per known output type (implemented or not)."""
     rows_by_type = {
         row.output_type: row
-        for row in (await db.execute(select(ProjectOutput).where(ProjectOutput.project_id == project_id)))
+        for row in (await db.execute(select(SessionOutput).where(SessionOutput.session_id == session_id)))
         .scalars()
         .all()
     }
-    blueprint = await get_or_create_blueprint(project_id, db)
+    blueprint = await get_or_create_blueprint(session_id, db)
 
     entries: list[OutputCatalogueEntry] = []
     for output_type in _HANDLERS:

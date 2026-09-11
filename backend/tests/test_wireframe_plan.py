@@ -324,10 +324,10 @@ def fake_llm_response():
 
 
 async def _make_session(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "vintage cameras"},
         headers=auth_headers,
     )

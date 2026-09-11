@@ -21,7 +21,6 @@ from ..deps import get_current_org, get_current_user
 from ..models.blueprint import BlueprintIteration, BlueprintSnapshot
 from ..models.board import Board, BoardColumn, Card
 from ..models.organization import Organization
-from ..models.project import Project
 from ..models.session import ChatMessage, Participant, Session, TranscriptEntry
 from ..models.usage_event import UsageEvent
 from ..models.user import User
@@ -237,7 +236,6 @@ async def _compute_cost_breakdown(
     db: AsyncSession,
     *,
     org_id: str,
-    project_id: str | None = None,
     session_id: str | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
@@ -251,8 +249,6 @@ async def _compute_cost_breakdown(
         func.coalesce(func.sum(UsageEvent.cost_usd), 0).label("cost"),
         func.coalesce(func.sum(case((UsageEvent.is_estimated, UsageEvent.cost_usd), else_=0)), 0).label("est_cost"),
     ).where(UsageEvent.org_id == org_id)
-    if project_id:
-        stmt = stmt.where(UsageEvent.project_id == project_id)
     if session_id:
         stmt = stmt.where(UsageEvent.session_id == session_id)
     if start:
@@ -284,7 +280,6 @@ async def _compute_cost_breakdown(
 def _build_scope(
     *,
     org_id: str,
-    project_id: str | None,
     session_id: str | None,
     session_count: int,
     start: datetime | None,
@@ -292,8 +287,6 @@ def _build_scope(
 ) -> ScopeInfo:
     if session_id:
         kind, scope_id = "session", session_id
-    elif project_id:
-        kind, scope_id = "project", project_id
     else:
         kind, scope_id = "org", org_id
     return ScopeInfo(
@@ -316,19 +309,12 @@ async def list_session_metrics(
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     limit: int = Query(50, ge=1, le=200),
-    project_id: str | None = Query(None),
     session_id: str | None = Query(None),
 ) -> list[SessionMetrics]:
     """Per-session metrics for all sessions in the org."""
 
-    # Fetch sessions with project names
-    stmt = (
-        select(Session, Project.name.label("project_name"))
-        .join(Project, Session.project_id == Project.id)
-        .where(Session.org_id == org.id)
-    )
-    if project_id:
-        stmt = stmt.where(Session.project_id == project_id)
+    # Fetch the sessions
+    stmt = select(Session, Session.name.label("project_name")).where(Session.org_id == org.id)
     if session_id:
         stmt = stmt.where(Session.id == session_id)
     result = await db.execute(stmt.order_by(Session.created_at.desc()).limit(limit))
@@ -357,19 +343,19 @@ async def list_session_metrics(
         # Blueprint
         bp_result = await db.execute(
             select(BlueprintSnapshot)
-            .where(BlueprintSnapshot.project_id == session.project_id)
+            .where(BlueprintSnapshot.session_id == session.id)
             .order_by(BlueprintSnapshot.version_number.desc())
             .limit(1)
         )
         latest_bp = bp_result.scalar_one_or_none()
         bp_versions_result = await db.execute(
-            select(func.count()).where(BlueprintSnapshot.project_id == session.project_id)
+            select(func.count()).where(BlueprintSnapshot.session_id == session.id)
         )
         bp_versions = bp_versions_result.scalar() or 0
         filled, total, pct = _blueprint_completion(latest_bp.content if latest_bp else None)
 
         # Board + cards
-        board_result = await db.execute(select(Board).where(Board.project_id == session.project_id))
+        board_result = await db.execute(select(Board).where(Board.session_id == session.id))
         board = board_result.scalar_one_or_none()
         cards_count = 0
         story_points = 0
@@ -437,15 +423,12 @@ async def get_aggregate_metrics(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
-    project_id: str | None = Query(None),
     session_id: str | None = Query(None),
 ) -> AggregateMetrics:
     """Org-wide or project/session-scoped aggregate metrics."""
 
-    # All sessions (optionally filtered) — join Project to exclude orphans from deleted projects
-    stmt = select(Session).join(Project, Session.project_id == Project.id).where(Session.org_id == org.id)
-    if project_id:
-        stmt = stmt.where(Session.project_id == project_id)
+    # All sessions, optionally filtered.
+    stmt = select(Session).where(Session.org_id == org.id)
     if session_id:
         stmt = stmt.where(Session.id == session_id)
     sessions_result = await db.execute(stmt.order_by(Session.created_at))
@@ -454,7 +437,6 @@ async def get_aggregate_metrics(
     if not sessions:
         empty_scope = _build_scope(
             org_id=org.id,
-            project_id=project_id,
             session_id=session_id,
             session_count=0,
             start=None,
@@ -533,7 +515,7 @@ async def get_aggregate_metrics(
         # Blueprint
         bp_result = await db.execute(
             select(BlueprintSnapshot)
-            .where(BlueprintSnapshot.project_id == session.project_id)
+            .where(BlueprintSnapshot.session_id == session.id)
             .order_by(BlueprintSnapshot.version_number.desc())
             .limit(1)
         )
@@ -542,7 +524,7 @@ async def get_aggregate_metrics(
         bp_pcts.append(pct)
 
         # Board
-        board_result = await db.execute(select(Board).where(Board.project_id == session.project_id))
+        board_result = await db.execute(select(Board).where(Board.session_id == session.id))
         board = board_result.scalar_one_or_none()
         if board:
             boards_count += 1
@@ -588,11 +570,10 @@ async def get_aggregate_metrics(
                 cast(Session.created_at, String).label("day"),
                 func.count().label("count"),
             )
-            .join(Project, Session.project_id == Project.id)
             .where(Session.org_id == org.id)
         )
-        if project_id:
-            timeline_stmt = timeline_stmt.where(Session.project_id == project_id)
+        if session_id:
+            timeline_stmt = timeline_stmt.where(Session.id == session_id)
         if session_id:
             timeline_stmt = timeline_stmt.where(Session.id == session_id)
         timeline_result = await db.execute(timeline_stmt.group_by("day").order_by("day"))
@@ -610,12 +591,10 @@ async def get_aggregate_metrics(
     cost = await _compute_cost_breakdown(
         db,
         org_id=org.id,
-        project_id=project_id,
         session_id=session_id,
     )
     scope = _build_scope(
         org_id=org.id,
-        project_id=project_id,
         session_id=session_id,
         session_count=total,
         start=earliest,
@@ -656,13 +635,12 @@ async def get_content_highlights(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
-    project_id: str | None = Query(None),
     session_id: str | None = Query(None),
 ) -> ContentHighlight:
     """Pre-packaged marketing-ready stats. Drop these into content directly."""
 
     # Reuse aggregate logic
-    agg = await get_aggregate_metrics(db=db, user=user, org=org, project_id=project_id, session_id=session_id)
+    agg = await get_aggregate_metrics(db=db, user=user, org=org, session_id=session_id)
 
     # Format for marketing
     duration_str = f"{agg.avg_duration_minutes:.0f} minutes" if agg.avg_duration_minutes else "N/A"
@@ -686,14 +664,14 @@ async def get_engineering_metrics(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
-    project_id: str | None = Query(None),
+    session_id: str | None = Query(None),
 ) -> EngineeringMetrics:
     """Engineering metrics: committed vs done, priority breakdown, deploy frequency, release trends."""
 
     # ── Fetch boards (optionally filtered by project) ────────────────
-    board_stmt = select(Board).join(Project, Board.project_id == Project.id).where(Board.org_id == org.id)
-    if project_id:
-        board_stmt = board_stmt.where(Board.project_id == project_id)
+    board_stmt = select(Board).where(Board.org_id == org.id)
+    if session_id:
+        board_stmt = board_stmt.where(Board.session_id == session_id)
     boards = (await db.execute(board_stmt)).scalars().all()
 
     if not boards:
@@ -726,17 +704,17 @@ async def get_engineering_metrics(
     # Map board_id → project for labeling
     board_project_map: dict[str, str] = {}
     for b in boards:
-        board_project_map[b.id] = b.project_id
+        board_project_map[b.id] = b.session_id
     # Map column_id → board_id
     col_board_map = {c.id: c.board_id for c in all_columns}
 
     # ── 1) Committed vs Done — per project ───────────────────────────
     # "Committed" = all cards on the board. "Done" = cards in "Done" column.
-    project_stats: dict[str, dict] = {}  # project_id → {committed, done, name}
+    project_stats: dict[str, dict] = {}  # session_id → {committed, done, name}
 
     # Fetch project names
-    proj_ids = list({b.project_id for b in boards})
-    proj_result = await db.execute(select(Project.id, Project.name).where(Project.id.in_(proj_ids)))
+    proj_ids = list({b.session_id for b in boards})
+    proj_result = await db.execute(select(Session.id, Session.name).where(Session.id.in_(proj_ids)))
     proj_name_map = {row.id: row.name for row in proj_result.all()}
 
     for card in all_cards:
@@ -906,12 +884,12 @@ async def get_costs(
     if end_dt <= start_dt:
         raise HTTPException(status_code=422, detail="end must be after start")
 
-    project_id = id if scope == "project" else None
+    session_id = id if scope == "project" else None
     session_id = id if scope == "session" else None
 
     base = select(UsageEvent).where(UsageEvent.org_id == org.id)
-    if project_id:
-        base = base.where(UsageEvent.project_id == project_id)
+    if session_id:
+        base = base.where(UsageEvent.session_id == session_id)
     if session_id:
         base = base.where(UsageEvent.session_id == session_id)
     base = base.where(UsageEvent.occurred_at >= start_dt, UsageEvent.occurred_at < end_dt)
@@ -978,8 +956,8 @@ async def get_costs(
 
     # Session count for ScopeInfo.
     sess_count_stmt = select(func.count(distinct(Session.id))).where(Session.org_id == org.id)
-    if project_id:
-        sess_count_stmt = sess_count_stmt.where(Session.project_id == project_id)
+    if session_id:
+        sess_count_stmt = sess_count_stmt.where(Session.id == session_id)
     if session_id:
         sess_count_stmt = sess_count_stmt.where(Session.id == session_id)
     sess_count_stmt = sess_count_stmt.where(Session.created_at >= start_dt, Session.created_at < end_dt)
@@ -994,7 +972,6 @@ async def get_costs(
     return CostsResponse(
         scope=_build_scope(
             org_id=org.id,
-            project_id=project_id,
             session_id=session_id,
             session_count=sess_count,
             start=start_dt,

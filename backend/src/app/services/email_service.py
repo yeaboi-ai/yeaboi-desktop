@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 async def _record_resend_send(
     *,
     org_id: str | None,
-    project_id: str | None = None,
     session_id: str | None = None,
     user_id: str | None = None,
     count: int = 1,
@@ -29,7 +28,6 @@ async def _record_resend_send(
         async with factory() as db:
             ctx = UsageContext(
                 org_id=org_id,
-                project_id=project_id,
                 session_id=session_id,
                 user_id=user_id,
             )
@@ -107,7 +105,6 @@ async def send_session_recap_email(
     summary: str | None = None,
     org_id: str | None = None,
     session_id: str | None = None,
-    project_id: str | None = None,
 ) -> int:
     """Send a session recap email to each address. Returns count of successful sends.
 
@@ -182,7 +179,6 @@ async def send_session_recap_email(
         await _record_resend_send(
             org_id=org_id,
             session_id=session_id,
-            project_id=project_id,
             count=succeeded,
         )
         return succeeded

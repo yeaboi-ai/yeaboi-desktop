@@ -59,7 +59,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function SessionPage() {
-  const { id: projectId, sessionId } = useParams<{ id: string; sessionId: string }>();
+  // One session is the workspace and the conversation, so one id serves both.
+  const { id } = useParams<{ id: string }>();
+  const projectId = id;
+  const sessionId = id;
   const router = useRouter();
   const confirm = useConfirm();
   const { authFetch } = useAuthFetch();
@@ -158,7 +161,7 @@ export default function SessionPage() {
     (async () => {
       const [sessionResp, blueprintResp, messagesResp] = await Promise.all([
         authFetch(`/api/sessions/${sessionId}`),
-        authFetch(`/api/projects/${projectId}/blueprint`),
+        authFetch(`/api/sessions/${projectId}/blueprint`),
         authFetch(`/api/sessions/${sessionId}/messages`),
       ]);
       if (cancelled) return;
@@ -208,7 +211,7 @@ export default function SessionPage() {
     if (data.coverageOverall >= 80 && !readyQuippedRef.current) {
       readyQuippedRef.current = true;
       duckQuip('session.ready-to-finalize', {
-        route: `/projects/${projectId}/sessions/${sessionId}`,
+        route: `/sessions/${sessionId}/room`,
       });
     }
   }, [data.coverageOverall, projectId, sessionId]);
@@ -235,7 +238,7 @@ export default function SessionPage() {
 
   const handleBlueprintSave = useCallback(
     async (section: string, content: string) => {
-      const resp = await authFetch(`/api/projects/${projectId}/blueprint/sections/${section}`, {
+      const resp = await authFetch(`/api/sessions/${projectId}/blueprint/sections/${section}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -258,7 +261,7 @@ export default function SessionPage() {
       const snapshotId = undoTargetByMessageId[messageId];
       if (!snapshotId) return;
       try {
-        const res = await authFetch(`/api/projects/${projectId}/blueprint/restore/${snapshotId}`, {
+        const res = await authFetch(`/api/sessions/${projectId}/blueprint/restore/${snapshotId}`, {
           method: 'POST',
         });
         if (res.ok) {
@@ -477,7 +480,7 @@ export default function SessionPage() {
         sessionId={sessionId}
         onComplete={() => {
           duckQuip('wizard.committed', { route: '/board' });
-          router.push(`/projects/${projectId}/sessions/${sessionId}/completed`);
+          router.push(`/sessions/${sessionId}/completed`);
         }}
         onCancel={() => void data.changeStatus('live')}
       />
@@ -491,7 +494,7 @@ export default function SessionPage() {
         className={`flex items-center gap-3 px-4 h-14 shrink-0 border-b border-border/60 bg-background/90 ${canvasFullscreen ? 'hidden' : ''}`}
       >
         <button
-          onClick={() => router.push(`/projects/${projectId}`)}
+          onClick={() => router.push(`/sessions/${projectId}`)}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-foreground/80 hover:bg-foreground/[0.05] transition-all shrink-0"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -891,7 +894,7 @@ export default function SessionPage() {
             ai.setOutputSuggestion(null);
             try {
               const res = await authFetch(
-                `/api/projects/${projectId}/outputs/${output_type}/generate`,
+                `/api/sessions/${projectId}/outputs/${output_type}/generate`,
                 {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },

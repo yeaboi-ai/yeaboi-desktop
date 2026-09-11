@@ -17,8 +17,7 @@ import {
   Search,
   Stethoscope,
 } from 'lucide-react';
-import { DOOR_MASCOT, WORLD_MASCOT } from '@/lib/audience/worlds';
-import { doorForPath } from '@/lib/yeaboi/home';
+import { PersonaMascot, WORLD_MASCOT } from '@/lib/audience/worlds';
 import { useAudience } from '@/components/providers/audience-provider';
 import { usePalette } from '@/components/providers/palette-provider';
 import { platform } from '@/lib/yeaboi/api';
@@ -79,9 +78,8 @@ export function TitleBar() {
   const { open } = usePalette();
   const edges = useHistoryEdges();
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
-  // On a door's screens the door's own duck leads; elsewhere the world's mark.
-  const door = doorForPath(pathname);
-  const Mascot = door ? DOOR_MASCOT[audience][door] : WORLD_MASCOT[audience];
+  // Inside a session the duck in its persona leads; elsewhere the world's mark.
+  const Mascot = /^\/sessions(\/|$)/.test(pathname) ? PersonaMascot : WORLD_MASCOT[audience];
 
   return (
     <header

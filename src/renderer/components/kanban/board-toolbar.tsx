@@ -520,7 +520,7 @@ export function BoardToolbar({
       <FilterDropdown
         value={projectFilter}
         onChange={onProjectFilterChange}
-        placeholder="All Projects"
+        placeholder="All sessions"
         options={projectOptions.map(([id, name]) => ({ value: id, label: name }))}
       />
 

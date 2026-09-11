@@ -5,7 +5,6 @@ from sqlalchemy import func, select
 
 from src.app.models.blueprint import BlueprintIteration, BlueprintSnapshot
 from src.app.models.board import Board, BoardColumn, Card
-from src.app.models.project import Project
 from src.app.models.session import Session
 from src.app.services.onboarding_seed import DEMO_CARDS, seed_demo_workspace
 
@@ -34,23 +33,19 @@ async def test_seed_demo_workspace_creates_expected_artifacts(
     )
     await db_session.commit()
 
-    # One completed session under the demo project
-    sessions = (
-        await db_session.execute(select(Session).where(Session.project_id == project.id))
-    ).scalars().all()
-    assert len(sessions) == 1
-    assert sessions[0].status == "completed"
+    # The demo workspace is one completed session
+    assert project.status == "completed"
 
     # One blueprint iteration + one snapshot
     iterations = (
         await db_session.execute(
-            select(BlueprintIteration).where(BlueprintIteration.project_id == project.id)
+            select(BlueprintIteration).where(BlueprintIteration.session_id == project.id)
         )
     ).scalars().all()
     assert len(iterations) == 1
     snapshots = (
         await db_session.execute(
-            select(BlueprintSnapshot).where(BlueprintSnapshot.project_id == project.id)
+            select(BlueprintSnapshot).where(BlueprintSnapshot.session_id == project.id)
         )
     ).scalars().all()
     assert len(snapshots) == 1
@@ -59,7 +54,7 @@ async def test_seed_demo_workspace_creates_expected_artifacts(
 
     # One board with three columns
     boards = (
-        await db_session.execute(select(Board).where(Board.project_id == project.id))
+        await db_session.execute(select(Board).where(Board.session_id == project.id))
     ).scalars().all()
     assert len(boards) == 1
     columns = (
@@ -72,13 +67,13 @@ async def test_seed_demo_workspace_creates_expected_artifacts(
     # Cards match the seed list and depend_on is wired
     card_count = (
         await db_session.execute(
-            select(func.count(Card.id)).where(Card.project_id == project.id)
+            select(func.count(Card.id)).where(Card.session_id == project.id)
         )
     ).scalar_one()
     assert card_count == len(DEMO_CARDS)
 
     cards = (
-        await db_session.execute(select(Card).where(Card.project_id == project.id))
+        await db_session.execute(select(Card).where(Card.session_id == project.id))
     ).scalars().all()
     assert any(card.depends_on for card in cards), "expected at least one card with a depends_on link"
     assert any(card.priority == "critical" for card in cards)
@@ -102,8 +97,8 @@ async def test_seed_demo_workspace_is_idempotent(
     # Still exactly one demo project for the team
     demo_projects = (
         await db_session.execute(
-            select(Project).where(
-                Project.team_id == sample_team.id, Project.is_demo.is_(True)
+            select(Session).where(
+                Session.team_id == sample_team.id, Session.is_demo.is_(True)
             )
         )
     ).scalars().all()

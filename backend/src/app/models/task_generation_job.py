@@ -12,11 +12,9 @@ class TaskGenerationJob(TimestampMixin, Base):
     __tablename__ = "task_generation_jobs"
     __table_args__ = (
         Index("ix_task_generation_jobs_session_status", "session_id", "status"),
-        Index("ix_task_generation_jobs_project_status", "project_id", "status"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False)
     # 'pending' | 'running' | 'complete' | 'failed' | 'cancelled'

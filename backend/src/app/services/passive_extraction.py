@@ -274,7 +274,6 @@ async def run_extraction_pass(session_id: str, db: AsyncSession) -> None:
                 section,
                 content,
                 db,
-                session_id=session_id,
                 source_message_ids=source_ids or None,
                 supersedes_bullet=supersedes_bullet,
             )

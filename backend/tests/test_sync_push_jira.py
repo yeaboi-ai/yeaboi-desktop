@@ -62,9 +62,9 @@ async def _make_card_with_mapping(
     client, auth_headers, db_session: AsyncSession
 ) -> dict:
     """Set up: project + board + card + Jira OrgIntegration + project mapping."""
-    proj = (await client.post("/api/projects", json={"name": "Sync me"}, headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Sync me"}, headers=auth_headers)).json()
     board = (
-        await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)
+        await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)
     ).json()
     backlog = board["columns"][0]["id"]
     card = (
@@ -87,8 +87,8 @@ async def _make_card_with_mapping(
     # decrypt_api_key call resolves it back to "fake-token".
     project_org_id = (
         await db_session.execute(
-            select(__import__("src.app.models.project", fromlist=["Project"]).Project.org_id).where(
-                __import__("src.app.models.project", fromlist=["Project"]).Project.id == proj["id"]
+            select(__import__("src.app.models.session", fromlist=["Session"]).Session.org_id).where(
+                __import__("src.app.models.session", fromlist=["Session"]).Session.id == proj["id"]
             )
         )
     ).scalar_one()
@@ -108,7 +108,7 @@ async def _make_card_with_mapping(
 
     mapping = IntegrationProjectMapping(
         integration_id=integration.id,
-        internal_project_id=proj["id"],
+        internal_session_id=proj["id"],
         external_project_key="PROJ",
         external_project_id="10000",
         default_issue_type="Story",
@@ -181,9 +181,9 @@ async def test_push_card_second_time_updates(client, auth_headers, db_session):
 
 @pytest.mark.anyio
 async def test_push_without_mapping_returns_400(client, auth_headers):
-    proj = (await client.post("/api/projects", json={"name": "No mapping"}, headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "No mapping"}, headers=auth_headers)).json()
     board = (
-        await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)
+        await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)
     ).json()
     backlog = board["columns"][0]["id"]
     card = (

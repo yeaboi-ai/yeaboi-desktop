@@ -92,7 +92,7 @@ export function useBlueprintHistory({
         if (iterationId) params.set('iteration_id', iterationId);
         if (beforeVersion !== null) params.set('before_version', String(beforeVersion));
         const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint/snapshots?${params.toString()}`,
+          `/api/sessions/${projectId}/blueprint/snapshots?${params.toString()}`,
         );
         if (!resp.ok) {
           setError(`Failed to load history (${resp.status})`);
@@ -133,7 +133,7 @@ export function useBlueprintHistory({
       if (detailCache[id]) return; // cached
       setSelectedLoading(true);
       try {
-        const resp = await authFetch(`/api/projects/${projectId}/blueprint/snapshots/${id}`);
+        const resp = await authFetch(`/api/sessions/${projectId}/blueprint/snapshots/${id}`);
         if (!resp.ok) {
           logger.warn(TAG, 'detail fetch failed', { id, status: resp.status });
           return;
@@ -159,7 +159,7 @@ export function useBlueprintHistory({
       if (!ready || !projectId) return;
       setRestoring(true);
       try {
-        const resp = await authFetch(`/api/projects/${projectId}/blueprint/restore/${snapshotId}`, {
+        const resp = await authFetch(`/api/sessions/${projectId}/blueprint/restore/${snapshotId}`, {
           method: 'POST',
         });
         if (!resp.ok) {

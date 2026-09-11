@@ -1,6 +1,6 @@
 'use client';
 
-// The New project form as the ledger's first ruled line: one borderless
+// The New session form as the ledger's first ruled line: one borderless
 // serif field that asks what you are building, the world's hairline under it,
 // and beneath that a line saying what becomes of the words — joined by AI
 // rewrite and Create once there are some. The page owns the text so an example
@@ -49,7 +49,7 @@ export interface ProjectComposerProps {
   onCreate: (draft: ProjectDraft) => Promise<{ id: string }>;
   /** The created row, so the caller can open it. */
   onCreated?: (created: { id: string }) => void;
-  /** Take focus on mount: the menu bar's New project… lands here with ?new,
+  /** Take focus on mount: the menu bar's New session… lands here with ?new,
    *  and an empty page has nothing else to offer. */
   autoFocus?: boolean;
   /** The field itself, for a caller that moves words into it. */
@@ -211,7 +211,7 @@ export function ProjectComposer({
     setRewriting(true);
     setError(null);
     try {
-      const resp = await authFetch('/api/projects/rewrite-idea', {
+      const resp = await authFetch('/api/sessions/rewrite-idea', {
         method: 'POST',
         body: JSON.stringify({ text }),
       });
@@ -232,7 +232,7 @@ export function ProjectComposer({
   const note = composerNote(Boolean(text), attached, REFERENCE_COPY.COMPOSER_HINT);
 
   return (
-    <form onSubmit={handleSubmit} aria-label="New project">
+    <form onSubmit={handleSubmit} aria-label="New session">
       <div
         ref={wrapper}
         data-audience-accented
@@ -359,7 +359,7 @@ export function ProjectComposer({
               </Button>
             )}
             <Button type="submit" size="sm" disabled={loading || !text} className="font-body">
-              {loading ? 'Creating…' : 'Create project'}
+              {loading ? 'Creating…' : 'Create session'}
             </Button>
           </div>
         )}

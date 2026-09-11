@@ -446,7 +446,6 @@ export interface ReviewHome {
 export interface ReviewRunBody {
   session_id?: string;
   project_id?: string;
-  context_deps?: string[];
   week_end?: string;
   carried_statuses?: Record<string, ReviewActionStatus>;
 }

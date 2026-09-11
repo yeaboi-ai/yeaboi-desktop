@@ -3,9 +3,9 @@
 import pytest
 
 
-async def _setup_board(client, auth_headers, name: str = "Search Project") -> dict:
-    proj = (await client.post("/api/projects", json={"name": name}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+async def _setup_board(client, auth_headers, name: str = "Search Session") -> dict:
+    proj = (await client.post("/api/sessions", json={"name": name}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     return {"project": proj, "board": board}
 
 
@@ -70,22 +70,22 @@ async def test_search_blank_returns_empty(client, auth_headers):
 
 @pytest.mark.anyio
 async def test_search_scoped_by_project(client, auth_headers):
-    a_ctx = await _setup_board(client, auth_headers, "Project A")
-    b_ctx = await _setup_board(client, auth_headers, "Project B")
+    a_ctx = await _setup_board(client, auth_headers, "Session A")
+    b_ctx = await _setup_board(client, auth_headers, "Session B")
     await _make_card(client, auth_headers, a_ctx["board"], title="Common shared title")
     await _make_card(client, auth_headers, b_ctx["board"], title="Common shared title")
     resp = await client.get(
-        f"/api/cards/search?q=Common&project_id={a_ctx['project']['id']}",
+        f"/api/cards/search?q=Common&session_id={a_ctx['project']['id']}",
         headers=auth_headers,
     )
     cards = resp.json()
     assert len(cards) == 1
-    assert cards[0]["project_id"] == a_ctx["project"]["id"]
+    assert cards[0]["session_id"] == a_ctx["project"]["id"]
 
 
 @pytest.mark.anyio
 async def test_bulk_update_priority(client, auth_headers):
-    ctx = await _setup_board(client, auth_headers, "Bulk Project")
+    ctx = await _setup_board(client, auth_headers, "Bulk Session")
     a = await _make_card(client, auth_headers, ctx["board"], title="A", priority="medium")
     b = await _make_card(client, auth_headers, ctx["board"], title="B", priority="low")
 

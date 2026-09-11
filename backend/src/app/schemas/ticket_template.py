@@ -45,7 +45,7 @@ class TicketTemplateCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: str | None = None
     icon: str = "zap"
-    project_id: str | None = None
+    session_id: str | None = None
     default_priority: str | None = None
     default_story_points: int | None = None
     default_labels: list[str] = []
@@ -75,7 +75,7 @@ class TicketTemplateUpdate(BaseModel):
 class TicketTemplateResponse(BaseModel):
     id: str
     org_id: str
-    project_id: str | None
+    session_id: str | None
     slug: str
     name: str
     description: str | None

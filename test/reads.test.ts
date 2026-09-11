@@ -1,12 +1,9 @@
-// The context flow: every step is a real mode, reads a real context source,
-// and is worded the way the doors are.
+// The flow: every step is a real mode, worded the way the rest of the app is.
 
 import { describe, expect, it } from 'vitest';
-import { CONTEXT_SOURCES } from '../src/renderer/lib/yeaboi/context-deps';
 import { FLOW, fallbackFlowKeys, flowFor } from '../src/renderer/lib/yeaboi/reads';
 import { MODE_ROUTES } from '../src/renderer/lib/yeaboi/tips';
 
-const TOKENS = new Set<string>(CONTEXT_SOURCES.map((s) => s.token));
 const TEAM_KEYS = [
   'project-planning',
   'team-analysis',
@@ -28,10 +25,6 @@ const SOLO_KEYS = [
 describe('FLOW', () => {
   it('names only modes the desktop routes', () => {
     for (const step of FLOW) expect(MODE_ROUTES).toHaveProperty(step.key);
-  });
-
-  it('reads only the context sources the settings speak', () => {
-    for (const step of FLOW) for (const token of step.reads) expect(TOKENS).toContain(token);
   });
 
   it('is worded like the doors: no arrows, no dot joins, no all-caps words', () => {

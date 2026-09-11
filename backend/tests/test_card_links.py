@@ -3,9 +3,9 @@
 import pytest
 
 
-async def _make_board(client, auth_headers, name: str = "Link Project") -> dict:
-    proj = (await client.post("/api/projects", json={"name": name}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+async def _make_board(client, auth_headers, name: str = "Link Session") -> dict:
+    proj = (await client.post("/api/sessions", json={"name": name}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     return {"project": proj, "board": board}
 
 

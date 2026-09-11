@@ -30,7 +30,7 @@ def assemble_prompt(
     agents_md: str = "",
 ) -> str:
     """Build a three-layer prompt from global context, stage instructions, and task details."""
-    global_context = f"Project context:\n{agents_md}\n\n" if agents_md else ""
+    global_context = f"Session context:\n{agents_md}\n\n" if agents_md else ""
     stage_prompt = STAGE_PROMPTS.get(stage, "Complete the assigned task.")
     task_context = f"Task: {card_title}\n\nDescription:\n{card_description or 'No description provided.'}"
 

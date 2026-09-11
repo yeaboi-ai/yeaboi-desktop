@@ -457,8 +457,8 @@ function TicketWorkspaceInner({
     >
       <TicketHeader
         card={card}
-        projectKey={ticket.project_key ?? null}
-        projectName={ticket.project_name ?? null}
+        sessionKey={ticket.session_key ?? null}
+        sessionName={ticket.session_name ?? null}
         saving={saving}
         saved={savedAt !== null}
         onTitleChange={(title) => persistPatch({ title })}

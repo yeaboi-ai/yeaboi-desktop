@@ -12,10 +12,10 @@ import pytest
 async def test_generate_design_system_routes_and_returns_memo(client, auth_headers):
     """Happy path: classifier + generator LLMs are mocked; endpoint returns
     tokens, memo, routing metadata, and the files loaded from the library."""
-    proj = await client.post("/api/projects", json={"name": "DSProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "DSProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "A SaaS dashboard for observability engineers"},
         headers=auth_headers,
     )
@@ -115,10 +115,10 @@ async def test_generate_design_system_routes_and_returns_memo(client, auth_heade
 @pytest.mark.asyncio
 async def test_generate_design_system_falls_back_when_classifier_errors(client, auth_headers):
     """If classifier LLM raises, endpoint uses keyword fallback and still returns."""
-    proj = await client.post("/api/projects", json={"name": "DS2"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "DS2"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "fintech trading dashboard"},
         headers=auth_headers,
     )
@@ -166,10 +166,10 @@ async def test_generate_design_system_falls_back_when_classifier_errors(client, 
 @pytest.mark.asyncio
 async def test_generate_design_system_returns_502_on_invalid_tokens_json(client, auth_headers):
     """Malformed tokens JSON from the generator → 502."""
-    proj = await client.post("/api/projects", json={"name": "DS3"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "DS3"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "landing page"},
         headers=auth_headers,
     )

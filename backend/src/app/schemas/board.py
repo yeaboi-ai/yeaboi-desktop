@@ -3,7 +3,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-
 # Acceptance criteria items can be either a legacy bare string or a
 # ``{"text": "...", "done": false}`` object. The frontend writes the new
 # shape; the backend tolerates both on read and writes through whatever it
@@ -64,7 +63,6 @@ class CardResponse(BaseModel):
     updated_at: datetime
 
     # Friendly id and template fields (Phase 0).
-    project_id: str | None = None
     number: int | None = None
     friendly_id: str | None = None
     template_id: str | None = None
@@ -142,7 +140,7 @@ class ColumnResponse(BaseModel):
 
 class BoardResponse(BaseModel):
     id: str
-    project_id: str
+    session_id: str
     columns: list[ColumnResponse] = []
     created_at: datetime
 
@@ -212,8 +210,8 @@ class TicketDetailResponse(BaseModel):
     """
 
     card: CardResponse
-    project_key: str | None = None
-    project_name: str | None = None
+    session_key: str | None = None
+    session_name: str | None = None
     board_id: str | None = None
     board_columns: list[TicketBoardColumnLite] = []
     attachments: list[TicketAttachmentResponse] = []

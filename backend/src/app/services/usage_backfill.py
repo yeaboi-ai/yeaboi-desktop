@@ -227,7 +227,6 @@ async def _record_estimate(
         return
     event = UsageEvent(
         org_id=session.org_id,
-        project_id=session.project_id,
         session_id=session.id,
         provider=provider,
         operation=operation,

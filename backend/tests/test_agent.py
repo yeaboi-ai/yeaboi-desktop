@@ -262,10 +262,10 @@ async def test_create_llm_fatal_config_when_no_keys():
 
 async def test_agent_status_endpoint(client, auth_headers):
     """GET /api/sessions/{id}/agent-status should return agent connection info."""
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )
@@ -286,10 +286,10 @@ async def test_agent_status_endpoint(client, auth_headers):
 
 async def test_agent_status_with_agent_connected(client, auth_headers):
     """When agent is in the room, agent_connected should be True."""
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )

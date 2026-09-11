@@ -1,8 +1,7 @@
 'use client';
 
 // The Agents family — one page over three modes, addressed by the route, read
-// machine-wide. A project's scoped view of the same reports is
-// agents-project-page.tsx; the views themselves are components/agents.
+// machine-wide. The views themselves are components/agents.
 //
 // The rule the terminal established and this keeps: the page opens on the last
 // saved report, stamped with its age, and re-runs the pass behind it only when

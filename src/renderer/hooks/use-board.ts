@@ -53,15 +53,14 @@ export interface Card {
   agent_log: Record<string, unknown>[];
   created_at: string;
   updated_at: string;
-  project_id?: string;
-  project_name?: string;
   session_id?: string;
+  session_name?: string;
   session_title?: string;
 
   // Phase 0 foundations.
   number?: number | null;
   friendly_id?: string | null;
-  project_key?: string | null;
+  session_key?: string | null;
   template_id?: string | null;
   template_icon?: string | null;
   template_version?: number | null;
@@ -158,7 +157,7 @@ export function useBoard(projectId: string | null, fetchFn?: FetchFn) {
 
   const fetchBoard = useCallback(async () => {
     try {
-      const url = projectId ? `/api/board-proxy?projectId=${projectId}` : `/api/global-board-proxy`;
+      const url = projectId ? `/api/board-proxy?sessionId=${projectId}` : `/api/global-board-proxy`;
       const resp = await fetchFnRef.current(url);
       if (!resp.ok) throw new Error(`Failed to load board: ${resp.status}`);
       const data = (await resp.json()) as Board;

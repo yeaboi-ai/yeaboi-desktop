@@ -86,7 +86,7 @@ function StandupScheduleBody() {
   useEffect(() => {
     loadStandup()
       .then((dash) => {
-        if (!dash.session_id) throw new Error('No project yet — plan one first.');
+        if (!dash.session_id) throw new Error('No session yet — start one first.');
         return loadSchedule(dash.session_id);
       })
       .then(

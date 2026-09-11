@@ -41,7 +41,7 @@ export function EditProjectDialog({
     if (!name.trim()) return;
     setLoading(true);
     try {
-      const resp = await authFetch(`/api/projects/${project.id}`, {
+      const resp = await authFetch(`/api/sessions/${project.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
       });
@@ -58,7 +58,7 @@ export function EditProjectDialog({
     if (!description.trim() || rewriting) return;
     setRewriting(true);
     try {
-      const resp = await authFetch('/api/projects/rewrite-idea', {
+      const resp = await authFetch('/api/sessions/rewrite-idea', {
         method: 'POST',
         body: JSON.stringify({ text: description.trim() }),
       });
@@ -99,7 +99,7 @@ export function EditProjectDialog({
               id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Project name"
+              placeholder="Session name"
               required
               autoFocus
               className="font-body text-sm bg-background border-border focus:border-primary/60 transition-colors"

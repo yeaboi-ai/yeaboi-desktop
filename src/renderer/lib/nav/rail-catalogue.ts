@@ -32,7 +32,6 @@ export interface RailDestination {
 /** The glyph a capability's pages start with. */
 export const CAPABILITY_ICONS: Record<string, RailLucideName> = {
   sessions: 'Sunrise',
-  projects: 'LayoutGrid',
   usage: 'Coins',
   'team-analysis': 'ChartLine',
   standup: 'Mic',
@@ -90,7 +89,6 @@ export function isRailDestination(route: AppRoute): boolean {
 export function railGroupFor(route: string): RailGroup {
   if (ABOUT.has(route)) return 'about';
   if (matches(route, '/settings') || route === '/setup') return 'settings';
-  if (route === '/agents/projects') return 'work';
   if (['/team', '/solo', '/agents'].some((prefix) => matches(route, prefix))) return 'modes';
   return 'work';
 }

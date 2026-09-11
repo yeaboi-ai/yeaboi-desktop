@@ -1,13 +1,13 @@
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project_output import ProjectOutput
+from src.app.models.session_output import SessionOutput
 from src.app.services.output_service import OutputServiceError, generate_output, get_output_catalogue
 
 
 async def _seed_project(db_session):
     from src.app.models.organization import Organization, OrgMember, Team, TeamMember
-    from src.app.models.project import Project
+    from src.app.models.session import Session
     from src.app.models.user import User
 
     user = User(email="x@y.com", name="X")
@@ -19,7 +19,7 @@ async def _seed_project(db_session):
     db_session.add(team)
     await db_session.flush()
     db_session.add(TeamMember(team_id=team.id, user_id=user.id, role="admin"))
-    project = Project(name="P", owner_id=user.id, org_id=org.id, team_id=team.id)
+    project = Session(name="P", owner_id=user.id, org_id=org.id, team_id=team.id)
     db_session.add(project)
     await db_session.commit()
     return project
@@ -41,7 +41,7 @@ async def test_slot_only_types_raise_not_implemented(db_session):
 
 
 async def test_code_scaffold_creates_row(db_session, monkeypatch):
-    """Generating code_scaffold writes a project_outputs row and calls the harness service."""
+    """Generating code_scaffold writes a session_outputs row and calls the harness service."""
     from src.app.services import output_service
 
     async def fake_generate_scaffold(name, content):
@@ -70,7 +70,7 @@ async def test_regeneration_updates_same_row(db_session, monkeypatch):
     # Row must reflect the most recent call's payload (update-in-place, not a stale read)
     assert second.payload == {"repo_name": "second"}
 
-    result = await db_session.execute(select(ProjectOutput).where(ProjectOutput.project_id == project.id))
+    result = await db_session.execute(select(SessionOutput).where(SessionOutput.session_id == project.id))
     assert len(result.scalars().all()) == 1
 
 

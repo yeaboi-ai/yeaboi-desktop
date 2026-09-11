@@ -13,13 +13,12 @@ from src.app.models.integration import OrgIntegration
 from src.app.models.sync import CardExternalLink, IntegrationProjectMapping
 from src.app.services.crypto import encrypt_api_key
 
-
 WEBHOOK_TOKEN = "shh-this-is-a-secret"
 
 
 async def _seed_link(client, auth_headers, db_session, *, provider: str) -> dict:
-    proj = (await client.post("/api/projects", json={"name": "Hooked"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Hooked"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     backlog = board["columns"][0]["id"]
     card = (
         await client.post(
@@ -31,8 +30,8 @@ async def _seed_link(client, auth_headers, db_session, *, provider: str) -> dict
 
     project_org_id = (
         await db_session.execute(
-            select(__import__("src.app.models.project", fromlist=["Project"]).Project.org_id).where(
-                __import__("src.app.models.project", fromlist=["Project"]).Project.id == proj["id"]
+            select(__import__("src.app.models.session", fromlist=["Session"]).Session.org_id).where(
+                __import__("src.app.models.session", fromlist=["Session"]).Session.id == proj["id"]
             )
         )
     ).scalar_one()
@@ -55,7 +54,7 @@ async def _seed_link(client, auth_headers, db_session, *, provider: str) -> dict
 
     mapping = IntegrationProjectMapping(
         integration_id=integration.id,
-        internal_project_id=proj["id"],
+        internal_session_id=proj["id"],
         external_project_key="EXT" if provider == "jira" else "AcmeProject",
         external_project_id="10000",
         default_issue_type="Story" if provider == "jira" else "User Story",

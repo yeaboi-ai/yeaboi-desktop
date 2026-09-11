@@ -22,15 +22,14 @@ from .niko import NikoConversation, NikoMessage
 from .notification import Notification
 from .org_ai_defaults import OrgAIDefaults
 from .organization import Organization, OrgMember, Team, TeamMember
-from .project import Project
-from .project_attachment import ProjectAttachment
-from .project_output import ProjectOutput
 from .recording import Recording
 from .repo_analysis_job import RepoAnalysisJob
 from .report_subscription import ReportSubscription, SubscriptionRun
 from .session import ChatMessage, Participant, Session, TranscriptEntry
+from .session_attachment import SessionAttachment
 from .session_clip import SessionClip
 from .session_event import SessionContext, SessionEvent
+from .session_output import SessionOutput
 from .slack_event_dedup import SlackEventDedup  # noqa: F401
 from .slack_session_announcement import SlackSessionAnnouncement  # noqa: F401
 from .slack_user_link import SlackUserLink  # noqa: F401
@@ -72,11 +71,10 @@ __all__ = [
     "OrgMember",
     "Team",
     "TeamMember",
-    "Project",
-    "ProjectAttachment",
-    "ProjectOutput",
     "Recording",
     "Session",
+    "SessionAttachment",
+    "SessionOutput",
     "Participant",
     "ChatMessage",
     "BlueprintIteration",

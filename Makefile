@@ -40,7 +40,7 @@ include $(TOOLING)/mk/node.mk
 # charge of the same file, and contracts-check would go red every time a route
 # moved here before yeaboi.ai caught up.
 
-.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check seed-projects
+.PHONY: help dev icons pack dist clean check-manifest gen-manifest build-check backend-test
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -59,8 +59,6 @@ dev: ## Run the app with HMR (needs the planning-platform backend on :8000)
 	bash scripts/dev-preflight.sh
 	$(NPM) run dev
 
-seed-projects: ## Seed a few local projects to look at in the ledger (CLEAN=1 removes them again)
-	CLEAN=$(CLEAN) node scripts/seed-projects.mjs
 
 # Rendered from the website's master duck art, committed here, and asserted by
 # test/icons.test.ts without Pillow. `uv run --with` needs only uv — there is
@@ -99,6 +97,9 @@ check-manifest: ## Assert the committed routes manifest matches the renderer's r
 build-check: build ## Turn an unresolved asset reference (a warning the build survives) into a failure
 	$(NPM) run build:check
 
+backend-test: ## Run the vendored backend's suite, failing only on a change against its known-failure list
+	cd backend && ./scripts/check-tests.sh
+
 # node.mk already makes this `lint format-check test build`. Adding prerequisites
 # WITHOUT a recipe extends that list rather than replacing it.
-ship-gate: check-manifest build-check tooling-check
+ship-gate: check-manifest build-check tooling-check backend-test

@@ -26,17 +26,16 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { BackupNotice } from '@/components/projects/backup-notice';
 import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
-import { LedgerFlowList, LedgerHead } from '@/components/projects/ledger-head';
+import { LedgerFlowList } from '@/components/projects/ledger-flow-list';
 import { ProjectComposer, type ProjectDraft } from '@/components/projects/project-composer';
 import { ProjectGuide } from '@/components/projects/project-guide';
-import { RunTrace } from '@/components/projects/run-trace';
-import { SuggestedProjects } from '@/components/projects/suggested-projects';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useAudience } from '@/components/providers/audience-provider';
-import { DOOR_MASCOT } from '@/lib/audience/worlds';
+import { PersonaMascot } from '@/lib/audience/worlds';
 import { glideText } from '@/lib/motion/glide';
-import { PROJECTS_HEADER_LINKS, type PageLink } from '@/lib/nav/sections';
+import { SESSIONS_HEADER_LINKS, type PageLink } from '@/lib/nav/sections';
 import { allCards, loadCapabilities, menuFor, type Capabilities } from '@/lib/yeaboi/capabilities';
 import {
   ALL_DONE_LINE,
@@ -50,29 +49,19 @@ import {
   NOT_ALLOWED_TITLE,
   OTHER_WAYS_WORD,
   UNREACHABLE_LINE,
-  ledgerColumns,
+  LEDGER_COLS,
   ledgerSections,
   projectCount,
   rowActions,
   type RowAction,
 } from '@/lib/yeaboi/ledger';
-import {
-  isDone,
-  nextStatus,
-  runsByEngineProject,
-  traceFor,
-  traceSentence,
-} from '@/lib/yeaboi/projects';
+import { isDone, nextStatus } from '@/lib/yeaboi/projects';
 import { REFERENCE_COPY, type ProjectReference } from '@/lib/yeaboi/references';
 import { cn } from '@/lib/utils';
 import { fallbackFlowKeys, flowFor, type FlowStep } from '@/lib/yeaboi/reads';
-import { loadRecentSessions, relativeDay } from '@/lib/yeaboi/sessions';
-import { HIDE_SUGGESTIONS_LABEL, SUGGEST_LABEL, suggestPrompt } from '@/lib/yeaboi/suggestions';
+import { relativeDay } from '@/lib/yeaboi/sessions';
 import { logger } from '@/lib/logger';
 import { PageShell } from '@/components/page-shell';
-
-/** Enough runs to trace every project on a desktop; the list is read once. */
-const TRACE_LIMIT = 200;
 
 interface Project {
   id: string;
@@ -97,25 +86,15 @@ const ACTION_ICONS = { rename: Pencil, delete: Trash2 } as const;
 function LedgerRow({
   project,
   now,
-  steps,
-  colors,
-  ran,
   onRename,
   onToggleStatus,
   onDelete,
 }: {
   project: Project;
   now: Date;
-  steps: FlowStep[];
-  colors: Record<string, string>;
-  ran: Map<string, Set<string>>;
 } & RowHandlers) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(project.name);
-  const trace = traceFor(
-    steps,
-    project.yeaboi_project_id ? ran.get(project.yeaboi_project_id) : undefined,
-  );
   // Escape unmounts the focused input, which still fires blur; the flag is what
   // keeps that blur from committing the rename Escape just cancelled.
   const cancelled = useRef(false);
@@ -142,11 +121,6 @@ function LedgerRow({
   const description = project.description && (
     <span className="mt-0.5 block truncate text-[13px] font-body text-muted-foreground">
       {project.description}
-    </span>
-  );
-  const labelled = trace.length > 0 && (
-    <span className="mt-1.5 block md:hidden">
-      <RunTrace trace={trace} colors={colors} variant="labelled" />
     </span>
   );
   const date = relativeDay(project.updated_at ?? project.created_at, now);
@@ -176,30 +150,18 @@ function LedgerRow({
                 className="w-full border-0 border-b border-border bg-transparent px-0 py-0 font-display text-[18px] leading-tight text-foreground outline-none"
               />
               {description}
-              {labelled}
-            </span>
-            <span className="hidden md:contents">
-              <RunTrace trace={trace} colors={colors} variant="dots" />
             </span>
             <span className="text-[12px] font-body tabular-nums text-muted-foreground md:text-right">
               {date}
             </span>
           </div>
         ) : (
-          <Link
-            href={`/projects/${project.id}`}
-            className={LEDGER_ROW}
-            aria-label={`${project.name}. ${traceSentence(trace)}`}
-          >
+          <Link href={`/projects/${project.id}`} className={LEDGER_ROW}>
             <span className="min-w-0">
               <span className="block truncate font-display text-[18px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
                 {project.name}
               </span>
               {description}
-              {labelled}
-            </span>
-            <span className="hidden md:contents">
-              <RunTrace trace={trace} colors={colors} variant="dots" />
             </span>
             <span className="text-[12px] font-body tabular-nums text-muted-foreground transition-opacity md:text-right md:group-hover:opacity-0 md:group-focus-within:opacity-0">
               {date}
@@ -244,34 +206,6 @@ function LedgerRow({
   );
 }
 
-/** The line that offers suggestions, under an empty sheet and a full one alike;
- *  the button unfolds them, and nothing is read until it is pressed. */
-function SuggestLine({
-  empty,
-  open,
-  onToggle,
-}: {
-  empty: boolean;
-  open: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-5 pb-3 text-[13px] font-body leading-snug text-muted-foreground">
-      <span>{suggestPrompt(empty)}</span>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls="suggested-projects"
-        className="inline-flex items-center gap-1.5 text-foreground/80 transition-colors hover:text-foreground"
-      >
-        <Lightbulb aria-hidden className="h-3 w-3" />
-        {open ? HIDE_SUGGESTIONS_LABEL : SUGGEST_LABEL}
-      </button>
-    </p>
-  );
-}
-
 function SheetWord({ children, tail }: { children: string; tail?: string }) {
   return (
     <p className="flex items-baseline gap-3 pt-5 pb-1 leading-none">
@@ -304,7 +238,7 @@ function WayInRow({ link }: { link: PageLink }) {
 export default function ProjectsPage() {
   const { authFetch, ready, teamVersion } = useAuthFetch();
   const { audience } = useAudience();
-  const Mascot = DOOR_MASCOT[audience].projects;
+  const Mascot = PersonaMascot;
   const router = useRouter();
   const { search } = useLocation();
   const confirm = useConfirm();
@@ -312,7 +246,7 @@ export default function ProjectsPage() {
   // screenshots follow the row one by one; a failed one is said, not fatal.
   const createProject = useCallback(
     async (draft: ProjectDraft) => {
-      const resp = await authFetch('/api/projects', {
+      const resp = await authFetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description: draft.description, references: draft.references }),
@@ -323,13 +257,13 @@ export default function ProjectsPage() {
         throw new Error(body.detail || `Couldn't create the project (${resp.status}).`);
       }
       const created = (await resp.json()) as { id: string };
-      logger.info('project created', { id: created.id, references: draft.references.length });
+      logger.info('session created', { id: created.id, references: draft.references.length });
       const failed: string[] = [];
       for (const file of draft.files) {
         const form = new FormData();
         form.append('file', file);
         try {
-          const upload = await authFetch(`/api/projects/${created.id}/attachments`, {
+          const upload = await authFetch(`/api/sessions/${created.id}/attachments`, {
             method: 'POST',
             body: form,
           });
@@ -339,7 +273,7 @@ export default function ProjectsPage() {
         }
       }
       if (failed.length > 0) {
-        logger.warn('project screenshots not attached', { id: created.id, failed });
+        logger.warn('session screenshots not attached', { id: created.id, failed });
         await confirm({
           title: REFERENCE_COPY.NOT_ATTACHED_TITLE,
           message: REFERENCE_COPY.notAttached(failed),
@@ -357,7 +291,7 @@ export default function ProjectsPage() {
     async (project: Project, body: Record<string, unknown>, title: string): Promise<boolean> => {
       let detail = UNREACHABLE_LINE;
       try {
-        const resp = await authFetch(`/api/projects/${project.id}`, {
+        const resp = await authFetch(`/api/sessions/${project.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -382,7 +316,7 @@ export default function ProjectsPage() {
   const renameProject = useCallback(
     async (project: Project, name: string) => {
       if (!(await patchProject(project, { name }, 'Name unchanged'))) return;
-      logger.info('project renamed', { id: project.id });
+      logger.info('session renamed', { id: project.id });
       setProjects((current) => current.map((p) => (p.id === project.id ? { ...p, name } : p)));
     },
     [patchProject],
@@ -391,7 +325,7 @@ export default function ProjectsPage() {
     async (project: Project) => {
       const status = nextStatus(project.status);
       if (!(await patchProject(project, { status }, 'Status unchanged'))) return;
-      logger.info('project status set', { id: project.id, status });
+      logger.info('session status set', { id: project.id, status });
       const updated_at = new Date().toISOString();
       setProjects((current) =>
         current.map((p) => (p.id === project.id ? { ...p, status, updated_at } : p)),
@@ -411,9 +345,9 @@ export default function ProjectsPage() {
       let title = 'Delete failed';
       let detail = UNREACHABLE_LINE;
       try {
-        const resp = await authFetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+        const resp = await authFetch(`/api/sessions/${project.id}`, { method: 'DELETE' });
         if (resp.ok || resp.status === 204) {
-          logger.info('project deleted', { id: project.id });
+          logger.info('session deleted', { id: project.id });
           setProjects((current) => current.filter((p) => p.id !== project.id));
           return;
         }
@@ -444,12 +378,6 @@ export default function ProjectsPage() {
   // null while the sidecar is being asked, or when it cannot be; the ledger
   // never waits on it.
   const [caps, setCaps] = useState<Capabilities | null>(null);
-  // Which modes have run inside each engine project; empty until the sidecar
-  // answers, and empty for good on one without the route.
-  const [ran, setRan] = useState<Map<string, Set<string>>>(() => new Map());
-  // The suggested rows stay folded until asked for, so an empty sheet is the
-  // composer and one line, and no connection is read behind the reader's back.
-  const [suggesting, setSuggesting] = useState(false);
   // Render nothing until we know the user has finished onboarding. Otherwise
   // the projects page paints for one frame before the redirect fires, which
   // shows up as a flash of the wrong UI right after first-time sign-in.
@@ -457,10 +385,6 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     loadCapabilities().then(setCaps, () => setCaps(null));
-    loadRecentSessions({ limit: TRACE_LIMIT }).then(
-      (sessions) => setRan(runsByEngineProject(sessions ?? [])),
-      () => setRan(new Map()),
-    );
   }, []);
 
   useEffect(() => {
@@ -480,7 +404,7 @@ export default function ProjectsPage() {
     // Fetch projects (includes X-Team-Id header) — runs in parallel so when
     // the gate clears the page is already populated.
     setLoading(true);
-    authFetch('/api/projects')
+    authFetch('/api/sessions')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setProjects(data))
       .catch(() => setProjects([]))
@@ -519,16 +443,13 @@ export default function ProjectsPage() {
   };
   const rowProps = {
     now,
-    steps,
-    colors,
-    ran,
     onRename: renameProject,
     onToggleStatus: toggleStatus,
     onDelete: deleteProject,
   };
   // The column heads label rows; the unfolded suggestions bring their own.
   const headed = loading || !empty;
-  const sheetStyle = { '--ledger-cols': ledgerColumns(steps.length) } as CSSProperties;
+  const sheetStyle = { '--ledger-cols': LEDGER_COLS } as CSSProperties;
 
   return (
     <PageShell>
@@ -537,18 +458,20 @@ export default function ProjectsPage() {
           <div className="flex items-center gap-4">
             <Mascot size={40} />
             <h1 className="font-display italic text-[40px] leading-none text-foreground">
-              Projects
+              Sessions
             </h1>
           </div>
           <p className="mt-3 max-w-md text-[14px] leading-relaxed text-muted-foreground">
-            Every run inside a project reads what the runs before it left.
+            Each session is its own workspace. A follow-up opens as a new one, seeded from the last.
           </p>
         </div>
         <ProjectGuide steps={steps} colors={colors} />
       </header>
 
+      <BackupNotice fetcher={authFetch} />
+
       <section
-        aria-label="Projects"
+        aria-label="Sessions"
         className="mt-10 rounded-lg border border-border bg-card px-8 py-5 animate-slide-up stagger-2"
         style={sheetStyle}
       >
@@ -565,9 +488,7 @@ export default function ProjectsPage() {
           <SheetWord tail={projectCount(rows.length)}>{IN_PROGRESS_WORD}</SheetWord>
         )}
 
-        {headed && <LedgerHead steps={steps} colors={colors} />}
-
-        {loading && <GhostSkeleton steps={steps} />}
+        {loading && <GhostSkeleton />}
 
         {!loading && !empty && (
           <>
@@ -595,32 +516,12 @@ export default function ProjectsPage() {
           </>
         )}
 
-        {!loading && (
-          <>
-            <SuggestLine
-              empty={empty}
-              open={suggesting}
-              onToggle={() => setSuggesting((open) => !open)}
-            />
-            {suggesting && (
-              <div id="suggested-projects">
-                <SuggestedProjects
-                  steps={steps}
-                  colors={colors}
-                  onPick={pickExample}
-                  showHead={empty}
-                />
-              </div>
-            )}
-          </>
-        )}
-
         {headed && <LedgerFlowList steps={steps} colors={colors} />}
 
         <div className="mt-5 border-t border-border">
           <SheetWord>{OTHER_WAYS_WORD}</SheetWord>
           <ul className="divide-y divide-border/50">
-            {PROJECTS_HEADER_LINKS.map((link) => (
+            {SESSIONS_HEADER_LINKS.map((link) => (
               <WayInRow key={link.href} link={link} />
             ))}
           </ul>

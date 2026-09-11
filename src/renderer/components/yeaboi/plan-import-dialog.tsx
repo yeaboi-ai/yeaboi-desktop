@@ -44,7 +44,7 @@ export function PlanImportDialog({
 
   useEffect(() => {
     if (!ready || fixedProjectId) return;
-    authFetch('/api/projects')
+    authFetch('/api/sessions')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`projects → ${r.status}`))))
       .then((rows: ProjectRow[]) => {
         setProjects(rows);

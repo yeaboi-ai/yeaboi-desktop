@@ -12,7 +12,7 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..middleware.rate_limit import limiter
 from ..models.organization import Team, TeamMember
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..schemas.team_last_viewed import LastViewedRequest
 
@@ -45,18 +45,18 @@ async def patch_last_viewed(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not a member of this team")
 
     project = (
-        await db.execute(select(Project).where(Project.id == str(body.project_id)))
+        await db.execute(select(Session).where(Session.id == str(body.session_id)))
     ).scalar_one_or_none()
     if project is None or project.deleted_at is not None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
     if project.org_id != team.org_id:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Project belongs to a different organization")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Session belongs to a different organization")
 
-    if team.last_viewed_project_id != project.id:
-        team.last_viewed_project_id = project.id
+    if team.last_viewed_session_id != project.id:
+        team.last_viewed_session_id = project.id
         await db.commit()
         logger.info(
-            "Team last_viewed_project_id stamped",
-            extra={"team_id": team.id, "project_id": project.id},
+            "Team last_viewed_session_id stamped",
+            extra={"team_id": team.id, "session_id": project.id},
         )
     return None

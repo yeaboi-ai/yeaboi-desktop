@@ -150,7 +150,7 @@ def test_tool_schemas_are_valid():
 async def test_execute_tool_list_projects(app, client, auth_headers, db_session):
     """list_projects returns projects for the org."""
     from src.app.models.organization import Organization, OrgMember, Team, TeamMember
-    from src.app.models.project import Project
+    from src.app.models.session import Session
     from src.app.models.user import User
 
     # Setup: user, org, team, project
@@ -168,13 +168,13 @@ async def test_execute_tool_list_projects(app, client, auth_headers, db_session)
     await db_session.flush()
 
     db_session.add(TeamMember(team_id=team.id, user_id=user.id, role="admin"))
-    project = Project(name="My Project", description="A test project", org_id=org.id, team_id=team.id, owner_id=user.id)
+    project = Session(name="My Session", description="A test project", org_id=org.id, team_id=team.id, owner_id=user.id)
     db_session.add(project)
     await db_session.commit()
 
     result = await execute_tool("list_projects", {}, org_id=org.id, team_id=team.id, db=db_session)
     assert len(result) == 1
-    assert result[0]["name"] == "My Project"
+    assert result[0]["name"] == "My Session"
 
 
 @pytest.mark.asyncio

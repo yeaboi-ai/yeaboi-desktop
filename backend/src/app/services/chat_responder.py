@@ -97,7 +97,6 @@ async def _generate_reply(
     persona_label: str,
     *,
     session_id: str | None = None,
-    project_id: str | None = None,
 ) -> str | None:
     """Call the chat AI for one short sentence. Returns None on failure."""
     session_factory = get_session_factory()
@@ -108,7 +107,6 @@ async def _generate_reply(
                 db,
                 role="chat",
                 session_id=session_id,
-                project_id=project_id,
             )
             text = await client.chat(
                 system=(
@@ -129,8 +127,8 @@ async def _generate_reply(
 
 async def _load_session_context(
     session_id: str,
-) -> tuple[str | None, str | None, str, str | None]:
-    """Return (org_id, last_message_excerpt, persona_label, project_id).
+) -> tuple[str | None, str | None, str]:
+    """Return (org_id, last_message_excerpt, persona_label).
 
     persona_label falls back to "AI Facilitator" so the speaker name matches
     the existing facilitator path when no persona is set.
@@ -142,9 +140,8 @@ async def _load_session_context(
         result = await db.execute(select(Session).where(Session.id == session_id))
         session = result.scalar_one_or_none()
         if not session:
-            return None, None, "AI Facilitator", None
+            return None, None, "AI Facilitator"
         org_id = session.org_id
-        project_id = session.project_id
         persona_key = (session.ai_config or {}).get("persona") or "default"
         persona_label = PERSONA_LABELS.get(persona_key, "AI Facilitator")
         # Last non-AI message gives the AI a tiny bit of grounding.
@@ -156,7 +153,7 @@ async def _load_session_context(
         )
         last = msg_result.scalar_one_or_none()
         excerpt = (last.content[:200] if last and last.content else None)
-        return org_id, excerpt, persona_label, project_id
+        return org_id, excerpt, persona_label
 
 
 async def maybe_generate_reaction_reply(
@@ -173,14 +170,14 @@ async def maybe_generate_reaction_reply(
             return
         _mark_reply(session_id)
 
-        org_id, _, persona_label, project_id = await _load_session_context(session_id)
+        org_id, _, persona_label = await _load_session_context(session_id)
         target_excerpt = await _excerpt_for_message(session_id, message_id)
         prompt = (
             f'{from_user_name} reacted with {emoji} to: "{target_excerpt or ""}". '
             f"Acknowledge their {emoji} reaction warmly in one short sentence."
         )
         reply = await _generate_reply(
-            org_id, prompt, persona_label, session_id=session_id, project_id=project_id
+            org_id, prompt, persona_label, session_id=session_id
         )
         if reply:
             await _persist_and_broadcast(session_id, reply, persona_label)
@@ -201,14 +198,14 @@ async def maybe_generate_emoji_message_reply(
             return
         _mark_reply(session_id)
 
-        org_id, last_excerpt, persona_label, project_id = await _load_session_context(session_id)
+        org_id, last_excerpt, persona_label = await _load_session_context(session_id)
         prompt = (
             f"{from_user_name} just sent {emoji_content} in chat"
             + (f' (after we were discussing: "{last_excerpt}")' if last_excerpt else "")
             + ". Acknowledge their emoji warmly in one short sentence."
         )
         reply = await _generate_reply(
-            org_id, prompt, persona_label, session_id=session_id, project_id=project_id
+            org_id, prompt, persona_label, session_id=session_id
         )
         if reply:
             await _persist_and_broadcast(session_id, reply, persona_label)

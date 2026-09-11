@@ -199,7 +199,7 @@ export function useSessionData(sessionId: string, projectId: string) {
 
   const fetchCoverage = useCallback(async () => {
     try {
-      const resp = await authFetch(`/api/projects/${projectId}/blueprint/coverage`);
+      const resp = await authFetch(`/api/sessions/${projectId}/blueprint/coverage`);
       if (resp.ok) {
         const data = await resp.json();
         setCoverageScores(data.scores || {});

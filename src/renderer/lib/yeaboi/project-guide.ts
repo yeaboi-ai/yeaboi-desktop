@@ -1,33 +1,34 @@
-// What the duck in the Projects header says: three pages on how a project
+// What the duck in the Sessions header says: three pages on how a session
 // works, and the words on the bubble's controls. Pure so the copy and the
 // stepping are covered from the node lane; the component reads them.
 
 import type { FlowStep } from './reads';
 
-/** localStorage key: the walkthrough was read on this machine. */
-export const GUIDE_SEEN_KEY = 'projects-guide-seen';
+/** localStorage key: the walkthrough was read on this machine. A new key on
+ *  purpose — what it explains changed, so it is worth showing again. */
+export const GUIDE_SEEN_KEY = 'sessions-guide-seen';
 
 export const GOT_IT_LABEL = 'Got it';
 export const NEXT_LABEL = 'Next';
-export const REOPEN_LABEL = 'How projects work';
+export const REOPEN_LABEL = 'How sessions work';
 /** The page dots' labels, one per page. */
 export const PAGE_LABEL = (n: number) => `Page ${n}`;
 
-/** One step's part in a project, as a verb phrase after its label. */
+/** What each mode is for, as a verb phrase after its label. */
 export const RELATED_CLAUSE: Record<string, string> = {
-  'project-planning': 'frames every other run',
+  'project-planning': 'breaks the work down',
   'team-analysis': 'profiles the team',
-  'daily-standup': 'tracks its blockers',
-  poker: 'sizes its tickets',
+  'daily-standup': 'tracks the blockers',
+  poker: 'sizes the tickets',
   retro: 'carries actions over',
   reporting: 'reads all of it',
 };
 
-export const RELATED_TITLE = 'Everything inside stays related';
-/** The Agents world has no flow: its projects scope by repository (flow.py's AGENTS_FLOW_LINE). */
+export const RELATED_TITLE = 'Runs are their own thing';
+/** A world with no flow at all — the Agents reports scope by repository. */
 export const AGENTS_RELATED_TITLE = 'Reports scope by repository';
 export const AGENTS_RELATED_LINE =
-  'Agents projects scope their reports to one repository, so every report inside reads the same code.';
+  'Agents reports scope to one repository, so every report reads the same code.';
 
 export interface GuideItem {
   key: string;
@@ -44,12 +45,12 @@ export interface GuidePage {
 
 const FIRST_PAGE: GuidePage = {
   title: 'One piece of work',
-  body: 'Plan it once and keep coming back to it. Describe it below and yeaboi names it — a description is a start, not a commitment.',
+  body: 'A session is a conversation and everything it produces: a blueprint, a plan, a board. Describe it below and yeaboi names it — a description is a start, not a commitment.',
 };
 
 const LAST_PAGE: GuidePage = {
-  title: 'It grows as you go',
-  body: 'Each run reads what the runs before it left. A session is the other door: one run, nothing carried.',
+  title: 'A follow-up starts a new one',
+  body: 'When the work moves on, the next session opens seeded from this one, so the ledger reads in the order the work happened.',
 };
 
 /** The world's steps that have a part to play, in flow order. */
@@ -65,7 +66,7 @@ function joinClauses(clauses: string[]): string {
   return `${clauses.slice(0, -1).join(', ')} and ${clauses[clauses.length - 1]}`;
 }
 
-/** The related page as one sentence, for a reader who hears it rather than sees it. */
+/** The middle page as one sentence, for a reader who hears it rather than sees it. */
 export function relatedLine(steps: readonly FlowStep[]): string {
   const items = relatedItems(steps);
   if (items.length === 0) return AGENTS_RELATED_LINE;

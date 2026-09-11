@@ -90,9 +90,9 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
     (async () => {
       try {
         const [covResp, bpResp, sessResp] = await Promise.all([
-          authFetch(`/api/projects/${projectId}/blueprint/coverage`),
-          authFetch(`/api/projects/${projectId}/blueprint`),
-          authFetch(`/api/projects/${projectId}/sessions`),
+          authFetch(`/api/sessions/${projectId}/blueprint/coverage`),
+          authFetch(`/api/sessions/${projectId}/blueprint`),
+          authFetch(`/api/sessions/${projectId}`),
         ]);
         if (cancelled) return;
 
@@ -102,9 +102,9 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
         const content: Record<string, string> = bpResp.ok
           ? ((await bpResp.json()).content ?? {})
           : {};
-        const sessions: Array<{ id: string; status: string; created_at: string }> = sessResp.ok
+        const session: { continued_from_id?: string | null } | null = sessResp.ok
           ? await sessResp.json()
-          : [];
+          : null;
 
         // Bullets — flatten across all sections, keep section provenance.
         const bullets: ParsedBullet[] = [];
@@ -127,16 +127,11 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
           }))
           .sort((a, b) => a.score - b.score);
 
-        // Most recent completed session — used to pull pending review items.
-        const sorted = [...sessions].sort((a, b) =>
-          a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
-        );
-        const prior = sorted.find((s) => s.status !== 'live' && s.status !== 'lobby') ?? null;
+        // The session this one was seeded from — what its review items belong to.
+        const prior = session?.continued_from_id ?? null;
         let previousSessionPendingCount = 0;
         if (prior) {
-          const sgResp = await authFetch(
-            `/api/projects/${projectId}/blueprint-suggestions?session_id=${prior.id}`,
-          );
+          const sgResp = await authFetch(`/api/sessions/${prior}/blueprint-suggestions`);
           if (sgResp.ok && !cancelled) {
             const arr = (await sgResp.json()) as unknown[];
             previousSessionPendingCount = Array.isArray(arr) ? arr.length : 0;
@@ -151,7 +146,7 @@ export function useBlueprintGaps(projectId: string, gapThreshold = 60): Blueprin
             content,
             bullets,
             openQuestions,
-            previousSessionId: prior?.id ?? null,
+            previousSessionId: prior,
             previousSessionPendingCount,
           });
         }

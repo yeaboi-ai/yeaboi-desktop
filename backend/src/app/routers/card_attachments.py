@@ -18,7 +18,7 @@ from ..deps import get_current_org, get_current_user
 from ..models.attachment import CardAttachment
 from ..models.board import Board, BoardColumn, Card
 from ..models.organization import Organization
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..schemas.board import TicketAttachmentResponse
 from ..services.attachment_storage import get_storage
@@ -48,10 +48,10 @@ async def _load_card_in_org(card_id: str, org_id: str, db: AsyncSession) -> Card
     """Resolve a card and 403/404 if cross-org."""
     row = (
         await db.execute(
-            select(Card, Project.org_id)
+            select(Card, Session.org_id)
             .join(BoardColumn, BoardColumn.id == Card.column_id)
             .join(Board, Board.id == BoardColumn.board_id)
-            .join(Project, Project.id == Board.project_id)
+            .join(Session, Session.id == Board.session_id)
             .where(Card.id == card_id)
         )
     ).first()

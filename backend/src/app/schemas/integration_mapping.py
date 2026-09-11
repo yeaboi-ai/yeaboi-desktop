@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class IntegrationProjectMappingCreate(BaseModel):
     integration_id: str
-    internal_project_id: str
+    internal_session_id: str
     external_project_key: str = Field(..., min_length=1, max_length=120)
     external_project_id: str | None = None
     default_issue_type: str = "Task"
@@ -28,7 +28,7 @@ class IntegrationProjectMappingUpdate(BaseModel):
 class IntegrationProjectMappingResponse(BaseModel):
     id: str
     integration_id: str
-    internal_project_id: str
+    internal_session_id: str
     external_project_key: str
     external_project_id: str | None
     default_issue_type: str

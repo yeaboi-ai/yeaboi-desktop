@@ -36,8 +36,8 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.integration import OrgIntegration
-from ..models.project import Project
 from ..models.repo_analysis_job import RepoAnalysisJob
+from ..models.session import Session
 from .ai_provider import get_ai_client
 from .connectors.scan_runner import with_retry
 from .github_app import GITHUB_API, get_installation_token
@@ -290,14 +290,14 @@ def _parse_extraction_response(raw: str) -> dict[str, Any]:
 
 
 async def _load_fresh_cached_profile(
-    project_id: str, repo_full_name: str, db: AsyncSession
+    session_id: str, repo_full_name: str, db: AsyncSession
 ) -> dict | None:
     """Return the latest complete profile if it's within TTL and matches the repo, else None."""
     job = (
         await db.execute(
             select(RepoAnalysisJob)
             .where(
-                RepoAnalysisJob.project_id == project_id,
+                RepoAnalysisJob.session_id == session_id,
                 RepoAnalysisJob.status == "complete",
             )
             .order_by(desc(RepoAnalysisJob.completed_at))
@@ -316,7 +316,7 @@ async def _load_fresh_cached_profile(
 
 
 async def ensure_repo_profile(
-    *, project: Project, db: AsyncSession
+    *, project: Session, db: AsyncSession
 ) -> dict[str, Any]:
     """Return a fresh-or-cached repo conventions profile for the project.
 
@@ -325,7 +325,7 @@ async def ensure_repo_profile(
     """
     owner_repo = parse_repo_url(project.repo_url)
     if not owner_repo:
-        raise RepoAnalysisError("Project has no parseable repo_url")
+        raise RepoAnalysisError("Session has no parseable repo_url")
     owner, repo = owner_repo
     repo_full_name = f"{owner}/{repo}"
 
@@ -339,7 +339,7 @@ async def ensure_repo_profile(
         raise RepoAnalysisError("Org has no active GitHub App installation")
 
     job = RepoAnalysisJob(
-        project_id=project.id,
+        session_id=project.id,
         org_id=project.org_id,
         status="running",
         repo_full_name=repo_full_name,
@@ -391,7 +391,7 @@ async def ensure_repo_profile(
         logger.warning(
             "Repo analysis failed (RepoAnalysisError)",
             extra={
-                "project_id": project.id,
+                "session_id": project.id,
                 "org_id": project.org_id,
                 "repo": repo_full_name,
                 "exc_type": exc.__class__.__name__,
@@ -406,7 +406,7 @@ async def ensure_repo_profile(
         logger.warning(
             "Repo analysis failed (GitHub API)",
             extra={
-                "project_id": project.id,
+                "session_id": project.id,
                 "org_id": project.org_id,
                 "repo": repo_full_name,
                 "status_code": exc.response.status_code,
@@ -421,7 +421,7 @@ async def ensure_repo_profile(
         logger.exception(
             "Repo analysis failed (unexpected)",
             extra={
-                "project_id": project.id,
+                "session_id": project.id,
                 "org_id": project.org_id,
                 "repo": repo_full_name,
                 "exc_type": exc.__class__.__name__,

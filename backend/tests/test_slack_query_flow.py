@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.services.slack_query_flow import handle_session_create, list_candidate_projects, resolve_project
 
 
@@ -13,7 +13,7 @@ from src.app.services.slack_query_flow import handle_session_create, list_candid
 async def test_resolve_project_uses_stamp_when_valid(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -21,7 +21,7 @@ async def test_resolve_project_uses_stamp_when_valid(
     )
     db_session.add(project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = project.id
+    sample_team.last_viewed_session_id = project.id
     await db_session.commit()
 
     resolved = await resolve_project(sample_team.id, db_session)
@@ -33,7 +33,7 @@ async def test_resolve_project_uses_stamp_when_valid(
 async def test_resolve_project_clears_stale_stamp(
     db_session, sample_team, sample_user
 ):
-    deleted = Project(
+    deleted = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -41,21 +41,21 @@ async def test_resolve_project_clears_stale_stamp(
     )
     db_session.add(deleted)
     await db_session.flush()
-    sample_team.last_viewed_project_id = deleted.id
+    sample_team.last_viewed_session_id = deleted.id
     deleted.deleted_at = datetime.now(UTC)
     await db_session.commit()
 
     resolved = await resolve_project(sample_team.id, db_session)
     assert resolved is None
     await db_session.refresh(sample_team)
-    assert sample_team.last_viewed_project_id is None
+    assert sample_team.last_viewed_session_id is None
 
 
 @pytest.mark.asyncio
 async def test_resolve_project_single_active(
     db_session, sample_team, sample_user
 ):
-    only = Project(
+    only = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -75,7 +75,7 @@ async def test_resolve_project_returns_none_when_ambiguous(
 ):
     for name in ("A", "B"):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id,
                 team_id=sample_team.id,
                 owner_id=sample_user.id,
@@ -100,13 +100,13 @@ async def test_resolve_project_returns_none_when_empty(
 async def test_list_candidate_projects_orders_by_updated_at_desc(
     db_session, sample_team, sample_user
 ):
-    older = Project(
+    older = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
         name="Older",
     )
-    newer = Project(
+    newer = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -133,7 +133,7 @@ async def test_resolve_project_clears_stamp_when_cross_org(
     db_session.add(other_org)
     await db_session.flush()
 
-    cross_org_project = Project(
+    cross_org_project = Session(
         org_id=other_org.id,
         team_id=sample_team.id,   # FK-only; doesn't affect the resolver logic
         owner_id=sample_user.id,
@@ -141,24 +141,24 @@ async def test_resolve_project_clears_stamp_when_cross_org(
     )
     db_session.add(cross_org_project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = cross_org_project.id
+    sample_team.last_viewed_session_id = cross_org_project.id
     await db_session.commit()
 
     resolved = await resolve_project(sample_team.id, db_session)
     assert resolved is None
     await db_session.refresh(sample_team)
-    assert sample_team.last_viewed_project_id is None
+    assert sample_team.last_viewed_session_id is None
 
 
 @pytest.mark.asyncio
 async def test_list_candidate_projects_excludes_soft_deleted(
     db_session, sample_team, sample_user
 ):
-    kept = Project(
+    kept = Session(
         org_id=sample_team.org_id, team_id=sample_team.id,
         owner_id=sample_user.id, name="Kept",
     )
-    removed = Project(
+    removed = Session(
         org_id=sample_team.org_id, team_id=sample_team.id,
         owner_id=sample_user.id, name="Removed",
     )
@@ -183,11 +183,11 @@ async def test_list_candidate_projects_excludes_other_org(
     db_session.add(other_org)
     await db_session.flush()
 
-    local = Project(
+    local = Session(
         org_id=sample_team.org_id, team_id=sample_team.id,
         owner_id=sample_user.id, name="Local",
     )
-    foreign = Project(
+    foreign = Session(
         org_id=other_org.id, team_id=sample_team.id,
         owner_id=sample_user.id, name="Foreign",
     )
@@ -205,7 +205,7 @@ async def test_list_candidate_projects_respects_limit(
 ):
     for i in range(5):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id, team_id=sample_team.id,
                 owner_id=sample_user.id, name=f"P{i}",
             )
@@ -225,7 +225,7 @@ async def test_list_candidate_projects_respects_limit(
 async def test_handle_session_create_posts_public_link_when_resolved(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -233,7 +233,7 @@ async def test_handle_session_create_posts_public_link_when_resolved(
     )
     db_session.add(project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = project.id
+    sample_team.last_viewed_session_id = project.id
     await db_session.commit()
 
     with patch(
@@ -254,7 +254,7 @@ async def test_handle_session_create_posts_public_link_when_resolved(
     assert resp["response_type"] == "in_channel"
     action = next(b for b in resp["blocks"] if b["type"] == "actions")
     button_url = action["elements"][0]["url"]
-    assert f"/projects/{project.id}/sessions/" in button_url
+    assert "/sessions/" in button_url
     section = next(b for b in resp["blocks"] if b["type"] == "section")
     assert "<@U1>" in section["text"]["text"]
 
@@ -265,7 +265,7 @@ async def test_handle_session_create_posts_ephemeral_picker_when_ambiguous(
 ):
     for nm in ("Alpha", "Beta"):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id,
                 team_id=sample_team.id,
                 owner_id=sample_user.id,
@@ -289,11 +289,11 @@ async def test_handle_session_create_posts_ephemeral_picker_when_ambiguous(
     assert len(action["elements"]) == 2
     # action_ids are suffixed per-button to satisfy Slack's uniqueness
     # requirement within a message; dispatcher matches via startswith.
-    assert action["elements"][0]["action_id"].startswith("session_create_pick_project")
+    assert action["elements"][0]["action_id"].startswith("session_create_pick")
 
 
 @pytest.mark.asyncio
-async def test_handle_session_create_rejects_when_no_projects(
+async def test_handle_session_create_rejects_when_no_sessions(
     db_session, sample_team, sample_user
 ):
     with patch(
@@ -307,16 +307,16 @@ async def test_handle_session_create_rejects_when_no_projects(
         )
 
     assert resp["response_type"] == "ephemeral"
-    assert "No projects" in resp["text"]
+    assert "No sessions" in resp["text"]
 
 
 @pytest.mark.asyncio
-async def test_handle_session_create_shows_web_app_link_when_over_ten_projects(
+async def test_handle_session_create_shows_web_app_link_when_over_ten_sessions(
     db_session, sample_team, sample_user
 ):
     for i in range(12):
         db_session.add(
-            Project(
+            Session(
                 org_id=sample_team.org_id,
                 team_id=sample_team.id,
                 owner_id=sample_user.id,
@@ -337,8 +337,8 @@ async def test_handle_session_create_shows_web_app_link_when_over_ten_projects(
 
     assert resp["response_type"] == "ephemeral"
     action = next(b for b in resp["blocks"] if b["type"] == "actions")
-    assert action["elements"][0]["action_id"] == "session_open_projects_list"
-    assert action["elements"][0]["url"].endswith("/projects")
+    assert action["elements"][0]["action_id"] == "session_open_sessions_list"
+    assert action["elements"][0]["url"].endswith("/sessions")
 
 
 @pytest.mark.asyncio

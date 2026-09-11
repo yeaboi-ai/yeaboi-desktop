@@ -131,7 +131,7 @@ def recording_ai(monkeypatch):
 
 async def test_first_session_is_told_what_the_project_points_at(client, auth_headers, recording_ai):
     proj = await client.post(
-        "/api/projects",
+        "/api/sessions",
         json={
             "name": "Safari login",
             "description": "Users cannot sign in on Safari.",
@@ -147,10 +147,10 @@ async def test_first_session_is_told_what_the_project_points_at(client, auth_hea
         headers=auth_headers,
     )
     assert proj.status_code == 201
-    project_id = proj.json()["id"]
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Work out why the cookie is dropped"},
         headers=auth_headers,
     )
@@ -166,13 +166,13 @@ async def test_first_session_is_told_what_the_project_points_at(client, auth_hea
 
 async def test_a_project_pointing_at_nothing_seeds_as_it_always_did(client, auth_headers, recording_ai):
     proj = await client.post(
-        "/api/projects",
+        "/api/sessions",
         json={"name": "Plain", "description": "A plain project."},
         headers=auth_headers,
     )
-    project_id = proj.json()["id"]
+    session_id = proj.json()["id"]
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Just an idea"},
         headers=auth_headers,
     )
@@ -206,8 +206,8 @@ def screenshot_reads(monkeypatch):
     """Record every scheduling of the vision task instead of running it."""
     calls: list[tuple] = []
 
-    async def _record(session_id, project_id, org_id, iteration_id):
-        calls.append((session_id, project_id, org_id, iteration_id))
+    async def _record(source_session_id, session_id, org_id, iteration_id):
+        calls.append((source_session_id, session_id, org_id, iteration_id))
 
     from src.app.routers import sessions as sessions_router
 
@@ -226,25 +226,27 @@ def _png() -> bytes:
 
 
 async def _project_with_a_screenshot(client, headers) -> str:
-    project_id = (await client.post("/api/projects", json={"name": "Mockups"}, headers=headers)).json()["id"]
+    session_id = (await client.post("/api/sessions", json={"name": "Mockups"}, headers=headers)).json()["id"]
     files = {"file": ("login.png", io.BytesIO(_png()), "image/png")}
-    resp = await client.post(f"/api/projects/{project_id}/attachments", files=files, headers=headers)
+    resp = await client.post(f"/api/sessions/{session_id}/attachments", files=files, headers=headers)
     assert resp.status_code == 201, resp.text
-    return project_id
+    return session_id
 
 
 async def test_the_first_session_reads_the_project_screenshots(
     client, auth_headers, recording_ai, upload_dir, screenshot_reads
 ):
-    project_id = await _project_with_a_screenshot(client, auth_headers)
+    session_id = await _project_with_a_screenshot(client, auth_headers)
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions", json={"initial_idea": "Build it"}, headers=auth_headers
+        f"/api/sessions/{session_id}/continuations", json={"initial_idea": "Build it"}, headers=auth_headers
     )
     assert resp.status_code == 201
     assert len(screenshot_reads) == 1
-    session_id, read_project, _org, iteration_id = screenshot_reads[0]
-    assert session_id == resp.json()["id"]
-    assert read_project == project_id
+    read_from, written_to, _org, iteration_id = screenshot_reads[0]
+    # The shots belong to the session this one continues; the reading of them
+    # belongs to the new session's own blueprint. Two ids, deliberately.
+    assert read_from == session_id
+    assert written_to == resp.json()["id"]
     # The reading lands on the iteration the seeding used, not on a resolved guess.
     assert iteration_id
 
@@ -256,9 +258,9 @@ async def test_a_later_session_does_not_read_them_again(
 
     from src.app.models.blueprint import BlueprintIteration
 
-    project_id = await _project_with_a_screenshot(client, auth_headers)
+    session_id = await _project_with_a_screenshot(client, auth_headers)
     first = await client.post(
-        f"/api/projects/{project_id}/sessions", json={"initial_idea": "Build it"}, headers=auth_headers
+        f"/api/sessions/{session_id}/continuations", json={"initial_idea": "Build it"}, headers=auth_headers
     )
     assert first.status_code == 201
     assert len(screenshot_reads) == 1
@@ -271,7 +273,7 @@ async def test_a_later_session_does_not_read_them_again(
     await db_session.commit()
 
     second = await client.post(
-        f"/api/projects/{project_id}/sessions", json={"initial_idea": "Now the billing half"}, headers=auth_headers
+        f"/api/sessions/{session_id}/continuations", json={"initial_idea": "Now the billing half"}, headers=auth_headers
     )
     assert second.status_code == 201, second.text
     # The reading is already in the blueprint; a second session must not pay for it twice.
@@ -281,9 +283,9 @@ async def test_a_later_session_does_not_read_them_again(
 async def test_a_project_with_no_screenshots_schedules_no_reading(
     client, auth_headers, recording_ai, upload_dir, screenshot_reads
 ):
-    project_id = (await client.post("/api/projects", json={"name": "Plain"}, headers=auth_headers)).json()["id"]
+    session_id = (await client.post("/api/sessions", json={"name": "Plain"}, headers=auth_headers)).json()["id"]
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions", json={"initial_idea": "Build it"}, headers=auth_headers
+        f"/api/sessions/{session_id}/continuations", json={"initial_idea": "Build it"}, headers=auth_headers
     )
     assert resp.status_code == 201
     assert screenshot_reads == []

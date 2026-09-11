@@ -367,7 +367,6 @@ class AIClient:
         org_id: str | None = None,
         db: AsyncSession | None = None,
         role: str | None = None,
-        project_id: str | None = None,
         session_id: str | None = None,
         user_id: str | None = None,
     ):
@@ -391,8 +390,7 @@ class AIClient:
         self._role = role
         # Attribution for the `usage_events` ledger. When org_id is set, each
         # chat call schedules a fire-and-forget write to usage_events tagged
-        # with these IDs. project/session/user may be None for org-level work.
-        self._project_id = project_id
+        # with these IDs. session/user may be None for org-level work.
         self._session_id = session_id
         self._user_id = user_id
 
@@ -847,7 +845,6 @@ class AIClient:
         loop.create_task(
             _write_usage_event(
                 org_id=self._org_id,
-                project_id=self._project_id,
                 session_id=self._session_id,
                 user_id=self._user_id,
                 provider=provider,
@@ -1346,7 +1343,6 @@ def _build_platform_client(
     org_id: str | None = None,
     db: AsyncSession | None = None,
     role: str | None = None,
-    project_id: str | None = None,
     session_id: str | None = None,
     user_id: str | None = None,
     model_override: str | None = None,
@@ -1410,7 +1406,6 @@ def _build_platform_client(
             org_id=org_id,
             db=db,
             role=role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1425,7 +1420,6 @@ def _build_platform_client(
             org_id=org_id,
             db=db,
             role=role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1440,7 +1434,6 @@ def _build_platform_client(
             org_id=org_id,
             db=db,
             role=role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1564,7 +1557,6 @@ async def get_ai_client_for_role(
     db: AsyncSession | None,
     role: str,
     *,
-    project_id: str | None = None,
     session_id: str | None = None,
     user_id: str | None = None,
 ) -> AIClient:
@@ -1609,7 +1601,6 @@ async def get_ai_client_for_role(
             org_id=org_id,
             db=db,
             role=role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
             model_override=model_override,
@@ -1625,7 +1616,6 @@ async def get_ai_client_for_role(
             org_id=org_id,
             db=None,
             role=role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1637,7 +1627,6 @@ async def get_ai_client_for_role(
         task=tier,
         _platform_override=provider,
         _role=role,
-        project_id=project_id,
         session_id=session_id,
         user_id=user_id,
     )
@@ -1650,7 +1639,6 @@ async def get_ai_client(
     *,
     _platform_override: str | None = None,
     _role: str | None = None,
-    project_id: str | None = None,
     session_id: str | None = None,
     user_id: str | None = None,
 ) -> AIClient:
@@ -1686,7 +1674,6 @@ async def get_ai_client(
             org_id=org_id,
             db=db,
             role=_role,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1720,7 +1707,6 @@ async def get_ai_client(
                 org_id=org_id,
                 db=db,
                 role=_role,
-                project_id=project_id,
                 session_id=session_id,
                 user_id=user_id,
             )
@@ -1734,7 +1720,6 @@ async def get_ai_client(
                 org_id=org_id,
                 db=db,
                 role=_role,
-                project_id=project_id,
                 session_id=session_id,
                 user_id=user_id,
             )
@@ -1751,7 +1736,6 @@ async def get_ai_client(
                 org_id=org_id,
                 db=db,
                 role=_role,
-                project_id=project_id,
                 session_id=session_id,
                 user_id=user_id,
             )
@@ -1806,7 +1790,6 @@ async def get_ai_client(
             scope=f"org:{org_id}" if org_id else "bedrock",
             org_id=org_id,
             db=db,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1831,7 +1814,6 @@ async def get_ai_client(
             scope=f"org:{org_id}" if org_id else "self_hosted",
             org_id=org_id,
             db=db,
-            project_id=project_id,
             session_id=session_id,
             user_id=user_id,
         )
@@ -1856,7 +1838,6 @@ async def test_ai_connection(org_id: str, db: AsyncSession) -> dict:
 async def _write_usage_event(
     *,
     org_id: str,
-    project_id: str | None,
     session_id: str | None,
     user_id: str | None,
     provider: str,
@@ -1880,7 +1861,6 @@ async def _write_usage_event(
         async with factory() as db:
             ctx = UsageContext(
                 org_id=org_id,
-                project_id=project_id,
                 session_id=session_id,
                 user_id=user_id,
             )

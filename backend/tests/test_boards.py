@@ -6,13 +6,13 @@ import pytest
 @pytest.mark.anyio
 async def test_get_board_creates_default_columns(client, auth_headers):
     """Getting a board for a project auto-creates it with 5 default columns."""
-    proj_resp = await client.post("/api/projects", json={"name": "Board Test"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Board Test"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    resp = await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)
     assert resp.status_code == 200
     board = resp.json()
-    assert board["project_id"] == project_id
+    assert board["session_id"] == session_id
     assert "id" in board
     column_names = [c["name"] for c in board["columns"]]
     assert column_names == ["Backlog", "To Do", "In Progress", "Review", "Done"]
@@ -21,11 +21,11 @@ async def test_get_board_creates_default_columns(client, auth_headers):
 @pytest.mark.anyio
 async def test_get_board_idempotent(client, auth_headers):
     """Calling get-board twice returns the same board."""
-    proj_resp = await client.post("/api/projects", json={"name": "Idempotent Board"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Idempotent Board"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    r1 = await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)
-    r2 = await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)
+    r1 = await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)
+    r2 = await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)
     assert r1.json()["id"] == r2.json()["id"]
     # Still only 5 columns
     assert len(r2.json()["columns"]) == 5
@@ -34,10 +34,10 @@ async def test_get_board_idempotent(client, auth_headers):
 @pytest.mark.anyio
 async def test_create_card(client, auth_headers):
     """Create a card in a board column."""
-    proj_resp = await client.post("/api/projects", json={"name": "Card Project"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Card Session"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board_resp = await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)
+    board_resp = await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)
     board = board_resp.json()
     board_id = board["id"]
     backlog_col_id = board["columns"][0]["id"]  # Backlog
@@ -67,10 +67,10 @@ async def test_create_card(client, auth_headers):
 @pytest.mark.anyio
 async def test_board_lists_cards_in_columns(client, auth_headers):
     """Board response includes nested cards in each column."""
-    proj_resp = await client.post("/api/projects", json={"name": "Nested Cards"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Nested Cards"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     col_id = board["columns"][0]["id"]
 
@@ -85,7 +85,7 @@ async def test_board_lists_cards_in_columns(client, auth_headers):
         headers=auth_headers,
     )
 
-    board2 = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board2 = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     backlog = board2["columns"][0]
     assert len(backlog["cards"]) == 2
     titles = {c["title"] for c in backlog["cards"]}
@@ -95,10 +95,10 @@ async def test_board_lists_cards_in_columns(client, auth_headers):
 @pytest.mark.anyio
 async def test_move_card_between_columns(client, auth_headers):
     """PATCH /api/cards/{id} with a new column_id moves the card."""
-    proj_resp = await client.post("/api/projects", json={"name": "Move Test"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Move Test"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     backlog_id = board["columns"][0]["id"]
     todo_id = board["columns"][1]["id"]
@@ -122,10 +122,10 @@ async def test_move_card_between_columns(client, auth_headers):
 @pytest.mark.anyio
 async def test_update_card_fields(client, auth_headers):
     """PATCH /api/cards/{id} updates title, priority, and story points."""
-    proj_resp = await client.post("/api/projects", json={"name": "Update Test"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Update Test"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     col_id = board["columns"][0]["id"]
 
@@ -153,10 +153,10 @@ async def test_update_card_fields(client, auth_headers):
 @pytest.mark.anyio
 async def test_delete_card(client, auth_headers):
     """DELETE /api/cards/{id} removes the card."""
-    proj_resp = await client.post("/api/projects", json={"name": "Delete Test"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Delete Test"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     col_id = board["columns"][0]["id"]
 
@@ -172,7 +172,7 @@ async def test_delete_card(client, auth_headers):
     assert del_resp.status_code == 204
 
     # Card should no longer appear in board
-    board2 = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board2 = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     all_cards = [c for col in board2["columns"] for c in col["cards"]]
     assert not any(c["id"] == card["id"] for c in all_cards)
 
@@ -182,20 +182,20 @@ async def test_cannot_access_other_users_board(client, auth_headers, other_auth_
     """A user not in the project's team is blocked from the board — either via
     404/403, or via the org/team resolution layer (400) before the handler runs.
     Today cross-team reads return 200 read-only; the test accepts that too."""
-    proj_resp = await client.post("/api/projects", json={"name": "Private Board"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Private Board"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    resp = await client.get(f"/api/projects/{project_id}/board", headers=other_auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/board", headers=other_auth_headers)
     assert resp.status_code in (200, 400, 403, 404)
 
 
 @pytest.mark.anyio
 async def test_update_column(client, auth_headers):
     """PATCH /api/boards/{id}/columns/{col_id} renames a column."""
-    proj_resp = await client.post("/api/projects", json={"name": "Column Update"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Column Update"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     col_id = board["columns"][0]["id"]
 
@@ -219,10 +219,10 @@ async def test_dispatch_event_called_on_card_state_changed(client, auth_headers)
     """dispatch_event is called with card_state_changed when a card is moved between columns."""
     from unittest.mock import AsyncMock, patch
 
-    proj_resp = await client.post("/api/projects", json={"name": "Slack Board Test"}, headers=auth_headers)
-    project_id = proj_resp.json()["id"]
+    proj_resp = await client.post("/api/sessions", json={"name": "Slack Board Test"}, headers=auth_headers)
+    session_id = proj_resp.json()["id"]
 
-    board = (await client.get(f"/api/projects/{project_id}/board", headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{session_id}/board", headers=auth_headers)).json()
     board_id = board["id"]
     backlog_id = board["columns"][0]["id"]
     todo_id = board["columns"][1]["id"]
@@ -265,8 +265,8 @@ async def test_dispatch_event_called_on_card_state_changed(client, auth_headers)
 @pytest.mark.anyio
 async def test_default_columns_have_lifecycle_flags(client, auth_headers):
     """The five default columns are seeded with the expected role flags."""
-    proj = (await client.post("/api/projects", json={"name": "Flag Defaults"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Flag Defaults"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
 
     by_name = {c["name"]: c for c in board["columns"]}
     assert by_name["Backlog"]["is_start_state"] is True
@@ -279,8 +279,8 @@ async def test_default_columns_have_lifecycle_flags(client, auth_headers):
 @pytest.mark.anyio
 async def test_create_column(client, auth_headers):
     """POST /api/boards/{id}/columns appends a new column at the end."""
-    proj = (await client.post("/api/projects", json={"name": "Column Create"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Column Create"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
 
     resp = await client.post(
         f"/api/boards/{board['id']}/columns",
@@ -294,7 +294,7 @@ async def test_create_column(client, auth_headers):
     assert new_col["accent_color"] == "#ff0000"
     assert new_col["position"] == 5  # after the 5 default columns
 
-    refreshed = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    refreshed = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     assert len(refreshed["columns"]) == 6
     assert refreshed["columns"][-1]["name"] == "Blocked"
 
@@ -302,8 +302,8 @@ async def test_create_column(client, auth_headers):
 @pytest.mark.anyio
 async def test_delete_column_reassigns_cards(client, auth_headers):
     """Deleting a column moves its cards to the fallback column."""
-    proj = (await client.post("/api/projects", json={"name": "Column Delete"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Column Delete"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     board_id = board["id"]
     backlog_id = board["columns"][0]["id"]
     todo_id = board["columns"][1]["id"]
@@ -323,7 +323,7 @@ async def test_delete_column_reassigns_cards(client, auth_headers):
     )
     assert resp.status_code == 204
 
-    refreshed = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    refreshed = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     names = [c["name"] for c in refreshed["columns"]]
     assert "To Do" not in names
     backlog = next(c for c in refreshed["columns"] if c["name"] == "Backlog")
@@ -333,8 +333,8 @@ async def test_delete_column_reassigns_cards(client, auth_headers):
 @pytest.mark.anyio
 async def test_cannot_delete_last_column(client, auth_headers):
     """Deleting all columns leaves an unusable board — reject the last delete."""
-    proj = (await client.post("/api/projects", json={"name": "Last Column"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Last Column"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     board_id = board["id"]
 
     # Delete four of five.
@@ -347,7 +347,7 @@ async def test_cannot_delete_last_column(client, auth_headers):
         )
         assert resp.status_code == 204
 
-    refreshed = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    refreshed = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     last_id = refreshed["columns"][0]["id"]
 
     resp = await client.request(
@@ -359,8 +359,8 @@ async def test_cannot_delete_last_column(client, auth_headers):
 @pytest.mark.anyio
 async def test_reorder_columns(client, auth_headers):
     """POST /columns/reorder applies the requested order."""
-    proj = (await client.post("/api/projects", json={"name": "Reorder"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Reorder"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     board_id = board["id"]
 
     column_ids = [c["id"] for c in board["columns"]]
@@ -380,8 +380,8 @@ async def test_reorder_columns(client, auth_headers):
 @pytest.mark.anyio
 async def test_reorder_columns_rejects_partial_list(client, auth_headers):
     """The reorder request must list every column on the board."""
-    proj = (await client.post("/api/projects", json={"name": "Partial Reorder"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Partial Reorder"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     resp = await client.post(
         f"/api/boards/{board['id']}/columns/reorder",
         json={"column_ids": [board["columns"][0]["id"]]},
@@ -393,8 +393,8 @@ async def test_reorder_columns_rejects_partial_list(client, auth_headers):
 @pytest.mark.anyio
 async def test_update_column_role_flags(client, auth_headers):
     """PATCH a column to update lifecycle flags + accent color."""
-    proj = (await client.post("/api/projects", json={"name": "Flag PATCH"}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+    proj = (await client.post("/api/sessions", json={"name": "Flag PATCH"}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     board_id = board["id"]
     done_col = next(c for c in board["columns"] if c["name"] == "Done")
 

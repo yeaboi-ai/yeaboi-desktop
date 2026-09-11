@@ -42,7 +42,7 @@ export function BoardSettingsDrawer({
   // The Sheet's max-width is bumped to full when expanded so the workflow
   // diagram has room to breathe. Header buttons toggle expand and open the
   // dedicated /projects/[id]/board-settings page in a new tab.
-  const settingsHref = projectId ? `/projects/${projectId}/board-settings` : null;
+  const settingsHref = projectId ? `/sessions/${projectId}/board-settings` : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

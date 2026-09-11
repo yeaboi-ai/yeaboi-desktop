@@ -1,7 +1,7 @@
 """The facilitator prompt must no longer contain the retired 'Complete and Generate
 Board' gatekeeping phrases, and must include the new `_RULES_OUTPUTS` block."""
 
-from src.app.services.facilitator import _ACTOR, _RULES_ABSOLUTE, _RULES_FACILITATION, _RULES_OUTPUTS, _RULES_STEERING
+from src.app.services.facilitator import _RULES_ABSOLUTE, _RULES_FACILITATION, _RULES_OUTPUTS, _RULES_STEERING
 
 
 def test_retired_phrases_removed():

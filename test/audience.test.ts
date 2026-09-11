@@ -63,9 +63,9 @@ describe('audiencesForRoute', () => {
     }
   });
 
-  it('leaves the sessions door in no world — every world has one', () => {
-    expect(audiencesForRoute('/sessions')).toEqual([]);
-    for (const world of AUDIENCES) expect(resolveAudience('/sessions', world)).toBeNull();
+  it('leaves the run history in no world — every world has one', () => {
+    expect(audiencesForRoute('/runs')).toEqual([]);
+    for (const world of AUDIENCES) expect(resolveAudience('/runs', world)).toBeNull();
   });
 
   it('claims the review of your own week for solo alone', () => {
@@ -92,8 +92,8 @@ describe('audiencesForRoute', () => {
       '/team/standup',
       '/team/reporting/style',
       '/team/ship/run',
-      '/projects',
-      '/projects/p1/blueprint',
+      '/sessions',
+      '/sessions/p1/blueprint',
       '/board',
       '/tickets/t1',
       '/ceremonies',

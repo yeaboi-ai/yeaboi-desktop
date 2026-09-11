@@ -4,12 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   isDone,
   nextStatus,
-  runsByEngineProject,
   splitProjects,
   statusActionLabel,
   statusWord,
-  traceFor,
-  traceSentence,
 } from '../src/renderer/lib/yeaboi/projects';
 
 const row = (id: string, created_at: string, over: Record<string, unknown> = {}) => ({
@@ -20,7 +17,7 @@ const row = (id: string, created_at: string, over: Record<string, unknown> = {})
 
 describe('isDone', () => {
   it('is true only for the explicit word', () => {
-    expect(isDone({ status: 'done' })).toBe(true);
+    expect(isDone({ status: 'completed' })).toBe(true);
     expect(isDone({ status: 'active' })).toBe(false);
     expect(isDone({ status: null })).toBe(false);
     expect(isDone({})).toBe(false);
@@ -37,7 +34,7 @@ describe('splitProjects', () => {
   it('puts done rows under Completed', () => {
     const { active, done } = splitProjects([
       row('a', '2026-09-01T00:00:00', { status: 'active' }),
-      row('b', '2026-09-02T00:00:00', { status: 'done' }),
+      row('b', '2026-09-02T00:00:00', { status: 'completed' }),
     ]);
     expect(active.map((r) => r.id)).toEqual(['a']);
     expect(done.map((r) => r.id)).toEqual(['b']);
@@ -61,77 +58,22 @@ describe('splitProjects', () => {
 
 describe('nextStatus', () => {
   it('toggles between the two words', () => {
-    expect(nextStatus('active')).toBe('done');
-    expect(nextStatus('done')).toBe('active');
-    expect(nextStatus(undefined)).toBe('done');
+    expect(nextStatus('active')).toBe('completed');
+    expect(nextStatus('completed')).toBe('active');
+    expect(nextStatus(undefined)).toBe('completed');
   });
 });
 
 describe('the words', () => {
   it('state the status in sentence case', () => {
-    expect(statusWord('done')).toBe('Completed');
+    expect(statusWord('completed')).toBe('Completed');
     expect(statusWord('active')).toBe('In progress');
     expect(statusWord(undefined)).toBe('In progress');
   });
 
   it('name the action that moves it', () => {
-    expect(statusActionLabel('done')).toBe('Reopen');
+    expect(statusActionLabel('completed')).toBe('Reopen');
     expect(statusActionLabel('active')).toBe('Mark done');
     expect(statusActionLabel(null)).toBe('Mark done');
-  });
-});
-
-describe('runsByEngineProject', () => {
-  const run = (project_id: string | null, mode: string) => ({ project_id, mode });
-
-  it('groups runs by engine project as card keys, through the aliases', () => {
-    const ran = runsByEngineProject([
-      run('proj-1', 'standup'),
-      run('proj-1', 'planning'),
-      run('proj-1', 'standup'),
-      run('proj-2', 'poker'),
-    ]);
-    expect([...(ran.get('proj-1') ?? [])].sort()).toEqual(['daily-standup', 'project-planning']);
-    expect([...(ran.get('proj-2') ?? [])]).toEqual(['poker']);
-  });
-
-  it('leaves one-off runs out', () => {
-    expect(runsByEngineProject([run(null, 'standup'), run('', 'retro')]).size).toBe(0);
-  });
-});
-
-describe('traceFor', () => {
-  const steps = [
-    { key: 'project-planning', label: 'Plan' },
-    { key: 'daily-standup', label: 'Standup' },
-    { key: 'poker', label: 'Poker' },
-  ];
-
-  it('keeps the flow order and marks what has run', () => {
-    expect(traceFor(steps, new Set(['daily-standup']))).toEqual([
-      { key: 'project-planning', label: 'Plan', ran: false },
-      { key: 'daily-standup', label: 'Standup', ran: true },
-      { key: 'poker', label: 'Poker', ran: false },
-    ]);
-  });
-
-  it('marks nothing when no runs are known', () => {
-    expect(traceFor(steps, undefined).every((step) => !step.ran)).toBe(true);
-  });
-});
-
-describe('traceSentence', () => {
-  it('says which steps have run inside and which have not', () => {
-    expect(
-      traceSentence([
-        { key: 'a', label: 'Plan', ran: true },
-        { key: 'b', label: 'Standup', ran: true },
-        { key: 'c', label: 'Poker', ran: false },
-      ]),
-    ).toBe('Plan and Standup have run inside; Poker has not.');
-    expect(traceSentence([{ key: 'a', label: 'Plan', ran: false }])).toBe(
-      'Nothing has run inside yet.',
-    );
-    expect(traceSentence([{ key: 'a', label: 'Plan', ran: true }])).toBe('Plan has run inside.');
   });
 });

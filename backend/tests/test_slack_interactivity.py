@@ -10,7 +10,7 @@ import pytest
 from src.app.models.board import Board, BoardColumn, Card
 from src.app.models.integration import OrgIntegration
 from src.app.models.organization import Organization, OrgMember, Team
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.models.slack_user_link import SlackUserLink
 from src.app.models.team_slack_channel import TeamSlackChannel
 from src.app.models.user import User
@@ -84,9 +84,9 @@ async def _setup_context(db_session):
         )
     )
 
-    # Project + board + card
-    project = Project(
-        name="Action Project",
+    # Session + board + card
+    project = Session(
+        name="Action Session",
         org_id=org.id,
         team_id=team.id,
         owner_id=user.id,
@@ -95,7 +95,7 @@ async def _setup_context(db_session):
     db_session.add(project)
     await db_session.flush()
 
-    board = Board(project_id=project.id, org_id=org.id)
+    board = Board(session_id=project.id, org_id=org.id)
     db_session.add(board)
     await db_session.flush()
 

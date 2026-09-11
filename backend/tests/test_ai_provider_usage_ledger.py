@@ -2,7 +2,7 @@
 
 The AI client schedules a fire-and-forget write to the usage_events ledger
 on every successful chat completion. Verifies the row is persisted with the
-right (org_id, session_id, project_id, provider, tokens) so the Analytics
+right (org_id, session_id, provider, tokens) so the Analytics
 "Cost Overview" page populates without the call sites having to remember
 to call `record_*` themselves.
 """
@@ -93,7 +93,7 @@ async def test_chat_writes_usage_event(db_session, sample_org, shared_session_fa
     assert float(row.cost_usd) > 0  # static pricing fills in a non-zero cost
 
 
-async def test_chat_attributes_session_and_project(
+async def test_chat_attributes_session(
     db_session, sample_org, shared_session_factory
 ):
     """Per-session attribution lands when the client was built with the IDs."""
@@ -104,7 +104,6 @@ async def test_chat_attributes_session_and_project(
         underlying_provider="anthropic",
         org_id=sample_org.id,
         db=db_session,
-        project_id="proj-xyz",
         session_id="sess-abc",
         user_id="user-1",
     )
@@ -113,7 +112,6 @@ async def test_chat_attributes_session_and_project(
 
     row = await _wait_for_event(db_session, org_id=sample_org.id)
     assert row.session_id == "sess-abc"
-    assert row.project_id == "proj-xyz"
 
 
 async def test_no_org_skips_ledger(db_session, shared_session_factory):

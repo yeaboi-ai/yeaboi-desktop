@@ -23,7 +23,7 @@ from src.app.services.reports.renderers.pdf import PdfRendererUnavailable, is_av
 
 
 async def _bootstrap_auth_org(client, auth_headers, db_session):
-    resp = await client.get("/api/projects", headers=auth_headers)
+    resp = await client.get("/api/sessions", headers=auth_headers)
     assert resp.status_code == 200, resp.text
     from tests.conftest import TEST_USER_EMAIL
 
@@ -40,23 +40,16 @@ async def auth_for_org(client, auth_headers, db_session):
 
 @pytest.fixture
 async def populated_org(client, auth_headers, db_session, auth_for_org):
-    """Auth org + a project + a session + a couple of usage_event rows.
+    """Auth org + one session + a couple of usage_event rows.
     Gives the assembler something to summarise."""
-    proj = await client.post("/api/projects", json={"name": "Reports Proj"}, headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "Reports Proj"}, headers=auth_headers)
     proj_id = proj.json()["id"]
-    sess = await client.post(
-        f"/api/projects/{proj_id}/sessions",
-        json={"initial_idea": "test"},
-        headers=auth_headers,
-    )
-    sess_id = sess.json()["id"]
     base_time = datetime.now(UTC) - timedelta(hours=2)
     db_session.add_all(
         [
             UsageEvent(
                 org_id=auth_for_org.id,
-                project_id=proj_id,
-                session_id=sess_id,
+                session_id=proj_id,
                 provider="anthropic",
                 operation="chat",
                 model="claude-opus-4-7",
@@ -68,8 +61,7 @@ async def populated_org(client, auth_headers, db_session, auth_for_org):
             ),
             UsageEvent(
                 org_id=auth_for_org.id,
-                project_id=proj_id,
-                session_id=sess_id,
+                session_id=proj_id,
                 provider="elevenlabs",
                 operation="tts",
                 units={"characters": 8000},
@@ -81,7 +73,7 @@ async def populated_org(client, auth_headers, db_session, auth_for_org):
         ]
     )
     await db_session.commit()
-    return {"org": auth_for_org, "project_id": proj_id, "session_id": sess_id}
+    return {"org": auth_for_org, "session_id": proj_id}
 
 
 # ── Assembler ────────────────────────────────────────────────────────────
@@ -100,18 +92,11 @@ class TestAssembler:
         assert report.cost_lines[0].provider == "elevenlabs"
         assert len(report.sessions) == 1
 
-    async def test_project_scope_filters_to_project(self, db_session, populated_org):
-        report = await build_report(db_session, org=populated_org["org"], project_id=populated_org["project_id"])
-        assert report.scope.kind == "project"
-        assert report.scope.label.startswith("Project Reports Proj")
-        assert report.total_cost_usd == Decimal("1.4925")
-
-    async def test_session_scope_filters_to_session(self, db_session, populated_org):
+    async def test_session_scope_filters_to_that_session(self, db_session, populated_org):
         report = await build_report(db_session, org=populated_org["org"], session_id=populated_org["session_id"])
         assert report.scope.kind == "session"
-        assert "Session #" in report.scope.label
+        assert report.scope.label.startswith("Reports Proj")
         assert report.total_cost_usd == Decimal("1.4925")
-        # Session-scope sessions table is the one session.
         assert len(report.sessions) == 1
 
     async def test_empty_range_yields_zero_cost(self, db_session, auth_for_org):

@@ -25,7 +25,7 @@ async def test_magic_prompts_studio(client, auth_headers):
 
 async def test_magic_prompts_board(client, auth_headers):
     resp = await client.get(
-        "/api/niko/magic-prompts?page=/projects/abc/board&project_id=abc",
+        "/api/niko/magic-prompts?page=/projects/abc/board&session_id=abc",
         headers=auth_headers,
     )
     assert resp.status_code == 200

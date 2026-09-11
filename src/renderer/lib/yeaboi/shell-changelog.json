@@ -2,6 +2,30 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "5.0.0",
+      "date": "2026-09-10",
+      "headline": "One kind of thing: a session",
+      "summary": "Projects are gone: a session is now the workspace, with its own blueprint, plan and board, and a follow-up opens as a new session seeded from the last. Existing project data is deleted on first launch, after a backup is written.",
+      "highlights": [
+        {
+          "text": "Sessions, Runs and Board replace the old Projects rail",
+          "areas": ["shell"]
+        },
+        {
+          "text": "A follow-up is a new session seeded from the one before it",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Your planning data is backed up beside it before anything is removed",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Old project links land on the session that replaced them",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "4.7.0",
       "date": "2026-09-10",
       "headline": "See which credentials work and pick your settings",

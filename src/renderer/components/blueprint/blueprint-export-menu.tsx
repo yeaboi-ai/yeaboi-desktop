@@ -36,7 +36,7 @@ export function BlueprintExportMenu({
   async function downloadMarkdown() {
     if (!ready) return;
     const resp = await authFetch(
-      `/api/projects/${projectId}/blueprint/export.md?iteration_id=${iterationId}`,
+      `/api/sessions/${projectId}/blueprint/export.md?iteration_id=${iterationId}`,
     );
     if (!resp.ok) return;
     const blob = await resp.blob();
@@ -58,7 +58,7 @@ export function BlueprintExportMenu({
     try {
       const method = shareEnabled ? 'DELETE' : 'POST';
       const resp = await authFetch(
-        `/api/projects/${projectId}/blueprint-iterations/${iterationId}/share`,
+        `/api/sessions/${projectId}/blueprint-iterations/${iterationId}/share`,
         { method },
       );
       if (resp.ok) {

@@ -85,7 +85,6 @@ async def chat_stream(
         content=message,
         context_snapshot={
             "page": context.page,
-            "project_id": context.project_id,
             "session_id": context.session_id,
             "board_id": context.board_id,
         },
@@ -239,7 +238,7 @@ _MAGIC_PROMPTS: dict[str, list[dict]] = {
     "/projects": [
         {"label": "Create a new project", "prompt": "Help me create a new project", "icon": "plus"},
         {
-            "label": "Project status overview",
+            "label": "Session status overview",
             "prompt": "Give me a status overview of all my projects",
             "icon": "bar-chart",
         },
@@ -249,7 +248,7 @@ _MAGIC_PROMPTS: dict[str, list[dict]] = {
             "icon": "compass",
         },
     ],
-    "/projects/{id}": [
+    "/sessions/{id}": [
         {
             "label": "Start a planning session",
             "prompt": "Let's start a new planning session for this project",
@@ -266,7 +265,7 @@ _MAGIC_PROMPTS: dict[str, list[dict]] = {
             "icon": "layout",
         },
     ],
-    "/projects/{id}/board": [
+    "/sessions/{id}/board": [
         {
             "label": "Create a new card",
             "prompt": "Help me create a new card for this board",
@@ -310,17 +309,17 @@ _MAGIC_PROMPTS: dict[str, list[dict]] = {
 }
 
 
-def get_magic_prompts(page: str, project_id: str | None = None) -> list[NikoMagicPrompt]:
+def get_magic_prompts(page: str, session_id: str | None = None) -> list[NikoMagicPrompt]:
     """Return contextual magic prompts for the given page."""
     # Try exact match first
     prompts = _MAGIC_PROMPTS.get(page)
 
     if not prompts:
         # Try pattern matching
-        if project_id and "/board" in page:
-            prompts = _MAGIC_PROMPTS.get("/projects/{id}/board")
-        elif project_id:
-            prompts = _MAGIC_PROMPTS.get("/projects/{id}")
+        if session_id and "/board" in page:
+            prompts = _MAGIC_PROMPTS.get("/sessions/{id}/board")
+        elif session_id:
+            prompts = _MAGIC_PROMPTS.get("/sessions/{id}")
 
     if not prompts:
         # Match by prefix

@@ -1,4 +1,4 @@
-// The rail: every world starts with Projects and Sessions plus Settings,
+// The rail: every world starts with Sessions, Runs and Board plus Settings,
 // every href a registered route, the active rule table-driven over the
 // arranged items, and nothing the old nineteen-row rail listed left
 // unreachable (the About pages live in the menu bar and the "+").
@@ -9,11 +9,11 @@ import { describe, expect, it } from 'vitest';
 import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
 import { RAIL_DEFAULTS, type RailItem } from '../src/shared/rail';
 import {
-  PROJECTS_HEADER_LINKS,
-  SESSIONS_FOOT_LINKS,
+  SESSIONS_HEADER_LINKS,
+  RUNS_FOOT_LINKS,
   SETTINGS_ITEM,
   activeRailRoute,
-  projectsHref,
+  sessionsHref,
 } from '../src/renderer/lib/nav/sections';
 import { railCatalogue } from '../src/renderer/lib/nav/rail-catalogue';
 import { MODE_ROUTES, MODE_START_ROUTES } from '../src/renderer/lib/yeaboi/tips';
@@ -31,9 +31,9 @@ const REGISTERED = new Set(registry.routes.map((route) => route.path));
 const OLD_INVENTORY = [
   '/solo/review',
   '/home',
-  '/projects',
+  '/sessions',
   '/board',
-  '/projects/new/from-roadmap',
+  '/sessions/new/from-roadmap',
   '/team/analysis',
   '/team/standup',
   '/team/retro',
@@ -61,9 +61,9 @@ const item = (route: string): RailItem => ({
 });
 
 describe('the rail as it starts', () => {
-  it('draws Projects and Sessions in every world', () => {
+  it('draws Sessions, Runs and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Projects', 'Sessions']);
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Runs', 'Board']);
     }
   });
 
@@ -74,14 +74,14 @@ describe('the rail as it starts', () => {
       }
     }
     expect(REGISTERED).toContain(SETTINGS_ITEM.href);
-    const pageLinks = [...PROJECTS_HEADER_LINKS, ...SESSIONS_FOOT_LINKS].map((link) => link.href);
+    const pageLinks = [...SESSIONS_HEADER_LINKS, ...RUNS_FOOT_LINKS].map((link) => link.href);
     for (const href of pageLinks) {
       expect(REGISTERED, `${href} is not in routes.json`).toContain(href);
     }
   });
 
-  it('gives every way into a project one short fact for its row', () => {
-    for (const link of PROJECTS_HEADER_LINKS) {
+  it('gives every other way in one short fact for its row', () => {
+    for (const link of SESSIONS_HEADER_LINKS) {
       expect(link.fact, `${link.label} has no fact`).toBeTruthy();
       expect(link.fact!.length).toBeLessThan(90);
       expect(link.fact!.endsWith('.')).toBe(true);
@@ -100,10 +100,10 @@ describe('the rail as it starts', () => {
     }
   });
 
-  it('sends both worlds to the workspace projects list', () => {
-    expect(projectsHref('team')).toBe('/projects');
-    expect(projectsHref('solo')).toBe('/projects');
-    expect(RAIL_DEFAULTS.solo[0]!.route).toBe('/projects');
+  it('sends both worlds to the same sessions ledger', () => {
+    expect(sessionsHref('team')).toBe('/sessions');
+    expect(sessionsHref('solo')).toBe('/sessions');
+    expect(RAIL_DEFAULTS.solo[0]!.route).toBe('/sessions');
   });
 
   it('orphans nothing the old rail listed', () => {
@@ -112,8 +112,8 @@ describe('the rail as it starts', () => {
       SETTINGS_ITEM.href,
       ...AUDIENCES.flatMap((a) => RAIL_DEFAULTS[a].map((i) => i.route)),
       ...AUDIENCES.flatMap((a) => railCatalogue(a).map((entry) => entry.route)),
-      ...PROJECTS_HEADER_LINKS.map((link) => link.href),
-      ...SESSIONS_FOOT_LINKS.map((link) => link.href),
+      ...SESSIONS_HEADER_LINKS.map((link: { href: string }) => link.href),
+      ...RUNS_FOOT_LINKS.map((link: { href: string }) => link.href),
       ...AUDIENCES.flatMap((a) => menuPathnames(a)),
       ...Object.values(MODE_ROUTES),
       ...Object.values(MODE_START_ROUTES),
@@ -126,96 +126,75 @@ describe('the rail as it starts', () => {
 
 describe('activeRailRoute over the default rail', () => {
   const team = RAIL_DEFAULTS.team;
-  const cases: [string, string, string | null][] = [
-    ['/home', '', null],
-    ['/', '', null],
-    ['/projects', '', '/projects'],
-    ['/projects/p1', '', '/projects'],
-    ['/projects/p1/blueprint', '', '/projects'],
-    ['/projects/new/from-roadmap', '', '/projects'],
-    ['/board', '', '/projects'],
-    ['/board', '?project=p1', '/projects'],
-    ['/tickets/t1', '', '/projects'],
-    ['/sessions', '', '/sessions'],
-    ['/team/standup', '', '/sessions'],
-    ['/team/reporting/new', '', '/sessions'],
-    ['/solo/review', '', '/sessions'],
-    ['/ceremonies', '', '/sessions'],
-    ['/ceremonies/slack', '', '/sessions'],
-    ['/provenance', '', '/sessions'],
-    ['/usage', '', '/sessions'],
-    ['/recordings/r1', '', '/sessions'],
-    ['/recording/tok', '', '/sessions'],
-    ['/clip/tok', '', '/sessions'],
-    ['/settings', '', '/settings'],
-    ['/settings/credentials', '', '/settings'],
-    ['/settings/themes/edit', '', '/settings'],
-    ['/setup', '', '/settings'],
-    ['/whats-new', '', null],
-    ['/system-check', '', null],
-    ['/privacy', '', null],
-    ['/feedback', '', null],
+  const cases: [string, string | null][] = [
+    ['/home', null],
+    ['/', null],
+    ['/sessions', '/sessions'],
+    ['/sessions/p1', '/sessions'],
+    ['/sessions/p1/blueprint', '/sessions'],
+    ['/sessions/new/from-roadmap', '/sessions'],
+    ['/board', '/board'],
+    ['/tickets/t1', '/sessions'],
+    ['/runs', '/runs'],
+    ['/team/standup', '/runs'],
+    ['/team/reporting/new', '/runs'],
+    ['/solo/review', '/runs'],
+    ['/ceremonies', '/runs'],
+    ['/ceremonies/slack', '/runs'],
+    ['/provenance', '/runs'],
+    ['/usage', '/runs'],
+    ['/recordings/r1', '/runs'],
+    ['/recording/tok', '/runs'],
+    ['/clip/tok', '/runs'],
+    ['/settings', '/settings'],
+    ['/settings/credentials', '/settings'],
+    ['/settings/themes/edit', '/settings'],
+    ['/setup', '/settings'],
+    ['/whats-new', null],
+    ['/system-check', null],
+    ['/privacy', null],
+    ['/feedback', null],
   ];
 
-  it.each(cases)('%s%s lights %s', (pathname, search, expected) => {
-    expect(activeRailRoute(team, pathname, search, 'team')).toBe(expected);
+  it.each(cases)('%s lights %s', (pathname, expected) => {
+    expect(activeRailRoute(team, pathname, 'team')).toBe(expected);
   });
 
-  it('lights the agentwatch pages under Solo', () => {
+  it('lights the agentwatch pages under Runs', () => {
     const solo = RAIL_DEFAULTS.solo;
-    expect(activeRailRoute(solo, '/agents/projects', '', 'solo')).toBe('/projects');
-    expect(activeRailRoute(solo, '/agents/projects/p1', '', 'solo')).toBe('/projects');
-    expect(activeRailRoute(solo, '/agents/usage', '', 'solo')).toBe('/sessions');
-    expect(activeRailRoute(solo, '/agents/security', '', 'solo')).toBe('/sessions');
-  });
-
-  it('keeps a mode page opened inside a project under Projects', () => {
-    expect(activeRailRoute(team, '/team/reporting/new', '?project=p1', 'team')).toBe('/projects');
-    expect(activeRailRoute(team, '/team/standup', '?project=p1&run=3', 'team')).toBe('/projects');
-    expect(activeRailRoute(RAIL_DEFAULTS.solo, '/agents/usage', '?project=p1', 'solo')).toBe(
-      '/projects',
-    );
-  });
-
-  it('ignores an empty project param', () => {
-    expect(activeRailRoute(team, '/team/standup', '?project=', 'team')).toBe('/sessions');
-    expect(activeRailRoute(team, '/team/standup', '?run=3', 'team')).toBe('/sessions');
+    expect(activeRailRoute(solo, '/agents/usage', 'solo')).toBe('/runs');
+    expect(activeRailRoute(solo, '/agents/security', 'solo')).toBe('/runs');
   });
 
   it('matches whole segments, not raw prefixes', () => {
-    expect(activeRailRoute(team, '/boardroom', '', 'team')).toBeNull();
-    expect(activeRailRoute(team, '/teamx', '', 'team')).toBeNull();
-    expect(activeRailRoute(team, '/settingsx', '', 'team')).toBeNull();
+    expect(activeRailRoute(team, '/boardroom', 'team')).toBeNull();
+    expect(activeRailRoute(team, '/teamx', 'team')).toBeNull();
+    expect(activeRailRoute(team, '/settingsx', 'team')).toBeNull();
   });
 });
 
 describe('activeRailRoute over an arranged rail', () => {
   it('lights an item over the family it belongs to', () => {
-    const items = [...RAIL_DEFAULTS.team, item('/board'), item('/team/standup')];
-    expect(activeRailRoute(items, '/board', '', 'team')).toBe('/board');
-    expect(activeRailRoute(items, '/team/standup/setup', '', 'team')).toBe('/team/standup');
-    expect(activeRailRoute(items, '/team/retro', '', 'team')).toBe('/sessions');
+    const items = [...RAIL_DEFAULTS.team, item('/team/standup')];
+    expect(activeRailRoute(items, '/board', 'team')).toBe('/board');
+    expect(activeRailRoute(items, '/team/standup/setup', 'team')).toBe('/team/standup');
+    expect(activeRailRoute(items, '/team/retro', 'team')).toBe('/runs');
   });
 
   it('prefers the longest match', () => {
     const items = [item('/team'), item('/team/standup')];
-    expect(activeRailRoute(items, '/team/standup/setup', '', 'team')).toBe('/team/standup');
-    expect(activeRailRoute(items, '/team/retro', '', 'team')).toBe('/team');
-  });
-
-  it('keeps a project-scoped mode page under Projects even with the mode on the rail', () => {
-    const items = [...RAIL_DEFAULTS.team, item('/team/standup')];
-    expect(activeRailRoute(items, '/team/standup', '?project=p1', 'team')).toBe('/projects');
+    expect(activeRailRoute(items, '/team/standup/setup', 'team')).toBe('/team/standup');
+    expect(activeRailRoute(items, '/team/retro', 'team')).toBe('/team');
   });
 
   it('lights an About page only when it is on the rail', () => {
-    expect(activeRailRoute([item('/whats-new')], '/whats-new', '', 'team')).toBe('/whats-new');
-    expect(activeRailRoute(RAIL_DEFAULTS.team, '/whats-new', '', 'team')).toBeNull();
+    expect(activeRailRoute([item('/whats-new')], '/whats-new', 'team')).toBe('/whats-new');
+    expect(activeRailRoute(RAIL_DEFAULTS.team, '/whats-new', 'team')).toBeNull();
   });
 
   it('lights nothing but the foot on an empty rail', () => {
-    expect(activeRailRoute([], '/projects/p1', '', 'team')).toBeNull();
-    expect(activeRailRoute([], '/team/standup', '?project=p1', 'team')).toBeNull();
-    expect(activeRailRoute([], '/settings/duck', '', 'team')).toBe('/settings');
+    expect(activeRailRoute([], '/sessions/p1', 'team')).toBeNull();
+    expect(activeRailRoute([], '/team/standup', 'team')).toBeNull();
+    expect(activeRailRoute([], '/settings/duck', 'team')).toBe('/settings');
   });
 });

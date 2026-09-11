@@ -51,13 +51,13 @@ from .routers.notifications import router as notifications_router
 from .routers.oauth import router as oauth_router
 from .routers.orchestrator import router as orchestrator_router
 from .routers.organizations import router as organizations_router
-from .routers.project_attachments import router as project_attachments_router
-from .routers.project_outputs import router as project_outputs_router
-from .routers.projects import router as projects_router
 from .routers.public_status import router as public_status_router
 from .routers.recordings import router as recordings_router
 from .routers.report_subscriptions import router as report_subscriptions_router
 from .routers.reports import router as reports_router
+from .routers.session_attachments import router as session_attachments_router
+from .routers.session_outputs import router as session_outputs_router
+from .routers.session_workspace import router as session_workspace_router
 from .routers.sessions import router as sessions_router
 from .routers.settings_routes import router as settings_router
 from .routers.slack_interactive import router as slack_interactive_router
@@ -236,7 +236,11 @@ def create_app() -> FastAPI:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
     app.include_router(me_router)
-    app.include_router(projects_router)
+    # Ahead of the session routers: its one static path, /api/sessions/
+    # deepgram-token, is otherwise captured by /api/sessions/{session_id},
+    # which FastAPI matches first because it is registered first.
+    app.include_router(livekit_router)
+    app.include_router(session_workspace_router)
     app.include_router(sessions_router)
     app.include_router(blueprints_router)
     app.include_router(blueprint_templates_router)
@@ -247,16 +251,15 @@ def create_app() -> FastAPI:
     app.include_router(character_previews_router)
     app.include_router(boards_router)
     app.include_router(card_attachments_router)
-    app.include_router(project_attachments_router)
+    app.include_router(session_attachments_router)
     app.include_router(card_links_router)
     app.include_router(card_views_router)
     app.include_router(integration_mappings_router)
     app.include_router(sync_actions_router)
     app.include_router(sync_webhooks_router)
     app.include_router(harness_router)
-    app.include_router(project_outputs_router)
+    app.include_router(session_outputs_router)
     app.include_router(orchestrator_router)
-    app.include_router(livekit_router)
     app.include_router(transcripts_router)
     app.include_router(uploads_router)
     app.include_router(voice_notes_router)

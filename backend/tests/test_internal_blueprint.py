@@ -9,14 +9,14 @@ from src.app.config import get_settings
 
 
 async def _create_session(client, auth_headers) -> tuple[str, str]:
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )
-    return project_id, sess.json()["id"]
+    return session_id, sess.json()["id"]
 
 
 def _internal_headers() -> dict:
@@ -25,7 +25,7 @@ def _internal_headers() -> dict:
 
 async def test_agent_merge_preserves_prior_bullets(client, auth_headers):
     """The whole point: LLM emits ONLY new bullets and prior content survives."""
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # First agent extraction: discovers tech stack basics
     resp = await client.patch(
@@ -51,7 +51,7 @@ async def test_agent_merge_preserves_prior_bullets(client, auth_headers):
 
 
 async def test_agent_merge_dedupes_repeated_bullets(client, auth_headers):
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     await client.patch(
         f"/api/internal/sessions/{session_id}/blueprint",
@@ -71,7 +71,7 @@ async def test_agent_merge_dedupes_repeated_bullets(client, auth_headers):
 async def test_user_deletion_blocks_agent_re_add(client, auth_headers):
     """If the user deletes a bullet, the agent must NOT re-add it on the
     next extraction even when the conversation re-mentions it."""
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # Agent extracts initial tech
     await client.patch(
@@ -82,7 +82,7 @@ async def test_user_deletion_blocks_agent_re_add(client, auth_headers):
 
     # User edits the section, removing Vue
     resp = await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- React"},
         headers=auth_headers,
     )
@@ -100,7 +100,7 @@ async def test_user_deletion_blocks_agent_re_add(client, auth_headers):
 
 
 async def test_agent_replace_mode_when_explicitly_requested(client, auth_headers):
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     await client.patch(
         f"/api/internal/sessions/{session_id}/blueprint",
@@ -128,16 +128,16 @@ async def test_coverage_endpoint_matches_assess_coverage(client, auth_headers):
     """The agent's spoken radar must use the same numbers the frontend shows."""
     from src.app.services.facilitator import assess_coverage
 
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # Fill a couple of sections so coverage isn't trivially zero.
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- React\n- Node\n- PostgreSQL"},
         headers=auth_headers,
     )
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "- Personal note-taking app for solo use"},
         headers=auth_headers,
     )
@@ -162,7 +162,7 @@ async def test_coverage_endpoint_matches_assess_coverage(client, auth_headers):
 
 
 async def test_agent_expected_version_409_on_mismatch(client, auth_headers):
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # Establish v2
     resp = await client.patch(
@@ -194,7 +194,7 @@ async def test_get_session_messages_paginates_with_limit(client, auth_headers):
     second-precision timestamps make row order among same-second inserts
     non-deterministic, so this test only asserts the count.
     """
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     for i in range(15):
         resp = await client.post(
@@ -231,7 +231,7 @@ async def test_agent_runtime_state_roundtrip(client, auth_headers):
     """Persisted runtime state must survive a worker restart cycle so the
     agent doesn't lose speaker diarization, used personas, or last-extracted
     index when the process bounces."""
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # Initially empty.
     resp = await client.get(
@@ -269,7 +269,7 @@ async def test_user_edit_broadcasts_to_internal_watchers(client, app, auth_heade
     system prompt — instead of narrating stale content."""
     from src.app.ws.manager import manager
 
-    project_id, session_id = await _create_session(client, auth_headers)
+    session_id, session_id = await _create_session(client, auth_headers)
 
     # Stand in for the agent's WS subscription.
     received: list[dict] = []
@@ -285,7 +285,7 @@ async def test_user_edit_broadcasts_to_internal_watchers(client, app, auth_heade
     try:
         # User edits the blueprint via the project route.
         resp = await client.patch(
-            f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+            f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
             json={"content": "- React frontend"},
             headers=auth_headers,
         )

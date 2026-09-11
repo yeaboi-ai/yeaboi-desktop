@@ -31,7 +31,7 @@ async def list_notifications(
             "type": n.type,
             "read": n.read,
             "link": n.link,
-            "project_id": n.project_id,
+            "session_id": n.session_id,
             "created_at": n.created_at.isoformat(),
         }
         for n in notifications

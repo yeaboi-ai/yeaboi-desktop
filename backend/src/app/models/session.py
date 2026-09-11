@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, TimestampMixin, gen_uuid
@@ -11,15 +11,44 @@ from .base import Base, TimestampMixin, gen_uuid
 class Session(TimestampMixin, Base):
     __tablename__ = "sessions"
 
+    __table_args__ = (UniqueConstraint("org_id", "key", name="uq_sessions_org_key"),)
+
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="created")
     title: Mapped[str | None] = mapped_column(String(255))
+
+    # ── What the session is, absorbed from the project it used to live in ──
+    name: Mapped[str | None] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(Text)
+    repo_url: Mapped[str | None] = mapped_column(String(500))
+    owner_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"))
+    team_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("teams.id", use_alter=True))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Human-friendly key, e.g. "PROJ" — renders ticket ids like PROJ-123. Unique within org.
+    key: Mapped[str | None] = mapped_column(String(10))
+    # Per-session monotonic counter for ticket numbering. Bumped via UPDATE...RETURNING.
+    card_counter: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", default=0)
+    # Marker for the onboarding-seeded sample: hidden from plan-limit counts.
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", default=False)
+    # Wizard ticket-generation default. None == the global default at run time.
+    default_generation_style: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    default_modifiers: Mapped[list] = mapped_column(JSON, nullable=False, default=list, server_default="[]")
+    # What the session points at: [{source, subject, label, url}]. Stored as
+    # `reference_links` because `references` is a reserved word.
+    references: Mapped[list] = mapped_column("reference_links", JSON, nullable=False, default=list, server_default="[]")
+    # A follow-up opens from the session before it; the chain is what makes the
+    # ledger read chronologically rather than as a folder tree.
+    continued_from_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"))
     initial_idea: Mapped[str | None] = mapped_column(Text)
     join_code: Mapped[str] = mapped_column(String(12), unique=True, default=lambda: gen_uuid()[:8])
     ai_config: Mapped[dict] = mapped_column(JSON, default=lambda: {"assertiveness": "balanced", "muted": False})
-    iteration_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("blueprint_iterations.id"))
+    # use_alter: sessions and blueprint_iterations point at each other, so the
+    # constraint is added after both tables exist rather than inline.
+    iteration_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("blueprint_iterations.id", use_alter=True)
+    )
     diagram_state: Mapped[dict | None] = mapped_column(JSON, default=None)
     canvas_elements: Mapped[list | None] = mapped_column(JSON, default=None)
     focus_sections: Mapped[list[str] | None] = mapped_column(JSON, default=None)
@@ -51,7 +80,7 @@ class Session(TimestampMixin, Base):
         DateTime(timezone=True), nullable=True, default=None
     )
 
-    project: Mapped[Project] = relationship()  # noqa: F821
+    owner: Mapped[User] = relationship(back_populates="sessions")  # noqa: F821
     participants: Mapped[list[Participant]] = relationship(back_populates="session", cascade="all, delete-orphan")
     chat_messages: Mapped[list[ChatMessage]] = relationship(back_populates="session", cascade="all, delete-orphan")
     transcript_entries: Mapped[list[TranscriptEntry]] = relationship(  # noqa: F821

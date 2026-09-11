@@ -35,8 +35,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "description": "Get details about a specific project including name, description, and session count.",
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID"}},
+            "required": ["session_id"],
         },
     },
     {
@@ -45,7 +45,7 @@ TOOL_DEFINITIONS: list[dict] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Project name (2-5 words)"},
+                "name": {"type": "string", "description": "Session name (2-5 words)"},
                 "description": {"type": "string", "description": "Brief project description"},
             },
             "required": [],
@@ -57,11 +57,11 @@ TOOL_DEFINITIONS: list[dict] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "project_id": {"type": "string", "description": "The project ID"},
+                "session_id": {"type": "string", "description": "The project ID"},
                 "name": {"type": "string", "description": "New project name"},
                 "description": {"type": "string", "description": "New project description"},
             },
-            "required": ["project_id"],
+            "required": ["session_id"],
         },
     },
     {
@@ -69,8 +69,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "description": "Delete a project and all its data. This is irreversible. Only call after user confirms.",
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID to delete"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID to delete"}},
+            "required": ["session_id"],
         },
     },
     # ── Sessions ──
@@ -79,8 +79,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "description": "List all planning sessions for a project.",
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID"}},
+            "required": ["session_id"],
         },
     },
     {
@@ -89,11 +89,11 @@ TOOL_DEFINITIONS: list[dict] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "project_id": {"type": "string", "description": "The project ID"},
+                "session_id": {"type": "string", "description": "The project ID"},
                 "title": {"type": "string", "description": "Session title"},
                 "initial_idea": {"type": "string", "description": "The initial idea or topic to plan"},
             },
-            "required": ["project_id"],
+            "required": ["session_id"],
         },
     },
     {
@@ -114,8 +114,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "description": "List the board columns and cards for a project, showing the kanban state.",
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID"}},
+            "required": ["session_id"],
         },
     },
     {
@@ -124,7 +124,7 @@ TOOL_DEFINITIONS: list[dict] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "project_id": {"type": "string", "description": "The project ID"},
+                "session_id": {"type": "string", "description": "The project ID"},
                 "title": {"type": "string", "description": "Card title"},
                 "description": {"type": "string", "description": "Card description"},
                 "priority": {
@@ -137,7 +137,7 @@ TOOL_DEFINITIONS: list[dict] = [
                     "description": "Column name to place the card in (default: Backlog)",
                 },
             },
-            "required": ["project_id", "title"],
+            "required": ["session_id", "title"],
         },
     },
     {
@@ -174,8 +174,8 @@ TOOL_DEFINITIONS: list[dict] = [
         "description": "Get the blueprint coverage scores and gaps for a project.",
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID"}},
+            "required": ["session_id"],
         },
     },
     {
@@ -184,7 +184,7 @@ TOOL_DEFINITIONS: list[dict] = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "project_id": {"type": "string", "description": "The project ID"},
+                "session_id": {"type": "string", "description": "The project ID"},
                 "section": {
                     "type": "string",
                     "description": (
@@ -195,7 +195,7 @@ TOOL_DEFINITIONS: list[dict] = [
                 },
                 "content": {"type": "string", "description": "New content for the section"},
             },
-            "required": ["project_id", "section", "content"],
+            "required": ["session_id", "section", "content"],
         },
     },
     # ── Studio ──
@@ -251,8 +251,8 @@ TOOL_DEFINITIONS: list[dict] = [
         ),
         "input_schema": {
             "type": "object",
-            "properties": {"project_id": {"type": "string", "description": "The project ID"}},
-            "required": ["project_id"],
+            "properties": {"session_id": {"type": "string", "description": "The project ID"}},
+            "required": ["session_id"],
         },
     },
 ]
@@ -283,12 +283,12 @@ async def execute_tool(
         return {"success": False, "error": str(e)}
 
 
-# ── Project handlers ──
+# ── Session handlers ──
 
 
 async def _list_projects(inp: dict, user: User, org: Organization, db: AsyncSession) -> list[dict]:
     from ..models.organization import Team, TeamMember
-    from ..models.project import Project
+    from ..models.session import Session
 
     # Get user's team in this org
     tm_result = await db.execute(
@@ -299,27 +299,27 @@ async def _list_projects(inp: dict, user: User, org: Organization, db: AsyncSess
         return []
 
     result = await db.execute(
-        select(Project)
-        .where(Project.org_id == org.id, Project.team_id == tm.team_id)
-        .order_by(Project.created_at.desc())
+        select(Session)
+        .where(Session.org_id == org.id, Session.team_id == tm.team_id)
+        .order_by(Session.created_at.desc())
     )
     projects = result.scalars().all()
     return [{"id": p.id, "name": p.name, "description": p.description} for p in projects]
 
 
 async def _get_project(inp: dict, user: User, org: Organization, db: AsyncSession) -> dict:
-    from ..models.project import Project
+    from ..models.session import Session
 
-    result = await db.execute(select(Project).where(Project.id == inp["project_id"]))
+    result = await db.execute(select(Session).where(Session.id == inp["session_id"]))
     project = result.scalar_one_or_none()
     if not project:
-        return {"error": "Project not found"}
+        return {"error": "Session not found"}
     return {"id": project.id, "name": project.name, "description": project.description}
 
 
 async def _create_project(inp: dict, user: User, org: Organization, db: AsyncSession) -> dict:
     from ..models.organization import Team, TeamMember
-    from ..models.project import Project
+    from ..models.session import Session
 
     # Get user's team
     tm_result = await db.execute(
@@ -329,8 +329,8 @@ async def _create_project(inp: dict, user: User, org: Organization, db: AsyncSes
     if not tm:
         return {"error": "User not in any team"}
 
-    name = inp.get("name") or "Untitled Project"
-    project = Project(
+    name = inp.get("name") or "Untitled Session"
+    project = Session(
         name=name,
         description=inp.get("description"),
         owner_id=user.id,
@@ -344,12 +344,12 @@ async def _create_project(inp: dict, user: User, org: Organization, db: AsyncSes
 
 
 async def _update_project(inp: dict, user: User, org: Organization, db: AsyncSession) -> dict:
-    from ..models.project import Project
+    from ..models.session import Session
 
-    result = await db.execute(select(Project).where(Project.id == inp["project_id"]))
+    result = await db.execute(select(Session).where(Session.id == inp["session_id"]))
     project = result.scalar_one_or_none()
     if not project:
-        return {"error": "Project not found"}
+        return {"error": "Session not found"}
     if "name" in inp and inp["name"]:
         project.name = inp["name"]
     if "description" in inp and inp["description"]:
@@ -359,12 +359,12 @@ async def _update_project(inp: dict, user: User, org: Organization, db: AsyncSes
 
 
 async def _delete_project(inp: dict, user: User, org: Organization, db: AsyncSession) -> dict:
-    from ..models.project import Project
+    from ..models.session import Session
 
-    result = await db.execute(select(Project).where(Project.id == inp["project_id"]))
+    result = await db.execute(select(Session).where(Session.id == inp["session_id"]))
     project = result.scalar_one_or_none()
     if not project:
-        return {"error": "Project not found"}
+        return {"error": "Session not found"}
     if project.owner_id != user.id:
         return {"error": "Only the project owner can delete it"}
 
@@ -380,7 +380,7 @@ async def _list_sessions(inp: dict, user: User, org: Organization, db: AsyncSess
     from ..models.session import Session
 
     result = await db.execute(
-        select(Session).where(Session.project_id == inp["project_id"]).order_by(Session.created_at.desc())
+        select(Session).where(Session.id == inp["session_id"]).order_by(Session.created_at.desc())
     )
     sessions = result.scalars().all()
     return [{"id": s.id, "title": s.title, "status": s.status} for s in sessions]
@@ -389,8 +389,9 @@ async def _list_sessions(inp: dict, user: User, org: Organization, db: AsyncSess
 async def _create_session(inp: dict, user: User, org: Organization, db: AsyncSession) -> dict:
     from ..models.session import Participant, Session
 
+    # A new session, seeded from the one it follows.
     session = Session(
-        project_id=inp["project_id"],
+        continued_from_id=inp.get("session_id"),
         org_id=org.id,
         title=inp.get("title"),
         initial_idea=inp.get("initial_idea"),
@@ -424,7 +425,7 @@ async def _list_board_cards(inp: dict, user: User, org: Organization, db: AsyncS
     from ..models.board import BoardColumn
     from ..services.board_service import get_or_create_board
 
-    board = await get_or_create_board(inp["project_id"], db)
+    board = await get_or_create_board(inp["session_id"], db)
     cols_result = await db.execute(
         select(BoardColumn)
         .where(BoardColumn.board_id == board.id)
@@ -457,7 +458,7 @@ async def _create_card(inp: dict, user: User, org: Organization, db: AsyncSessio
     from ..models.board import BoardColumn, Card
     from ..services.board_service import get_or_create_board
 
-    board = await get_or_create_board(inp["project_id"], db)
+    board = await get_or_create_board(inp["session_id"], db)
 
     # Find the target column
     column_name = inp.get("column_name", "Backlog")
@@ -545,7 +546,7 @@ async def _get_blueprint_coverage(inp: dict, user: User, org: Organization, db: 
     from ..services.blueprint_service import get_or_create_blueprint
     from ..services.facilitator import assess_coverage
 
-    snapshot = await get_or_create_blueprint(inp["project_id"], db)
+    snapshot = await get_or_create_blueprint(inp["session_id"], db)
     if not snapshot or not snapshot.content:
         return {"overall": 0, "grade": "F", "message": "Blueprint is empty"}
     return assess_coverage(snapshot.content)
@@ -555,7 +556,7 @@ async def _update_blueprint_section(inp: dict, user: User, org: Organization, db
     from ..services.blueprint_service import update_section
 
     snapshot = await update_section(
-        project_id=inp["project_id"],
+        session_id=inp["session_id"],
         section_name=inp["section"],
         content=inp["content"],
         created_by=user.id,
@@ -645,25 +646,24 @@ async def _get_project_status(inp: dict, user: User, org: Organization, db: Asyn
     from sqlalchemy import func
 
     from ..models.board import Board, BoardColumn, Card
-    from ..models.project import Project
     from ..models.session import Session
     from ..services.blueprint_service import get_or_create_blueprint
     from ..services.facilitator import assess_coverage
 
-    # Project info
-    result = await db.execute(select(Project).where(Project.id == inp["project_id"]))
+    # Session info
+    result = await db.execute(select(Session).where(Session.id == inp["session_id"]))
     project = result.scalar_one_or_none()
     if not project:
-        return {"error": "Project not found"}
+        return {"error": "Session not found"}
 
     # Session count
     session_count = await db.execute(
-        select(func.count()).select_from(Session).where(Session.project_id == project.id)
+        select(func.count()).select_from(Session).where(Session.id == project.id)
     )
 
     # Board state
     board_summary = {}
-    board_result = await db.execute(select(Board).where(Board.project_id == project.id))
+    board_result = await db.execute(select(Board).where(Board.session_id == project.id))
     board = board_result.scalar_one_or_none()
     if board:
         cols = await db.execute(

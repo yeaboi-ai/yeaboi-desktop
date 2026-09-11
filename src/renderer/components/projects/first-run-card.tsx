@@ -33,7 +33,7 @@ export function FirstRunCard({ projectId, canStart, children }: FirstRunCardProp
       {canStart && (
         <div className="mt-5">
           <Link
-            href={`/projects/${projectId}/sessions/new`}
+            href={`/sessions/${projectId}/new`}
             className={buttonVariants({ size: 'sm', className: 'font-body' })}
           >
             {DESCRIBE_COPY.CARD_ACTION}

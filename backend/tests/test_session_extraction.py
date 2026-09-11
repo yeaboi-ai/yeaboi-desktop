@@ -2,10 +2,10 @@
 
 
 async def _create_session_with_messages(client, auth_headers) -> str:
-    proj = await client.post("/api/projects", json={"name": "ExtractP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ExtractP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "extract"},
         headers=auth_headers,
     )

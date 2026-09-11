@@ -3,9 +3,9 @@
 import pytest
 
 
-async def _create_card(client, auth_headers, name: str = "Project A") -> dict:
-    proj = (await client.post("/api/projects", json={"name": name}, headers=auth_headers)).json()
-    board = (await client.get(f"/api/projects/{proj['id']}/board", headers=auth_headers)).json()
+async def _create_card(client, auth_headers, name: str = "Session A") -> dict:
+    proj = (await client.post("/api/sessions", json={"name": name}, headers=auth_headers)).json()
+    board = (await client.get(f"/api/sessions/{proj['id']}/board", headers=auth_headers)).json()
     backlog = board["columns"][0]["id"]
     card = (
         await client.post(
@@ -28,8 +28,8 @@ async def test_resolve_by_uuid(client, auth_headers):
     assert body["card"]["id"] == card_id
     assert body["card"]["friendly_id"]
     assert body["board_id"] == ctx["board"]["id"]
-    assert body["project_key"]
-    assert body["project_name"] == "Acme Storefront"
+    assert body["session_key"]
+    assert body["session_name"] == "Acme Storefront"
     assert body["attachments"] == []
     assert body["links"] == []
     assert body["events"] == []
@@ -57,7 +57,7 @@ async def test_resolve_by_friendly_id_case_insensitive(client, auth_headers):
 @pytest.mark.anyio
 async def test_resolve_returns_comments(client, auth_headers):
     """Comments on the card are bundled into the response."""
-    ctx = await _create_card(client, auth_headers, "Comments Project")
+    ctx = await _create_card(client, auth_headers, "Comments Session")
     card_id = ctx["card"]["id"]
     await client.post(
         f"/api/cards/{card_id}/comments",

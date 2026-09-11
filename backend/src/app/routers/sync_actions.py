@@ -24,7 +24,7 @@ from ..deps import get_current_org, get_current_user
 from ..models.board import Board, BoardColumn, Card
 from ..models.integration import OrgIntegration
 from ..models.organization import Organization
-from ..models.project import Project
+from ..models.session import Session
 from ..models.sync import CardExternalLink, IntegrationProjectMapping, SyncEvent
 from ..models.user import User
 from ..services.crypto import decrypt_api_key
@@ -45,13 +45,13 @@ class ResolveBody(BaseModel):
     choice: str  # "local" | "remote"
 
 
-async def _load_card_in_org(card_id: str, org_id: str, db: AsyncSession) -> tuple[Card, Project]:
+async def _load_card_in_org(card_id: str, org_id: str, db: AsyncSession) -> tuple[Card, Session]:
     row = (
         await db.execute(
-            select(Card, Project)
+            select(Card, Session)
             .join(BoardColumn, BoardColumn.id == Card.column_id)
             .join(Board, Board.id == BoardColumn.board_id)
-            .join(Project, Project.id == Board.project_id)
+            .join(Session, Session.id == Board.session_id)
             .where(Card.id == card_id)
         )
     ).first()
@@ -82,7 +82,7 @@ async def push_card(
             select(IntegrationProjectMapping, OrgIntegration)
             .join(OrgIntegration, OrgIntegration.id == IntegrationProjectMapping.integration_id)
             .where(
-                IntegrationProjectMapping.internal_project_id == project.id,
+                IntegrationProjectMapping.internal_session_id == project.id,
                 IntegrationProjectMapping.enabled.is_(True),
                 OrgIntegration.provider == body.provider,
                 OrgIntegration.org_id == org.id,
@@ -217,9 +217,9 @@ async def resolve_conflict(
         return {"resolved": "remote", "sync_status": _link_to_status_dict(link)}
 
     # "local" — re-push.
-    project_id = (
+    session_id = (
         await db.execute(
-            select(Board.project_id)
+            select(Board.session_id)
             .join(BoardColumn, BoardColumn.board_id == Board.id)
             .where(BoardColumn.id == card.column_id)
         )
@@ -233,7 +233,7 @@ async def resolve_conflict(
             )
             .where(
                 IntegrationProjectMapping.integration_id == link.integration_id,
-                IntegrationProjectMapping.internal_project_id == project_id,
+                IntegrationProjectMapping.internal_session_id == session_id,
                 OrgIntegration.org_id == org.id,
             )
         )

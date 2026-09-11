@@ -24,9 +24,6 @@ import {
 } from '@/lib/yeaboi/dashboards';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
-import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
-import { scopedRunBody } from '@/lib/yeaboi/project-scope';
 import { useAudience } from '@/components/providers/audience-provider';
 import { Button } from '@/components/ui/button';
 
@@ -87,8 +84,6 @@ const checkInput = 'mt-0.5 accent-[var(--primary)]';
 
 function AnalysisSetupBody() {
   const { audience } = useAudience();
-  const scope = useProjectScope();
-  const [scopeNote, setScopeNote] = useState('');
   const [options, setOptions] = useState<AnalysisOptions | null>(null);
   const [answers, setAnswers] = useState<Answers | null>(null);
   const [plan, setPlan] = useState<StepPlan | null>(null);
@@ -157,16 +152,8 @@ function AnalysisSetupBody() {
     setError('');
     let state = emptyRun();
     setRun(state);
-    // A project that cannot be scoped still gets its analysis, as a one-off.
-    let engineId = '';
-    setScopeNote('');
     try {
-      engineId = await scope.engineId();
-    } catch (e) {
-      setScopeNote(`${(e as Error).message} This analysis is a one-off instead.`);
-    }
-    try {
-      await runAnalysis(scopedRunBody(plan!.run as RunRequest, engineId), (line: RunLine) => {
+      await runAnalysis(plan!.run as RunRequest, (line: RunLine) => {
         state = reduceRun(state, line);
         setRun(state);
       });
@@ -196,7 +183,6 @@ function AnalysisSetupBody() {
         </Section>
         {run.cancelled && <Notice title="Cancelled" items={['Nothing was saved.']} />}
         {error && <Notice title="That run did not finish" items={[error]} />}
-        {scopeNote && <p className="text-[12px] text-muted-foreground">{scopeNote}</p>}
         <div className="flex items-center gap-3">
           {busy && run.opId && (
             <Button size="sm" variant="outline" onClick={() => void cancelRun(run.opId)}>
@@ -228,11 +214,6 @@ function AnalysisSetupBody() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl text-foreground">New analysis</h1>
-        {scope.scoped && (
-          <div className="mt-1">
-            <ProjectScopeLine name={scope.project?.name ?? 'this project'} onClear={scope.clear} />
-          </div>
-        )}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {plan.steps.map((key, i) => (

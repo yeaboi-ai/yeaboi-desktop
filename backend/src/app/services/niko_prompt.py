@@ -71,20 +71,20 @@ async def build_system_prompt(
     parts.append(f"\n## Current Context\n- Page: {context.page}")
 
     # Enrich with project data if applicable
-    if context.project_id:
-        project_ctx = await _build_project_context(context.project_id, db)
+    if context.session_id:
+        project_ctx = await _build_project_context(context.session_id, db)
         if project_ctx:
             parts.append(project_ctx)
 
     # Enrich with board data if on a board page
-    if context.board_id or (context.project_id and "/board" in context.page):
-        board_ctx = await _build_board_context(context.project_id, db)
+    if context.board_id or (context.session_id and "/board" in context.page):
+        board_ctx = await _build_board_context(context.session_id, db)
         if board_ctx:
             parts.append(board_ctx)
 
     # Enrich with blueprint coverage
-    if context.project_id:
-        blueprint_ctx = await _build_blueprint_context(context.project_id, db)
+    if context.session_id:
+        blueprint_ctx = await _build_blueprint_context(context.session_id, db)
         if blueprint_ctx:
             parts.append(blueprint_ctx)
 
@@ -101,23 +101,22 @@ async def build_system_prompt(
     return "\n".join(parts)
 
 
-async def _build_project_context(project_id: str, db: AsyncSession) -> str | None:
+async def _build_project_context(session_id: str, db: AsyncSession) -> str | None:
     """Build context about the current project."""
-    from ..models.project import Project
     from ..models.session import Session
 
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
         return None
 
     session_count = await db.execute(
-        select(func.count()).select_from(Session).where(Session.project_id == project_id)
+        select(func.count()).select_from(Session).where(Session.id == session_id)
     )
     num_sessions = session_count.scalar_one()
 
     lines = [
-        f"\n### Active Project: {project.name}",
+        f"\n### Active Session: {project.name}",
         f"- ID: {project.id}",
     ]
     if project.description:
@@ -126,14 +125,14 @@ async def _build_project_context(project_id: str, db: AsyncSession) -> str | Non
     return "\n".join(lines)
 
 
-async def _build_board_context(project_id: str | None, db: AsyncSession) -> str | None:
+async def _build_board_context(session_id: str | None, db: AsyncSession) -> str | None:
     """Build context about the project's board."""
-    if not project_id:
+    if not session_id:
         return None
 
     from ..models.board import Board, BoardColumn, Card
 
-    result = await db.execute(select(Board).where(Board.project_id == project_id))
+    result = await db.execute(select(Board).where(Board.session_id == session_id))
     board = result.scalar_one_or_none()
     if not board:
         return None
@@ -154,13 +153,13 @@ async def _build_board_context(project_id: str | None, db: AsyncSession) -> str 
     return "\n".join(lines)
 
 
-async def _build_blueprint_context(project_id: str, db: AsyncSession) -> str | None:
+async def _build_blueprint_context(session_id: str, db: AsyncSession) -> str | None:
     """Build context about blueprint coverage."""
     from ..services.blueprint_service import get_or_create_blueprint
     from ..services.facilitator import assess_coverage
 
     try:
-        snapshot = await get_or_create_blueprint(project_id, db)
+        snapshot = await get_or_create_blueprint(session_id, db)
         if not snapshot or not snapshot.content:
             return None
         coverage = assess_coverage(snapshot.content)
@@ -171,7 +170,7 @@ async def _build_blueprint_context(project_id: str, db: AsyncSession) -> str | N
             lines.append(f"- Gaps: {', '.join(coverage['gaps'][:5])}")
         return "\n".join(lines)
     except Exception:
-        logger.debug("Failed to build blueprint context for project %s", project_id)
+        logger.debug("Failed to build blueprint context for project %s", session_id)
         return None
 
 

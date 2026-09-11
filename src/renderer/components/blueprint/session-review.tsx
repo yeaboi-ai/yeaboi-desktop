@@ -63,8 +63,8 @@ export function SessionReview({
     setLoading(true);
     try {
       const [diffResp, suggResp, sessResp] = await Promise.all([
-        authFetch(`/api/projects/${projectId}/sessions/${sessionId}/blueprint-diff`),
-        authFetch(`/api/projects/${projectId}/blueprint-suggestions?session_id=${sessionId}`),
+        authFetch(`/api/sessions/${sessionId}/blueprint-diff`),
+        authFetch(`/api/sessions/${sessionId}/blueprint-suggestions`),
         authFetch(`/api/sessions/${sessionId}`),
       ]);
       if (diffResp.ok) setDiff(await diffResp.json());
@@ -74,7 +74,7 @@ export function SessionReview({
         if (s.iteration_id) {
           setIterationId(s.iteration_id);
           // Look up the iteration label for the "Promote to v(n+1)" CTA copy.
-          const iterResp = await authFetch(`/api/projects/${projectId}/iterations`);
+          const iterResp = await authFetch(`/api/sessions/${projectId}/iterations`);
           if (iterResp.ok) {
             const iters: Array<{ id: string; label: string }> = await iterResp.json();
             const match = iters.find((i) => i.id === s.iteration_id);
@@ -92,7 +92,7 @@ export function SessionReview({
   }, [fetchAll]);
 
   async function accept(id: string, editedContent?: string, replace?: boolean) {
-    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/${id}/accept`, {
+    const resp = await authFetch(`/api/sessions/${projectId}/blueprint-suggestions/${id}/accept`, {
       method: 'POST',
       body: JSON.stringify({
         edited_content: editedContent,
@@ -106,7 +106,7 @@ export function SessionReview({
   }
 
   async function reject(id: string) {
-    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/${id}/reject`, {
+    const resp = await authFetch(`/api/sessions/${projectId}/blueprint-suggestions/${id}/reject`, {
       method: 'POST',
     });
     if (resp.ok) {
@@ -115,7 +115,7 @@ export function SessionReview({
   }
 
   async function bulkAccept(section: string) {
-    const resp = await authFetch(`/api/projects/${projectId}/blueprint-suggestions/bulk-accept`, {
+    const resp = await authFetch(`/api/sessions/${projectId}/blueprint-suggestions/bulk-accept`, {
       method: 'POST',
       body: JSON.stringify({ section, session_id: sessionId }),
     });
@@ -151,11 +151,11 @@ export function SessionReview({
         method: 'POST',
         body: JSON.stringify({ skip_remaining: true }),
       });
-      await authFetch(`/api/projects/${projectId}/iterations`, {
+      await authFetch(`/api/sessions/${projectId}/iterations`, {
         method: 'POST',
         body: JSON.stringify({}),
       });
-      router.push(`/projects/${projectId}/blueprint`);
+      router.push(`/sessions/${projectId}/blueprint`);
     } finally {
       setCompleting(false);
     }
@@ -257,7 +257,7 @@ export function SessionReview({
           You closed the review for this session. Reopen the{' '}
           <a
             className="underline underline-offset-2 hover:text-foreground"
-            href={`/projects/${projectId}/blueprint`}
+            href={`/sessions/${projectId}/blueprint`}
           >
             blueprint
           </a>{' '}

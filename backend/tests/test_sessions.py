@@ -3,11 +3,11 @@ import pytest
 
 async def test_create_session(client, auth_headers):
     # First create a project
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Build a todo app"},
         headers=auth_headers,
     )
@@ -25,11 +25,11 @@ async def test_create_session_persists_focus_target(client, auth_headers):
     """Phase 3 coverage-aware launcher payload must round-trip on create and
     show up on subsequent reads. Backend derives focus_sections from
     focus_target.sections when the caller omits the explicit field."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={
             "initial_idea": "Iter on the API layer",
             "focus_target": {
@@ -55,12 +55,12 @@ async def test_create_session_persists_pace(client, auth_headers):
     """Pace selector ("fast" | "balanced" | "deep") from the session launcher
     must round-trip into ai_config so the facilitator and voice worker can
     read it on every turn. Default is "balanced" — matches today's behaviour."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     # Explicit fast.
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Triage this bug fast", "pace": "fast"},
         headers=auth_headers,
     )
@@ -71,11 +71,11 @@ async def test_create_session_persists_pace(client, auth_headers):
 async def test_create_session_pace_defaults_to_balanced(client, auth_headers):
     """Omitting pace must persist "balanced" — never None — so the worker
     always has a value to look up in PACE_BUDGETS."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Whatever"},
         headers=auth_headers,
     )
@@ -87,11 +87,11 @@ async def test_create_session_invalid_pace_falls_back_to_balanced(client, auth_h
     """An invalid pace value (older client, fat-finger, etc.) must not blow
     up the create endpoint — services.pace.normalise_pace coerces unknown
     values to balanced."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Bogus pace", "pace": "lightspeed"},
         headers=auth_headers,
     )
@@ -102,11 +102,11 @@ async def test_create_session_invalid_pace_falls_back_to_balanced(client, auth_h
 async def test_create_session_persists_technical_comfort(client, auth_headers):
     """Comfort level from the session launcher round-trips into ai_config so
     the facilitator picks it up on every turn. Mirrors the pace pattern."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Plain English please", "technical_comfort": "non_technical"},
         headers=auth_headers,
     )
@@ -117,11 +117,11 @@ async def test_create_session_persists_technical_comfort(client, auth_headers):
 async def test_create_session_technical_comfort_defaults_to_comfortable(client, auth_headers):
     """Omitting the field must persist "comfortable" — never None — so the
     facilitator always has a value to look up in TECHNICAL_COMFORT_PROMPTS."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "No comfort field"},
         headers=auth_headers,
     )
@@ -132,11 +132,11 @@ async def test_create_session_technical_comfort_defaults_to_comfortable(client, 
 async def test_create_session_invalid_technical_comfort_falls_back(client, auth_headers):
     """Unknown comfort values must not 422 — normalise_technical_comfort
     coerces to "comfortable" the same way pace falls back to balanced."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Bogus level", "technical_comfort": "ninja-grade"},
         headers=auth_headers,
     )
@@ -147,11 +147,11 @@ async def test_create_session_invalid_technical_comfort_falls_back(client, auth_
 async def test_patch_session_technical_comfort_merges_without_clobbering(client, auth_headers):
     """Mid-session toggle PATCHes ai_config with only the comfort key — the
     rest of ai_config (persona, pace, etc.) must survive the merge."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Will toggle", "pace": "deep", "persona": "pm"},
         headers=auth_headers,
     )
@@ -175,11 +175,11 @@ async def test_create_session_explicit_focus_sections_wins_over_target(client, a
     """When both focus_sections and focus_target are sent, the explicit
     focus_sections takes precedence — the launcher only auto-derives when
     the caller stays silent on focus_sections."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={
             "initial_idea": "Override",
             "focus_sections": ["tech_stack"],
@@ -197,26 +197,27 @@ async def test_create_session_explicit_focus_sections_wins_over_target(client, a
 
 
 async def test_list_sessions(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
-    # Only one "live" session per project is allowed — create one, then list.
-    # Creating a second would either fail or supersede the first depending on
-    # how the create endpoint handles conflicts. For list coverage, one is
-    # enough.
-    await client.post(f"/api/projects/{project_id}/sessions", json={"initial_idea": "Idea 1"}, headers=auth_headers)
+    # One continuation is enough for list coverage.
+    await client.post(
+        f"/api/sessions/{session_id}/continuations",
+        json={"initial_idea": "Idea 1"},
+        headers=auth_headers,
+    )
 
-    resp = await client.get(f"/api/projects/{project_id}/sessions", headers=auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/continuations", headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()) >= 1
 
 
 async def test_get_session(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Build a thing"},
         headers=auth_headers,
     )
@@ -229,11 +230,11 @@ async def test_get_session(client, auth_headers):
 
 
 async def test_update_session_status(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Build a thing"},
         headers=auth_headers,
     )
@@ -250,11 +251,11 @@ async def test_update_session_status(client, auth_headers):
 
 
 async def test_join_session_via_code(client, auth_headers, other_auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Collab"},
         headers=auth_headers,
     )
@@ -266,11 +267,11 @@ async def test_join_session_via_code(client, auth_headers, other_auth_headers):
 
 
 async def test_send_chat_message(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Chat test"},
         headers=auth_headers,
     )
@@ -292,10 +293,10 @@ async def test_send_chat_message(client, auth_headers):
 
 async def test_toggle_message_reaction(client, auth_headers):
     """Toggling a reaction adds the user's id; toggling again removes it."""
-    proj = await client.post("/api/projects", json={"name": "ReactProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ReactProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "React test"},
         headers=auth_headers,
     )
@@ -333,10 +334,10 @@ async def test_toggle_message_reaction(client, auth_headers):
 
 
 async def test_reaction_rejects_non_participant(client, auth_headers, other_auth_headers):
-    proj = await client.post("/api/projects", json={"name": "ReactAuth"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ReactAuth"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "auth"},
         headers=auth_headers,
     )
@@ -359,10 +360,10 @@ async def test_reaction_rejects_non_participant(client, auth_headers, other_auth
 
 
 async def test_reaction_404_for_unknown_message(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "React404"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "React404"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "404"},
         headers=auth_headers,
     )
@@ -391,10 +392,10 @@ def test_is_emoji_only_detects_emoji_messages():
 async def test_redact_chat_message(client, auth_headers):
     """W5.7.5 — PATCH with redact=true replaces content with [redacted] and
     preserves the original in original_content."""
-    proj = await client.post("/api/projects", json={"name": "RedactP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "RedactP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Redact test"},
         headers=auth_headers,
     )
@@ -423,10 +424,10 @@ async def test_redact_chat_message(client, auth_headers):
 
 async def test_edit_chat_message_requires_content_when_not_redacting(client, auth_headers):
     """PATCH must reject empty body (neither content nor redact provided)."""
-    proj = await client.post("/api/projects", json={"name": "EditP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "EditP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Edit test"},
         headers=auth_headers,
     )
@@ -450,10 +451,10 @@ async def test_edit_chat_message_requires_content_when_not_redacting(client, aut
 
 async def test_co_host_promotion_grants_update_permission(client, auth_headers, other_auth_headers):
     """W4.3.5 — host promotes another participant to co_host; co_host can then PATCH session status."""
-    proj = await client.post("/api/projects", json={"name": "CoHostP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "CoHostP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "co-host test"},
         headers=auth_headers,
     )
@@ -488,10 +489,10 @@ async def test_co_host_promotion_grants_update_permission(client, auth_headers, 
 
 async def test_role_change_rejects_non_host(client, auth_headers, other_auth_headers):
     """A non-host calling the role endpoint gets 403."""
-    proj = await client.post("/api/projects", json={"name": "RoleP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "RoleP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -512,10 +513,10 @@ async def test_role_change_rejects_non_host(client, auth_headers, other_auth_hea
 
 async def test_role_change_validates_role_value(client, auth_headers):
     """role must be co_host or member."""
-    proj = await client.post("/api/projects", json={"name": "RoleVP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "RoleVP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -532,10 +533,10 @@ async def test_role_change_validates_role_value(client, auth_headers):
 
 async def test_recording_consent_set_and_persist(client, auth_headers):
     """W5.7.4 — PATCH /recording-consent persists tri-state value (true/false/null)."""
-    proj = await client.post("/api/projects", json={"name": "ConsentP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ConsentP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "consent"},
         headers=auth_headers,
     )
@@ -576,10 +577,10 @@ async def test_recording_consent_set_and_persist(client, auth_headers):
 
 async def test_recording_consent_validates_type(client, auth_headers):
     """consent must be bool or null, not arbitrary types."""
-    proj = await client.post("/api/projects", json={"name": "ConsentVP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ConsentVP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -594,10 +595,10 @@ async def test_recording_consent_validates_type(client, auth_headers):
 
 async def test_summarize_recent_no_messages(client, auth_headers):
     """W4.3.3 — empty conversation returns the no-content fallback string."""
-    proj = await client.post("/api/projects", json={"name": "SumP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "SumP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "summarize"},
         headers=auth_headers,
     )
@@ -611,10 +612,10 @@ async def test_summarize_recent_no_messages(client, auth_headers):
 
 async def test_summarize_recent_validates_minutes(client, auth_headers):
     """`minutes` outside 1..60 returns 422."""
-    proj = await client.post("/api/projects", json={"name": "SumP422"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "SumP422"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -627,10 +628,10 @@ async def test_summarize_recent_validates_minutes(client, auth_headers):
 
 async def test_summarize_recent_falls_back_without_ai_provider(client, auth_headers):
     """When no AI provider is wired, returns a deterministic summary."""
-    proj = await client.post("/api/projects", json={"name": "SumPNoAI"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "SumPNoAI"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -652,10 +653,10 @@ async def test_summarize_recent_falls_back_without_ai_provider(client, auth_head
 
 async def test_explain_term_validates_input(client, auth_headers):
     """Empty / oversized terms must 422, not crash the AI call downstream."""
-    proj = await client.post("/api/projects", json={"name": "ExpTerm"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ExpTerm"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -679,10 +680,10 @@ async def test_explain_term_validates_input(client, auth_headers):
 async def test_explain_term_falls_back_without_ai_provider(client, auth_headers):
     """When no AI provider is wired, the endpoint still returns a renderable
     GlossaryEntry-shaped payload so the popover can render something."""
-    proj = await client.post("/api/projects", json={"name": "ExpTermNoAI"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ExpTermNoAI"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -705,10 +706,10 @@ async def test_explain_term_falls_back_without_ai_provider(client, auth_headers)
 
 async def test_send_recap_email_no_resend_key(client, auth_headers, monkeypatch):
     """W6.6.5 — endpoint returns 200 with sent=0 when Resend isn't configured."""
-    proj = await client.post("/api/projects", json={"name": "RecapP"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "RecapP"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "recap"},
         headers=auth_headers,
     )
@@ -732,10 +733,10 @@ async def test_send_recap_email_no_resend_key(client, auth_headers, monkeypatch)
 
 async def test_send_recap_email_not_participant(client, auth_headers, other_auth_headers):
     """Non-participants must get 403."""
-    proj = await client.post("/api/projects", json={"name": "RecapPriv"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "RecapPriv"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     s = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "private"},
         headers=auth_headers,
     )
@@ -745,10 +746,10 @@ async def test_send_recap_email_not_participant(client, auth_headers, other_auth
 
 
 async def test_redact_chat_message_not_found(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P404"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P404"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     session_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "404 test"},
         headers=auth_headers,
     )
@@ -768,10 +769,10 @@ async def test_facilitator_exception_surfaces_system_message(client, auth_header
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-    proj = await client.post("/api/projects", json={"name": "ErrProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ErrProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "trigger-error"},
         headers=auth_headers,
     )
@@ -836,10 +837,10 @@ async def test_wireframe_diagram_defaults_fidelity_to_low_when_missing(client, a
 
     from src.app.models.session import Session as SessionModel
 
-    proj = await client.post("/api/projects", json={"name": "WFProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "WFProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui session"},
         headers=auth_headers,
     )
@@ -897,12 +898,12 @@ async def test_session_created_does_not_dispatch_slack_event(client, auth_header
     Verify the dispatch is NOT called for that event type."""
     from unittest.mock import AsyncMock, patch
 
-    proj = await client.post("/api/projects", json={"name": "Slack Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Slack Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     with patch("src.app.routers.sessions.dispatch_event", new_callable=AsyncMock) as mock_dispatch:
         resp = await client.post(
-            f"/api/projects/{project_id}/sessions",
+            f"/api/sessions/{session_id}/continuations",
             json={"initial_idea": "Test dispatch"},
             headers=auth_headers,
         )
@@ -918,11 +919,11 @@ async def test_dispatch_event_called_on_session_completed(client, auth_headers):
     """dispatch_event is called with session_completed when status transitions to completed."""
     from unittest.mock import AsyncMock, patch
 
-    proj = await client.post("/api/projects", json={"name": "Slack Test 2"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Slack Test 2"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Complete me"},
         headers=auth_headers,
     )
@@ -951,11 +952,11 @@ async def test_session_deleted_does_not_dispatch_slack_event(client, auth_header
     for the same reason — it was paired noise. Verify dispatch is NOT called."""
     from unittest.mock import AsyncMock, patch
 
-    proj = await client.post("/api/projects", json={"name": "Slack Test 3"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Slack Test 3"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Delete me"},
         headers=auth_headers,
     )
@@ -981,10 +982,10 @@ async def test_delete_session_clears_session_event_rows(client, auth_headers, db
 
     from src.app.models.session_event import SessionContext, SessionEvent
 
-    proj = await client.post("/api/projects", json={"name": "Session children test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Session children test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Has child rows"},
         headers=auth_headers,
     )
@@ -1013,10 +1014,10 @@ async def test_delete_project_clears_session_children(client, auth_headers, db_s
 
     from src.app.models.session_event import SessionContext, SessionEvent
 
-    proj = await client.post("/api/projects", json={"name": "Project children test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Session children test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Session with events"},
         headers=auth_headers,
     )
@@ -1026,7 +1027,7 @@ async def test_delete_project_clears_session_children(client, auth_headers, db_s
     db_session.add(SessionContext(session_id=session_id, directory={"people": []}))
     await db_session.commit()
 
-    resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
+    resp = await client.delete(f"/api/sessions/{session_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
 
     events = (await db_session.execute(select(SessionEvent).where(SessionEvent.session_id == session_id))).all()
@@ -1045,10 +1046,10 @@ async def test_wireframe_enhance_promotes_fidelity_and_injects_tokens(client, au
 
     from src.app.models.session import Session as SessionModel
 
-    proj = await client.post("/api/projects", json={"name": "EnhanceProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "EnhanceProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui session"},
         headers=auth_headers,
     )
@@ -1124,10 +1125,10 @@ async def test_wireframe_enhance_400_when_design_system_missing(client, auth_hea
 
     from src.app.models.session import Session as SessionModel
 
-    proj = await client.post("/api/projects", json={"name": "NoDS"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "NoDS"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui session"},
         headers=auth_headers,
     )
@@ -1149,10 +1150,10 @@ async def test_wireframe_enhance_400_when_design_system_missing(client, auth_hea
 
 
 async def test_wireframe_enhance_404_when_no_wireframe(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "NoWF"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "NoWF"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui session"},
         headers=auth_headers,
     )
@@ -1174,10 +1175,10 @@ async def test_wireframe_enhance_403_for_non_participant(client, auth_headers, o
     from src.app.models.session import Session as SessionModel
 
     # auth_headers user creates project + session
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui"},
         headers=auth_headers,
     )
@@ -1269,10 +1270,10 @@ def test_format_wireframe_summary_returns_none_when_empty():
 
 
 async def _make_live_session(client, auth_headers, idea="multi-user"):
-    proj = await client.post("/api/projects", json={"name": "MU"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "MU"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": idea},
         headers=auth_headers,
     )
@@ -1408,10 +1409,10 @@ async def test_facilitator_persists_ai_meta_on_assistant_message(client, auth_he
 
     from src.app.models.session import ChatMessage as ChatMessageModel
 
-    proj = await client.post("/api/projects", json={"name": "MetaProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "MetaProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "meta test"},
         headers=auth_headers,
     )
@@ -1468,10 +1469,10 @@ async def test_facilitator_passes_emotion_from_ai_config(client, auth_headers, a
 
     from src.app.models.session import Session as SessionModel
 
-    proj = await client.post("/api/projects", json={"name": "EmoProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "EmoProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "emotion test"},
         headers=auth_headers,
     )
@@ -1560,10 +1561,10 @@ async def test_facilitator_broadcasts_suggest_persona_when_result_has_one(client
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-    proj = await client.post("/api/projects", json={"name": "PSugProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "PSugProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "persona suggest test"},
         headers=auth_headers,
     )
@@ -1620,10 +1621,10 @@ async def test_facilitator_does_not_broadcast_persona_when_none(client, auth_hea
 
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-    proj = await client.post("/api/projects", json={"name": "PNoSugProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "PNoSugProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "no suggest"},
         headers=auth_headers,
     )
@@ -1668,10 +1669,10 @@ async def test_facilitator_skipped_in_observer_mode_emits_ws_event(client, auth_
     from src.app.models.session import ChatMessage as ChatMessageModel
     from src.app.models.session import Session as SessionModel
 
-    proj = await client.post("/api/projects", json={"name": "ObsProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ObsProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "observer test"},
         headers=auth_headers,
     )
@@ -1729,10 +1730,10 @@ async def test_extraction_runs_as_background_task_after_fourth_user_message(clie
 
     from src.app.models.session import ChatMessage as ChatMessageModel
 
-    proj = await client.post("/api/projects", json={"name": "ExtProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "ExtProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "extraction test"},
         headers=auth_headers,
     )
@@ -1781,7 +1782,7 @@ async def test_extraction_runs_as_background_task_after_fourth_user_message(clie
     assert extract_mock.await_count == 1
     call_kwargs = extract_mock.await_args.kwargs
     assert call_kwargs["session_id"] == session_id
-    assert call_kwargs["project_id"] == project_id
+    assert call_kwargs["session_id"] == session_id
 
 
 async def test_facilitator_blueprint_update_appends_new_bullet(client, auth_headers, app, db_engine):
@@ -1796,10 +1797,10 @@ async def test_facilitator_blueprint_update_appends_new_bullet(client, auth_head
     from src.app.models.blueprint import BlueprintSnapshot
     from src.app.services.blueprint_service import update_section
 
-    proj = await client.post("/api/projects", json={"name": "MergeProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "MergeProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "merge test"},
         headers=auth_headers,
     )
@@ -1811,12 +1812,11 @@ async def test_facilitator_blueprint_update_appends_new_bullet(client, auth_head
     # next facilitator turn.
     async with test_factory() as db:
         await update_section(
-            project_id,
+            session_id,
             "tech_stack",
             "- React frontend",
             "user",
             db,
-            session_id=session_id,
         )
 
     fake_result = {
@@ -1850,7 +1850,7 @@ async def test_facilitator_blueprint_update_appends_new_bullet(client, auth_head
         latest = (
             await db.execute(
                 select(BlueprintSnapshot)
-                .where(BlueprintSnapshot.project_id == project_id)
+                .where(BlueprintSnapshot.session_id == session_id)
                 .order_by(BlueprintSnapshot.version_number.desc())
                 .limit(1)
             )
@@ -1883,10 +1883,10 @@ async def test_facilitator_blueprint_update_dedupes_re_emitted_bullet(client, au
     from src.app.models.blueprint import BlueprintSnapshot
     from src.app.services.blueprint_service import update_section
 
-    proj = await client.post("/api/projects", json={"name": "DedupProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "DedupProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "dedup test"},
         headers=auth_headers,
     )
@@ -1896,12 +1896,11 @@ async def test_facilitator_blueprint_update_dedupes_re_emitted_bullet(client, au
 
     async with test_factory() as db:
         await update_section(
-            project_id,
+            session_id,
             "tech_stack",
             "- React frontend",
             "user",
             db,
-            session_id=session_id,
         )
 
     fake_result = {
@@ -1931,7 +1930,7 @@ async def test_facilitator_blueprint_update_dedupes_re_emitted_bullet(client, au
         latest = (
             await db.execute(
                 select(BlueprintSnapshot)
-                .where(BlueprintSnapshot.project_id == project_id)
+                .where(BlueprintSnapshot.session_id == session_id)
                 .order_by(BlueprintSnapshot.version_number.desc())
                 .limit(1)
             )
@@ -1954,10 +1953,10 @@ async def test_facilitator_emits_one_chat_message_per_segment(client, auth_heade
 
     from src.app.models.session import ChatMessage as ChatMessageModel
 
-    proj = await client.post("/api/projects", json={"name": "SegProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "SegProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "segments test"},
         headers=auth_headers,
     )
@@ -2035,10 +2034,10 @@ async def test_facilitator_single_segment_still_emits_one_bubble(client, auth_he
 
     from src.app.models.session import ChatMessage as ChatMessageModel
 
-    proj = await client.post("/api/projects", json={"name": "SegOneProj"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "SegOneProj"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "one-bubble test"},
         headers=auth_headers,
     )

@@ -14,7 +14,7 @@ class BlueprintIteration(TimestampMixin, Base):
     __tablename__ = "blueprint_iterations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), nullable=False)
     org_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("organizations.id"))
     iteration_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     label: Mapped[str] = mapped_column(String(50), default="v1")
@@ -49,13 +49,15 @@ class BlueprintSnapshot(TimestampMixin, Base):
     __tablename__ = "blueprint_snapshots"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), nullable=False)
     org_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("organizations.id"))
     iteration_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("blueprint_iterations.id"))
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_by: Mapped[str] = mapped_column(String(36), default="ai")
-    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id", ondelete="SET NULL"))
+    # True when the conversation caused the write, False for a direct edit.
+    # The post-session diff baselines on the last snapshot that was not.
+    from_conversation: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     section_sources: Mapped[dict | None] = mapped_column(JSON, default=None)
     # {section_slug: {normalized_bullet: source}} — per-bullet provenance.
     # source is one of "user_stated" | "user_confirmed" | "ai_inferred".
@@ -75,8 +77,7 @@ class BlueprintSuggestion(TimestampMixin, Base):
     __tablename__ = "blueprint_suggestions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
-    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id", ondelete="SET NULL"))
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), nullable=False)
     section: Mapped[str] = mapped_column(String(50), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     edited_content: Mapped[str | None] = mapped_column(Text, default=None)

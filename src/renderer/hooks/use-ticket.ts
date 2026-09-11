@@ -50,8 +50,8 @@ export interface TicketBoardColumn {
 
 export interface TicketResponse {
   card: Card;
-  project_key?: string | null;
-  project_name?: string | null;
+  session_key?: string | null;
+  session_name?: string | null;
   board_id?: string | null;
   board_columns?: TicketBoardColumn[];
   attachments: TicketAttachment[];

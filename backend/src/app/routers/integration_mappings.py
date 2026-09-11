@@ -1,4 +1,4 @@
-"""CRUD for per-project mappings between an internal Project and an external
+"""CRUD for per-project mappings between an internal Session and an external
 issue-tracker project (Jira project key, ADO project/team).
 
 Every mapping is org-scoped through the ``OrgIntegration``; cross-org access
@@ -18,7 +18,7 @@ from ..db import get_db
 from ..deps import get_current_org, get_current_user
 from ..models.integration import OrgIntegration
 from ..models.organization import Organization
-from ..models.project import Project
+from ..models.session import Session
 from ..models.sync import IntegrationProjectMapping
 from ..models.user import User
 from ..schemas.integration_mapping import (
@@ -41,12 +41,12 @@ async def _verify_integration_in_org(integration_id: str, org_id: str, db: Async
     return integration
 
 
-async def _verify_project_in_org(project_id: str, org_id: str, db: AsyncSession) -> Project:
+async def _verify_project_in_org(session_id: str, org_id: str, db: AsyncSession) -> Session:
     project = (
-        await db.execute(select(Project).where(Project.id == project_id))
+        await db.execute(select(Session).where(Session.id == session_id))
     ).scalar_one_or_none()
     if not project or project.org_id != org_id:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
     return project
 
 
@@ -83,13 +83,13 @@ async def create_mapping(
     db: AsyncSession = Depends(get_db),
 ) -> IntegrationProjectMapping:
     await _verify_integration_in_org(body.integration_id, org.id, db)
-    await _verify_project_in_org(body.internal_project_id, org.id, db)
+    await _verify_project_in_org(body.internal_session_id, org.id, db)
 
     existing = (
         await db.execute(
             select(IntegrationProjectMapping).where(
                 IntegrationProjectMapping.integration_id == body.integration_id,
-                IntegrationProjectMapping.internal_project_id == body.internal_project_id,
+                IntegrationProjectMapping.internal_session_id == body.internal_session_id,
             )
         )
     ).scalar_one_or_none()
@@ -101,7 +101,7 @@ async def create_mapping(
 
     row = IntegrationProjectMapping(
         integration_id=body.integration_id,
-        internal_project_id=body.internal_project_id,
+        internal_session_id=body.internal_session_id,
         external_project_key=body.external_project_key,
         external_project_id=body.external_project_id,
         default_issue_type=body.default_issue_type,

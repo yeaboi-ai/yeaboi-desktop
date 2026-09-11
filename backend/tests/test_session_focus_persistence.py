@@ -51,10 +51,10 @@ async def test_session_focus_persisted_on_facilitator_emission(
     client, auth_headers, db_session, _patched_factory
 ):
     # 1. Create a project + session
-    proj = await client.post("/api/projects", json={"name": "Focus Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Focus Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "I want to plan the UI"},
         headers=auth_headers,
     )
@@ -91,10 +91,10 @@ async def test_session_focus_persisted_on_facilitator_emission(
 async def test_empty_session_focus_resets_scope(
     client, auth_headers, db_session, _patched_factory
 ):
-    proj = await client.post("/api/projects", json={"name": "Reset Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Reset Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui focused"},
         headers=auth_headers,
     )
@@ -138,10 +138,10 @@ async def test_none_session_focus_leaves_scope_unchanged(
     client, auth_headers, db_session, _patched_factory
 ):
     """When process_message returns session_focus=None, do not touch the column."""
-    proj = await client.post("/api/projects", json={"name": "Untouched Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Untouched Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "something"},
         headers=auth_headers,
     )
@@ -185,10 +185,10 @@ async def test_focus_sections_passed_to_facilitator_as_override(
 ):
     """When session.focus_sections is set, process_message receives it as
     sections_override (takes precedence over iteration-type templates)."""
-    proj = await client.post("/api/projects", json={"name": "Override Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Override Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "ui"},
         headers=auth_headers,
     )

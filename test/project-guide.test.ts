@@ -1,4 +1,4 @@
-// The Projects header's duck: the three pages he says, true for each world,
+// The Sessions header's duck: the three pages he says, true for each world,
 // the stepping between them, and the guarantee that he stays in the header
 // band above the sheet rather than floating over it.
 
@@ -22,11 +22,11 @@ const RENDERER = join(import.meta.dirname, '..', 'src', 'renderer');
 const read = (rel: string) => readFileSync(join(RENDERER, rel), 'utf8');
 
 describe('guidePages', () => {
-  it('is three pages, opening on what a project is and closing on how it grows', () => {
+  it('is three pages, opening on what a session is and closing on what follows it', () => {
     const pages = guidePages(FLOW);
     expect(pages).toHaveLength(3);
     expect(pages[0]!.title).toBe('One piece of work');
-    expect(pages[2]!.title).toBe('It grows as you go');
+    expect(pages[2]!.title).toBe('A follow-up starts a new one');
     for (const page of pages) {
       expect(page.title).not.toMatch(/\.$/);
       if (page.body) expect(page.body.endsWith('.')).toBe(true);
@@ -52,7 +52,7 @@ describe('guidePages', () => {
     expect(keys).not.toContain('retro');
   });
 
-  it('says a project with no flow at all scopes by repository', () => {
+  it('says a world with no flow at all scopes by repository', () => {
     const page = guidePages([])[1]!;
     expect(page.title).toBe(AGENTS_RELATED_TITLE);
     expect(page.body).toBe(AGENTS_RELATED_LINE);
@@ -63,10 +63,10 @@ describe('guidePages', () => {
 describe('relatedLine', () => {
   it('reads the related page as one sentence', () => {
     expect(relatedLine(FLOW)).toBe(
-      'Everything inside stays related: plan frames every other run, analysis profiles the team, standup tracks its blockers, poker sizes its tickets, retro carries actions over and report reads all of it.',
+      'Runs are their own thing: plan breaks the work down, analysis profiles the team, standup tracks the blockers, poker sizes the tickets, retro carries actions over and report reads all of it.',
     );
     expect(relatedLine(FLOW.filter((s) => s.key === 'daily-standup'))).toBe(
-      'Everything inside stays related: standup tracks its blockers.',
+      'Runs are their own thing: standup tracks the blockers.',
     );
     expect(relatedLine([])).toBe(AGENTS_RELATED_LINE);
   });
@@ -84,7 +84,7 @@ describe('stepIndex', () => {
 
 describe('the guide on the page', () => {
   it('remembers being read under one key', () => {
-    expect(GUIDE_SEEN_KEY).toBe('projects-guide-seen');
+    expect(GUIDE_SEEN_KEY).toBe('sessions-guide-seen');
     expect(read('components/projects/project-guide.tsx')).toContain('GUIDE_SEEN_KEY');
   });
 

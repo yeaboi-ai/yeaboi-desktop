@@ -1,5 +1,5 @@
 /**
- * Stamps a team's currently-viewed project via PATCH /api/teams/{id}/last-viewed.
+ * Stamps a team's currently-viewed session via PATCH /api/teams/{id}/last-viewed.
  *
  * Called from the project detail page on mount (see Task 10). Debounced per
  * (team_id, project_id) pair via sessionStorage — if we stamped the same pair
@@ -44,14 +44,14 @@ export function _resetStampCacheForTests(): void {
 
 type AuthFetch = (url: string, options?: RequestInit) => Promise<Response>;
 
-export async function stampLastViewedProject(args: {
+export async function stampLastViewedSession(args: {
   teamId: string;
-  projectId: string;
+  sessionId: string;
   authFetch: AuthFetch;
 }): Promise<void> {
   if (typeof window === 'undefined') return; // SSR no-op
 
-  const key = `${args.teamId}:${args.projectId}`;
+  const key = `${args.teamId}:${args.sessionId}`;
   const cache = readCache();
   const last = cache[key];
   const now = Date.now();
@@ -60,7 +60,7 @@ export async function stampLastViewedProject(args: {
   try {
     const res = await args.authFetch(`/api/teams/${args.teamId}/last-viewed`, {
       method: 'PATCH',
-      body: JSON.stringify({ project_id: args.projectId }),
+      body: JSON.stringify({ session_id: args.sessionId }),
     });
     if (!res.ok) {
       // 4xx (403/400/404) → do NOT cache; the client state may recover on next load

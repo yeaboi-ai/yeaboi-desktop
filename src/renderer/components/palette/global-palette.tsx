@@ -30,9 +30,9 @@ import {
   groupHits,
   moveSelection,
   pageHits,
-  projectHits,
+  workspaceHits,
   rankHits,
-  sessionHits,
+  runHits,
   settingHits,
   type PaletteActionId,
   type PaletteHit,
@@ -68,8 +68,8 @@ export function GlobalPalette() {
       ? visibleSessions(shapeSessions(sessions, cards, now), soloEnabled)
       : [];
     return [
-      ...projectHits(projects ?? [], audience),
-      ...sessionHits(shaped),
+      ...workspaceHits(projects ?? [], audience),
+      ...runHits(shaped),
       ...pageHits(visibleRailDestinations(soloEnabled), caps, audience),
       ...settingHits(settings ?? []),
       ...actionHits(audience, update, audiencesShown(soloEnabled)),

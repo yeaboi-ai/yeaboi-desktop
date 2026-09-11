@@ -1,4 +1,4 @@
-// The Projects ledger's pure half: the shared row grid, the head row's
+// The sessions ledger's pure half: the shared row grid, the head row's
 // sentences, the serif words, the rows-and-Completed split, and the
 // composer's error sentences.
 
@@ -10,6 +10,7 @@ import {
   DELETE_PROJECT_MESSAGE,
   DELETE_PROJECT_TITLE,
   IN_PROGRESS_WORD,
+  LEDGER_COLS,
   LEDGER_ROW,
   NOT_ALLOWED_LINE,
   NOT_ALLOWED_TITLE,
@@ -19,22 +20,15 @@ import {
   UNREACHABLE_LINE,
   createErrorMessage,
   leavesSentence,
-  ledgerColumns,
   ledgerSections,
   projectCount,
   rowActions,
 } from '../src/renderer/lib/yeaboi/ledger';
 import { FLOW } from '../src/renderer/lib/yeaboi/reads';
 
-describe('ledgerColumns', () => {
-  it('gives one 3.5rem column per step between the name and the date', () => {
-    expect(ledgerColumns(6)).toBe('minmax(0, 1fr) repeat(6, 3.5rem) 5.5rem');
-    expect(ledgerColumns(4)).toBe('minmax(0, 1fr) repeat(4, 3.5rem) 5.5rem');
-  });
-
-  it('is name and date alone when the world has no flow', () => {
-    expect(ledgerColumns(0)).toBe('minmax(0, 1fr) 5.5rem');
-    expect(ledgerColumns(-1)).toBe('minmax(0, 1fr) 5.5rem');
+describe('LEDGER_COLS', () => {
+  it('is the name and the date, and nothing between them', () => {
+    expect(LEDGER_COLS).toBe('minmax(0, 1fr) 5.5rem');
   });
 
   it('is the grid every row reads', () => {
@@ -51,7 +45,7 @@ describe('leavesSentence', () => {
       expect(sentence).not.toMatch(/\.\.$/);
     }
     expect(leavesSentence(FLOW[0]!)).toBe(
-      'Plan leaves the sprint plan every other run frames itself with.',
+      'Plan leaves a sprint plan with epics, stories and tasks.',
     );
   });
 });
@@ -62,7 +56,7 @@ describe('ledgerSections', () => {
   it('puts active rows first and done ones under Completed, newest first', () => {
     const { rows, completed } = ledgerSections([
       row('a', '2026-09-01T00:00:00Z'),
-      row('b', '2026-09-03T00:00:00Z', 'done'),
+      row('b', '2026-09-03T00:00:00Z', 'completed'),
       row('c', '2026-09-02T00:00:00Z', 'active'),
     ]);
     expect(rows.map((r) => r.id)).toEqual(['c', 'a']);
@@ -110,9 +104,9 @@ describe('createErrorMessage', () => {
   });
 
   it('falls back to one sentence for anything else', () => {
-    expect(createErrorMessage(undefined)).toBe("Couldn't create the project. Please try again.");
+    expect(createErrorMessage(undefined)).toBe("Couldn't create the session. Please try again.");
     expect(createErrorMessage(new Error(''))).toBe(
-      "Couldn't create the project. Please try again.",
+      "Couldn't create the session. Please try again.",
     );
   });
 });
@@ -124,11 +118,11 @@ describe('the rows’ actions', () => {
       ['status', 'Mark done'],
       ['delete', 'Delete'],
     ]);
-    expect(rowActions('done').map((a) => a.label)).toEqual(['Rename', 'Reopen', 'Delete']);
+    expect(rowActions('completed').map((a) => a.label)).toEqual(['Rename', 'Reopen', 'Delete']);
   });
 
-  it('count the projects in progress in words', () => {
-    expect(projectCount(1)).toBe('One project');
-    expect(projectCount(3)).toBe('3 projects');
+  it('counts the sessions in progress in words', () => {
+    expect(projectCount(1)).toBe('One session');
+    expect(projectCount(3)).toBe('3 sessions');
   });
 });

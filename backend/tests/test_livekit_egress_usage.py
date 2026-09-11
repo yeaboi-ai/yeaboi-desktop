@@ -14,7 +14,6 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
 from src.app.models.recording import Recording
 from src.app.models.session import Session
 from src.app.models.usage_event import UsageEvent
@@ -22,22 +21,14 @@ from src.app.routers.livekit_webhooks import _handle_egress_event
 
 
 @pytest.fixture
-async def project(db_session, sample_org, sample_team, sample_user):
-    proj = Project(
+async def session_row(db_session, sample_org, sample_team, sample_user):
+    s = Session(
         org_id=sample_org.id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
         name="LK Test",
+        status="active",
     )
-    db_session.add(proj)
-    await db_session.commit()
-    await db_session.refresh(proj)
-    return proj
-
-
-@pytest.fixture
-async def session_row(db_session, project, sample_org):
-    s = Session(project_id=project.id, org_id=sample_org.id, status="active")
     db_session.add(s)
     await db_session.commit()
     await db_session.refresh(s)
@@ -76,7 +67,7 @@ def _ended_event(egress_id: str, *, status: int = 3, duration_ns: int = 600 * 1_
 
 
 class TestEgressUsageRecording:
-    async def test_completed_egress_writes_usage_event(self, db_session, recording_row, sample_org, project):
+    async def test_completed_egress_writes_usage_event(self, db_session, recording_row, sample_org):
         # 600s of duration → 10 minutes × $0.0075/min = $0.075
         await _handle_egress_event(db_session, _ended_event(recording_row.egress_id))
 
@@ -86,7 +77,6 @@ class TestEgressUsageRecording:
         assert ev.provider == "livekit"
         assert ev.operation == "egress"
         assert ev.org_id == sample_org.id
-        assert ev.project_id == project.id
         assert ev.session_id == recording_row.session_id
         assert ev.units == {"seconds": 600}
         assert ev.cost_usd == Decimal("0.075000")

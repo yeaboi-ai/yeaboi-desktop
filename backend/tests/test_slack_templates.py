@@ -17,7 +17,7 @@ def test_pr_ready_template_includes_approve_button():
     blocks = build_blocks_for_event(
         "pr_ready",
         {"card_id": "card-123", "card_title": "Add login",
-         "pr_url": "https://github.com/x/y/pull/1", "project_id": "proj-1"},
+         "pr_url": "https://github.com/x/y/pull/1", "session_id": "proj-1"},
     )
     flat = str(blocks)
     assert "pr_ready:approve" in flat
@@ -29,7 +29,7 @@ def test_card_failed_template_includes_retry_button():
     blocks = build_blocks_for_event(
         "card_failed",
         {"card_id": "card-1", "card_title": "Broken thing",
-         "error": "boom", "project_id": "p1"},
+         "error": "boom", "session_id": "p1"},
     )
     flat = str(blocks)
     assert "card_failed:retry" in flat
@@ -76,8 +76,8 @@ def test_session_created_block_contains_link_button():
     blocks = session_created_block(
         slack_user_id="U123",
         title="Onboarding",
-        project_name="Acme · Web",
-        session_url="http://localhost:3001/projects/p1/sessions/s1",
+        continues_from="Acme · Web",
+        session_url="http://localhost:3001/sessions/s1",
     )
     dumped = json.dumps(blocks, ensure_ascii=False)
     assert "U123" in dumped
@@ -89,19 +89,19 @@ def test_session_created_block_contains_link_button():
     assert action_blocks, "expected an actions block"
     elements = action_blocks[0]["elements"]
     urls = [el.get("url") for el in elements]
-    assert "http://localhost:3001/projects/p1/sessions/s1" in urls
+    assert "http://localhost:3001/sessions/s1" in urls
     assert elements[0]["style"] == "primary"
     assert elements[0]["action_id"] == "session_open_link"
 
 
-def test_project_picker_block_has_one_button_per_project():
+def test_session_picker_block_has_one_button_per_session():
     import json
 
-    from src.app.services.slack_templates import project_picker_block
+    from src.app.services.slack_templates import session_picker_block
 
-    blocks = project_picker_block(
+    blocks = session_picker_block(
         title="Onboarding",
-        projects=[{"id": "p1", "name": "Web"}, {"id": "p2", "name": "Mobile"}],
+        sessions=[{"id": "p1", "name": "Web"}, {"id": "p2", "name": "Mobile"}],
     )
     action_blocks = [b for b in blocks if b.get("type") == "actions"]
     assert action_blocks
@@ -111,40 +111,40 @@ def test_project_picker_block_has_one_button_per_project():
     # suffixed with its index. The dispatcher matches via startswith.
     seen_action_ids = set()
     for el in elements:
-        assert el["action_id"].startswith("session_create_pick_project")
+        assert el["action_id"].startswith("session_create_pick")
         assert el["action_id"] not in seen_action_ids  # uniqueness
         seen_action_ids.add(el["action_id"])
         value = json.loads(el["value"])
         assert value["title"] == "Onboarding"
-        assert value["project_id"] in {"p1", "p2"}
+        assert value["session_id"] in {"p1", "p2"}
         assert value["source"] == "slash"  # default source when unspecified
 
 
-def test_project_picker_block_caps_at_10_buttons():
-    from src.app.services.slack_templates import project_picker_block
+def test_session_picker_block_caps_at_10_buttons():
+    from src.app.services.slack_templates import session_picker_block
 
-    projects = [{"id": f"p{i}", "name": f"Project {i}"} for i in range(15)]
-    blocks = project_picker_block(title="X", projects=projects)
+    sessions = [{"id": f"p{i}", "name": f"Session {i}"} for i in range(15)]
+    blocks = session_picker_block(title="X", sessions=sessions)
     action_blocks = [b for b in blocks if b.get("type") == "actions"]
     assert len(action_blocks[0]["elements"]) == 10
 
 
-def test_over_project_limit_block_has_projects_link():
-    from src.app.services.slack_templates import over_project_limit_block
+def test_over_session_limit_block_has_sessions_link():
+    from src.app.services.slack_templates import over_session_limit_block
 
-    blocks = over_project_limit_block(projects_url="https://app.example.com/projects")
+    blocks = over_session_limit_block(sessions_url="https://app.example.com/sessions")
     action = next(b for b in blocks if b["type"] == "actions")
-    assert action["elements"][0]["action_id"] == "session_open_projects_list"
-    assert action["elements"][0]["url"] == "https://app.example.com/projects"
+    assert action["elements"][0]["action_id"] == "session_open_sessions_list"
+    assert action["elements"][0]["url"] == "https://app.example.com/sessions"
 
 
-def test_project_picker_block_truncates_long_names():
-    from src.app.services.slack_templates import project_picker_block
+def test_session_picker_block_truncates_long_names():
+    from src.app.services.slack_templates import session_picker_block
 
     long_name = "A" * 120
-    blocks = project_picker_block(
+    blocks = session_picker_block(
         title="X",
-        projects=[{"id": "p1", "name": long_name}],
+        sessions=[{"id": "p1", "name": long_name}],
     )
     action_blocks = [b for b in blocks if b.get("type") == "actions"]
     text_value = action_blocks[0]["elements"][0]["text"]["text"]

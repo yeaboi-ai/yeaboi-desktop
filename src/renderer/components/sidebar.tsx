@@ -54,7 +54,7 @@ export function Sidebar() {
   const { audience, soloEnabled, setAudience } = useAudience();
   const { items, loaded, removeItem, moveItem, resetWorld } = useRail();
   const confirm = useConfirm();
-  const active = activeRailRoute(items, pathname, search, audience);
+  const active = activeRailRoute(items, pathname, audience);
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
   const [worldOpen, setWorldOpen] = useState(false);
   const [editor, setEditor] = useState<RailEditorMode | null>(null);
@@ -123,7 +123,7 @@ export function Sidebar() {
   const reset = async () => {
     const ok = await confirm({
       title: 'Reset this rail?',
-      message: 'Back to Projects and Sessions. Icons and images you added here are forgotten.',
+      message: 'Back to Sessions, Runs and Board. Icons and images you added here are forgotten.',
       confirmLabel: 'Reset',
       variant: 'warning',
     });

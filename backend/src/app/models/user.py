@@ -25,4 +25,4 @@ class User(TimestampMixin, Base):
     tour_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     intended_use: Mapped[str | None] = mapped_column(Text)
 
-    projects: Mapped[list["Project"]] = relationship(back_populates="owner")  # noqa: F821
+    sessions: Mapped[list["Session"]] = relationship(back_populates="owner")  # noqa: F821

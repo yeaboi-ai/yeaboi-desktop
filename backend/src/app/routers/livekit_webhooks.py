@@ -138,7 +138,6 @@ async def _handle_egress_event(db: AsyncSession, event) -> None:
             if session_row is not None:
                 ctx = UsageContext(
                     org_id=session_row.org_id,
-                    project_id=session_row.project_id,
                     session_id=session_row.id,
                 )
                 await record_livekit_egress(

@@ -1,11 +1,11 @@
-"""Seed a sample workspace (project + session + blueprint + board) for a new org.
+"""Seed a sample workspace (session + blueprint + board) for a new org.
 
 Called from `POST /api/orgs` so first-time users land on a populated workspace
-instead of an empty projects list. The demo project is marked `is_demo=True` so
+instead of an empty ledger. The demo session is marked `is_demo=True` so
 the frontend can mount a guided tour and we can exclude it from plan-limit counts
 later.
 
-The seed is idempotent on the team: if a `is_demo=True` project already exists
+The seed is idempotent on the team: if a `is_demo=True` session already exists
 for the team, it's returned unchanged. The caller is responsible for committing
 the surrounding transaction; this service only flushes.
 """
@@ -19,7 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.blueprint import BlueprintIteration, BlueprintSnapshot
 from ..models.board import Board, BoardColumn, Card
-from ..models.project import Project
 from ..models.session import ChatMessage, Participant, Session, TranscriptEntry
 
 logger = logging.getLogger(__name__)
@@ -93,7 +92,7 @@ DEMO_CHAT: list[tuple[str, str, str]] = [
         "system",
         "Facilitator",
         "Captured: photo-based diagnosis is the differentiating feature. "
-        "Adding it to the blueprint under Project Overview.",
+        "Adding it to the blueprint under Session Overview.",
     ),
 ]
 
@@ -207,7 +206,7 @@ DEMO_CARDS: list[tuple[str, str, str, str, list[str]]] = [
         ["Local watering reminders (APNs)"],
     ),
     (
-        "Project scaffolding",
+        "Session scaffolding",
         "iOS app target, FastAPI service, Postgres schema, CI green on main.",
         "high",
         "done",
@@ -222,18 +221,18 @@ async def seed_demo_workspace(
     org_id: str,
     team_id: str,
     user_id: str,
-) -> Project:
-    """Create a sample project + session + blueprint + board for a new org.
+) -> Session:
+    """Create a sample session + blueprint + board for a new org.
 
-    Idempotent: returns the existing demo project for the team if one already
+    Idempotent: returns the existing demo session for the team if one already
     exists. The caller commits the surrounding transaction; this function only
     flushes so the org-create POST stays atomic.
     """
     existing = (
         await db.execute(
-            select(Project).where(
-                Project.team_id == team_id,
-                Project.is_demo.is_(True),
+            select(Session).where(
+                Session.team_id == team_id,
+                Session.is_demo.is_(True),
             )
         )
     ).scalar_one_or_none()
@@ -241,7 +240,8 @@ async def seed_demo_workspace(
         logger.info("Demo workspace already seeded for team %s — returning %s", team_id, existing.id)
         return existing
 
-    project = Project(
+    # One row: the session is the workspace and the conversation both.
+    session = Session(
         name=DEMO_PROJECT_NAME,
         description=DEMO_PROJECT_DESCRIPTION,
         owner_id=user_id,
@@ -250,12 +250,16 @@ async def seed_demo_workspace(
         key=DEMO_PROJECT_KEY,
         card_counter=len(DEMO_CARDS),
         is_demo=True,
+        status="completed",
+        title=DEMO_SESSION_TITLE,
+        initial_idea=DEMO_SESSION_INITIAL_IDEA,
+        ai_config={"assertiveness": "balanced", "muted": False, "persona": "pm"},
     )
-    db.add(project)
+    db.add(session)
     await db.flush()
 
     iteration = BlueprintIteration(
-        project_id=project.id,
+        session_id=session.id,
         org_id=org_id,
         iteration_number=1,
         label="v1",
@@ -267,7 +271,7 @@ async def seed_demo_workspace(
 
     db.add(
         BlueprintSnapshot(
-            project_id=project.id,
+            session_id=session.id,
             org_id=org_id,
             iteration_id=iteration.id,
             version_number=1,
@@ -276,16 +280,7 @@ async def seed_demo_workspace(
         )
     )
 
-    session = Session(
-        project_id=project.id,
-        org_id=org_id,
-        status="completed",
-        title=DEMO_SESSION_TITLE,
-        initial_idea=DEMO_SESSION_INITIAL_IDEA,
-        iteration_id=iteration.id,
-        ai_config={"assertiveness": "balanced", "muted": False, "persona": "pm"},
-    )
-    db.add(session)
+    session.iteration_id = iteration.id
     await db.flush()
 
     db.add(Participant(session_id=session.id, user_id=user_id, role="host"))
@@ -312,7 +307,7 @@ async def seed_demo_workspace(
             )
         )
 
-    board = Board(project_id=project.id, org_id=org_id, iteration_id=iteration.id)
+    board = Board(session_id=session.id, org_id=org_id, iteration_id=iteration.id)
     db.add(board)
     await db.flush()
 
@@ -333,7 +328,7 @@ async def seed_demo_workspace(
 
     title_to_card: dict[str, Card] = {}
     # Cards intentionally omit `friendly_id` — that column is globally
-    # unique, and if two demo projects exist (e.g. after a soft-delete and
+    # unique, and if two demo sessions exist (e.g. after a soft-delete and
     # re-onboarding) the second seed would collide on `uq_cards_friendly_id`.
     # `number` is still set so the UI can render a stable ordinal if needed.
     column_positions: dict[str, int] = {"backlog": 0, "in_progress": 0, "done": 0}
@@ -342,12 +337,11 @@ async def seed_demo_workspace(
         card = Card(
             column_id=column.id,
             position=column_positions[column_key],
-            project_id=project.id,
+            session_id=session.id,
             title=title,
             description=description,
             priority=priority,
             number=idx,
-            session_id=session.id,
         )
         column_positions[column_key] += 1
         db.add(card)
@@ -362,10 +356,9 @@ async def seed_demo_workspace(
     await db.flush()
 
     logger.info(
-        "Demo workspace seeded: project=%s session=%s board=%s cards=%d",
-        project.id,
+        "Demo workspace seeded: session=%s board=%s cards=%d",
         session.id,
         board.id,
         len(DEMO_CARDS),
     )
-    return project
+    return session

@@ -12,7 +12,7 @@ const ROOT = join(import.meta.dirname, '..');
 const RENDERER = join(ROOT, 'src', 'renderer');
 const read = (rel: string) => readFileSync(join(RENDERER, rel), 'utf8');
 
-// Outside the frame by design. The two /sessions/:id pages are rendered bare
+// Outside the frame by design. The session room and recap are rendered bare
 // by app-shell.tsx; the rest keep a wide viewer or workspace layout of their
 // own (the ticket workspace is shared with the side panel and sizes itself).
 const OUTSIDE_THE_FRAME = [

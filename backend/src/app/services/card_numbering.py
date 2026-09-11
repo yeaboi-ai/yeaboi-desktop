@@ -1,6 +1,6 @@
 """Per-project monotonic ticket numbering — produces friendly_id like "PROJ-123".
 
-Uses an atomic UPDATE...RETURNING on Project.card_counter so concurrent inserts each
+Uses an atomic UPDATE...RETURNING on Session.card_counter so concurrent inserts each
 get a distinct number with no advisory locks. The row-level lock acquired by UPDATE
 serializes counter bumps within a single project; concurrent inserts across different
 projects don't contend.
@@ -15,7 +15,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.board import Card
-from ..models.project import Project
+from ..models.session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ async def derive_unique_key(name: str, org_id: str, db: AsyncSession) -> str:
     suffix = 2
     while True:
         existing = await db.execute(
-            select(Project.id).where(Project.org_id == org_id, Project.key == candidate)
+            select(Session.id).where(Session.org_id == org_id, Session.key == candidate)
         )
         if existing.scalar_one_or_none() is None:
             return candidate
@@ -54,33 +54,33 @@ def is_valid_key(key: str) -> bool:
     return bool(_KEY_RE.match(key))
 
 
-async def assign_friendly_id(card: Card, project_id: str, db: AsyncSession) -> None:
+async def assign_friendly_id(card: Card, session_id: str, db: AsyncSession) -> None:
     """Assign card.number and card.friendly_id atomically.
 
     Caller is responsible for committing the surrounding transaction. Mutates `card`
-    in place and sets card.project_id (denormalized).
+    in place and sets card.session_id (denormalized).
 
     If the project has no key yet (legacy/migration window), falls back to deriving
     one on the fly so we never produce a card without a friendly_id.
     """
     row = (
         await db.execute(
-            update(Project)
-            .where(Project.id == project_id)
-            .values(card_counter=Project.card_counter + 1)
-            .returning(Project.card_counter, Project.key, Project.name, Project.org_id)
+            update(Session)
+            .where(Session.id == session_id)
+            .values(card_counter=Session.card_counter + 1)
+            .returning(Session.card_counter, Session.key, Session.name, Session.org_id)
         )
     ).one_or_none()
 
     if row is None:
-        logger.warning("assign_friendly_id: project %s not found, skipping numbering", project_id)
+        logger.warning("assign_friendly_id: project %s not found, skipping numbering", session_id)
         return
 
     counter, key, name, org_id = row
     if not key:
         key = await derive_unique_key(name, org_id, db)
-        await db.execute(update(Project).where(Project.id == project_id).values(key=key))
+        await db.execute(update(Session).where(Session.id == session_id).values(key=key))
 
-    card.project_id = project_id
+    card.session_id = session_id
     card.number = counter
     card.friendly_id = f"{key}-{counter}"

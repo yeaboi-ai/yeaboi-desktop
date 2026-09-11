@@ -10,7 +10,6 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...models.organization import Organization
-from ...models.project import Project
 from ...models.session import ChatMessage, Session
 from ...models.usage_event import UsageEvent
 from .model import CostLine, DateRange, Report, ScopeRef, SessionRow
@@ -20,17 +19,14 @@ async def _resolve_scope(
     db: AsyncSession,
     *,
     org: Organization,
-    project_id: str | None,
     session_id: str | None,
 ) -> tuple[ScopeRef, str | None]:
     """Return (ScopeRef, label-suffix-or-None). The suffix is used when we
     need a friendly name for templates (project name vs id)."""
     if session_id:
-        return ScopeRef(kind="session", label=f"Session #{session_id[:8]}", session_count=1), None
-    if project_id:
-        proj = (await db.execute(select(Project).where(Project.id == project_id))).scalar_one_or_none()
-        name = proj.name if proj else f"Project {project_id[:8]}"
-        return ScopeRef(kind="project", label=f"Project {name}", session_count=0), name
+        row = (await db.execute(select(Session).where(Session.id == session_id))).scalar_one_or_none()
+        name = (row.name if row else None) or f"Session #{session_id[:8]}"
+        return ScopeRef(kind="session", label=name, session_count=1), name
     return ScopeRef(kind="org", label=org.name, session_count=0), None
 
 
@@ -38,7 +34,6 @@ async def build_report(
     db: AsyncSession,
     *,
     org: Organization,
-    project_id: str | None = None,
     session_id: str | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
@@ -50,8 +45,7 @@ async def build_report(
     PDF stays one page for typical orgs."""
     end_dt = end or datetime.now(UTC)
     start_dt = start or end_dt - timedelta(days=30)
-
-    scope, _ = await _resolve_scope(db, org=org, project_id=project_id, session_id=session_id)
+    scope, _ = await _resolve_scope(db, org=org, session_id=session_id)
 
     # ── Cost rollup by provider ─────────────────────────────────────────
     cost_stmt = select(
@@ -63,8 +57,8 @@ async def build_report(
         UsageEvent.occurred_at >= start_dt,
         UsageEvent.occurred_at < end_dt,
     )
-    if project_id:
-        cost_stmt = cost_stmt.where(UsageEvent.project_id == project_id)
+    if session_id:
+        cost_stmt = cost_stmt.where(UsageEvent.session_id == session_id)
     if session_id:
         cost_stmt = cost_stmt.where(UsageEvent.session_id == session_id)
     cost_stmt = cost_stmt.group_by(UsageEvent.provider).order_by(func.sum(UsageEvent.cost_usd).desc())
@@ -80,17 +74,11 @@ async def build_report(
         estimated += est
 
     # ── Sessions table (top N by created_at desc within range) ──────────
-    sess_stmt = (
-        select(Session, Project.name)
-        .join(Project, Session.project_id == Project.id)
-        .where(
-            Session.org_id == org.id,
-            Session.created_at >= start_dt,
-            Session.created_at < end_dt,
-        )
+    sess_stmt = select(Session, Session.name).where(
+        Session.org_id == org.id,
+        Session.created_at >= start_dt,
+        Session.created_at < end_dt,
     )
-    if project_id:
-        sess_stmt = sess_stmt.where(Session.project_id == project_id)
     if session_id:
         sess_stmt = sess_stmt.where(Session.id == session_id)
     sess_stmt = sess_stmt.order_by(Session.created_at.desc()).limit(sessions_limit)

@@ -60,9 +60,9 @@ def _fast_grace(monkeypatch):
 
 
 async def _create_session(client, auth_headers) -> str:
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
     sess = await client.post(
-        f"/api/projects/{proj.json()['id']}/sessions",
+        f"/api/sessions/{proj.json()['id']}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )
