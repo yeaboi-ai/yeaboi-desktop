@@ -70,7 +70,6 @@ describe('audiencesForRoute', () => {
   it('keeps the modes that need a room team-only', () => {
     for (const path of [
       '/team/retro',
-      '/team/retro/board',
       '/team/poker',
       '/team/poker/new',
       '/team/performance',

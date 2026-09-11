@@ -72,11 +72,6 @@
       "title": "Retro"
     },
     {
-      "path": "/team/retro/board",
-      "capability": "retro-board",
-      "title": "Retro · Board"
-    },
-    {
       "path": "/team/poker",
       "capability": "scrum-poker",
       "title": "Poker"

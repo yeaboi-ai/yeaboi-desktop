@@ -38,10 +38,14 @@ function boot(sprint: string, musicChannels: { name: string; url: string }[]) {
 export function RetroBoard({
   boardId,
   sprint,
+  showRun,
   onLeave,
 }: {
   boardId: string;
   sprint: string;
+  /** Open on a past retro rather than today's. The board holds the history;
+   *  this is the ledger elsewhere in the window pointing at one of them. */
+  showRun?: number | undefined;
   onLeave: () => void;
 }) {
   const music = useBoardMusic();
@@ -52,6 +56,7 @@ export function RetroBoard({
         boot={boot(sprint, channels) as never}
         music={music}
         musicControl={({ cast }) => <BoardMusicControl cast={cast} />}
+        showRun={showRun}
       />
     </StagedBoard>
   );

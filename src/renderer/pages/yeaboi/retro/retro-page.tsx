@@ -13,20 +13,19 @@
 
 import { useEffect, useState } from 'react';
 
-import { quip } from '@/lib/yeaboi/ambience';
 import {
   type BoardSnapshot,
   type RetroBoardState,
   type RetroActionItem,
   type RetroReportSummary,
   type RetroRun,
-  generateActionItems,
   openActions,
   loadBoards,
   retroHistory,
   startRetroBoard,
 } from '@/lib/yeaboi/boards';
 import { canPlayBoards } from '@/board/board-api';
+import { Columns3 } from 'lucide-react';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
@@ -67,7 +66,7 @@ function BoardState({ board }: { board: BoardSnapshot }) {
   const columns = Object.keys(GRID_TITLES).filter((key) => key in grids);
   const shown = columns.length > 0 ? columns : Object.keys(grids);
   return (
-    <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="mb-3 grid grid-cols-2 gap-2">
       {shown.map((key) => (
         <div key={key} className="rounded-xl bg-secondary/40 px-3 py-2">
           <p className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
@@ -79,6 +78,64 @@ function BoardState({ board }: { board: BoardSnapshot }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** The live board, in the card that offered it. One step on from Start rather
+ *  than a different screen — so it keeps the same shape, and what carried in
+ *  from last time stays beside it. */
+function LivePanel({
+  board,
+  masked,
+  onStage,
+  onClosed,
+  anonNote,
+  onAnonymize,
+}: {
+  board: BoardSnapshot;
+  masked: number;
+  onStage?: (() => void) | undefined;
+  onClosed: (runId: number) => void;
+  anonNote: string;
+  onAnonymize: (replacements: [string, string][], note: string) => void;
+}) {
+  return (
+    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
+      <h2 className="font-display text-[19px] leading-none text-foreground">On the board</h2>
+
+      <div className="mt-4">
+        <BoardState board={board} />
+      </div>
+
+      <div className="mt-auto pt-1">
+        {/* One row. Drafting the actions is the host's, and the only thing on
+            this page the board itself does not offer; the export and share are
+            the same set of choices about the same session, so they stand
+            beside it rather than under it. */}
+        <BoardHost
+          board={board}
+          onStage={onStage}
+          onClosed={onClosed}
+          extras={
+            // Drafting them is the board's own — its rail offers it while the
+            // cards are still in front of you, which is where the decision is
+            // actually made. A second button for it here was the same job
+            // named twice.
+            <ResultActions
+              refer={{ kind: 'retro', session_id: board.session_id }}
+              mode="retro"
+              anonNote={anonNote}
+              onAnonymize={onAnonymize}
+            />
+          }
+        />
+        {masked > 0 && (
+          <p className="mt-2 text-[11px] text-muted-foreground/70">
+            {masked} name{masked === 1 ? '' : 's'} replaced in what leaves here.
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -94,7 +151,7 @@ function StartPanel({
   onStart: () => void;
 }) {
   return (
-    <section className="flex flex-col rounded-2xl bg-card p-5 ring-1 ring-border/60">
+    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
       <h2 className="font-display text-[19px] leading-none text-foreground">Start a retro</h2>
       <p className="mt-2 font-body text-[13px] leading-relaxed text-muted-foreground">
         A live board your team fills in from their own browsers. Send the invite and everyone adds
@@ -141,7 +198,7 @@ const STATUS_WORDS: Record<string, string> = {
  *  so this is what a page about retros is read for. */
 function OpenActions({ rows }: { rows: RetroActionItem[] }) {
   return (
-    <section className="flex flex-col rounded-2xl bg-card p-5 ring-1 ring-border/60">
+    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-[19px] leading-none text-foreground">Open actions</h2>
         {rows.length > 0 && (
@@ -185,9 +242,11 @@ function RetroBody() {
   // Playing the board in the window: it takes the surface and the app's chrome
   // steps back off its edges until it is left.
   const [staged, setStaged] = useState(false);
+  // Which retro the board opens on. Cleared when the board is left, so the
+  // next time it is opened it shows today's.
+  const [showRun, setShowRun] = useState<number | undefined>(undefined);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
-  const [message, setMessage] = useState('');
   const [mask, setMask] = useState<[string, string][]>([]);
   const [anonNote, setAnonNote] = useState('');
   const actions = openActions(report);
@@ -222,26 +281,21 @@ function RetroBody() {
     setBusy('');
   }
 
-  async function draft() {
-    if (!board) return;
-    setBusy('draft');
-    try {
-      const result = await generateActionItems(board.board_id);
-      setMessage(result.message);
-      quip('actions_done');
-    } catch (e) {
-      setMessage((e as Error).message);
-    }
-    setBusy('');
-  }
-
   // The board is the window, not a panel on it. Rendered outside the surface —
   // no page padding, no centred column, no title above it — because a board
   // inside the box the rest of the page is drawn in is a screen within a
   // screen, and this app is the one running the room.
   if (staged && board) {
     return (
-      <RetroBoard boardId={board.board_id} sprint={board.title} onLeave={() => setStaged(false)} />
+      <RetroBoard
+        boardId={board.board_id}
+        sprint={board.title}
+        showRun={showRun}
+        onLeave={() => {
+          setStaged(false);
+          setShowRun(undefined);
+        }}
+      />
     );
   }
 
@@ -259,72 +313,44 @@ function RetroBody() {
 
         {error && <Notice title="Could not start the board" items={[error]} />}
 
-        {board && (
-          <Panel
-            title="On the board"
-            aside={
-              <a
-                href={`#/team/retro/board?id=${encodeURIComponent(board.board_id)}`}
-                className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              >
-                Full view
-              </a>
-            }
-          >
-            <BoardState board={board} />
-            {/* One row. Drafting the actions is the host's, and the only
-                thing on this page the board itself does not offer; the export
-                and share are the same set of choices about the same session,
-                so they stand beside it rather than under it. */}
-            <BoardHost
-              board={board}
-              onStage={canPlayBoards() ? () => setStaged(true) : undefined}
-              onClosed={() => {
-                setLiveId('');
-                setStaged(false);
-                retroHistory().then((envelope) => {
-                  setRuns(envelope.data?.history ?? []);
-                  setReport(envelope.data?.latest_report ?? null);
-                }, undefined);
-              }}
-              extras={
-                <>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy === 'draft'}
-                    onClick={() => void draft()}
-                  >
-                    {busy === 'draft' ? 'Drafting…' : 'Generate action items'}
-                  </Button>
-                  <ResultActions
-                    refer={{ kind: 'retro', session_id: board.session_id }}
-                    mode="retro"
-                    anonNote={anonNote}
-                    onAnonymize={(replacements, note) => {
-                      setMask(replacements);
-                      setAnonNote(note);
-                    }}
-                  />
-                </>
-              }
-            />
-            {message && <p className="mt-2 text-[12px] text-muted-foreground">{message}</p>}
-            {mask.length > 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground/70">
-                {mask.length} name{mask.length === 1 ? '' : 's'} replaced in what leaves here.
-              </p>
-            )}
-          </Panel>
-        )}
-
-        {!board && runs && (
+        {/* One card either way. A live board is the same decision one step
+            on, not a different screen: the panel that offered it becomes the
+            panel that runs it, and what carried in stays beside it. */}
+        {runs && (
           <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-            <StartPanel
-              busy={busy === 'start'}
-              carried={actions.length}
-              onStart={() => void start()}
-            />
+            {board ? (
+              <LivePanel
+                board={board}
+                masked={mask.length}
+                onStage={
+                  canPlayBoards()
+                    ? () => {
+                        setShowRun(undefined);
+                        setStaged(true);
+                      }
+                    : undefined
+                }
+                onClosed={() => {
+                  setLiveId('');
+                  setStaged(false);
+                  retroHistory().then((envelope) => {
+                    setRuns(envelope.data?.history ?? []);
+                    setReport(envelope.data?.latest_report ?? null);
+                  }, undefined);
+                }}
+                anonNote={anonNote}
+                onAnonymize={(replacements, anon) => {
+                  setMask(replacements);
+                  setAnonNote(anon);
+                }}
+              />
+            ) : (
+              <StartPanel
+                busy={busy === 'start'}
+                carried={actions.length}
+                onStart={() => void start()}
+              />
+            )}
             <OpenActions rows={actions} />
           </div>
         )}
@@ -352,7 +378,7 @@ function RetroBody() {
                 </button>
               )}
             </div>
-            <div className="divide-y divide-border/40 overflow-hidden rounded-2xl bg-card ring-1 ring-border/60">
+            <div className="divide-y divide-border/40 overflow-hidden rounded-2xl ring-1 ring-border/60">
               {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
                 <div
                   key={run.id}
@@ -370,6 +396,22 @@ function RetroBody() {
                     {plural(run.card_count ?? 0, 'card')} ·{' '}
                     {plural(run.action_count ?? 0, 'action')}
                   </p>
+                  {/* The board already steps back through these; this points
+                      it at one. It needs a board to do it on, so it is offered
+                      only while there is one. */}
+                  {board && canPlayBoards() && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowRun(run.id);
+                        setStaged(true);
+                      }}
+                    >
+                      <Columns3 data-icon="inline-start" />
+                      Open
+                    </Button>
+                  )}
                   <ResultActions
                     refer={{ kind: 'retro', session_id: sessionId, run_id: run.id }}
                     mode="retro"

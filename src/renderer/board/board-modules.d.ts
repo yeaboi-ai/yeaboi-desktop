@@ -43,6 +43,8 @@ declare module '@board/retro/App' {
     boot: unknown;
     music?: BoardMusicApi;
     musicControl?: BoardMusicControlFn;
+    /** A past retro to open on, by run id. The board steps back to it. */
+    showRun?: number | undefined;
   }): JSX.Element;
 }
 

@@ -1,15 +1,18 @@
 'use client';
 
-// Export, Share and Anonymize — the three actions every result screen carries.
+// Export and Share — the two ways a result leaves this screen — and the one
+// decision that belongs to both: what goes out under its real name.
 //
-// One component rather than three copies per page: they take the same artifact
-// reference, they open the same way, and a mode that grew its own copy of any
-// of them would be the mode whose Share dialog forgets to say the link expired.
+// One component rather than copies per page: they take the same artifact
+// reference, they open the same way, and a mode that grew its own copy of
+// either would be the mode whose Share dialog forgets to say the link expired.
 //
-// Anonymize is deliberately NOT a state this component owns: the page has to
-// mask what it is drawing, so the replacement map is handed up and the page
-// applies it with `maskText`. A mask is a view over the same data, never a
-// second copy of it.
+// Masking is not a third action. It is a setting on the two, shown at the
+// moment something is about to leave rather than standing beside them as a
+// button you have to know to press first. And it is deliberately NOT a state
+// this component owns: the page has to mask what it is drawing, so the
+// replacement map is handed up and the page applies it with `maskText`. A mask
+// is a view over the same data, never a second copy of it.
 
 import { useEffect, useState } from 'react';
 import { Download, EyeOff, Share2, SlidersHorizontal, Undo2 } from 'lucide-react';
@@ -36,7 +39,7 @@ import {
 } from '@/lib/yeaboi/boards';
 import { Button } from '@/components/ui/button';
 
-type Dialog = '' | 'export' | 'share' | 'anonymize';
+type Dialog = '' | 'export' | 'share';
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -94,6 +97,14 @@ export function ResultActions({
     );
   }, [refer.kind]);
 
+  // Masking is not an action of its own: it is a decision about what leaves,
+  // and it only matters at the moment something is about to. So it travels
+  // into whichever dialog is open rather than standing beside them.
+  const mask =
+    can?.anonymize && onAnonymize ? (
+      <MaskSetting refer={refer} anonNote={anonNote} onAnonymize={onAnonymize} />
+    ) : null;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -117,57 +128,22 @@ export function ResultActions({
             Share online
           </Button>
         )}
-        {can?.anonymize &&
-          onAnonymize &&
-          (anonNote ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}
-              >
-                <SlidersHorizontal data-icon="inline-start" />
-                Adjust
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onAnonymize([], '')}>
-                <Undo2 data-icon="inline-start" />
-                Revert
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDialog(dialog === 'anonymize' ? '' : 'anonymize')}
-            >
-              <EyeOff data-icon="inline-start" />
-              Anonymize
-            </Button>
-          ))}
       </div>
-      {anonNote && <p className="text-[12px] text-muted-foreground italic">{anonNote}</p>}
       {message && <p className="text-[12px] text-muted-foreground">{message}</p>}
       {dialog === 'export' && (
         <ExportDialog
           refer={refer}
           mode={mode}
           extras={extras}
+          mask={mask}
           onDone={(text) => {
             setMessage(text);
             setDialog('');
           }}
         />
       )}
-      {dialog === 'share' && <ShareDialog refer={refer} onClose={() => setDialog('')} />}
-      {dialog === 'anonymize' && (
-        <AnonymizeDialog
-          refer={refer}
-          onDone={(replacements, note) => {
-            onAnonymize?.(replacements, note);
-            setDialog('');
-          }}
-          onCancel={() => setDialog('')}
-        />
+      {dialog === 'share' && (
+        <ShareDialog refer={refer} mask={mask} onClose={() => setDialog('')} />
       )}
     </div>
   );
@@ -179,11 +155,15 @@ function ExportDialog({
   refer,
   mode,
   extras,
+  mask,
   onDone,
 }: {
   refer: ArtifactRef;
   mode: string;
   extras: string[];
+  /** What goes out under its real name. Above the destinations, because it is
+   *  a decision about the document rather than about where it lands. */
+  mask?: React.ReactNode;
   onDone: (message: string) => void;
 }) {
   const [destinations, setDestinations] = useState<Destination[] | null>(null);
@@ -221,6 +201,7 @@ function ExportDialog({
 
   return (
     <Panel title="Choose export destination">
+      {mask}
       {error && <Notice title="Export failed" items={[error]} />}
       {!destinations && <p className="text-[13px] text-muted-foreground">Loading…</p>}
       <ul className="space-y-2">
@@ -246,7 +227,17 @@ function ExportDialog({
 
 // ── Share ──────────────────────────────────────────────────────────────────
 
-function ShareDialog({ refer, onClose }: { refer: ArtifactRef; onClose: () => void }) {
+function ShareDialog({
+  refer,
+  mask,
+  onClose,
+}: {
+  refer: ArtifactRef;
+  /** What goes out under its real name. Offered before the share starts: once
+   *  the link is live the document behind it is already readable. */
+  mask?: React.ReactNode;
+  onClose: () => void;
+}) {
   const [share, setShare] = useState<ShareSnapshot | null>(null);
   const [invite, setInvite] = useState('');
   const [error, setError] = useState('');
@@ -326,6 +317,7 @@ function ShareDialog({ refer, onClose }: { refer: ArtifactRef; onClose: () => vo
   if (!share) {
     return (
       <Panel title="Share this output online">
+        {mask}
         <p className="text-[12px] text-muted-foreground mb-3">
           Anyone with the temporary URL and the access code can read this while the share is open.
         </p>
@@ -410,9 +402,68 @@ function ShareDialog({ refer, onClose }: { refer: ArtifactRef; onClose: () => vo
   );
 }
 
-// ── Anonymize ──────────────────────────────────────────────────────────────
+// ── Masking ────────────────────────────────────────────────────────────────
 
-function AnonymizeDialog({
+/**
+ * What leaves under its real name, as a line in the dialog that is about to
+ * send it. Closed it says which way it currently stands; open it is the pass
+ * itself.
+ */
+function MaskSetting({
+  refer,
+  anonNote,
+  onAnonymize,
+}: {
+  refer: ArtifactRef;
+  anonNote: string;
+  onAnonymize: (replacements: [string, string][], note: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (open) {
+    return (
+      <div className="mb-4">
+        <AnonymizeForm
+          refer={refer}
+          onDone={(replacements, note) => {
+            onAnonymize(replacements, note);
+            setOpen(false);
+          }}
+          onCancel={() => setOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-secondary/30 px-3 py-2">
+      <EyeOff className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1 text-[12px] text-muted-foreground">
+        {anonNote || 'Names, tickets and identifiers go out as written.'}
+      </span>
+      <div className="flex gap-1">
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+          {anonNote ? (
+            <>
+              <SlidersHorizontal data-icon="inline-start" />
+              Adjust
+            </>
+          ) : (
+            'Mask names'
+          )}
+        </Button>
+        {anonNote && (
+          <Button variant="ghost" size="sm" onClick={() => onAnonymize([], '')}>
+            <Undo2 data-icon="inline-start" />
+            Revert
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AnonymizeForm({
   refer,
   onDone,
   onCancel,
@@ -446,7 +497,7 @@ function AnonymizeDialog({
   }
 
   return (
-    <Panel title="Anonymize this output">
+    <div className="rounded-xl bg-secondary/30 p-4">
       <p className="text-[12px] text-muted-foreground mb-3">
         Names, tickets and identifiers are replaced with stable placeholders. Review before sharing
         — a mask is a starting position, not a guarantee.
@@ -477,6 +528,6 @@ function AnonymizeDialog({
           Cancel
         </Button>
       </div>
-    </Panel>
+    </div>
   );
 }
