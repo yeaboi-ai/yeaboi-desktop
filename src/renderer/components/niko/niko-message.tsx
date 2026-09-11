@@ -88,56 +88,62 @@ function AssistantBubble({ message, isStreaming, onAnswer }: NikoMessageProps) {
   const empty = !typed && !hasTools && !message.bubble;
 
   return (
-    // Far enough that the BUBBLE clears the composer's left edge, not just the
-    // duck: he is 24px wide with a gap in front of it, so a small nudge only
-    // moved him out and left what he says still inside the channel.
-    <div className="group -ml-[42px] flex justify-start gap-2">
-      <DuckMark size={24} state={isStreaming ? 'urgent' : 'idle'} className="mt-0.5 shrink-0" />
-      <div className="flex max-w-[85%] flex-col items-start gap-1.5">
-        <div
-          // A line's worth of room from the moment the turn starts, so the panel
-          // grows once — for the question and the space the answer will need —
-          // rather than a second time when the answer arrives in it.
-          className="min-h-9 w-full rounded-2xl rounded-bl-md border border-border/40 px-3.5 py-2 backdrop-blur-sm"
-          style={{ background: 'color-mix(in srgb, var(--popover) 92%, transparent)' }}
-        >
-          {hasTools && (
-            <div className="flex flex-col gap-1 mb-1.5">
-              {message.toolCalls!.map((call, i) => {
-                const result = message.toolResults?.[i];
-                const status = result ? (result.success ? 'success' : 'error') : 'running';
-                return (
-                  <NikoToolCard
-                    key={`${call.name}-${i}`}
-                    name={call.name}
-                    status={status}
-                    error={result?.error}
-                  />
-                );
-              })}
-            </div>
-          )}
+    <div className="flex flex-col gap-1.5">
+      {/* What was said, leaning out to the left. Far enough that the BUBBLE
+          clears the composer's edge and not just the duck: he is 24px with a
+          gap in front of him, so a small nudge moved him out and left what he
+          says inside the channel. */}
+      <div className="group -ml-[42px] flex justify-start gap-2">
+        <DuckMark size={24} state={isStreaming ? 'urgent' : 'idle'} className="mt-0.5 shrink-0" />
+        <div className="flex max-w-[85%] flex-col items-start">
+          <div
+            // A line's worth of room from the moment the turn starts, so the panel
+            // grows once — for the question and the space the answer will need —
+            // rather than a second time when the answer arrives in it.
+            className="min-h-9 w-full rounded-2xl rounded-bl-md border border-border/40 px-3.5 py-2 backdrop-blur-sm"
+            style={{ background: 'color-mix(in srgb, var(--popover) 92%, transparent)' }}
+          >
+            {hasTools && (
+              <div className="flex flex-col gap-1 mb-1.5">
+                {message.toolCalls!.map((call, i) => {
+                  const result = message.toolResults?.[i];
+                  const status = result ? (result.success ? 'success' : 'error') : 'running';
+                  return (
+                    <NikoToolCard
+                      key={`${call.name}-${i}`}
+                      name={call.name}
+                      status={status}
+                      error={result?.error}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
-          {typed && <NikoMarkdown content={typed} />}
+            {typed && <NikoMarkdown content={typed} />}
 
-          {/* Nothing to show yet — the turn has started but not spoken. */}
-          {empty && isStreaming && (
-            <div className="flex items-center gap-1.5 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse [animation-delay:150ms]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse [animation-delay:300ms]" />
-            </div>
-          )}
+            {/* Nothing to show yet — the turn has started but not spoken. */}
+            {empty && isStreaming && (
+              <div className="flex items-center gap-1.5 py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/40 animate-pulse [animation-delay:300ms]" />
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Outside the bubble and off any ground of its own: what Niko said is a
-          thing it said, and what you can press is not part of it. Held back
-          until the words are out — a row of answers under a half-typed question
-          is an answer to something nobody has finished asking. */}
-        {message.bubble && typed === message.content && onAnswer && (
-          <NikoBubble bubble={message.bubble} onAnswer={onAnswer} />
-        )}
       </div>
+
+      {/* And what you can press sits under the middle of the input box, on no
+          ground of its own. It is not part of what Niko said, so it neither
+          rides in his bubble nor lines up with the side he speaks from. Held
+          back until the words are out — a row of answers under a half-typed
+          question answers something nobody has finished asking. */}
+      {message.bubble && typed === message.content && onAnswer && (
+        <div className="flex justify-center">
+          <NikoBubble bubble={message.bubble} onAnswer={onAnswer} />
+        </div>
+      )}
     </div>
   );
 }
