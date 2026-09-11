@@ -111,6 +111,7 @@ def _workspace_row(session: Session, *, is_own_team: bool = False, attachments=N
         "references": list(session.references or []),
         "attachments": attachments,
         "continued_from_id": session.continued_from_id,
+        "yeaboi_session_id": session.yeaboi_session_id,
         "created_at": session.created_at,
         "updated_at": session.updated_at,
     }
@@ -157,6 +158,7 @@ async def create_project(
         # when the owner says so. `live`/`reviewing` are the conversation's own.
         status="active",
         references=dedupe_references([r.model_dump() for r in body.references or []]),
+        yeaboi_session_id=(body.yeaboi_session_id or "").strip() or None,
     )
     db.add(project)
     await db.flush()
@@ -180,17 +182,21 @@ async def create_project(
 @limiter.limit("60/minute")
 async def list_projects(
     request: Request,
+    yeaboi_session_id: str | None = None,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     team: Team = Depends(get_current_team),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
-    # Filter by org + selected team
-    result = await db.execute(
+    query = (
         select(Session)
         .where(Session.org_id == org.id, Session.team_id == team.id, Session.deleted_at.is_(None))
         .order_by(Session.created_at.desc())
     )
+    # The room asks for the one row that serves its engine plan.
+    if yeaboi_session_id:
+        query = query.where(Session.yeaboi_session_id == yeaboi_session_id.strip())
+    result = await db.execute(query)
     return [_workspace_row(row) for row in result.scalars().all()]
 
 

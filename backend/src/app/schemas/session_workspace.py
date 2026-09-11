@@ -49,6 +49,8 @@ class SessionCreate(BaseModel):
     name: str | None = None
     description: str | None = None
     references: list[SessionReference] | None = Field(default=None, max_length=MAX_REFERENCES)
+    # The engine plan this row serves; the list route finds the row by it.
+    yeaboi_session_id: str | None = Field(default=None, max_length=64)
 
 
 class SessionUpdate(BaseModel):

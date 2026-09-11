@@ -131,6 +131,7 @@ class SessionResponse(BaseModel):
     # Only the detail GET fills this; None elsewhere means "not loaded", not "none".
     attachments: list[dict] | None = None
     continued_from_id: str | None = None
+    yeaboi_session_id: str | None = None
     join_code: str
     ai_config: dict
     iteration_id: str | None = None
