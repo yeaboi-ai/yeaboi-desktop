@@ -60,34 +60,62 @@ jobs:
   backend:
     name: The vendored backend's tests
     runs-on: ubuntu-latest
-    # ~8 minutes of suite plus the voice extra's install on a cold cache.
+    # ~8 minutes of suite plus the voice extra's install on a cold cache, and
+    # it only pays that on a PR that touches backend/.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
-          # The migration guard diffs against the base branch, which a shallow
-          # clone cannot reach.
+          # Both the change check and the migration guard diff against the base
+          # branch, which a shallow clone cannot reach.
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+
+      # This job reports on every PR and does the work on some of them. That is
+      # deliberate: a job skipped with `if:` never reports at all, so the moment
+      # anyone makes this a required check, every PR that does not touch
+      # backend/ would wait on a check that can never arrive.
+      - id: changed
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then
+            echo "not a pull request — running the full job"
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --quiet "$base"...HEAD -- backend/; then
+            echo "backend/ untouched — nothing to test"
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$base"...HEAD -- backend/ | head -20
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.changed.outputs.backend == 'true'
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
+
       # The suite had failures before it had a job here, so this compares the
       # failing set against backend/tests/known-failures.txt rather than
       # requiring green — both ways, so the list cannot quietly rot. The two
       # migrations that remove projects are the reason this job exists: they
       # run unattended inside every installed app's startup, and nothing else
       # in CI touches them.
-      - run: ./scripts/check-tests.sh
+      - if: steps.changed.outputs.backend == 'true'
+        run: ./scripts/check-tests.sh
         working-directory: backend
-      - run: uv run ruff check src tests
+
+      - if: steps.changed.outputs.backend == 'true'
+        run: uv run ruff check src tests
         working-directory: backend
         continue-on-error: true
+
       # Only the migrations this branch touches: history predates the policy.
-      - run: |
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref || 'main' }}"
-          git diff --name-only FETCH_HEAD...HEAD -- 'backend/alembic/versions/*.py' \
-            | sed 's|^backend/||' > /tmp/changed-migrations
+      - if: steps.changed.outputs.backend == 'true'
+        run: |
+          git diff --name-only "${{ github.event.pull_request.base.sha || 'HEAD~1' }}"...HEAD \
+            -- 'backend/alembic/versions/*.py' | sed 's|^backend/||' > /tmp/changed-migrations
           if [ -s /tmp/changed-migrations ]; then
             cd backend && xargs ./scripts/check-sqlite-safe-migrations.sh < /tmp/changed-migrations
           else
