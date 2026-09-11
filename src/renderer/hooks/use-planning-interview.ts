@@ -26,6 +26,12 @@ import {
  *  screen first, short enough that it is an arrival rather than an interruption. */
 const SETTLE_MS = 1200;
 
+/** And how long the bar takes to open before it says anything. Two beats, not
+ *  one: the panel finds its size, then the words fade into it. Both at once is
+ *  a box growing around text that is already there. Matches the bar's own
+ *  `HEIGHT_MS`. */
+const OPEN_MS = 360;
+
 /** Remembered for the session, not on disk: dismissing it means "not this
  *  time", and a page that never offers again is a feature nobody can find. */
 let dismissed = false;
@@ -66,6 +72,8 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
   latest.current = { state, onOpen, onCreated };
   const carry = useRef(carryOn);
   carry.current = carryOn;
+  /** The first turn, held back until the bar has finished opening. */
+  const speak = useRef(0);
 
   const show = useCallback(
     (next: Interview) => {
@@ -147,11 +155,14 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
       const opened = start(carry.current);
       setState(opened);
       setIsOpen(true);
-      show(opened);
+      speak.current = window.setTimeout(() => show(opened), OPEN_MS);
     }, SETTLE_MS);
     const stop = () => window.clearTimeout(timer);
     window.addEventListener('pointerdown', stop, { once: true });
     window.addEventListener('keydown', stop, { once: true });
+    // Not `speak`: starting the interview sets state, which re-runs this
+    // effect, and clearing it here cancelled the turn it had just scheduled.
+    // It is cleared on the way out instead.
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('pointerdown', stop);
@@ -192,6 +203,7 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
       // The turns go with the page, but the offer does not: coming back to
       // Planning is asking again. Only "Not now" retires it, and only until
       // the app is next launched.
+      window.clearTimeout(speak.current);
       if (turnId.current) {
         clearLocal();
         turnId.current = null;

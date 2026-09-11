@@ -75,7 +75,7 @@ const COMPOSER_GIVE = 64;
 /** A bubble's own arrival, and how far apart in time they arrive. The
  *  conversation deals itself in from the composer upwards rather than being
  *  revealed by a box that grows around it. */
-const BUBBLE_IN_MS = 320;
+const BUBBLE_IN_MS = 420;
 const BUBBLE_OUT_MS = 200;
 const BUBBLE_STAGGER = 45;
 /** How far from the bottom still counts as reading the newest line: past this
@@ -212,6 +212,9 @@ export function NikoBar() {
     inputRef.current?.blur();
   }, [setIsOpen]);
   const close = useCallback(() => {
+    // Not while a page is asking. The bar is the only place the question is,
+    // and there is a way out inside it — the answer that says "not now".
+    if (scripted) return;
     if (state !== 'expanded' || leaving) {
       finish();
       return;
@@ -222,7 +225,7 @@ export function NikoBar() {
       setTimeout(() => setClosingPhase('shrink'), gone),
       setTimeout(finish, gone + SHRINK_MS),
     ];
-  }, [state, leaving, messages.length, finish]);
+  }, [state, leaving, messages.length, finish, scripted]);
   useEffect(
     () => () => {
       for (const timer of closeTimers.current) clearTimeout(timer);

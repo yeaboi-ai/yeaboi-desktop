@@ -1529,7 +1529,7 @@ input[type='search']::-webkit-search-decoration {
 @keyframes niko-bubble-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

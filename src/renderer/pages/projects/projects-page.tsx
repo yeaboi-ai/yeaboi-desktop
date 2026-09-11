@@ -29,8 +29,10 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
 import { LedgerFlowList, LedgerHead } from '@/components/projects/ledger-head';
 import { usePlanningInterview } from '@/hooks/use-planning-interview';
-import { ProjectGuide } from '@/components/projects/project-guide';
 import { RunTrace } from '@/components/projects/run-trace';
+import { useSeenFlag } from '@/hooks/use-seen-flag';
+import { duckVoice } from '@/lib/duck-voice';
+import { GUIDE_SEEN_KEY, guidePages } from '@/lib/yeaboi/project-guide';
 import { SuggestedProjects } from '@/components/projects/suggested-projects';
 import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useAudience } from '@/components/providers/audience-provider';
@@ -72,6 +74,9 @@ import { logger } from '@/lib/logger';
 import { PageShell } from '@/components/page-shell';
 
 /** Enough runs to trace every project on a desktop; the list is read once. */
+/** How long the duck holds the guide line — a paragraph, not a quip. */
+const GUIDE_HOLD_MS = 12_000;
+
 const TRACE_LIMIT = 200;
 
 interface Project {
@@ -407,6 +412,7 @@ export default function ProjectsPage() {
   // the projects page paints for one frame before the redirect fires, which
   // shows up as a flash of the wrong UI right after first-time sign-in.
   const [gate, setGate] = useState<'checking' | 'redirecting' | 'ok'>('checking');
+  const [guideSeen, setGuideSeen] = useSeenFlag(GUIDE_SEEN_KEY);
 
   useEffect(() => {
     loadCapabilities().then(setCaps, () => setCaps(null));
@@ -452,6 +458,17 @@ export default function ProjectsPage() {
     () => Object.fromEntries((caps ? allCards(caps) : []).map((card) => [card.key, card.color])),
     [caps],
   );
+
+  // The duck in the dock says what the header's guide card used to, once per
+  // machine. A card the size of a paragraph beside a page whose own duck is
+  // about to start talking was two ducks explaining the same screen.
+  useEffect(() => {
+    if (gate !== 'ok' || guideSeen) return;
+    const [first] = guidePages(steps);
+    if (!first) return;
+    duckVoice().say(`${first.title} — ${first.body}`, undefined, GUIDE_HOLD_MS);
+    setGuideSeen(true);
+  }, [gate, guideSeen, setGuideSeen, steps]);
 
   // Niko asks what the page used to ask in a text field, a moment after the
   // page settles. `rows` is what it offers to carry on from, so it waits for
@@ -516,7 +533,6 @@ export default function ProjectsPage() {
             Every run inside a project reads what the runs before it left.
           </p>
         </div>
-        <ProjectGuide steps={steps} colors={colors} />
       </header>
 
       <section
