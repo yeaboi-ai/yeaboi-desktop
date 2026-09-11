@@ -34,11 +34,11 @@ export function ThemeSwitcher({ compact = false }: { compact?: boolean }) {
         render={
           <button
             type="button"
-            className="shrink-0 p-1 text-muted-foreground/40 transition-colors hover:text-foreground"
+            className="shrink-0 p-1 text-muted-foreground transition-colors hover:text-foreground"
             title={`Theme: ${activeLabel}`}
             aria-label={`Theme: ${activeLabel}`}
           >
-            <ActiveIcon className="h-3 w-3" />
+            <ActiveIcon className="h-4 w-4" />
           </button>
         }
       />

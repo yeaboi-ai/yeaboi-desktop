@@ -52,23 +52,14 @@ const TICKETS_ROWS = 7;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-/** Where the room is up to, live or last. A finished session has no phase and
- *  nobody at the table, so it is read off the row the store kept. */
-function figuresFor(board: BoardSnapshot | null, last: PokerRun | undefined) {
-  if (board) {
-    const state = (board.state ?? {}) as PokerState;
-    return [
-      ['Ticket', `${(state.ticket_index ?? 0) + 1} / ${state.ticket_count ?? 0}`],
-      ['Estimated', `${state.progress?.estimated ?? 0} / ${state.progress?.total ?? 0}`],
-      ['At the table', String(state.presence?.length ?? 0)],
-      ['Phase', state.phase === 'voting' ? 'voting' : 'revealed'],
-    ] as const;
-  }
+/** Where the room is up to, in four figures. */
+function figuresFor(board: BoardSnapshot) {
+  const state = (board.state ?? {}) as PokerState;
   return [
-    ['Tickets', String(last?.ticket_count ?? 0)],
-    ['Estimated', `${last?.estimated_count ?? 0} / ${last?.ticket_count ?? 0}`],
-    ['Scope', last?.scope_label || '—'],
-    ['From', last?.source || '—'],
+    ['Ticket', `${(state.ticket_index ?? 0) + 1} / ${state.ticket_count ?? 0}`],
+    ['Estimated', `${state.progress?.estimated ?? 0} / ${state.progress?.total ?? 0}`],
+    ['At the table', String(state.presence?.length ?? 0)],
+    ['Phase', state.phase === 'voting' ? 'voting' : 'revealed'],
   ] as const;
 }
 
@@ -150,21 +141,25 @@ function PokerBody() {
         </header>
 
         <div className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <TicketSummary tickets={report?.tickets ?? []} />
-          {/* Dealing does not go anywhere: the setup sits under the figures on
-              the surface the host is already looking at. */}
-          <div className="flex min-h-0 flex-col gap-4">
-            <TablePanel
-              board={board ?? null}
-              last={runs?.[0]}
-              onStage={canPlayBoards() ? () => setStaged(true) : undefined}
-              onClosed={() => {
-                setLiveId('');
-                setStaged(false);
-                void readHistory();
-              }}
-            />
-            {!board && <PokerSetup onOpened={setLiveId} />}
+          <TicketSummary tickets={report?.tickets ?? []} date={report?.date ?? ''} />
+          {/* The table while one is up; otherwise the way to the next one.
+              There is no third thing to say here — what the last session came
+              to is the column beside this, in full rather than as four
+              figures counting it. */}
+          <div className="flex min-h-0 flex-col">
+            {board ? (
+              <TablePanel
+                board={board}
+                onStage={canPlayBoards() ? () => setStaged(true) : undefined}
+                onClosed={() => {
+                  setLiveId('');
+                  setStaged(false);
+                  void readHistory();
+                }}
+              />
+            ) : (
+              <PokerSetup onOpened={setLiveId} />
+            )}
           </div>
         </div>
 
@@ -209,14 +204,15 @@ function PokerBody() {
 
 /** What the last session settled, ticket by ticket. The figures beside it say
  *  how many; this says which, and for how much. */
-function TicketSummary({ tickets }: { tickets: PokerTicketResult[] }) {
+function TicketSummary({ tickets, date }: { tickets: PokerTicketResult[]; date: string }) {
   return (
     <section className="flex min-h-0 flex-col py-5">
       <div className="flex items-baseline gap-2.5">
-        <h2 className="font-display text-[19px] leading-none text-foreground">Tickets</h2>
+        <h2 className="font-display text-[19px] leading-none text-foreground">Previous session</h2>
+        {date && <span className="font-code text-[11px] text-muted-foreground">{date}</span>}
         {tickets.length > 0 && (
           <span className="font-code text-[11px] text-muted-foreground tabular-nums">
-            {tickets.length}
+            {plural(tickets.length, 'ticket')}
           </span>
         )}
       </div>
@@ -252,57 +248,39 @@ function TicketSummary({ tickets }: { tickets: PokerTicketResult[] }) {
   );
 }
 
-/** The table's figures and what can be done with them — the same panel whether
- *  a session is running or the last one finished on Tuesday. */
+/** Where the room is up to, and what can be done with it. */
 function TablePanel({
   board,
-  last,
   onStage,
   onClosed,
 }: {
-  board: BoardSnapshot | null;
-  last: PokerRun | undefined;
+  board: BoardSnapshot;
   onStage?: (() => void) | undefined;
   onClosed: () => void;
 }) {
-  const state = (board?.state ?? {}) as PokerState;
+  const state = (board.state ?? {}) as PokerState;
   return (
-    <section className="flex flex-col py-5">
-      <div className="flex items-baseline gap-2.5">
-        <h2 className="font-display text-[19px] leading-none text-foreground">
-          {board ? 'At the table' : 'Last session'}
-        </h2>
-        {!board && last?.poker_date && (
-          <span className="font-code text-[11px] text-muted-foreground">{last.poker_date}</span>
-        )}
-      </div>
+    <section className="flex flex-1 flex-col py-5">
+      <h2 className="font-display text-[19px] leading-none text-foreground">At the table</h2>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col">
-        <TableState figures={figuresFor(board, last)} ticket={board ? state.ticket : null} />
+        <TableState figures={figuresFor(board)} ticket={state.ticket} />
       </div>
 
       <div className="pt-1">
-        {board ? (
-          <BoardHost
-            fill
-            board={board}
-            onStage={onStage}
-            onClosed={onClosed}
-            extras={
-              <ResultActions
-                fill
-                refer={{ kind: 'poker', session_id: board.session_id }}
-                mode="poker"
-              />
-            }
-          />
-        ) : last ? (
-          <ResultActions
-            fill
-            refer={{ kind: 'poker', session_id: last.session_id, run_id: last.id }}
-            mode="poker"
-          />
-        ) : null}
+        <BoardHost
+          fill
+          board={board}
+          onStage={onStage}
+          onClosed={onClosed}
+          extras={
+            <ResultActions
+              fill
+              refer={{ kind: 'poker', session_id: board.session_id }}
+              mode="poker"
+            />
+          }
+        />
       </div>
     </section>
   );

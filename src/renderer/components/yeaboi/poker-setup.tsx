@@ -32,7 +32,6 @@ import { ChevronsUpDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Panel } from '@/components/yeaboi/surface';
 
 interface Ticket {
   key?: string;
@@ -294,8 +293,11 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
     <div className="flex flex-col gap-3">
       {/* What the session is made of goes in the panel; what starts it does
           not. An action is not one of the questions. */}
-      <Panel title="New session">
-        <div className="flex flex-col gap-4">
+      {/* No frame: a fill on a sparse screen has to be earned by density, and
+          this is two fields. The heading carries it. */}
+      <section className="flex flex-col py-5">
+        <h2 className="font-display text-[19px] leading-none text-foreground">New session</h2>
+        <div className="mt-4 flex flex-col gap-4">
           {/* The questions, as one line of choices rather than a wizard of pages.
           Everything a session needs is visible before it starts: where the
           tickets come from, which ones, and — once fetched — exactly which. */}
@@ -397,7 +399,7 @@ export function PokerSetup({ onOpened }: { onOpened: (boardId: string) => void }
             </div>
           )}
         </div>
-      </Panel>
+      </section>
 
       {/* The actions, on the surface rather than in the panel. */}
       <div className="flex flex-wrap items-center gap-2">
