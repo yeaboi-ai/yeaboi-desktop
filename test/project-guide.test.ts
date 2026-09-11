@@ -88,11 +88,14 @@ describe('the guide on the page', () => {
     expect(read('components/projects/project-guide.tsx')).toContain('GUIDE_SEEN_KEY');
   });
 
-  it('stands in the header band, so the sheet can grow beneath him and never meet him', () => {
+  it('is said by the duck in the dock, not by a card in the header', () => {
     const page = read('pages/projects/projects-page.tsx');
-    const header = page.slice(page.indexOf('<header'), page.indexOf('</header>'));
-    expect(header).toContain('<ProjectGuide');
-    expect(header).toContain('flex-wrap');
+    // The card left the header when the interview took over the page: two
+    // ducks explaining one screen. The words are the same ones, said once.
+    expect(page).not.toContain('<ProjectGuide');
+    expect(page).toContain('guidePages(steps)');
+    expect(page).toContain('duckVoice().say');
+    expect(page).toContain('GUIDE_SEEN_KEY');
   });
 
   it('is in flow: nothing about him is fixed to the window or absolute to the page', () => {
