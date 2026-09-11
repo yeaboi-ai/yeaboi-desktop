@@ -394,15 +394,12 @@ function RetroBody() {
                 grow instead pushed the page taller, and the way back to the
                 sticky notes at the top was a scroll through every retro. */}
             <div
-              className={`divide-y divide-border/40 overflow-hidden rounded-2xl ring-1 ring-border/60 ${
-                allRuns ? 'quiet-scroll max-h-[46vh] overflow-y-auto overscroll-contain' : ''
+              className={`divide-y divide-border/40 ${
+                allRuns ? 'slim-scroll max-h-[46vh] overflow-y-auto overscroll-contain pr-2' : ''
               }`}
             >
               {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
-                <div
-                  key={run.id}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5"
-                >
+                <div key={run.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
                   <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
                     {run.sprint_name || run.retro_date}
                     {run.sprint_name && (
