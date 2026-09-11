@@ -38,8 +38,8 @@ import { Button } from '@/components/ui/button';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-/** How many past retros the ledger shows before it is asked for the rest. */
-const LEDGER_SHOWN = 5;
+/** How many rows tall the ledger stands, whatever it holds. */
+const LEDGER_ROWS = 5;
 
 /** And how many there are to ask for. Stated here rather than left to the
  *  tool's own default: how far back the ledger reaches is this page's decision. */
@@ -74,11 +74,29 @@ function Notice({ title, items }: { title: string; items: string[] }) {
 
 /** The live board's own line: how full each column is, in one row. The cards
  *  themselves are on the board — this says whether there are any yet. */
-function BoardState({ board }: { board: BoardSnapshot }) {
-  const state = (board.state ?? {}) as unknown as RetroBoardState;
-  const grids = state.grids ?? {};
-  const columns = Object.keys(GRID_TITLES).filter((key) => key in grids);
-  const shown = columns.length > 0 ? columns : Object.keys(grids);
+/** How many cards each column holds. A live board says so itself; a finished
+ *  one is counted off the report, which carries every card with its column. */
+function gridCounts(
+  board: BoardSnapshot | null,
+  report: RetroReportSummary | null,
+): Record<string, number> {
+  if (board) {
+    const grids = ((board.state ?? {}) as unknown as RetroBoardState).grids ?? {};
+    return Object.fromEntries(
+      Object.entries(grids).map(([key, cards]) => [key, cards?.length ?? 0]),
+    );
+  }
+  const counts: Record<string, number> = {};
+  for (const key of Object.keys(GRID_TITLES)) counts[key] = 0;
+  for (const card of report?.cards ?? []) {
+    if (card.grid) counts[card.grid] = (counts[card.grid] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function BoardState({ counts }: { counts: Record<string, number> }) {
+  const columns = Object.keys(GRID_TITLES).filter((key) => key in counts);
+  const shown = columns.length > 0 ? columns : Object.keys(counts);
   return (
     <div className="mb-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
       {shown.map((key) => (
@@ -87,7 +105,7 @@ function BoardState({ board }: { board: BoardSnapshot }) {
             {GRID_TITLES[key] ?? key}
           </p>
           <p className="font-code text-[12px] text-foreground">
-            {grids[key]?.length ?? 0} {grids[key]?.length === 1 ? 'card' : 'cards'}
+            {plural(counts[key] ?? 0, 'card')}
           </p>
         </div>
       ))}
@@ -95,32 +113,68 @@ function BoardState({ board }: { board: BoardSnapshot }) {
   );
 }
 
-/** The live board, in the card that offered it. One step on from Start rather
- *  than a different screen — so it keeps the same shape, and what carried in
- *  from last time stays beside it. */
-function LivePanel({
+/**
+ * The retro's four columns, live or last.
+ *
+ * The same panel either way, because the question it answers — what is in each
+ * column, and what can be done with it — is the same question whether the room
+ * is open or the retro finished last Thursday. Only the heading and the row of
+ * controls change: a board that is running can be opened and ended, and one
+ * that has finished can only be read.
+ */
+function BoardPanel({
   board,
+  report,
+  latestRun,
+  sessionId,
   masked,
   onStage,
   onClosed,
   anonNote,
   onAnonymize,
 }: {
-  board: BoardSnapshot;
+  board: BoardSnapshot | null;
+  report: RetroReportSummary | null;
+  /** The run the finished columns belong to, for anything exported from here. */
+  latestRun: number | undefined;
+  sessionId: string;
   masked: number;
   onStage?: (() => void) | undefined;
   onClosed: (runId: number) => void;
   anonNote: string;
   onAnonymize: (replacements: [string, string][], note: string) => void;
 }) {
+  const counts = gridCounts(board, report);
+  const held = report?.date ?? '';
+  const actions = (
+    <ResultActions
+      fill
+      refer={
+        board
+          ? { kind: 'retro', session_id: board.session_id }
+          : { kind: 'retro', session_id: sessionId, ...(latestRun ? { run_id: latestRun } : {}) }
+      }
+      mode="retro"
+      anonNote={anonNote}
+      onAnonymize={onAnonymize}
+    />
+  );
+
   return (
     // No frame, like the wall beside it. The grids inside are already boxes,
     // and a box around four boxes is the screen saying the same thing twice.
     <section className="flex flex-col py-5">
-      <h2 className="font-display text-[19px] leading-none text-foreground">On the board</h2>
+      <div className="flex items-baseline gap-2.5">
+        <h2 className="font-display text-[19px] leading-none text-foreground">
+          {board ? 'On the board' : 'Last retro'}
+        </h2>
+        {!board && held && (
+          <span className="font-code text-[11px] text-muted-foreground">{held}</span>
+        )}
+      </div>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col">
-        <BoardState board={board} />
+        <BoardState counts={counts} />
       </div>
 
       <div className="pt-1">
@@ -128,25 +182,23 @@ function LivePanel({
             this page the board itself does not offer; the export and share are
             the same set of choices about the same session, so they stand
             beside it rather than under it. */}
-        <BoardHost
-          fill
-          board={board}
-          onStage={onStage}
-          onClosed={onClosed}
-          extras={
-            // Drafting them is the board's own — its rail offers it while the
-            // cards are still in front of you, which is where the decision is
-            // actually made. A second button for it here was the same job
-            // named twice.
-            <ResultActions
-              fill
-              refer={{ kind: 'retro', session_id: board.session_id }}
-              mode="retro"
-              anonNote={anonNote}
-              onAnonymize={onAnonymize}
-            />
-          }
-        />
+        {board ? (
+          <BoardHost
+            fill
+            board={board}
+            onStage={onStage}
+            onClosed={onClosed}
+            extras={
+              // Drafting them is the board's own — its rail offers it while the
+              // cards are still in front of you, which is where the decision is
+              // actually made. A second button for it here was the same job
+              // named twice.
+              actions
+            }
+          />
+        ) : (
+          actions
+        )}
         {masked > 0 && (
           <p className="mt-2 text-[11px] text-muted-foreground/70">
             {masked} name{masked === 1 ? '' : 's'} replaced in what leaves here.
@@ -165,12 +217,10 @@ function LivePanel({
  * whatever happens to be behind it.
  */
 function ScrollBox({
-  enabled,
   height,
   className,
   children,
 }: {
-  enabled: boolean;
   height: number;
   className?: string;
   children: React.ReactNode;
@@ -186,8 +236,6 @@ function ScrollBox({
     });
   };
 
-  if (!enabled) return <div className={className}>{children}</div>;
-
   const from = edge.top ? `transparent 0, #000 ${FADE}px` : '#000 0';
   const to = edge.bottom ? `#000 calc(100% - ${FADE}px), transparent 100%` : '#000 100%';
   const mask = `linear-gradient(to bottom, ${from}, ${to})`;
@@ -195,6 +243,7 @@ function ScrollBox({
   return (
     <div
       ref={read}
+      data-wheel
       onScroll={(event) => read(event.currentTarget)}
       style={{ height, maskImage: mask, WebkitMaskImage: mask }}
       className={`slim-scroll overflow-y-auto overscroll-contain pr-2 ${className ?? ''}`}
@@ -265,7 +314,6 @@ function OpenActions({
 function RetroBody() {
   const [runs, setRuns] = useState<RetroRun[] | null>(null);
   const [report, setReport] = useState<RetroReportSummary | null>(null);
-  const [allRuns, setAllRuns] = useState(false);
   // The session the history belongs to is a sibling of the rows, not a column
   // on them — an artifact reference needs both halves.
   const [sessionId, setSessionId] = useState('');
@@ -385,46 +433,41 @@ function RetroBody() {
             on, not a different screen: the panel that offered it becomes the
             panel that runs it, and what carried in stays beside it. */}
         {runs && (
-          <div
-            className={
-              board
-                ? 'grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'
-                : ''
-            }
-          >
+          <div className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
             <OpenActions
               rows={actions}
               busy={correcting}
               onEdit={(row, text) => void correct(row, { text })}
               onClose={(row, status) => void correct(row, { status })}
             />
-            {board ? (
-              <LivePanel
-                board={board}
-                masked={mask.length}
-                onStage={
-                  canPlayBoards()
-                    ? () => {
-                        setShowRun(undefined);
-                        setStaged(true);
-                      }
-                    : undefined
-                }
-                onClosed={() => {
-                  setLiveId('');
-                  setStaged(false);
-                  retroHistory(LEDGER_LIMIT).then((envelope) => {
-                    setRuns(envelope.data?.history ?? []);
-                    setReport(envelope.data?.latest_report ?? null);
-                  }, undefined);
-                }}
-                anonNote={anonNote}
-                onAnonymize={(replacements, anon) => {
-                  setMask(replacements);
-                  setAnonNote(anon);
-                }}
-              />
-            ) : null}
+            <BoardPanel
+              board={board ?? null}
+              report={report}
+              latestRun={runs[0]?.id}
+              sessionId={sessionId}
+              masked={mask.length}
+              onStage={
+                canPlayBoards()
+                  ? () => {
+                      setShowRun(undefined);
+                      setStaged(true);
+                    }
+                  : undefined
+              }
+              onClosed={() => {
+                setLiveId('');
+                setStaged(false);
+                retroHistory(LEDGER_LIMIT).then((envelope) => {
+                  setRuns(envelope.data?.history ?? []);
+                  setReport(envelope.data?.latest_report ?? null);
+                }, undefined);
+              }}
+              anonNote={anonNote}
+              onAnonymize={(replacements, anon) => {
+                setMask(replacements);
+                setAnonNote(anon);
+              }}
+            />
           </div>
         )}
 
@@ -444,25 +487,15 @@ function RetroBody() {
               <h2 className="font-display text-[15px] leading-none text-muted-foreground">
                 Recent retros
               </h2>
-              {runs.length > LEDGER_SHOWN && (
-                <button
-                  type="button"
-                  onClick={() => setAllRuns((open) => !open)}
-                  className="font-body text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  {allRuns ? 'Show fewer' : `Show all ${runs.length}`}
-                </button>
-              )}
+              <span className="font-code text-[11px] text-muted-foreground tabular-nums">
+                {runs.length}
+              </span>
             </div>
-            {/* Opened out, the ledger scrolls rather than growing: the box is
-                the same height either way, and the rows above and below what
-                it is showing fade out at its edges. */}
-            <ScrollBox
-              enabled={allRuns}
-              height={LEDGER_SHOWN * LEDGER_ROW}
-              className="divide-y divide-border/40"
-            >
-              {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
+            {/* All of them, in a box the height of five: once the box scrolls
+                and stays one size, a control for how much of it to show is a
+                question about nothing. */}
+            <ScrollBox height={LEDGER_ROWS * LEDGER_ROW} className="divide-y divide-border/40">
+              {runs.map((run) => (
                 <div key={run.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
                   <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
                     {run.sprint_name || run.retro_date}
