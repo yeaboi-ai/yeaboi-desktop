@@ -236,12 +236,7 @@ function RetroBody() {
     setCorrecting(row.id);
     setError(null);
     try {
-      const envelope = await editAction(
-        sessionId,
-        row,
-        change,
-        auth?.user?.name ?? '',
-      );
+      const envelope = await editAction(sessionId, row, change, auth?.user?.name ?? '');
       const result = envelope.data as { refused?: { reason: string }[] };
       if (result.refused?.length) {
         setError({ title: 'The correction was refused', message: result.refused[0]!.reason });
@@ -395,7 +390,14 @@ function RetroBody() {
                 </button>
               )}
             </div>
-            <div className="divide-y divide-border/40 overflow-hidden rounded-2xl ring-1 ring-border/60">
+            {/* Opened out, the ledger scrolls inside its own frame. Letting it
+                grow instead pushed the page taller, and the way back to the
+                sticky notes at the top was a scroll through every retro. */}
+            <div
+              className={`divide-y divide-border/40 overflow-hidden rounded-2xl ring-1 ring-border/60 ${
+                allRuns ? 'quiet-scroll max-h-[46vh] overflow-y-auto overscroll-contain' : ''
+              }`}
+            >
               {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
                 <div
                   key={run.id}
