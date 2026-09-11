@@ -139,55 +139,6 @@ function LivePanel({
   );
 }
 
-/** Starting one, as the decision it is: what it will cover, what it inherits,
- *  and the way in. */
-function StartPanel({
-  busy,
-  carried,
-  onStart,
-}: {
-  busy: boolean;
-  carried: number;
-  onStart: () => void;
-}) {
-  return (
-    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
-      <h2 className="font-display text-[19px] leading-none text-foreground">Start a retro</h2>
-      <p className="mt-2 font-body text-[13px] leading-relaxed text-muted-foreground">
-        A live board your team fills in from their own browsers. Send the invite and everyone adds
-        cards at once; yeaboi drafts the action items when you are done.
-      </p>
-      <ul className="mt-4 space-y-1.5 font-body text-[12px] text-muted-foreground">
-        <li className="flex gap-2">
-          <span aria-hidden className="text-muted-foreground/50">
-            ·
-          </span>
-          Four columns — went well, didn’t, actions, demos.
-        </li>
-        <li className="flex gap-2">
-          <span aria-hidden className="text-muted-foreground/50">
-            ·
-          </span>
-          {carried > 0
-            ? `${carried} open action${carried === 1 ? '' : 's'} carry in for review.`
-            : 'Last retro’s open actions carry in for review.'}
-        </li>
-        <li className="flex gap-2">
-          <span aria-hidden className="text-muted-foreground/50">
-            ·
-          </span>
-          Runs in this window, or in a browser for anyone you invite.
-        </li>
-      </ul>
-      <div className="mt-auto pt-5">
-        <Button disabled={busy} onClick={onStart}>
-          {busy ? 'Opening…' : 'Start a retro'}
-        </Button>
-      </div>
-    </section>
-  );
-}
-
 const STATUS_WORDS: Record<string, string> = {
   pending: 'open',
   in_progress: 'in progress',
@@ -196,6 +147,7 @@ const STATUS_WORDS: Record<string, string> = {
 
 /** What the last retro left behind. The point of a retro is what it changed,
  *  so this is what a page about retros is read for. */
+
 /** One number per action, so its lean and its colour are the same every time
  *  the page draws. Random would re-deal the wall on every render, which is a
  *  pile of paper that shuffles itself while you read it. */
@@ -332,6 +284,9 @@ function RetroBody() {
   return (
     <Surface>
       <div className="flex h-full flex-col gap-4">
+        {/* The way into the next one is a button, not a panel. What it does
+            needs saying once, not on every visit — and a card explaining it
+            was what forced a second column with nothing to put in it. */}
         <header className="flex items-start justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl text-foreground">Retro</h1>
@@ -339,6 +294,11 @@ function RetroBody() {
               What the last one changed, and the way into the next.
             </p>
           </div>
+          {runs && !board && (
+            <Button disabled={busy === 'start'} onClick={() => void start()}>
+              {busy === 'start' ? 'Opening…' : 'Start a retro'}
+            </Button>
+          )}
         </header>
 
         {error && <Notice title="Could not start the board" items={[error]} />}
@@ -347,7 +307,11 @@ function RetroBody() {
             on, not a different screen: the panel that offered it becomes the
             panel that runs it, and what carried in stays beside it. */}
         {runs && (
-          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <div
+            className={
+              board ? 'grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' : ''
+            }
+          >
             <OpenActions rows={actions} />
             {board ? (
               <LivePanel
@@ -375,13 +339,7 @@ function RetroBody() {
                   setAnonNote(anon);
                 }}
               />
-            ) : (
-              <StartPanel
-                busy={busy === 'start'}
-                carried={actions.length}
-                onStart={() => void start()}
-              />
-            )}
+            ) : null}
           </div>
         )}
 
