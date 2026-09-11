@@ -41,6 +41,13 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** How many past retros the ledger shows before it is asked for the rest. */
 const LEDGER_SHOWN = 5;
 
+/** One ledger row, in px. Asking for the rest scrolls that many rows rather
+ *  than growing the box, so the ledger is the same size either way. */
+const LEDGER_ROW = 49;
+
+/** How far the fade at a scrolled edge reaches. */
+const FADE = 28;
+
 const GRID_TITLES: Record<string, string> = {
   went_well: 'Went well',
   didnt_go_well: "Didn't go well",
@@ -139,6 +146,53 @@ function LivePanel({
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * A box that scrolls at a fixed height, fading whichever edge has more past it.
+ *
+ * The fade is a mask rather than a gradient laid over the rows: the page has no
+ * ground of its own here, so an overlay would be a smear of one colour on
+ * whatever happens to be behind it.
+ */
+function ScrollBox({
+  enabled,
+  height,
+  className,
+  children,
+}: {
+  enabled: boolean;
+  height: number;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [edge, setEdge] = useState({ top: false, bottom: false });
+
+  const read = (el: HTMLElement | null) => {
+    if (!el) return;
+    setEdge((was) => {
+      const top = el.scrollTop > 2;
+      const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
+      return was.top === top && was.bottom === bottom ? was : { top, bottom };
+    });
+  };
+
+  if (!enabled) return <div className={className}>{children}</div>;
+
+  const from = edge.top ? `transparent 0, #000 ${FADE}px` : '#000 0';
+  const to = edge.bottom ? `#000 calc(100% - ${FADE}px), transparent 100%` : '#000 100%';
+  const mask = `linear-gradient(to bottom, ${from}, ${to})`;
+
+  return (
+    <div
+      ref={read}
+      onScroll={(event) => read(event.currentTarget)}
+      style={{ height, maskImage: mask, WebkitMaskImage: mask }}
+      className={`slim-scroll overflow-y-auto overscroll-contain pr-2 ${className ?? ''}`}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -390,13 +444,13 @@ function RetroBody() {
                 </button>
               )}
             </div>
-            {/* Opened out, the ledger scrolls inside its own frame. Letting it
-                grow instead pushed the page taller, and the way back to the
-                sticky notes at the top was a scroll through every retro. */}
-            <div
-              className={`divide-y divide-border/40 ${
-                allRuns ? 'slim-scroll max-h-[46vh] overflow-y-auto overscroll-contain pr-2' : ''
-              }`}
+            {/* Opened out, the ledger scrolls rather than growing: the box is
+                the same height either way, and the rows above and below what
+                it is showing fade out at its edges. */}
+            <ScrollBox
+              enabled={allRuns}
+              height={LEDGER_SHOWN * LEDGER_ROW}
+              className="divide-y divide-border/40"
             >
               {(allRuns ? runs : runs.slice(0, LEDGER_SHOWN)).map((run) => (
                 <div key={run.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
@@ -434,7 +488,7 @@ function RetroBody() {
                   />
                 </div>
               ))}
-            </div>
+            </ScrollBox>
           </div>
         )}
       </div>
