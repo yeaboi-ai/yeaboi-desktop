@@ -28,12 +28,18 @@ interface BoardMusicApi {
  *  business, not the window's — and undefined for a guest. */
 type BoardMusicControlFn = (parts: { cast?: (() => void) | undefined }) => React.ReactNode;
 
+/** What a staged board is given in place of its own palette switcher. A board
+ *  in the window already draws in the app's colours, so the menu that changes
+ *  them is the app's. */
+type BoardThemeControlFn = () => React.ReactNode;
+
 declare module '@board/poker/App' {
   export type BoardMusic = BoardMusicApi;
   export function App(props: {
     boot: unknown;
     music?: BoardMusicApi;
     musicControl?: BoardMusicControlFn;
+    themeControl?: BoardThemeControlFn;
   }): JSX.Element;
 }
 
@@ -43,6 +49,7 @@ declare module '@board/retro/App' {
     boot: unknown;
     music?: BoardMusicApi;
     musicControl?: BoardMusicControlFn;
+    themeControl?: BoardThemeControlFn;
     /** A past retro to open on, by run id. The board steps back to it. */
     showRun?: number | undefined;
   }): JSX.Element;

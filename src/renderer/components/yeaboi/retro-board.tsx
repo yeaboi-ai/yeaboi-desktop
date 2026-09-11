@@ -8,6 +8,7 @@ import { App as RetroApp } from '@board/retro/App';
 
 import { useBoardChannels, useBoardMusic } from './board-music';
 import { BoardMusicControl } from './board-music-control';
+import { BoardThemeControl } from './board-theme-control';
 import { StagedBoard } from './staged-board';
 
 /**
@@ -56,6 +57,7 @@ export function RetroBoard({
         boot={boot(sprint, channels) as never}
         music={music}
         musicControl={({ cast }) => <BoardMusicControl cast={cast} />}
+        themeControl={() => <BoardThemeControl />}
         showRun={showRun}
       />
     </StagedBoard>

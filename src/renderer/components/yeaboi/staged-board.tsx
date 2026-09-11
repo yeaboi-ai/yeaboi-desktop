@@ -628,6 +628,14 @@ body > [class^='_'] {
   bottom: 16px;
   transform: none;
   translate: none;
+  gap: 8px;
+}
+
+/* The capsule is worn by each cluster, not by the carrier holding them: the
+   window's own player stands apart from the board's controls, and one ground
+   under both is the row they were in before. */
+.board-frame .${HOST} [class*='dockPanel'],
+.board-frame .${HOST} [class*='dockAside'] {
   border: 0;
   border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
@@ -798,8 +806,14 @@ body > [class^='_'] {
  * A bar of bare keys, not a strip of boxes: no ground under an icon until the
  * cursor is on it, one icon size throughout, fully round ends, and the bar the
  * same height as the door beside it so the two share a baseline. */
-.board-frame .${HOST} [class*='dockApp'] {
+.board-frame .${HOST} [class*='dockPanel'],
+.board-frame .${HOST} [class*='dockAside'] {
   border-radius: 999px;
+}
+
+.board-frame .${HOST} [class*='dockAside'] {
+  padding: 2px;
+  gap: 2px;
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {

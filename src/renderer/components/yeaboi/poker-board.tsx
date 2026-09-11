@@ -8,6 +8,7 @@ import { App as PokerApp } from '@board/poker/App';
 
 import { useBoardChannels, useBoardMusic } from './board-music';
 import { BoardMusicControl } from './board-music-control';
+import { BoardThemeControl } from './board-theme-control';
 import { StagedBoard } from './staged-board';
 
 /**
@@ -54,6 +55,7 @@ export function PokerBoard({
         boot={boot(scope, channels) as never}
         music={music}
         musicControl={({ cast }) => <BoardMusicControl cast={cast} />}
+        themeControl={() => <BoardThemeControl />}
       />
     </StagedBoard>
   );
