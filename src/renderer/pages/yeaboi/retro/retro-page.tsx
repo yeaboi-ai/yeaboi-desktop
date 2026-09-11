@@ -333,6 +333,15 @@ function RetroBody() {
     setBusy('');
   }
 
+  /** Put one of the past retros on the board. Opening a board first if there
+   *  is none: reading last sprint's should not mean starting this sprint's by
+   *  hand before it can be read. */
+  async function open(runId: number) {
+    setShowRun(runId);
+    if (board) setStaged(true);
+    else await start();
+  }
+
   // The board is the window, not a panel on it. Rendered outside the surface —
   // no page padding, no centred column, no title above it — because a board
   // inside the box the rest of the page is drawn in is a screen within a
@@ -469,14 +478,12 @@ function RetroBody() {
                   {/* The board already steps back through these; this points
                       it at one. It needs a board to do it on, so it is offered
                       only while there is one. */}
-                  {board && canPlayBoards() && (
+                  {canPlayBoards() && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        setShowRun(run.id);
-                        setStaged(true);
-                      }}
+                      disabled={busy === 'start'}
+                      onClick={() => void open(run.id)}
                     >
                       <Columns3 data-icon="inline-start" />
                       Open
