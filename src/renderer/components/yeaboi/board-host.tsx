@@ -92,10 +92,16 @@ export function BoardHost({
           {board.link.notice}
         </p>
       )}
-      {/* Its own buttons only: whatever `extras` is asks for the share it
-          needs, and one share for a pair of controls squeezes them onto two
-          lines. */}
-      <div className={`flex flex-wrap items-center gap-2 ${fill ? '[&>button]:flex-1' : ''}`}>
+      {/* Filled, the row is a grid of equal tracks rather than flexed shares:
+          a control holding two buttons spans two of them and splits them on
+          the same gap, so every button on the row is the same width. */}
+      <div
+        className={
+          fill
+            ? 'grid grid-flow-col auto-cols-fr items-center gap-2'
+            : 'flex flex-wrap items-center gap-2'
+        }
+      >
         {/* One way in. The board plays here now, so a second copy of it in a
             window of its own is two rooms with the same people in them — the
             window is only the way in where the app cannot stage a board. */}

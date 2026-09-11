@@ -110,11 +110,14 @@ export function ResultActions({
     ) : null;
 
   return (
-    // `flex-[2]` for the two controls it holds, so a row that shares its width
-    // between its children gives this pair two shares and every button on the
-    // row comes out the same width.
-    <div className={fill ? 'flex-[2] space-y-3' : 'space-y-3'}>
-      <div className={`flex flex-wrap items-center gap-2 ${fill ? 'w-full [&>*]:flex-1' : ''}`}>
+    // Two of the row's tracks for the two controls it holds, split on the
+    // row's own gap so they come out the width of every button beside them.
+    <div className={fill ? 'col-span-2 space-y-3' : 'space-y-3'}>
+      <div
+        className={
+          fill ? 'grid grid-cols-2 items-center gap-2' : 'flex flex-wrap items-center gap-2'
+        }
+      >
         {can?.export && (
           <Button
             variant="outline"
