@@ -22,7 +22,14 @@ import { canPlayBoards } from '@/board/board-api';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { ScrollBox } from '@/components/yeaboi/scroll-box';
 import { Surface } from '@/components/yeaboi/surface';
-import { type BoardSnapshot, type PokerRun, loadBoards, pokerHistory } from '@/lib/yeaboi/boards';
+import {
+  type BoardSnapshot,
+  type PokerReportSummary,
+  type PokerRun,
+  type PokerTicketResult,
+  loadBoards,
+  pokerHistory,
+} from '@/lib/yeaboi/boards';
 
 interface PokerState {
   phase?: string;
@@ -39,6 +46,9 @@ const LEDGER_ROWS = 5;
 const LEDGER_ROW = 49;
 /** How far back it reaches. */
 const LEDGER_LIMIT = 30;
+/** How many rows tall the ticket list stands. Taller than the ledger: it is
+ *  the column's subject, not its footer. */
+const TICKETS_ROWS = 7;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -96,10 +106,14 @@ function PokerBody() {
   // chrome steps back off its edges until it is left.
   const [staged, setStaged] = useState(false);
   const [runs, setRuns] = useState<PokerRun[] | null>(null);
+  const [report, setReport] = useState<PokerReportSummary | null>(null);
 
   const readHistory = () =>
     pokerHistory(LEDGER_LIMIT).then(
-      (envelope) => setRuns(envelope.data?.history ?? []),
+      (envelope) => {
+        setRuns(envelope.data?.history ?? []);
+        setReport(envelope.data?.latest_report ?? null);
+      },
       () => setRuns([]),
     );
 
@@ -136,32 +150,22 @@ function PokerBody() {
         </header>
 
         <div className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* Dealing does not go anywhere: the setup sits beside the table on
-              the surface the host is already looking at, and steps back to a
-              line once there is a table to look at instead. */}
-          {board ? (
-            <section className="flex flex-col py-5">
-              <h2 className="font-display text-[19px] leading-none text-foreground">
-                Estimating from
-              </h2>
-              <p className="mt-3 font-body text-[13px] leading-relaxed text-muted-foreground">
-                {board.title || 'This session'} — the team votes from their own browsers and the
-                points go back to the board.
-              </p>
-            </section>
-          ) : (
-            <PokerSetup onOpened={setLiveId} />
-          )}
-          <TablePanel
-            board={board ?? null}
-            last={runs?.[0]}
-            onStage={canPlayBoards() ? () => setStaged(true) : undefined}
-            onClosed={() => {
-              setLiveId('');
-              setStaged(false);
-              void readHistory();
-            }}
-          />
+          <TicketSummary tickets={report?.tickets ?? []} />
+          {/* Dealing does not go anywhere: the setup sits under the figures on
+              the surface the host is already looking at. */}
+          <div className="flex min-h-0 flex-col gap-4">
+            <TablePanel
+              board={board ?? null}
+              last={runs?.[0]}
+              onStage={canPlayBoards() ? () => setStaged(true) : undefined}
+              onClosed={() => {
+                setLiveId('');
+                setStaged(false);
+                void readHistory();
+              }}
+            />
+            {!board && <PokerSetup onOpened={setLiveId} />}
+          </div>
         </div>
 
         {/* At the foot of the screen, the same ledger the retro keeps. */}
@@ -200,6 +204,51 @@ function PokerBody() {
         )}
       </div>
     </Surface>
+  );
+}
+
+/** What the last session settled, ticket by ticket. The figures beside it say
+ *  how many; this says which, and for how much. */
+function TicketSummary({ tickets }: { tickets: PokerTicketResult[] }) {
+  return (
+    <section className="flex min-h-0 flex-col py-5">
+      <div className="flex items-baseline gap-2.5">
+        <h2 className="font-display text-[19px] leading-none text-foreground">Tickets</h2>
+        {tickets.length > 0 && (
+          <span className="font-code text-[11px] text-muted-foreground tabular-nums">
+            {tickets.length}
+          </span>
+        )}
+      </div>
+      {tickets.length === 0 ? (
+        <p className="mt-3 font-body text-[13px] leading-relaxed text-muted-foreground">
+          Nothing estimated yet — the last session's tickets land here.
+        </p>
+      ) : (
+        <div className="mt-4 min-h-0 flex-1">
+          <ScrollBox height={TICKETS_ROWS * LEDGER_ROW} className="divide-y divide-border/40">
+            {tickets.map((ticket) => (
+              <div key={ticket.key} className="flex items-center gap-3 py-2.5">
+                <span className="shrink-0 font-code text-[11px] text-muted-foreground">
+                  {ticket.key}
+                </span>
+                <p className="min-w-0 flex-1 truncate font-body text-[13px] text-foreground">
+                  {ticket.summary}
+                </p>
+                {/* The number the room agreed, or why there isn't one. */}
+                <span
+                  className={`shrink-0 font-code text-[12px] tabular-nums ${
+                    ticket.estimated ? 'text-foreground' : 'text-muted-foreground/60'
+                  }`}
+                >
+                  {ticket.estimated ? (ticket.final_points ?? '—') : 'not voted'}
+                </span>
+              </div>
+            ))}
+          </ScrollBox>
+        </div>
+      )}
+    </section>
   );
 }
 

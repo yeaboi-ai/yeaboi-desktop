@@ -215,8 +215,30 @@ export function retroHistory(limit = 30) {
   }>('retro_history', { limit });
 }
 
+/** One ticket's outcome, as a stored poker session records it. */
+export interface PokerTicketResult {
+  key: string;
+  summary: string;
+  url?: string;
+  assignee?: string;
+  initial_points?: number | null;
+  final_points?: number | null;
+  estimated?: boolean;
+}
+
+/** The last poker session this store recorded, and what it settled. */
+export interface PokerReportSummary {
+  date?: string;
+  scope_label?: string;
+  source?: string;
+  tickets?: PokerTicketResult[];
+}
+
 export function pokerHistory(limit = 30) {
-  return callTool<{ history: PokerRun[] }>('poker_history', { limit });
+  return callTool<{ history: PokerRun[]; latest_report: PokerReportSummary | null }>(
+    'poker_history',
+    { limit },
+  );
 }
 
 // ── Poker setup ────────────────────────────────────────────────────────────
