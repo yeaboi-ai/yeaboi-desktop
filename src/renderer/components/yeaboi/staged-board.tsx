@@ -628,7 +628,9 @@ body > [class^='_'] {
   bottom: 16px;
   transform: none;
   translate: none;
-  gap: 8px;
+  /* Wider than the space between keys, or the player reads as the last key on
+     the board's row rather than as the window's own thing beside it. */
+  gap: 14px;
 }
 
 /* The capsule is worn by each cluster, not by the carrier holding them: the
@@ -811,7 +813,7 @@ body > [class^='_'] {
   border-radius: 999px;
 }
 
-.board-frame .${HOST} [class*='dockAside'] {
+.board-frame .${HOST} [class*='dockApp'] [class*='dockAside'] {
   padding: 2px;
   gap: 2px;
 }
