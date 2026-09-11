@@ -245,3 +245,39 @@ describe('customTags', () => {
     expect(customTags(addTag(scope, 'Q3 launch'), OPTIONS.defaults.tags)).toEqual(['q3-launch']);
   });
 });
+
+describe('scopeFromWire', () => {
+  it('takes a scope as the sidecar holds it, adding the default tags', async () => {
+    const { scopeFromWire } = await import('../src/renderer/lib/context/scope');
+    const options = { default: null, defaults: { tags: ['mode:planning'] } } as never;
+    const scope = scopeFromWire(
+      {
+        sources: ['standup'],
+        window: { kind: 'sprints', count: 2 },
+        projects: ['apollo'],
+        tags: ['q3'],
+        limits: { retro: 1 },
+      },
+      options,
+    );
+    expect(scope).toEqual({
+      sources: ['standup'],
+      window: { kind: 'sprints', count: 2 },
+      projects: ['apollo'],
+      tags: ['mode:planning', 'q3'],
+      limits: { retro: 1 },
+    });
+  });
+
+  it('falls back to the default for junk, and keeps null sources as everything', async () => {
+    const { scopeFromWire, defaultScope } = await import('../src/renderer/lib/context/scope');
+    expect(scopeFromWire('nope', null)).toEqual(defaultScope(null));
+    expect(scopeFromWire({ sources: null, window: { kind: 'never' } }, null)).toEqual({
+      sources: null,
+      window: { kind: 'all' },
+      projects: [],
+      tags: [],
+      limits: {},
+    });
+  });
+});

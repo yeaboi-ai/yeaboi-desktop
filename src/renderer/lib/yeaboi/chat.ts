@@ -45,8 +45,8 @@ export type ChatLine =
   | { type: 'section'; kind: SectionKey; status: SectionStatus; version: number }
   /** A dim local line, never persisted. */
   | { type: 'notice'; text: string }
-  /** Something the room does rather than says: a sync typed at a gate. */
-  | { type: 'action'; name: string; tracker?: string }
+  /** Something the room does rather than says: a sync typed at a gate; `detail` names the tracker. */
+  | { type: 'action'; name: string; detail?: string }
   | { type: 'done'; stage: Stage }
   | { type: 'cancelled' }
   | { type: 'error'; message: string };
@@ -91,7 +91,10 @@ export function sessionIdOf(view: Pick<SessionView, 'session_id' | 'project_id'>
 /** One row of the planning hub. */
 export interface ChatSummary {
   session_id: string;
+  /** The reader's name for the plan; empty until renamed. */
   title: string;
+  /** The engine's name for it, from the analysis. */
+  project_name: string;
   project_label: string;
   tags: string[];
   stage: Stage;
@@ -161,6 +164,11 @@ export interface ChatListQuery {
   tag?: string;
 }
 
+/** What a plan is called on a row: the reader's title, else the engine's name. */
+export function planName(row: Pick<ChatSummary, 'title' | 'project_name'>): string {
+  return row.title || row.project_name || 'Untitled plan';
+}
+
 /** The planning hub's rows, newest first. */
 export async function listChats(query: ChatListQuery = {}): Promise<ChatSummary[]> {
   const params = new URLSearchParams();
@@ -177,8 +185,10 @@ export async function listChats(query: ChatListQuery = {}): Promise<ChatSummary[
 export interface ChatPatch {
   title?: string;
   projectLabel?: string;
+  /** Replaces the list, the fixed tags included. */
   tags?: string[];
-  context?: object;
+  /** A scope's JSON twin; null clears it. */
+  context?: object | null;
 }
 
 /** The title, the labels or the scope of one plan. The sidecar is reached over
@@ -186,7 +196,13 @@ export interface ChatPatch {
 export function updateChat(
   sessionId: string,
   patch: ChatPatch,
-): Promise<{ session_id: string; title: string; project_label: string; tags: string[] }> {
+): Promise<{
+  session_id: string;
+  title: string;
+  project_label: string;
+  tags: string[];
+  context: object | null;
+}> {
   const body: Record<string, unknown> = {};
   if (patch.title !== undefined) body['title'] = patch.title;
   if (patch.projectLabel !== undefined) body['project_label'] = patch.projectLabel;
@@ -195,7 +211,7 @@ export function updateChat(
   return apiPost(`/api/chat/sessions/${encodeURIComponent(sessionId)}/update`, body);
 }
 
-export function deleteChat(sessionId: string): Promise<{ deleted: boolean }> {
+export function deleteChat(sessionId: string): Promise<{ deleted: boolean; session_id: string }> {
   return apiPost(`/api/chat/sessions/${encodeURIComponent(sessionId)}/delete`);
 }
 

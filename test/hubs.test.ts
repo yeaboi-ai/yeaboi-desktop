@@ -12,6 +12,7 @@ const NOW = new Date('2026-09-11T12:00:00');
 const summary = (over: Partial<ChatSummary>): ChatSummary => ({
   session_id: 's1',
   title: 'Barber booking',
+  project_name: 'Barber',
   project_label: '',
   tags: [],
   stage: 'review',
@@ -42,8 +43,10 @@ describe('hubRows', () => {
     expect(rows[1]!.detail).toBe('Review');
   });
 
-  it('names an untitled plan and escapes the id in its link', () => {
-    const [row] = hubRows([summary({ session_id: 'a b', title: '' })], NOW);
+  it("names a plan the engine's way until it is renamed, and escapes the id in its link", () => {
+    const [named] = hubRows([summary({ title: '' })], NOW);
+    expect(named!.title).toBe('Barber');
+    const [row] = hubRows([summary({ session_id: 'a b', title: '', project_name: '' })], NOW);
     expect(row!.title).toBe('Untitled plan');
     expect(row!.href).toBe('/planning/a%20b');
   });

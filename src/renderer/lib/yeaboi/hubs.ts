@@ -3,7 +3,7 @@
 // takes its loader and its labels. Pure rows (test/hubs.test.ts); the
 // descriptors name registered routes.
 
-import { deleteChat, listChats, type ChatSummary } from './chat';
+import { deleteChat, listChats, planName, type ChatSummary } from './chat';
 import { relativeDay } from './sessions';
 import { stageLabel } from './chat';
 
@@ -37,7 +37,7 @@ export function hubRows(sessions: readonly ChatSummary[], now: Date, base = '/pl
     .sort((a, b) => stamp(b).localeCompare(stamp(a)))
     .map((session) => ({
       id: session.session_id,
-      title: session.title || 'Untitled plan',
+      title: planName(session),
       detail: [stageLabel(session.stage), session.project_label, ...(session.tags ?? [])]
         .filter(Boolean)
         .join(', '),

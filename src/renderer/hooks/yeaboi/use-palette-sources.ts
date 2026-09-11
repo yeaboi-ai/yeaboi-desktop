@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import { loadCapabilities, type Capabilities } from '@/lib/yeaboi/capabilities';
-import { listChats } from '@/lib/yeaboi/chat';
+import { listChats, planName } from '@/lib/yeaboi/chat';
 import type { PalettePlan } from '@/lib/yeaboi/palette';
 import { loadRecentSessions, type RecentSession } from '@/lib/yeaboi/sessions';
 import { loadSettings, type SettingField } from '@/lib/yeaboi/settings';
@@ -45,8 +45,7 @@ export function usePaletteSources(active: boolean): PaletteSources {
       );
       listChats({ limit: RECENT_LIMIT }).then(
         (rows) =>
-          !stale &&
-          setPlans(rows.map((row) => ({ id: row.session_id, name: row.title || 'Untitled plan' }))),
+          !stale && setPlans(rows.map((row) => ({ id: row.session_id, name: planName(row) }))),
         () => undefined,
       );
     }

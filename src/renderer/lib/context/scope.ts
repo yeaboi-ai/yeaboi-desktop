@@ -299,3 +299,46 @@ export function runBody(scope: ContextScope | null, available: boolean): Record<
   if (project) body['project_label'] = project;
   return body;
 }
+
+/** A scope as the sidecar returns it on a session, made safe: an unknown or
+ *  malformed value falls back to the mode's default. */
+export function scopeFromWire(raw: unknown, options: ContextOptions | null): ContextScope {
+  const fallback = defaultScope(options);
+  if (!raw || typeof raw !== 'object') return fallback;
+  const source = raw as Record<string, unknown>;
+  const sources =
+    source['sources'] === null
+      ? null
+      : Array.isArray(source['sources'])
+        ? source['sources'].filter((s): s is string => typeof s === 'string')
+        : fallback.sources;
+  const window = source['window'] as Partial<ScopeWindow> | undefined;
+  const kinds: WindowKind[] = ['all', 'sprints', 'month', 'quarter', 'year', 'custom'];
+  const kind = window && kinds.includes(window.kind as WindowKind) ? window!.kind! : 'all';
+  const tags = Array.isArray(source['tags'])
+    ? source['tags'].filter((t): t is string => typeof t === 'string')
+    : [];
+  const projects = Array.isArray(source['projects'])
+    ? source['projects'].filter((p): p is string => typeof p === 'string')
+    : [];
+  const limits =
+    source['limits'] && typeof source['limits'] === 'object'
+      ? Object.fromEntries(
+          Object.entries(source['limits'] as Record<string, unknown>).filter(
+            (entry): entry is [string, number] => typeof entry[1] === 'number',
+          ),
+        )
+      : {};
+  return {
+    sources,
+    window: {
+      kind,
+      ...(typeof window?.count === 'number' ? { count: window.count } : {}),
+      ...(typeof window?.start === 'string' ? { start: window.start } : {}),
+      ...(typeof window?.end === 'string' ? { end: window.end } : {}),
+    },
+    projects,
+    tags: [...new Set([...(options?.defaults?.tags ?? []), ...tags])],
+    limits,
+  };
+}

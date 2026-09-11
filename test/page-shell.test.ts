@@ -16,6 +16,7 @@ const read = (rel: string) => readFileSync(join(RENDERER, rel), 'utf8');
 // by app-shell.tsx; the rest keep a wide viewer or workspace layout of their
 // own (the ticket workspace is shared with the side panel and sizes itself).
 const OUTSIDE_THE_FRAME = [
+  'pages/planning/room-page.tsx',
   'pages/session/session-page.tsx',
   'pages/session/session-completed-page.tsx',
   'pages/recordings/',

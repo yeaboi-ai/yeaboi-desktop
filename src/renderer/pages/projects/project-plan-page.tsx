@@ -14,7 +14,7 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { GeneratePlanDialog } from '@/components/projects/generate-plan-dialog';
-import { PlanPanel } from '@/components/projects/plan-panel';
+import { PlanPanel } from '@/components/planning/plan-panel';
 import { Button } from '@/components/ui/button';
 
 interface IterationRow {

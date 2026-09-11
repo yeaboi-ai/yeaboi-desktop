@@ -14,7 +14,7 @@ import {
 import registry from '../src/renderer/lib/yeaboi/routes.json';
 
 /** The terminal's verbs a window answers with the ordinary thing instead. */
-const TERMINAL_ONLY = ['image', 'voice', 'paste', 'quit'];
+const TERMINAL_ONLY = ['image', 'voice', 'paste', 'quit', 'duck'];
 
 const ANSWERED = [
   'help',
@@ -28,7 +28,6 @@ const ANSWERED = [
   'edit',
   'small',
   'large',
-  'duck',
 ];
 
 describe('the registry', () => {
@@ -60,7 +59,7 @@ describe('parseCommand', () => {
     expect(parseCommand('/help')).toEqual({ kind: 'shortcuts' });
     expect(parseCommand('/export')).toEqual({ kind: 'export' });
     expect(parseCommand('/summary')).toEqual({ kind: 'summary' });
-    expect(parseCommand('/duck')).toEqual({ kind: 'duck' });
+    expect(parseCommand('/duck')).toEqual({ kind: 'unknown', name: 'duck' });
     expect(parseCommand('/questions')).toEqual({ kind: 'questions' });
     expect(parseCommand('/form')).toEqual({ kind: 'questions' });
     expect(parseCommand('/small')).toEqual({ kind: 'size', mode: 'small_project' });

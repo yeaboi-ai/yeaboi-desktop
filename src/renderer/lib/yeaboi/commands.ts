@@ -6,9 +6,10 @@
 // `/export` means is the page's business, and a registry that reached into a
 // page would need the page to exist to be testable.
 //
-// Four terminal verbs are deliberately absent — /image, /paste, /voice and
-// /quit. Each exists because a terminal cannot do the ordinary thing; a window
-// can, so the ordinary thing is what this surface offers instead.
+// Five terminal verbs are deliberately absent — /image, /paste, /voice, /quit
+// and /duck. Each exists because a terminal cannot do the ordinary thing; a
+// window can (the duck is muted from its settings page), so the ordinary thing
+// is what this surface offers instead.
 
 import registry from './routes.json';
 
@@ -27,7 +28,6 @@ export type CommandIntent =
   | { kind: 'export' }
   | { kind: 'questions' }
   | { kind: 'summary' }
-  | { kind: 'duck' }
   | { kind: 'size'; mode: 'small_project' | 'smart' }
   // A literal the intake node consumes itself — "skip", "defaults",
   // "defaults all", "edit 6". These are turns, not local actions.
@@ -54,8 +54,6 @@ export function parseCommand(line: string): CommandIntent | null {
       return { kind: 'export' };
     case 'summary':
       return { kind: 'summary' };
-    case 'duck':
-      return { kind: 'duck' };
     case 'questions':
     case 'form':
       return { kind: 'questions' };

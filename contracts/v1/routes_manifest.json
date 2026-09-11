@@ -462,11 +462,6 @@
       "name": "large",
       "tui": "large",
       "help": "switch to a Large plan"
-    },
-    {
-      "name": "duck",
-      "tui": "duck",
-      "help": "mute or unmute the duck's speech bubble"
     }
   ]
 }

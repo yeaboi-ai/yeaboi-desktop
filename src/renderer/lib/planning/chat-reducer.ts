@@ -148,7 +148,7 @@ export function reduceLine(state: RoomState, line: ChatLine): RoomState {
     case 'section':
       return { ...state, planDirty: true };
     case 'action':
-      return { ...state, action: { name: line.name, tracker: line.tracker ?? '' } };
+      return { ...state, action: { name: line.name, tracker: line.detail ?? '' } };
     case 'done':
       return { ...state, stage: line.stage, needsAdvance: needsAdvance(line.stage) };
     case 'cancelled':

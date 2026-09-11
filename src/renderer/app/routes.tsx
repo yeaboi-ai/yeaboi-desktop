@@ -25,6 +25,8 @@ import HomePage from '@/pages/home/home-page';
 import ModeHubPage from '@/pages/hub/mode-hub-page';
 import NewPlanPage from '@/pages/planning/new-plan-page';
 import PlanningFromRoadmapPage from '@/pages/planning/from-roadmap-page';
+import PlanCompletedPage from '@/pages/planning/plan-completed-page';
+import PlanRoomPage from '@/pages/planning/room-page';
 import NewsPage from '@/pages/news/news-page';
 import MusicPage from '@/pages/yeaboi/music-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
@@ -189,6 +191,8 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
 // affordances (`action:*`, `dialog:*`) the palette owns.
 const NON_PAGE = (path: string) => !path.startsWith('/');
 const PLANNING_SERVED = new Set([
+  '/planning/:id',
+  '/planning/:id/completed',
   '/sessions',
   '/sessions/new/from-roadmap',
   '/sessions/:id',
@@ -263,6 +267,8 @@ export const router = createHashRouter([
       { path: '/agents/projects', element: <Navigate to="/sessions" replace /> },
       { path: '/projects/*', element: <LegacyProjectRedirect /> },
       { path: '/projects', element: <Navigate to="/sessions" replace /> },
+      { path: '/planning/:id', element: <PlanRoomPage /> },
+      { path: '/planning/:id/completed', element: <PlanCompletedPage /> },
       { path: '/sessions', element: <ProjectsPage /> },
       { path: '/sessions/new/from-roadmap', element: <FromRoadmapPage /> },
       { path: '/sessions/:id', element: <ProjectRoute /> },

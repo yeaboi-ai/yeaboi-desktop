@@ -201,7 +201,7 @@ describe('reduceLine', () => {
   });
 
   it('hands an action to the room, once', () => {
-    const state = reduceLine(emptyRoom(), { type: 'action', name: 'sync', tracker: 'jira' });
+    const state = reduceLine(emptyRoom(), { type: 'action', name: 'sync', detail: 'jira' });
     expect(state.action).toEqual({ name: 'sync', tracker: 'jira' });
     expect(actionTaken(state).action).toBeNull();
   });

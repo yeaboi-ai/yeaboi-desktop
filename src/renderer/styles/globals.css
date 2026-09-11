@@ -207,6 +207,8 @@ html {
   /* The page frame (components/page-shell.tsx): one column width and one
      bottom clearance for the fixed Niko bar, on every page. */
   --page-w: 64rem;
+  /* The plan room's reading column. */
+  --room-w: 44rem;
   --page-pb: 7rem;
   /* What is left of the viewport under the title bar and the provider-health
      banner (which sets --banner-h on <html>). */
