@@ -620,12 +620,14 @@ body > [class^='_'] {
  * fill and a 1px line, which next to the rest reads as a different surface.
  * These are the same values, written in the board's names. */
 .board-frame .${HOST} [class*='dockApp'] {
-  /* Beside the way out, at the left end of the bottom row. The board parks it
-     on the right in its own JS and lets it be dragged along the wall; here the
-     row has a fixed shape — out of the table, then the table's controls, then
-     who is at it — so the placement is pinned and the drag goes with it. */
-  left: 58px;
-  bottom: 16px;
+  /* At the right end of the bottom row, inside the presence chips. The board
+     parks it in its own JS and lets it be dragged along the wall; here the row
+     has a fixed shape, so the placement is pinned and the drag goes with it.
+     Anchored by its right edge, so the player unfolding to the left of the
+     notch grows into the room rather than pushing the notch off the edge. */
+  left: auto;
+  right: 16px;
+  bottom: 60px;
   transform: none;
   translate: none;
   /* Wider than the space between keys, or the player reads as the last key on
@@ -633,11 +635,11 @@ body > [class^='_'] {
   gap: 14px;
 }
 
-/* The capsule is worn by each cluster, not by the carrier holding them: the
-   window's own player stands apart from the board's controls, and one ground
-   under both is the row they were in before. */
-.board-frame .${HOST} [class*='dockPanel'],
-.board-frame .${HOST} [class*='dockAside'] {
+/* The capsule is worn by the notch, not by the carrier holding it: the window's
+   own player stands apart from the board's controls, and one ground under both
+   is the row they were in before. The player brings its own material — a
+   capsule around it would be a second ground drawn on the first. */
+.board-frame .${HOST} [class*='dockPanel'] {
   border: 0;
   border-radius: calc(var(--app-radius) * 2);
   background: color-mix(in srgb, var(--app-card) 85%, transparent);
@@ -808,14 +810,16 @@ body > [class^='_'] {
  * A bar of bare keys, not a strip of boxes: no ground under an icon until the
  * cursor is on it, one icon size throughout, fully round ends, and the bar the
  * same height as the door beside it so the two share a baseline. */
-.board-frame .${HOST} [class*='dockPanel'],
-.board-frame .${HOST} [class*='dockAside'] {
+.board-frame .${HOST} [class*='dockPanel'] {
   border-radius: 999px;
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockAside'] {
-  padding: 2px;
+  padding: 0;
   gap: 2px;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .board-frame .${HOST} [class*='dockApp'] [class*='dockRow'] {
