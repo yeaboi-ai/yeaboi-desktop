@@ -22,10 +22,13 @@ function Chip({ choice, onPick }: { choice: Choice; onPick: (id: string) => void
     <button
       type="button"
       onClick={() => onPick(choice.id)}
-      className={`rounded-full border px-3 py-1 font-body text-[12px] transition-colors ${
+      // Each one carries its own ground; nothing carries them. A panel behind a
+      // row of buttons is a second object saying they belong together, which
+      // the row already says.
+      className={`rounded-full border px-3 py-1 font-body text-[12px] backdrop-blur-sm transition-colors ${
         choice.muted
-          ? 'border-border/40 text-muted-foreground hover:text-foreground'
-          : 'border-border/60 text-foreground hover:border-primary/50 hover:bg-primary/10'
+          ? 'border-border/40 bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground'
+          : 'border-border/60 bg-popover text-foreground hover:border-primary/50 hover:bg-primary/10'
       }`}
     >
       {choice.label}

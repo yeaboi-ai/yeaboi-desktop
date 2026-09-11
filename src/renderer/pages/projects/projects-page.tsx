@@ -515,7 +515,9 @@ export default function ProjectsPage() {
 
       <section
         aria-label="Projects"
-        className="mt-10 rounded-lg border border-border bg-card px-8 py-5 animate-slide-up stagger-2"
+        // No sheet under it: the ledger's own rules already separate the rows,
+        // and a card behind a list of two lines is a box drawn round a box.
+        className="mt-10 animate-slide-up stagger-2 py-5"
         style={sheetStyle}
       >
         {!loading && rows.length > 0 && (
