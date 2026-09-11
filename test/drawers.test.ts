@@ -1,10 +1,10 @@
 // The room's drawers and keys: six drawers in order, plain names, unique
-// keys, a key that opens only a drawer that exists yet, Escape closing.
+// keys, a key opening its drawer, Escape closing.
 
 import { describe, expect, it } from 'vitest';
 import {
   DRAWERS,
-  NOT_READY_LINE,
+  SOCKET_DRAWERS,
   roomKey,
   toggleDrawer,
 } from '../src/renderer/lib/planning/drawers';
@@ -23,7 +23,10 @@ describe('DRAWERS', () => {
       expect(drawer.label).not.toMatch(/[·→]/);
       expect(drawer.label).not.toMatch(/\b[A-Z]{2,}\b/);
     }
-    expect(NOT_READY_LINE).toMatch(/\.$/);
+  });
+
+  it('reads the vendored socket only from the drawers that show a call', () => {
+    expect([...SOCKET_DRAWERS].sort()).toEqual(['recap', 'video']);
   });
 
   it('claims each hotkey once', () => {
@@ -33,9 +36,11 @@ describe('DRAWERS', () => {
 });
 
 describe('roomKey', () => {
-  it('opens a ready drawer by its key, never one that is not ready', () => {
+  it('opens each drawer by its key', () => {
     expect(roomKey('i', false)).toEqual({ type: 'open', kind: 'blueprint' });
-    expect(roomKey('v', false)).toBeNull();
+    expect(roomKey('v', false)).toEqual({ type: 'open', kind: 'video' });
+    expect(roomKey('r', false)).toEqual({ type: 'open', kind: 'recap' });
+    expect(roomKey('s', false)).toEqual({ type: 'open', kind: 'settings' });
   });
 
   it('closes on Escape even while typing, and ignores letters while typing', () => {

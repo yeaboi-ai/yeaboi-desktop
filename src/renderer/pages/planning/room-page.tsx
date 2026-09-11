@@ -2,8 +2,9 @@
 
 // The plan room: the conversation as a centred reading column, the stage
 // strip over it, one composer under it, and a strip of drawers on the right
-// edge — Blueprint, Context, Integrations open here; Video, Recap and
-// Settings arrive with the next step. Bare: no rail, no frame.
+// edge. The call, its recap and the facilitator's voice settings hang off a
+// vendored session row made the first time one of them is opened. Bare: no
+// rail, no frame.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -19,12 +20,17 @@ import { Transcript } from '@/components/planning/transcript';
 import { BlueprintDrawer } from '@/components/planning/drawers/blueprint-drawer';
 import { ContextDrawer } from '@/components/planning/drawers/context-drawer';
 import { IntegrationsDrawer } from '@/components/planning/drawers/integrations-drawer';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { RecapDrawer } from '@/components/planning/drawers/recap-drawer';
+import { SettingsDrawer } from '@/components/planning/drawers/settings-drawer';
+import { VideoDrawer } from '@/components/planning/drawers/video-drawer';
+import { CallLayer } from '@/components/session/call-layer';
 import { useAudience } from '@/components/providers/audience-provider';
 import { usePlanChat } from '@/hooks/planning/use-plan-chat';
 import { useRoomLink } from '@/hooks/planning/use-room-link';
-import { NOT_READY_LINE, roomKey, toggleDrawer, type DrawerKind } from '@/lib/planning/drawers';
+import { useRoomVoice } from '@/hooks/planning/use-room-voice';
+import { SOCKET_DRAWERS, roomKey, toggleDrawer, type DrawerKind } from '@/lib/planning/drawers';
 import { stageStep } from '@/lib/planning/stages';
+import { personaName } from '@/lib/planning/voice';
 import { apiGet } from '@/lib/yeaboi/api';
 import { allCards, loadCapabilities, type ModeCard } from '@/lib/yeaboi/capabilities';
 import { stageLabel } from '@/lib/yeaboi/chat';
@@ -86,6 +92,7 @@ function RoomBody({ sessionId }: { sessionId: string }) {
   const { room, view, plan } = chat;
   const link = useRoomLink(sessionId, view?.title ?? '', view?.opening ?? '');
   const [drawer, setDrawer] = useState<DrawerKind | null>(null);
+  const voice = useRoomVoice(link, drawer !== null && SOCKET_DRAWERS.has(drawer));
   const [pane, setPane] = useState<'plan' | 'history' | 'export'>('plan');
   const [tipsOpen, setTipsOpen] = useState(false);
   const [tips, setTips] = useState<Tip[]>([]);
@@ -180,22 +187,27 @@ function RoomBody({ sessionId }: { sessionId: string }) {
           <EditableTitle title={view?.title ?? ''} onSave={(next) => void chat.rename(next)} />
           <span className="text-[12px] text-muted-foreground">{stageLabel(room.stage)}</span>
           <div className="flex-1" />
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    disabled
-                    className="rounded-lg border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground/50"
-                  />
-                }
-              >
-                Call
-              </TooltipTrigger>
-              <TooltipContent>Video. {NOT_READY_LINE}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {voice.call.inCall ? (
+            <button
+              type="button"
+              onClick={voice.endCall}
+              className="rounded-lg border border-border/60 px-2.5 py-1 text-[11px] text-foreground transition-colors hover:bg-secondary"
+            >
+              Leave{voice.call.timer ? ` ${voice.call.timer}` : ''}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setDrawer('video');
+                void voice.startCall();
+              }}
+              disabled={voice.joining}
+              className="rounded-lg border border-border/60 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50"
+            >
+              {voice.joining ? 'Joining…' : 'Call'}
+            </button>
+          )}
           <button
             type="button"
             disabled={!(room.stage === 'review' || room.stage === 'chat')}
@@ -254,7 +266,44 @@ function RoomBody({ sessionId }: { sessionId: string }) {
           <ContextDrawer sessionId={sessionId} view={view} onSaved={chat.patchView} />
         )}
         {drawer === 'integrations' && <IntegrationsDrawer />}
+        {drawer === 'video' && <VideoDrawer link={link} voice={voice} />}
+        {drawer === 'recap' && (
+          <RecapDrawer
+            bubbles={room.bubbles}
+            planName={view?.title ?? ''}
+            createdAt={view?.created_at ?? ''}
+            voice={voice}
+          />
+        )}
+        {drawer === 'settings' && <SettingsDrawer link={link} voice={voice} />}
       </RoomDrawer>
+
+      <CallLayer
+        inCall={voice.call.inCall}
+        lkToken={voice.call.token}
+        lkUrl={voice.call.url}
+        agentStatus={voice.call.agentStatus}
+        agentInCall={voice.call.agentInCall}
+        onLeaveCall={voice.endCall}
+        timerStr={voice.call.timer}
+        teamMembers={voice.teamMembers}
+        micMuted={voice.call.micMuted}
+        onMicMuteChange={voice.call.setMicMuted}
+        captionsOn={voice.call.captionsOn}
+        onToggleCaptions={voice.call.toggleCaptions}
+        onDispatchAgent={() => void voice.call.dispatchAgent()}
+        onDetachAgent={() => void voice.call.detachAgent()}
+        personaName={personaName(
+          (link.session?.ai_config as Record<string, unknown> | undefined)?.['persona'] as string,
+        )}
+        personaSlug={
+          ((link.session?.ai_config as Record<string, unknown> | undefined)?.[
+            'persona'
+          ] as string) ?? 'default'
+        }
+        isRecording={voice.recordings.isRecording}
+        onAgentTranscript={voice.setAgentEntries}
+      />
 
       <DrawerStrip open={drawer} onToggle={toggle} onTips={() => setTipsOpen(true)} />
 

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Check, ClipboardList, Copy, FileText, MessageSquareText, Pencil, X } from 'lucide-react';
 import { CallLayer } from '@/components/session/call-layer';
-import { useCallState } from './use-call-state';
+import { useCallState } from '@/hooks/use-call-state';
 import { ChatPanel } from '@/components/session/chat-panel';
 import { ParticipantList } from '@/components/session/participant-list';
 import { ReviewScreen } from '@/components/session/review-screen';

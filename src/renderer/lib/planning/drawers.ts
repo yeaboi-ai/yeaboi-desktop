@@ -9,20 +9,19 @@ export interface DrawerSpec {
   label: string;
   /** The bare key that opens it, when there is one. */
   hotkey?: string;
-  /** False while the drawer is a placeholder for a later step. */
-  ready: boolean;
 }
 
 export const DRAWERS: readonly DrawerSpec[] = [
-  { kind: 'blueprint', label: 'Blueprint', hotkey: 'i', ready: true },
-  { kind: 'context', label: 'Context', ready: true },
-  { kind: 'integrations', label: 'Integrations', ready: true },
-  { kind: 'video', label: 'Video', hotkey: 'v', ready: false },
-  { kind: 'recap', label: 'Recap', hotkey: 'r', ready: false },
-  { kind: 'settings', label: 'Settings', hotkey: 's', ready: false },
+  { kind: 'blueprint', label: 'Blueprint', hotkey: 'i' },
+  { kind: 'context', label: 'Context' },
+  { kind: 'integrations', label: 'Integrations' },
+  { kind: 'video', label: 'Video', hotkey: 'v' },
+  { kind: 'recap', label: 'Recap', hotkey: 'r' },
+  { kind: 'settings', label: 'Settings', hotkey: 's' },
 ];
 
-export const NOT_READY_LINE = 'Arrives with the next step.';
+/** The drawers that read the vendored session's socket while open. */
+export const SOCKET_DRAWERS: ReadonlySet<DrawerKind> = new Set(['video', 'recap']);
 
 export type RoomKeyAction =
   { type: 'open'; kind: DrawerKind } | { type: 'close' } | { type: 'shortcuts' } | null;
@@ -32,7 +31,7 @@ export function roomKey(key: string, typing: boolean): RoomKeyAction {
   if (key === 'Escape') return { type: 'close' };
   if (typing) return null;
   if (key === '?') return { type: 'shortcuts' };
-  const drawer = DRAWERS.find((spec) => spec.hotkey === key && spec.ready);
+  const drawer = DRAWERS.find((spec) => spec.hotkey === key);
   return drawer ? { type: 'open', kind: drawer.kind } : null;
 }
 

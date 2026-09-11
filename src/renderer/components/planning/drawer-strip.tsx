@@ -7,7 +7,7 @@ import { FileText, Layers, Plug, Video, ClipboardList, SlidersHorizontal } from 
 import { PersonaDuckMark } from '@/components/brand/duck';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { currentPersona } from '@/lib/home/wardrobe';
-import { DRAWERS, NOT_READY_LINE, type DrawerKind } from '@/lib/planning/drawers';
+import { DRAWERS, type DrawerKind } from '@/lib/planning/drawers';
 import { cn } from '@/lib/utils';
 
 const ICONS: Record<DrawerKind, typeof FileText> = {
@@ -45,14 +45,12 @@ export function DrawerStrip({
                     type="button"
                     aria-label={spec.label}
                     aria-pressed={lit}
-                    disabled={!spec.ready}
                     onClick={() => onToggle(spec.kind)}
                     className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-md transition-colors',
                       lit
                         ? 'bg-primary/15 text-primary'
                         : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-                      !spec.ready && 'text-muted-foreground/40 hover:bg-transparent',
                     )}
                   />
                 }
@@ -61,8 +59,7 @@ export function DrawerStrip({
               </TooltipTrigger>
               <TooltipContent side="left">
                 {spec.label}
-                {spec.hotkey && spec.ready ? `, ${spec.hotkey}` : ''}
-                {!spec.ready ? `. ${NOT_READY_LINE}` : ''}
+                {spec.hotkey ? `, ${spec.hotkey}` : ''}
               </TooltipContent>
             </Tooltip>
           );
