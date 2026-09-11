@@ -26,6 +26,7 @@ import {
   reduceTurn,
   sendTurn,
 } from '@/lib/yeaboi/niko';
+import type { Bubble } from '@/lib/yeaboi/planning-interview';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -35,12 +36,19 @@ export interface NikoMessage {
   content: string;
   toolCalls?: Array<{ name: string; input: Record<string, unknown> }>;
   toolResults?: Array<{ name: string; success: boolean; error?: string }>;
+  /** What a scripted turn puts under its words. Only ever set by a turn a page
+   *  pushed itself — a streamed answer is prose, and the model has no way to
+   *  ask for one of these. */
+  bubble?: Bubble;
 }
 
 /** A chip the empty panel offers. Named for the components that render it. */
 export type NikoMagicPrompt = NikoSuggestion;
 
 const STORAGE_KEY = 'niko_conversation_id';
+
+/** How a locally pushed turn is told apart from a streamed one. */
+const LOCAL_PREFIX = 'local:';
 
 /** Where the panel thinks the user is. The backend maps it to a capability. */
 function routeOf(pathname: string | null): string {
@@ -64,6 +72,10 @@ function turnMessage(id: string, turn: NikoTurnState): NikoMessage {
 
 export function useNiko() {
   const [isOpen, setIsOpen] = useState(false);
+  /** Set by whichever page is running a script of its own. */
+  const answerRef = useRef<((answer: string) => void) | null>(null);
+  /** The same, for what is typed in the composer while a script is asking. */
+  const typedRef = useRef<((text: string) => boolean) | null>(null);
   const [messages, setMessages] = useState<NikoMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(() => {
     try {
@@ -188,6 +200,60 @@ export function useNiko() {
     [isStreaming, conversationId, route, session?.user?.name],
   );
 
+  /**
+   * Put a turn in the bar without a round trip.
+   *
+   * For a page running a script of its own — the planning interview asks three
+   * questions whose answers are a form, and routing them through the model
+   * would be a worse form of that form. Returns the id so the caller can
+   * replace the turn as its own state moves on.
+   *
+   * These turns are the panel's, not the conversation's: they are never sent
+   * to the backend and never come back when the thread is replayed.
+   */
+  const pushLocal = useCallback((turn: Omit<NikoMessage, 'id'>) => {
+    const id = `${LOCAL_PREFIX}${crypto.randomUUID()}`;
+    setMessages((prev) => [...prev, { ...turn, id }]);
+    return id;
+  }, []);
+
+  /**
+   * Who answers a scripted turn's bubble.
+   *
+   * The bar draws every turn, but only the page that pushed one knows what its
+   * answers mean — so the page registers a handler while it is mounted and the
+   * bar calls whatever is registered. A ref, not state: a page re-rendering
+   * must not re-render the bar.
+   */
+  const setBubbleAnswer = useCallback((handle: ((answer: string) => void) | null) => {
+    answerRef.current = handle;
+  }, []);
+
+  const onBubbleAnswer = useCallback((answer: string) => answerRef.current?.(answer), []);
+
+  /** A page takes the composer's words while it is asking a question of its
+   *  own. Registering one does not take the bar over: the handler says whether
+   *  it wanted this line, and an unwanted one goes to the model as usual. */
+  const setTypedAnswer = useCallback((handle: ((text: string) => boolean) | null) => {
+    typedRef.current = handle;
+  }, []);
+
+  const onTypedAnswer = useCallback((text: string) => typedRef.current?.(text) ?? false, []);
+
+  /** Replace a turn this panel pushed, or drop it when `turn` is null. */
+  const replaceLocal = useCallback((id: string, turn: Omit<NikoMessage, 'id'> | null) => {
+    setMessages((prev) =>
+      turn === null
+        ? prev.filter((m) => m.id !== id)
+        : prev.map((m) => (m.id === id ? { ...turn, id } : m)),
+    );
+  }, []);
+
+  /** Clear every turn the panel put there itself, leaving the thread alone. */
+  const clearLocal = useCallback(() => {
+    setMessages((prev) => prev.filter((m) => !m.id.startsWith(LOCAL_PREFIX)));
+  }, []);
+
   const togglePanel = useCallback(() => setIsOpen((prev) => !prev), []);
 
   const startNewConversation = useCallback(() => {
@@ -214,6 +280,13 @@ export function useNiko() {
     suggestedRoute,
     clearSuggestedRoute,
     sendMessage,
+    pushLocal,
+    replaceLocal,
+    clearLocal,
+    setBubbleAnswer,
+    onBubbleAnswer,
+    setTypedAnswer,
+    onTypedAnswer,
     togglePanel,
     startNewConversation,
     stopStreaming,

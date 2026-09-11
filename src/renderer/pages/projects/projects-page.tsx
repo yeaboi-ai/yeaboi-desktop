@@ -28,7 +28,7 @@ import {
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
 import { LedgerFlowList, LedgerHead } from '@/components/projects/ledger-head';
-import { ProjectComposer, type ProjectDraft } from '@/components/projects/project-composer';
+import { usePlanningInterview } from '@/hooks/use-planning-interview';
 import { ProjectGuide } from '@/components/projects/project-guide';
 import { RunTrace } from '@/components/projects/run-trace';
 import { SuggestedProjects } from '@/components/projects/suggested-projects';
@@ -299,50 +299,6 @@ export default function ProjectsPage() {
   const router = useRouter();
   const { search } = useLocation();
   const confirm = useConfirm();
-  // Was a Next server action; the desktop talks to FastAPI directly. The
-  // screenshots follow the row one by one; a failed one is said, not fatal.
-  const createProject = useCallback(
-    async (draft: ProjectDraft) => {
-      const resp = await authFetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: draft.description, references: draft.references }),
-      });
-      if (!resp.ok) {
-        // The composer renders this verbatim, so prefer the backend's wording.
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.detail || `Couldn't create the project (${resp.status}).`);
-      }
-      const created = (await resp.json()) as { id: string };
-      logger.info('project created', { id: created.id, references: draft.references.length });
-      const failed: string[] = [];
-      for (const file of draft.files) {
-        const form = new FormData();
-        form.append('file', file);
-        try {
-          const upload = await authFetch(`/api/projects/${created.id}/attachments`, {
-            method: 'POST',
-            body: form,
-          });
-          if (!upload.ok) failed.push(file.name);
-        } catch {
-          failed.push(file.name);
-        }
-      }
-      if (failed.length > 0) {
-        logger.warn('project screenshots not attached', { id: created.id, failed });
-        await confirm({
-          title: REFERENCE_COPY.NOT_ATTACHED_TITLE,
-          message: REFERENCE_COPY.notAttached(failed),
-          variant: 'warning',
-          confirmLabel: 'OK',
-          cancelLabel: 'Close',
-        });
-      }
-      return created;
-    },
-    [authFetch, confirm],
-  );
   // One PATCH per row action; a refusal is said in a dialog and the row keeps its state.
   const patchProject = useCallback(
     async (project: Project, body: Record<string, unknown>, title: string): Promise<boolean> => {
@@ -491,6 +447,24 @@ export default function ProjectsPage() {
     [caps],
   );
 
+  // Niko asks what the page used to ask in a text field, a moment after the
+  // page settles. `rows` is what it offers to carry on from, so it waits for
+  // them rather than opening on a page it has not read.
+  const inProgress = ledgerSections(projects).rows[0];
+  const carryOn = inProgress ? { id: inProgress.id, title: inProgress.name } : undefined;
+  usePlanningInterview({
+    carryOn,
+    ready: gate === 'ok' && !loading,
+    onOpen: (id) =>
+      router.push(id === 'roadmap' ? '/projects/new/from-roadmap' : `/projects/${id}`),
+    onCreated: () => {
+      authFetch('/api/projects')
+        .then((r) => (r.ok ? r.json() : []))
+        .then(setProjects)
+        .catch(() => undefined);
+    },
+  });
+
   if (gate !== 'ok') {
     return <div className="min-h-[var(--page-min-h)] bg-background" aria-busy="true" />;
   }
@@ -500,6 +474,7 @@ export default function ProjectsPage() {
   const empty = !loading && rows.length === 0 && completed.length === 0;
   // After Create the app opens the project; the old view is where the work is.
   const openCreated = (created: { id: string }) => router.push(`/projects/${created.id}`);
+
   const pickExample = (from: HTMLElement, text: string) => {
     const target = field.current;
     if (!target) return;
@@ -543,15 +518,6 @@ export default function ProjectsPage() {
         className="mt-10 rounded-lg border border-border bg-card px-8 py-5 animate-slide-up stagger-2"
         style={sheetStyle}
       >
-        <ProjectComposer
-          value={description}
-          onChange={setDescription}
-          onCreate={createProject}
-          onCreated={openCreated}
-          autoFocus={empty || new URLSearchParams(search).has('new')}
-          fieldRef={field}
-        />
-
         {!loading && rows.length > 0 && (
           <SheetWord tail={projectCount(rows.length)}>{IN_PROGRESS_WORD}</SheetWord>
         )}

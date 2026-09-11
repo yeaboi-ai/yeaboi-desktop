@@ -71,8 +71,11 @@ describe('the rows on the page', () => {
   });
 
   it('send the screenshots after the row, one by one', () => {
-    expect(page).toContain('/attachments`');
-    expect(page).toContain("form.append('file', file)");
+    // Attaching moved off the page with the composer: the interview that
+    // replaced it offers them once the project exists.
+    const interview = read('hooks/use-planning-interview.ts');
+    expect(interview).toContain('/attachments`');
+    expect(interview).toContain("form.append('file', file)");
   });
 });
 

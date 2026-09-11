@@ -128,6 +128,8 @@ export function NikoBar() {
     stopStreaming,
     suggestedRoute,
     clearSuggestedRoute,
+    onBubbleAnswer,
+    onTypedAnswer,
   } = useNikoContext();
 
   const [value, setValue] = useState('');
@@ -417,13 +419,14 @@ export function NikoBar() {
     (text: string) => {
       const question = text.trim();
       if (!question || isStreaming || down) return;
-      void sendMessage(question);
+      // A page asking a question of its own gets first refusal on the answer.
+      if (!onTypedAnswer(question)) void sendMessage(question);
       setAside(false);
       resetComposer();
       setShowChips(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     },
-    [isStreaming, down, sendMessage, resetComposer],
+    [isStreaming, down, sendMessage, resetComposer, onTypedAnswer],
   );
 
   const runSlash = useCallback(
@@ -692,6 +695,7 @@ export function NikoBar() {
                       isStreaming={
                         isStreaming && message.role === 'assistant' && i === messages.length - 1
                       }
+                      onAnswer={onBubbleAnswer}
                     />
                   </div>
                 ))}

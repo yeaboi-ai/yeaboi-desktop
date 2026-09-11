@@ -86,6 +86,28 @@ async def project_attachment_rows(project_id: str, db: AsyncSession) -> list[dic
     ]
 
 
+async def _name_for(description: str, org_id: str, db: AsyncSession) -> str:
+    """A short name read off a description, or the placeholder when there is
+    nothing to read or the model cannot be reached."""
+    if not description.strip():
+        return "Untitled Project"
+    try:
+        ai = await get_ai_client(org_id, db, task="fast")
+        name = await ai.chat(
+            system=(
+                "Generate a short project name (2-4 words, lowercase) from a description. "
+                "Return ONLY the name, nothing else. No quotes, no punctuation. "
+                "Examples: 'todo app', 'recipe platform', 'team dashboard'"
+            ),
+            messages=[{"role": "user", "content": description.strip()}],
+            max_tokens=20,
+        )
+        return name.strip().strip('"').strip("'") or "Untitled Project"
+    except Exception:
+        logger.debug("AI project name generation failed, using default")
+        return "Untitled Project"
+
+
 @router.post("", status_code=201, response_model=ProjectResponse)
 @limiter.limit("60/minute")
 async def create_project(
@@ -96,26 +118,9 @@ async def create_project(
     team: Team = Depends(get_current_team),
     db: AsyncSession = Depends(get_db),
 ) -> Project:
-    # Auto-generate project name from description if not provided
     name = body.name
-    if (not name or not name.strip()) and body.description and body.description.strip():
-        try:
-            ai = await get_ai_client(org.id, db, task="fast")
-            name = await ai.chat(
-                system=(
-                    "Generate a short project name (2-4 words, lowercase) from a description. "
-                    "Return ONLY the name, nothing else. No quotes, no punctuation. "
-                    "Examples: 'todo app', 'recipe platform', 'team dashboard'"
-                ),
-                messages=[{"role": "user", "content": body.description.strip()}],
-                max_tokens=20,
-            )
-            name = name.strip().strip('"').strip("'")
-        except Exception:
-            logger.debug("AI project name generation failed, using default")
-            name = "Untitled Project"
-    elif not name or not name.strip():
-        name = "Untitled Project"
+    if not name or not name.strip():
+        name = await _name_for(body.description or "", org.id, db)
 
     project = Project(
         name=name,
@@ -444,6 +449,36 @@ async def generate_description(
 class RewriteIdeaRequest(BaseModel):
     text: str
     project_id: str | None = None
+
+
+class SuggestNameRequest(BaseModel):
+    description: str
+    """What the team said they are building."""
+    avoid: str | None = None
+    """A name already offered and turned down, so a second ask is a second name."""
+
+
+@router.post("/suggest-name")
+@limiter.limit("20/minute")
+async def suggest_name(
+    request: Request,
+    body: SuggestNameRequest,
+    user: User = Depends(get_current_user),
+    org: Organization = Depends(get_current_org),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Name a project that does not exist yet.
+
+    The same naming `create_project` does on its own, offered before anything is
+    written — so a caller can put the name in front of somebody and let them
+    correct it, rather than creating a row and renaming it afterwards.
+    """
+    if not body.description.strip():
+        raise HTTPException(status_code=422, detail="Description is required")
+    described = body.description.strip()
+    if body.avoid:
+        described = f"{described}\n\n(Not '{body.avoid.strip()}' — give a different name.)"
+    return {"name": await _name_for(described, org.id, db)}
 
 
 @router.post("/rewrite-idea")
