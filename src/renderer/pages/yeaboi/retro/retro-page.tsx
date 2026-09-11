@@ -12,13 +12,15 @@
 // the participant link, which is what `BoardHost` hands out.
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 
 import {
   type BoardSnapshot,
   type RetroBoardState,
-  type RetroActionItem,
+  type OpenAction,
   type RetroReportSummary,
   type RetroRun,
+  editAction,
   openActions,
   loadBoards,
   retroHistory,
@@ -26,6 +28,7 @@ import {
 } from '@/lib/yeaboi/boards';
 import { canPlayBoards } from '@/board/board-api';
 import { Columns3 } from 'lucide-react';
+import { ActionNote } from './action-note';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
@@ -139,29 +142,20 @@ function LivePanel({
   );
 }
 
-const STATUS_WORDS: Record<string, string> = {
-  pending: 'open',
-  in_progress: 'in progress',
-  carried_over: 'carried over',
-};
-
 /** What the last retro left behind. The point of a retro is what it changed,
  *  so this is what a page about retros is read for. */
-
-/** One number per action, so its lean and its colour are the same every time
- *  the page draws. Random would re-deal the wall on every render, which is a
- *  pile of paper that shuffles itself while you read it. */
-function deal(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return Math.abs(hash);
-}
-
-/** A pad's worth. Desaturated rather than highlighter — they sit on a near
- *  black screen, and full-strength paper colours glow on it. */
-const PAPER = ['#e0cd8c', '#b7cca6', '#a8c2d6', '#d9b2b6'];
-
-function OpenActions({ rows }: { rows: RetroActionItem[] }) {
+function OpenActions({
+  rows,
+  busy,
+  onEdit,
+  onClose,
+}: {
+  rows: OpenAction[];
+  /** The action a correction is in flight for, by id. */
+  busy: string;
+  onEdit(row: OpenAction, text: string): void;
+  onClose(row: OpenAction, status: string): void;
+}) {
   return (
     // No frame, and hard left. Paper on a wall is the object; a box drawn
     // around it is a second object saying the same thing more quietly, and
@@ -186,25 +180,19 @@ function OpenActions({ rows }: { rows: RetroActionItem[] }) {
         // Paper on a wall, not rows in a table. They are what the last retro
         // asked of you and they are meant to be in the way — a list of two
         // lines between rules reads as a footnote to the panel it is in.
-        <ul className="mt-4 flex flex-wrap content-start gap-3">
+        //
+        // `items-start`, or the tallest note on a row sets the height of every
+        // note beside it: a pad's sheets are the same size, what is written on
+        // them is not.
+        <ul className="mt-4 flex flex-wrap items-start content-start gap-3">
           {rows.map((row) => (
-            <li
+            <ActionNote
               key={row.id}
-              style={{
-                // Pinned by hand, so no two sit the same way — and the same
-                // way every render, or the wall reshuffles while you read it.
-                rotate: `${((deal(row.id) % 13) - 6) / 2}deg`,
-                translate: `${(deal(`${row.id}x`) % 7) - 3}px ${(deal(`${row.id}y`) % 9) - 4}px`,
-                backgroundColor: PAPER[deal(row.id) % PAPER.length],
-              }}
-              className="flex min-h-[104px] w-[148px] flex-col rounded-sm p-3 text-[#1c1c1c] shadow-lg transition-[rotate,translate] duration-200 ease-out hover:translate-y-[-2px] hover:rotate-0"
-            >
-              <span className="font-body text-[12.5px] leading-snug">{row.text}</span>
-              <span className="mt-auto pt-2 font-code text-[10px] text-black/55">
-                {row.author}
-                {row.status && STATUS_WORDS[row.status] ? ` · ${STATUS_WORDS[row.status]}` : ''}
-              </span>
-            </li>
+              row={row}
+              busy={busy === row.id}
+              onEdit={onEdit}
+              onClose={onClose}
+            />
           ))}
         </ul>
       )}
@@ -227,11 +215,44 @@ function RetroBody() {
   // Which retro the board opens on. Cleared when the board is left, so the
   // next time it is opened it shows today's.
   const [showRun, setShowRun] = useState<number | undefined>(undefined);
-  const [error, setError] = useState('');
+  // Titled, because more than one thing on this page can fail and "could not
+  // start the board" over a refused correction is a lie.
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [busy, setBusy] = useState('');
   const [mask, setMask] = useState<[string, string][]>([]);
   const [anonNote, setAnonNote] = useState('');
+  // The action a correction is in flight for. One at a time is enough: each
+  // one re-reads the whole report, and two in flight would race that read.
+  const [correcting, setCorrecting] = useState('');
+  const { data: auth } = useSession();
   const actions = openActions(report);
+
+  /** Apply one correction to an open action and re-read the report.
+   *
+   *  Not an optimistic edit: the engine can refuse — a cap, a conflict with a
+   *  correction somebody made on the shared document — and a note that moved
+   *  and then moved back is worse than one that waits. */
+  async function correct(row: OpenAction, change: { text: string } | { status: string }) {
+    setCorrecting(row.id);
+    setError(null);
+    try {
+      const envelope = await editAction(
+        sessionId,
+        row,
+        change,
+        auth?.user?.name ?? '',
+      );
+      const result = envelope.data as { refused?: { reason: string }[] };
+      if (result.refused?.length) {
+        setError({ title: 'The correction was refused', message: result.refused[0]!.reason });
+      }
+      const next = await retroHistory();
+      setReport(next.data?.latest_report ?? null);
+    } catch (e) {
+      setError({ title: 'Could not change the action', message: (e as Error).message });
+    }
+    setCorrecting('');
+  }
 
   useEffect(() => {
     retroHistory().then(
@@ -240,7 +261,7 @@ function RetroBody() {
         setSessionId(envelope.data?.session_id ?? '');
         setReport(envelope.data?.latest_report ?? null);
       },
-      (e: Error) => setError(e.message),
+      (e: Error) => setError({ title: 'Could not read the retro history', message: e.message }),
     );
     loadBoards().then(
       (body) => setLiveId(body.boards.find((one) => one.kind === 'retro')?.board_id ?? ''),
@@ -250,7 +271,7 @@ function RetroBody() {
 
   async function start() {
     setBusy('start');
-    setError('');
+    setError(null);
     try {
       const started = await startRetroBoard();
       setLiveId(started.board_id);
@@ -258,7 +279,7 @@ function RetroBody() {
       // one person who should not have to find the way in.
       if (canPlayBoards()) setStaged(true);
     } catch (e) {
-      setError((e as Error).message);
+      setError({ title: 'Could not start the board', message: (e as Error).message });
     }
     setBusy('');
   }
@@ -301,7 +322,7 @@ function RetroBody() {
           )}
         </header>
 
-        {error && <Notice title="Could not start the board" items={[error]} />}
+        {error && <Notice title={error.title} items={[error.message]} />}
 
         {/* One card either way. A live board is the same decision one step
             on, not a different screen: the panel that offered it becomes the
@@ -312,7 +333,12 @@ function RetroBody() {
               board ? 'grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' : ''
             }
           >
-            <OpenActions rows={actions} />
+            <OpenActions
+              rows={actions}
+              busy={correcting}
+              onEdit={(row, text) => void correct(row, { text })}
+              onClose={(row, status) => void correct(row, { status })}
+            />
             {board ? (
               <LivePanel
                 board={board}

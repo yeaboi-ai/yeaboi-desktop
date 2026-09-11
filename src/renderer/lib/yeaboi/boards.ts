@@ -132,6 +132,18 @@ export interface RetroActionItem {
   status?: string;
   created_at?: string;
   origin?: string;
+  /** Which column of the board it was written in. Only `action_items` is an
+   *  action; the rest of a retro's cards are what was said about the sprint. */
+  grid?: string;
+}
+
+/** An open action with the path that addresses it in the stored retro, so a
+ *  correction can be applied to the row a reader is looking at. */
+export interface OpenAction extends RetroActionItem {
+  /** `cards[id=…]` or `carried_action_items[id=…]` — a field name away from an
+   *  editable path. The two lists hold the same shape and are corrected the
+   *  same way, but they are different lists and the path has to say which. */
+  anchor: string;
 }
 
 /** The last retro this session recorded: what it agreed, and what it inherited. */
@@ -148,17 +160,51 @@ const OPEN_STATUSES = ['pending', 'in_progress', 'carried_over'];
  *
  *  A retro's own actions and the ones it carried in are the same list to a
  *  reader — what is outstanding — so they arrive as one, deduped by id. */
-export function openActions(report: RetroReportSummary | null | undefined): RetroActionItem[] {
+export function openActions(report: RetroReportSummary | null | undefined): OpenAction[] {
   if (!report) return [];
+  const lists: [string, RetroActionItem[]][] = [
+    ['cards', report.cards ?? []],
+    ['carried_action_items', report.carried_action_items ?? []],
+  ];
   const seen = new Set<string>();
-  const rows: RetroActionItem[] = [];
-  for (const card of [...(report.cards ?? []), ...(report.carried_action_items ?? [])]) {
-    if (card.id && seen.has(card.id)) continue;
-    if (card.status && !OPEN_STATUSES.includes(card.status)) continue;
-    if (card.id) seen.add(card.id);
-    rows.push(card);
+  const rows: OpenAction[] = [];
+  for (const [list, cards] of lists) {
+    for (const card of cards) {
+      // `cards` is the whole board, not the action column: a retro that went
+      // well has a lot to say and none of it is something anyone has to do.
+      if (list === 'cards' && card.grid !== 'action_items') continue;
+      if (card.id && seen.has(card.id)) continue;
+      if (card.status && !OPEN_STATUSES.includes(card.status)) continue;
+      if (card.id) seen.add(card.id);
+      rows.push({ ...card, anchor: `${list}[id=${card.id}]` });
+    }
   }
   return rows;
+}
+
+/** The statuses that take an action off the open list, in the order a reader
+ *  would reach for them. */
+export const ACTION_CLOSED = [
+  { status: 'done', label: 'Done' },
+  { status: 'not_relevant', label: 'Not relevant' },
+] as const;
+
+/** Correct one open action: its text, or the status that closes it. `base` is
+ *  the value being replaced, so a change somebody else already made comes back
+ *  as a conflict rather than being silently overwritten. */
+export function editAction(
+  sessionId: string,
+  action: OpenAction,
+  change: { text: string } | { status: string },
+  author: string,
+) {
+  const [path, value, base] =
+    'text' in change
+      ? [`${action.anchor}.text`, change.text, action.text]
+      : [`${action.anchor}.status`, change.status, action.status ?? ''];
+  return applyArtifactEdits({ kind: 'retro', session_id: sessionId }, [
+    { op: 'set', path, value, base },
+  ], author);
 }
 
 export function retroHistory(limit = 30) {
