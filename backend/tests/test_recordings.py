@@ -6,6 +6,7 @@ directly. The webhook receiver is exercised with a hand-built event.
 """
 
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy import select
@@ -335,6 +336,14 @@ async def test_call_start_skips_recording_when_no_consent(client, auth_headers, 
     s = (await db_session.execute(select(SessionModel).where(SessionModel.id == sid))).scalar_one()
     s.status = "live"
     await db_session.commit()
+
+    # Minting a token creates the LiveKit room, which opens a real socket to
+    # the media server. Patched the way test_livekit.py does, so the test says
+    # something about consent rather than about what is running on :7880.
+    monkeypatch.setattr(
+        "src.app.routers.livekit_routes.create_room",
+        AsyncMock(return_value={"name": f"session-{sid}", "sid": "test-sid"}),
+    )
 
     resp = await client.post(f"/api/sessions/{sid}/livekit-token", headers=auth_headers)
     assert resp.status_code == 200, resp.text
