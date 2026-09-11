@@ -145,7 +145,7 @@ function LedgerRow({
     </span>
   );
   const labelled = trace.length > 0 && (
-    <span className="mt-1.5 block md:hidden">
+    <span className="mt-1.5 block @3xl/ledger:hidden">
       <RunTrace trace={trace} colors={colors} variant="labelled" />
     </span>
   );
@@ -178,7 +178,10 @@ function LedgerRow({
               {description}
               {labelled}
             </span>
-            <span className="hidden md:contents">
+            {/* A column per step, and only where there are six columns to give
+                them: stacked, the strip is a vertical line of circles that
+                says nothing the row does not. */}
+            <span className="hidden @3xl/ledger:contents">
               <RunTrace trace={trace} colors={colors} variant="dots" />
             </span>
             <span className="text-[12px] font-body tabular-nums text-muted-foreground md:text-right">
@@ -198,10 +201,13 @@ function LedgerRow({
               {description}
               {labelled}
             </span>
-            <span className="hidden md:contents">
+            {/* A column per step, and only where there are six columns to
+                give them: stacked, the strip is a line of circles saying
+                nothing, and the labelled trace above says it in words. */}
+            <span className="hidden @3xl/ledger:contents">
               <RunTrace trace={trace} colors={colors} variant="dots" />
             </span>
-            <span className="text-[12px] font-body tabular-nums text-muted-foreground transition-opacity md:text-right md:group-hover:opacity-0 md:group-focus-within:opacity-0">
+            <span className="text-[12px] font-body tabular-nums text-muted-foreground transition-opacity @3xl/ledger:text-right @3xl/ledger:group-hover:opacity-0 @3xl/ledger:group-focus-within:opacity-0">
               {date}
             </span>
           </Link>
@@ -277,7 +283,7 @@ function WayInRow({ link }: { link: PageLink }) {
     <li>
       <Link
         href={link.href}
-        className="group grid gap-x-4 gap-y-0.5 py-2.5 md:grid-cols-[10rem_minmax(0,1fr)] md:items-baseline"
+        className="group grid gap-x-4 gap-y-0.5 py-2.5 @lg/ways:grid-cols-[8rem_minmax(0,1fr)] @lg/ways:items-baseline"
       >
         <span className="font-display text-[16px] leading-tight text-foreground decoration-1 underline-offset-[3px] group-hover:underline">
           {link.label}
@@ -515,57 +521,71 @@ export default function ProjectsPage() {
 
       <section
         aria-label="Projects"
-        // No sheet under it: the ledger's own rules already separate the rows,
-        // and a card behind a list of two lines is a box drawn round a box.
-        className="mt-10 animate-slide-up stagger-2 py-5"
+        // Three columns, the middle one empty: the bar stands in it. What the
+        // page has to say goes either side of the conversation rather than
+        // above it, so the screen is one surface rather than a chat over a
+        // page. `--niko-width` is the bar's own, published for this.
+        // The middle track is a little narrower than the bar that stands in
+        // it, so the conversation overlaps the columns rather than sitting in
+        // a slot cut for it.
+        className="mt-10 grid w-full animate-slide-up stagger-2 items-start gap-x-6 py-5 [grid-template-columns:minmax(0,1fr)_calc(var(--niko-width,560px)-2.5rem)_minmax(0,1fr)]"
         style={sheetStyle}
       >
-        {!loading && rows.length > 0 && (
-          <SheetWord tail={projectCount(rows.length)}>{IN_PROGRESS_WORD}</SheetWord>
-        )}
+        {/* What there is. A container, so its rows measure themselves against
+            this column rather than the window. Named, so a variant cannot
+            resolve against some other container further up. */}
+        <div className="@container/ledger">
+          {!loading && rows.length > 0 && (
+            <SheetWord tail={projectCount(rows.length)}>{IN_PROGRESS_WORD}</SheetWord>
+          )}
 
-        {headed && <LedgerHead steps={steps} colors={colors} />}
+          {headed && <LedgerHead steps={steps} colors={colors} />}
 
-        {loading ? (
-          <GhostSkeleton steps={steps} />
-        ) : empty ? (
-          <>
-            <SuggestLine open={suggesting} onToggle={() => setSuggesting((open) => !open)} />
-            {suggesting && (
-              <div id="suggested-projects">
-                <SuggestedProjects steps={steps} colors={colors} onPick={pickExample} />
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {rows.length === 0 ? (
-              <p className="py-3 text-[13px] font-body leading-relaxed text-muted-foreground">
-                {ALL_DONE_LINE}
-              </p>
-            ) : (
-              <ul className="divide-y divide-border/50">
-                {rows.map((project) => (
-                  <LedgerRow key={project.id} project={project} {...rowProps} />
-                ))}
-              </ul>
-            )}
-            {completed.length > 0 && (
-              <>
-                <SheetWord>{COMPLETED_WORD}</SheetWord>
+          {loading ? (
+            <GhostSkeleton steps={steps} />
+          ) : empty ? (
+            <>
+              <SuggestLine open={suggesting} onToggle={() => setSuggesting((open) => !open)} />
+              {suggesting && (
+                <div id="suggested-projects">
+                  <SuggestedProjects steps={steps} colors={colors} onPick={pickExample} />
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {rows.length === 0 ? (
+                <p className="py-3 text-[13px] font-body leading-relaxed text-muted-foreground">
+                  {ALL_DONE_LINE}
+                </p>
+              ) : (
                 <ul className="divide-y divide-border/50">
-                  {completed.map((project) => (
+                  {rows.map((project) => (
                     <LedgerRow key={project.id} project={project} {...rowProps} />
                   ))}
                 </ul>
-              </>
-            )}
-          </>
-        )}
+              )}
+              {completed.length > 0 && (
+                <>
+                  <SheetWord>{COMPLETED_WORD}</SheetWord>
+                  <ul className="divide-y divide-border/50">
+                    {completed.map((project) => (
+                      <LedgerRow key={project.id} project={project} {...rowProps} />
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
 
-        {headed && <LedgerFlowList steps={steps} colors={colors} />}
+          {headed && <LedgerFlowList steps={steps} colors={colors} />}
+        </div>
 
-        <div className="mt-5 border-t border-border">
+        {/* The channel the bar stands in. Nothing of the page's goes here. */}
+        <div aria-hidden="true" />
+
+        {/* The other doors, on the far side of the conversation. */}
+        <div className="@container/ways">
           <SheetWord>{OTHER_WAYS_WORD}</SheetWord>
           <ul className="divide-y divide-border/50">
             {PROJECTS_HEADER_LINKS.map((link) => (

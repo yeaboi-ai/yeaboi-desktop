@@ -112,6 +112,11 @@ function useOpenWidth(): number {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+  // Published, so a page can lay itself out around the channel the bar sits in
+  // rather than working the same sum out a second time.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--niko-width', `${width}px`);
+  }, [width]);
   return width;
 }
 
@@ -130,6 +135,7 @@ export function NikoBar() {
     clearSuggestedRoute,
     onBubbleAnswer,
     onTypedAnswer,
+    scripted,
   } = useNikoContext();
 
   const [value, setValue] = useState('');
@@ -676,7 +682,10 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              className={`quiet-scroll flex min-h-0 flex-1 flex-col px-1 py-1 ${
+              // Wider than the composer by a little on each side, so the
+              // conversation reads as a thing standing over the page rather
+              // than a column the composer cut for it.
+              className={`quiet-scroll -mx-3 flex min-h-0 flex-1 flex-col px-4 py-1 ${
                 settling ? 'overflow-hidden' : 'overflow-y-auto'
               }`}
             >
@@ -768,7 +777,9 @@ export function NikoBar() {
                 Kept mounted and inert when closed, or unmounting them mid-
                 animation leaves the half-drawn object behind. */}
             {CONTROLS.map(({ key, title, Icon }, index) => {
-              const shown = state === 'expanded' && closingPhase !== 'shrink';
+              // Put away while a page is asking: there is no new thread to
+              // start and none to close in the middle of being asked something.
+              const shown = state === 'expanded' && closingPhase !== 'shrink' && !scripted;
               // Later ones arrive later and leave first, so the pair reads as
               // two things rather than one wide thing.
               const delay = (shown ? index : CONTROLS_COUNT - 1 - index) * CONTROL_STAGGER;

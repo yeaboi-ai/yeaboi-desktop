@@ -29,7 +29,7 @@ export function LedgerHead({
   const step = explained === null ? null : steps[Math.min(explained, steps.length - 1)];
   return (
     <div
-      className="hidden gap-x-4 pt-4 md:grid md:[grid-template-columns:var(--ledger-cols)]"
+      className="hidden gap-x-4 pt-4 @3xl/ledger:grid @3xl/ledger:[grid-template-columns:var(--ledger-cols)]"
       onMouseLeave={() => setExplained(null)}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setExplained(null);

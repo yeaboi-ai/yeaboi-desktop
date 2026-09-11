@@ -45,8 +45,15 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
   // Pulled apart rather than held whole: the context is a fresh object every
   // render, and an effect that depends on it never settles — the opening timer
   // was cleared and set again forever, so Niko never spoke.
-  const { setIsOpen, pushLocal, replaceLocal, clearLocal, setBubbleAnswer, setTypedAnswer } =
-    useNikoContext();
+  const {
+    setIsOpen,
+    pushLocal,
+    replaceLocal,
+    clearLocal,
+    setBubbleAnswer,
+    setTypedAnswer,
+    setScripted,
+  } = useNikoContext();
   const { authFetch } = useAuthFetch();
   const [state, setState] = useState<Interview | null>(null);
   /** The last turn pushed, so leaving the page can clear what it left. */
@@ -97,7 +104,6 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
           setIsOpen(false);
           return;
         case 'open':
-          dismissed = true;
           latest.current.onOpen(effect.id);
           return;
         case 'attach': {
@@ -183,18 +189,24 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
   // again until the next launch.
   useEffect(
     () => () => {
-      // Only once it actually asked something: in dev the page is mounted,
-      // unmounted and mounted again, and an unconditional mark here meant the
-      // interview was retired before it had spoken.
+      // The turns go with the page, but the offer does not: coming back to
+      // Planning is asking again. Only "Not now" retires it, and only until
+      // the app is next launched.
       if (turnId.current) {
         clearLocal();
         turnId.current = null;
         workingId.current = null;
-        dismissed = true;
       }
     },
     [clearLocal],
   );
+
+  // The bar puts its own controls away while this is asking.
+  const live = Boolean(state && running(state));
+  useEffect(() => {
+    setScripted(live);
+    return () => setScripted(false);
+  }, [live, setScripted]);
 
   /** True while what is typed in the bar is an answer rather than a question. */
   const answering = Boolean(state && running(state) && takesTyping(state));
@@ -210,7 +222,7 @@ export function usePlanningInterview({ carryOn, ready, onOpen, onCreated }: Opti
     [perform],
   );
 
-  return { answering, answer, live: Boolean(state && running(state)) };
+  return { answering, answer, live };
 }
 
 type Fetcher = (path: string, init?: RequestInit) => Promise<Response>;

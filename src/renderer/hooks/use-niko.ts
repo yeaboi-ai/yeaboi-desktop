@@ -76,6 +76,10 @@ export function useNiko() {
   const answerRef = useRef<((answer: string) => void) | null>(null);
   /** The same, for what is typed in the composer while a script is asking. */
   const typedRef = useRef<((text: string) => boolean) | null>(null);
+  /** True while a page is running a script in the bar. The bar puts away the
+   *  controls that belong to a conversation you started — there is no new
+   *  thread to open and no thread to close in the middle of being asked. */
+  const [scripted, setScripted] = useState(false);
   const [messages, setMessages] = useState<NikoMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(() => {
     try {
@@ -287,6 +291,8 @@ export function useNiko() {
     onBubbleAnswer,
     setTypedAnswer,
     onTypedAnswer,
+    scripted,
+    setScripted,
     togglePanel,
     startNewConversation,
     stopStreaming,

@@ -13,9 +13,13 @@ export function ledgerColumns(stepCount: number): string {
   return `minmax(0, 1fr) repeat(${stepCount}, 3.5rem) 5.5rem`;
 }
 
-/** The grid every line of the ledger shares, so the columns cannot drift. */
+/** The grid every line of the ledger shares, so the columns cannot drift.
+ *
+ *  Measured against its own column rather than the window: the sheet is one of
+ *  three now, and a row that asks the viewport whether it has room lays six
+ *  step columns and a date across 480px and leaves the name nothing. */
 export const LEDGER_ROW =
-  'grid grid-cols-1 gap-x-4 gap-y-1 py-3 md:items-baseline md:gap-y-0 md:[grid-template-columns:var(--ledger-cols)]';
+  'grid grid-cols-1 gap-x-4 gap-y-1 py-3 @3xl/ledger:items-baseline @3xl/ledger:gap-y-0 @3xl/ledger:[grid-template-columns:var(--ledger-cols)]';
 
 /** What the head row says for the step under the pointer. */
 export function leavesSentence(step: { label: string; leaves: string }): string {
