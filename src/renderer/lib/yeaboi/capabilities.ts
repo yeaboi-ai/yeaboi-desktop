@@ -10,6 +10,8 @@ export interface ModeCard {
   description: string;
   available: boolean;
   color: string;
+  /** A maturity word the terminal shows beside the title (`BETA`), when it does. */
+  badge?: string;
 }
 
 export interface CategoryCard {

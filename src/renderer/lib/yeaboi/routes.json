@@ -3,13 +3,13 @@
   "routes": [
     {
       "path": "/home",
-      "capability": null,
+      "capability": "sessions",
       "title": "Home"
     },
     {
-      "path": "/runs",
-      "capability": "sessions",
-      "title": "Runs"
+      "path": "/news",
+      "capability": null,
+      "title": "Front page"
     },
     {
       "path": "/whats-new",
@@ -44,12 +44,12 @@
     {
       "path": "/team/analysis/new",
       "capability": "team-analysis",
-      "title": "Analysis \u00b7 New"
+      "title": "Analysis · New"
     },
     {
       "path": "/team/analysis/results",
       "capability": "team-analysis",
-      "title": "Analysis \u00b7 Results"
+      "title": "Analysis · Results"
     },
     {
       "path": "/team/standup",
@@ -59,17 +59,17 @@
     {
       "path": "/team/standup/setup",
       "capability": "standup",
-      "title": "Standup \u00b7 Setup"
+      "title": "Standup · Setup"
     },
     {
       "path": "/team/standup/schedule",
       "capability": "standup",
-      "title": "Standup \u00b7 Schedule"
+      "title": "Standup · Schedule"
     },
     {
       "path": "/team/standup/review",
       "capability": "standup",
-      "title": "Standup \u00b7 Transcript review"
+      "title": "Standup · Transcript review"
     },
     {
       "path": "/team/retro",
@@ -79,7 +79,7 @@
     {
       "path": "/team/retro/board",
       "capability": "retro-board",
-      "title": "Retro \u00b7 Board"
+      "title": "Retro · Board"
     },
     {
       "path": "/team/poker",
@@ -89,12 +89,12 @@
     {
       "path": "/team/poker/new",
       "capability": "scrum-poker",
-      "title": "Poker \u00b7 New session"
+      "title": "Poker · New session"
     },
     {
       "path": "/team/poker/board",
       "capability": "scrum-poker",
-      "title": "Poker \u00b7 Table"
+      "title": "Poker · Table"
     },
     {
       "path": "/team/performance",
@@ -104,7 +104,7 @@
     {
       "path": "/team/performance/engineer",
       "capability": "performance",
-      "title": "Performance \u00b7 Engineer"
+      "title": "Performance · Engineer"
     },
     {
       "path": "/team/reporting",
@@ -114,12 +114,12 @@
     {
       "path": "/team/reporting/new",
       "capability": "reporting",
-      "title": "Reporting \u00b7 New report"
+      "title": "Reporting · New report"
     },
     {
       "path": "/team/reporting/style",
       "capability": "reporting",
-      "title": "Reporting \u00b7 Deck style"
+      "title": "Reporting · Deck style"
     },
     {
       "path": "/team/ship",
@@ -129,7 +129,7 @@
     {
       "path": "/team/ship/run",
       "capability": "ship",
-      "title": "Ship \u00b7 Run"
+      "title": "Ship · Run"
     },
     {
       "path": "/solo/review",
@@ -139,7 +139,7 @@
     {
       "path": "/solo/review/report",
       "capability": "weekly-review",
-      "title": "Weekly Review \u00b7 Report"
+      "title": "Weekly Review · Report"
     },
     {
       "path": "/agents/usage",
@@ -164,7 +164,7 @@
     {
       "path": "/ceremonies/slack",
       "capability": "slack-inbound",
-      "title": "Ceremonies \u00b7 Slack"
+      "title": "Ceremonies · Slack"
     },
     {
       "path": "/provenance",
@@ -174,22 +174,22 @@
     {
       "path": "/settings/credentials",
       "capability": "settings",
-      "title": "Settings \u00b7 Credentials"
+      "title": "Settings · Credentials"
     },
     {
       "path": "/settings/connections",
       "capability": "connections",
-      "title": "Settings \u00b7 Catalog"
+      "title": "Settings · Catalog"
     },
     {
       "path": "/settings/sharing",
       "capability": "settings",
-      "title": "Settings \u00b7 Sharing"
+      "title": "Settings · Sharing"
     },
     {
       "path": "/settings/system",
       "capability": "settings",
-      "title": "Settings \u00b7 System"
+      "title": "Settings · System"
     },
     {
       "path": "/setup",
@@ -249,12 +249,12 @@
     {
       "path": "/sessions/:id/plan",
       "capability": "planning",
-      "title": "Session \u00b7 Plan"
+      "title": "Session · Plan"
     },
     {
       "path": "/sessions/new/from-roadmap",
       "capability": "roadmap",
-      "title": "New session \u00b7 From roadmap"
+      "title": "New session · From roadmap"
     },
     {
       "path": "/sessions/:id/new",
@@ -264,7 +264,7 @@
     {
       "path": "/sessions/:id/room",
       "capability": null,
-      "title": "Session \u00b7 Room"
+      "title": "Session · Room"
     },
     {
       "path": "/sessions/:id/completed",
@@ -294,22 +294,22 @@
     {
       "path": "/settings/appearance",
       "capability": null,
-      "title": "Settings \u00b7 Appearance"
+      "title": "Settings · Appearance"
     },
     {
       "path": "/settings/music",
       "capability": null,
-      "title": "Settings \u00b7 Player"
+      "title": "Settings · Player"
     },
     {
       "path": "/settings/duck",
       "capability": null,
-      "title": "Settings \u00b7 Duck"
+      "title": "Settings · Duck"
     },
     {
       "path": "/settings/news",
       "capability": null,
-      "title": "Settings \u00b7 Front page"
+      "title": "Settings · Paper"
     },
     {
       "path": "/settings/themes",

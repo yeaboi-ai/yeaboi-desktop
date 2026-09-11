@@ -1,4 +1,4 @@
-// The rail: every world starts with Sessions, Runs and Board plus Settings,
+// The rail: every world starts with Sessions and Board plus Settings,
 // every href a registered route, the active rule table-driven over the
 // arranged items, and nothing the old nineteen-row rail listed left
 // unreachable (the About pages live in the menu bar and the "+").
@@ -10,7 +10,7 @@ import { audiencesForRoute, AUDIENCES } from '../src/shared/audience';
 import { RAIL_DEFAULTS, type RailItem } from '../src/shared/rail';
 import {
   SESSIONS_HEADER_LINKS,
-  RUNS_FOOT_LINKS,
+  HOME_FOOT_LINKS,
   SETTINGS_ITEM,
   activeRailRoute,
   sessionsHref,
@@ -61,9 +61,9 @@ const item = (route: string): RailItem => ({
 });
 
 describe('the rail as it starts', () => {
-  it('draws Sessions, Runs and Board in every world', () => {
+  it('draws Sessions and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Runs', 'Board']);
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Board']);
     }
   });
 
@@ -74,7 +74,7 @@ describe('the rail as it starts', () => {
       }
     }
     expect(REGISTERED).toContain(SETTINGS_ITEM.href);
-    const pageLinks = [...SESSIONS_HEADER_LINKS, ...RUNS_FOOT_LINKS].map((link) => link.href);
+    const pageLinks = [...SESSIONS_HEADER_LINKS, ...HOME_FOOT_LINKS].map((link) => link.href);
     for (const href of pageLinks) {
       expect(REGISTERED, `${href} is not in routes.json`).toContain(href);
     }
@@ -113,7 +113,7 @@ describe('the rail as it starts', () => {
       ...AUDIENCES.flatMap((a) => RAIL_DEFAULTS[a].map((i) => i.route)),
       ...AUDIENCES.flatMap((a) => railCatalogue(a).map((entry) => entry.route)),
       ...SESSIONS_HEADER_LINKS.map((link: { href: string }) => link.href),
-      ...RUNS_FOOT_LINKS.map((link: { href: string }) => link.href),
+      ...HOME_FOOT_LINKS.map((link: { href: string }) => link.href),
       ...AUDIENCES.flatMap((a) => menuPathnames(a)),
       ...Object.values(MODE_ROUTES),
       ...Object.values(MODE_START_ROUTES),
@@ -127,25 +127,25 @@ describe('the rail as it starts', () => {
 describe('activeRailRoute over the default rail', () => {
   const team = RAIL_DEFAULTS.team;
   const cases: [string, string | null][] = [
-    ['/home', null],
-    ['/', null],
+    ['/home', '/home'],
+    ['/', '/home'],
+    ['/news', '/home'],
     ['/sessions', '/sessions'],
     ['/sessions/p1', '/sessions'],
     ['/sessions/p1/blueprint', '/sessions'],
     ['/sessions/new/from-roadmap', '/sessions'],
     ['/board', '/board'],
     ['/tickets/t1', '/sessions'],
-    ['/runs', '/runs'],
-    ['/team/standup', '/runs'],
-    ['/team/reporting/new', '/runs'],
-    ['/solo/review', '/runs'],
-    ['/ceremonies', '/runs'],
-    ['/ceremonies/slack', '/runs'],
-    ['/provenance', '/runs'],
-    ['/usage', '/runs'],
-    ['/recordings/r1', '/runs'],
-    ['/recording/tok', '/runs'],
-    ['/clip/tok', '/runs'],
+    ['/team/standup', '/home'],
+    ['/team/reporting/new', '/home'],
+    ['/solo/review', '/home'],
+    ['/ceremonies', '/home'],
+    ['/ceremonies/slack', '/home'],
+    ['/provenance', '/home'],
+    ['/usage', '/home'],
+    ['/recordings/r1', '/home'],
+    ['/recording/tok', '/home'],
+    ['/clip/tok', '/home'],
     ['/settings', '/settings'],
     ['/settings/credentials', '/settings'],
     ['/settings/themes/edit', '/settings'],
@@ -160,10 +160,10 @@ describe('activeRailRoute over the default rail', () => {
     expect(activeRailRoute(team, pathname, 'team')).toBe(expected);
   });
 
-  it('lights the agentwatch pages under Runs', () => {
+  it('lights the mascot on the agentwatch pages, as on every mode page', () => {
     const solo = RAIL_DEFAULTS.solo;
-    expect(activeRailRoute(solo, '/agents/usage', 'solo')).toBe('/runs');
-    expect(activeRailRoute(solo, '/agents/security', 'solo')).toBe('/runs');
+    expect(activeRailRoute(solo, '/agents/usage', 'solo')).toBe('/home');
+    expect(activeRailRoute(solo, '/agents/security', 'solo')).toBe('/home');
   });
 
   it('matches whole segments, not raw prefixes', () => {
@@ -178,7 +178,7 @@ describe('activeRailRoute over an arranged rail', () => {
     const items = [...RAIL_DEFAULTS.team, item('/team/standup')];
     expect(activeRailRoute(items, '/board', 'team')).toBe('/board');
     expect(activeRailRoute(items, '/team/standup/setup', 'team')).toBe('/team/standup');
-    expect(activeRailRoute(items, '/team/retro', 'team')).toBe('/runs');
+    expect(activeRailRoute(items, '/team/retro', 'team')).toBe('/home');
   });
 
   it('prefers the longest match', () => {
@@ -194,7 +194,7 @@ describe('activeRailRoute over an arranged rail', () => {
 
   it('lights nothing but the foot on an empty rail', () => {
     expect(activeRailRoute([], '/sessions/p1', 'team')).toBeNull();
-    expect(activeRailRoute([], '/team/standup', 'team')).toBeNull();
+    expect(activeRailRoute([], '/team/standup', 'team')).toBe('/home');
     expect(activeRailRoute([], '/settings/duck', 'team')).toBe('/settings');
   });
 });

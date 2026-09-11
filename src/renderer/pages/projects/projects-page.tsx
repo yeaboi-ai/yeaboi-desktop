@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/context-menu';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { BackupNotice } from '@/components/projects/backup-notice';
-import { GhostSkeleton } from '@/components/projects/ghost-skeleton';
+import { GhostSkeleton } from '@/components/ui/ghost-skeleton';
 import { LedgerFlowList } from '@/components/projects/ledger-flow-list';
 import { ProjectComposer, type ProjectDraft } from '@/components/projects/project-composer';
 import { ProjectGuide } from '@/components/projects/project-guide';

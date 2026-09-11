@@ -119,7 +119,7 @@ describe('railCatalogue', () => {
 describe('railGroupFor', () => {
   it.each([
     ['/sessions', 'work'],
-    ['/runs', 'work'],
+    ['/news', 'work'],
     ['/board', 'work'],
     ['/ceremonies/slack', 'work'],
     ['/team/standup', 'modes'],

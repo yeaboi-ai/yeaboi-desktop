@@ -54,6 +54,11 @@ describe('menu bar', () => {
     expect(goPages('team').find((p) => p.label === 'Sessions')?.route).toBe('/sessions');
   });
 
+  it('opens the paper from Go, now that the home is the menu', () => {
+    expect(goPages('team').find((p) => p.label === 'Front page')?.route).toBe('/news');
+    expect(FILE_PAGES.map((p) => p.label)).toEqual(['New session…']);
+  });
+
   it('claims every shortcut once', () => {
     const accelerators = [PALETTE_COMMAND, ...FILE_PAGES, ...goPages('team'), ...MUSIC_COMMANDS]
       .map((p) => p.accelerator)

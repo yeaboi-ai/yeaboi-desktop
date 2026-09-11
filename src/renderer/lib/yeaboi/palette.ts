@@ -243,18 +243,6 @@ export function actionHits(
       available: true,
       href: `${sessionsHref(audience)}?new=1`,
     },
-    {
-      id: 'action:new-run',
-      kind: 'action',
-      title: 'New run',
-      detail: '',
-      group: 'actions',
-      world: null,
-      icon: 'Sunrise',
-      keywords: ['create', 'start', 'run'],
-      available: true,
-      href: '/runs',
-    },
   ];
   // `worlds` is what the build offers, so a one-world launch emits no
   // switch-world action at all.

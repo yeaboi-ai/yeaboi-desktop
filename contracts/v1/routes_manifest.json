@@ -3,13 +3,13 @@
   "routes": [
     {
       "path": "/home",
-      "capability": null,
+      "capability": "sessions",
       "title": "Home"
     },
     {
-      "path": "/runs",
-      "capability": "sessions",
-      "title": "Runs"
+      "path": "/news",
+      "capability": null,
+      "title": "Front page"
     },
     {
       "path": "/whats-new",
@@ -309,7 +309,7 @@
     {
       "path": "/settings/news",
       "capability": null,
-      "title": "Settings · Front page"
+      "title": "Settings · Paper"
     },
     {
       "path": "/settings/themes",

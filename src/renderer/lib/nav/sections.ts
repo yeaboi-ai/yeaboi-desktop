@@ -1,6 +1,6 @@
 // The rail's fixed parts and its active rule. The rail's items themselves are
 // a preference (@shared/rail, one list per world); what stays here is the
-// Settings foot, the links the Projects and Sessions pages carry, and which
+// Settings foot, the links the home and the Sessions page carry, and which
 // item a location lights. Pure, so the rule is testable in the node lane
 // (test/nav-sections.test.ts).
 //
@@ -8,6 +8,7 @@
 // rail is a view over that registry, not a second list of truths.
 
 import { sessionsHref, type Audience } from '@shared/audience';
+import { DEFAULT_ROUTE } from '@/lib/yeaboi/routes';
 
 export { sessionsHref };
 
@@ -35,17 +36,20 @@ export const SESSIONS_HEADER_LINKS: readonly PageLink[] = [
   },
 ];
 
-/** Reached from the foot of Runs, and lit as Runs on the rail. */
-export const RUNS_FOOT_LINKS: readonly PageLink[] = [
+/** Reached from the foot of the home. */
+export const HOME_FOOT_LINKS: readonly PageLink[] = [
   { href: '/ceremonies', label: 'Ceremonies' },
   { href: '/provenance', label: 'Provenance' },
   { href: '/usage', label: 'Spend' },
+  { href: '/news', label: 'Front page' },
 ];
 
 const SETTINGS_PREFIXES = ['/settings', '/setup'];
 const SESSIONS_PREFIXES = ['/sessions', '/board', '/tickets'];
-const RUNS_PREFIXES = [
-  '/runs',
+/** The mode pages and what the home's foot reaches: pages of the menu, so
+ *  they light the mascot. */
+const MODE_PREFIXES = [
+  '/news',
   '/team',
   '/solo',
   '/agents',
@@ -66,11 +70,12 @@ function inFamily(pathname: string, prefixes: readonly string[]): boolean {
 }
 
 /**
- * The route of the rail item a location lights, `/settings` for the foot, or
- * null (the home, and a page no item and no family covers). In order: the
- * settings family; the item whose route is the longest whole-segment prefix of
- * the location; then the families, so a default rail still lights Sessions on a
- * ticket and Runs on a standup.
+ * The route of the rail item a location lights, `/settings` for the foot, the
+ * home for the home itself and the mode pages (they are the menu's pages), or
+ * null (a page no item and no family covers). In order: the settings family;
+ * the item whose route is the longest whole-segment prefix of the location;
+ * then the families, so a default rail still lights Sessions on a ticket and
+ * the mascot on a standup.
  */
 export function activeRailRoute(
   items: readonly { route: string }[],
@@ -90,6 +95,7 @@ export function activeRailRoute(
   if (best !== null) return best;
 
   if (inFamily(pathname, SESSIONS_PREFIXES) && has(sessions)) return sessions;
-  if (inFamily(pathname, RUNS_PREFIXES) && has('/runs')) return '/runs';
+  if (pathname === '/' || pathname === DEFAULT_ROUTE) return DEFAULT_ROUTE;
+  if (inFamily(pathname, MODE_PREFIXES)) return DEFAULT_ROUTE;
   return null;
 }

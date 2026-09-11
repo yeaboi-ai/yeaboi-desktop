@@ -23,18 +23,17 @@ export const PALETTE_COMMAND: MenuCommand = { label: 'Find anything…', acceler
 
 export const FILE_PAGES: readonly MenuPage[] = [
   { label: 'New session…', route: '/sessions?new=1', accelerator: 'CmdOrCtrl+N' },
-  { label: 'New run…', route: '/runs', accelerator: 'CmdOrCtrl+Shift+N' },
 ];
 
-/** The Go menu: the rail's rows and the board, per world. */
+/** The Go menu: the home, the rail's rows, the paper, per world. */
 export function goPages(audience: Audience): readonly MenuPage[] {
   return [
     { label: 'Home', route: '/home' },
     { label: 'Sessions', route: sessionsHref(audience), accelerator: 'CmdOrCtrl+P' },
-    { label: 'Runs', route: '/runs' },
+    { label: 'Board', route: '/board', accelerator: 'CmdOrCtrl+B' },
+    { label: 'Front page', route: '/news' },
     { label: 'Music', route: '/music' },
     { label: 'Settings', route: '/settings', accelerator: 'CmdOrCtrl+S' },
-    { label: 'Board', route: '/board', accelerator: 'CmdOrCtrl+B' },
   ];
 }
 

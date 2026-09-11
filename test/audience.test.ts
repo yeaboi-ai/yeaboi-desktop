@@ -64,8 +64,8 @@ describe('audiencesForRoute', () => {
   });
 
   it('leaves the run history in no world — every world has one', () => {
-    expect(audiencesForRoute('/runs')).toEqual([]);
-    for (const world of AUDIENCES) expect(resolveAudience('/runs', world)).toBeNull();
+    expect(audiencesForRoute('/news')).toEqual([]);
+    for (const world of AUDIENCES) expect(resolveAudience('/news', world)).toBeNull();
   });
 
   it('claims the review of your own week for solo alone', () => {

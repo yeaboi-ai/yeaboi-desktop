@@ -30,12 +30,11 @@ const item = (over: Partial<RailItem> = {}): RailItem => ({
 const PNG = `data:image/png;base64,${'A'.repeat(64)}`;
 
 describe('RAIL_DEFAULTS', () => {
-  it('draws Sessions, Runs and Board in every world', () => {
+  it('draws Sessions and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Runs', 'Board']);
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Board']);
       expect(RAIL_DEFAULTS[audience][0]!.route).toBe(sessionsHref(audience));
-      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/runs');
-      expect(RAIL_DEFAULTS[audience][2]!.route).toBe('/board');
+      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/board');
     }
   });
 
@@ -188,7 +187,7 @@ describe('normalizeRailItems', () => {
   });
 
   it('applies the known set to the defaults too', () => {
-    expect(normalizeRailItems(undefined, 'team', new Set(['/runs']))).toEqual([
+    expect(normalizeRailItems(undefined, 'team', new Set(['/board']))).toEqual([
       RAIL_DEFAULTS.team[1],
     ]);
   });

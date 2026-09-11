@@ -123,7 +123,7 @@ export function Sidebar() {
   const reset = async () => {
     const ok = await confirm({
       title: 'Reset this rail?',
-      message: 'Back to Sessions, Runs and Board. Icons and images you added here are forgotten.',
+      message: 'Back to Sessions and Board. Icons and images you added here are forgotten.',
       confirmLabel: 'Reset',
       variant: 'warning',
     });
@@ -148,7 +148,7 @@ export function Sidebar() {
           <RailButton
             label={`Home · ${WORLD_COPY[audience].title}`}
             aria-label="Home"
-            lit={pathname === DEFAULT_ROUTE}
+            lit={active === DEFAULT_ROUTE}
             ring={cmdHeld}
             onClick={() => router.push(DEFAULT_ROUTE)}
             onContextMenu={(event) => {

@@ -32,7 +32,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = registry.settings_tabs;
  *  section, which is where the rest of this window's look is chosen. */
 export const CHROME_TABS: readonly TabLink[] = [
   { route: '/settings/appearance', title: 'Appearance' },
-  { route: '/settings/news', title: 'Front page' },
+  { route: '/settings/news', title: 'Paper' },
   { route: '/settings/duck', title: 'Duck' },
   { route: '/settings/music', title: 'Player' },
 ];

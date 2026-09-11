@@ -131,7 +131,8 @@ export function isRailLucideName(value: unknown): value is RailLucideName {
   return typeof value === 'string' && (RAIL_LUCIDE_ICONS as readonly string[]).includes(value);
 }
 
-/** Where every world's rail starts: your sessions, their runs, the board. */
+/** Where every world's rail starts: your sessions and the board. The modes
+ *  are the home's menu, behind the mascot. */
 export function railDefaultsFor(audience: Audience): RailItem[] {
   return [
     {
@@ -139,12 +140,6 @@ export function railDefaultsFor(audience: Audience): RailItem[] {
       route: sessionsHref(audience),
       label: 'Sessions',
       icon: { kind: 'lucide', name: 'NotebookPen' },
-    },
-    {
-      id: 'runs',
-      route: '/runs',
-      label: 'Runs',
-      icon: { kind: 'lucide', name: 'Sunrise' },
     },
     {
       id: 'board',

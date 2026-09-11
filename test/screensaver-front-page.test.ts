@@ -23,7 +23,7 @@ const section = read(
   'screensaver-section.tsx',
 );
 const view = read('src', 'renderer', 'components', 'news', 'front-page-view.tsx');
-const home = read('src', 'renderer', 'pages', 'yeaboi', 'home', 'front-page.tsx');
+const home = read('src', 'renderer', 'pages', 'news', 'front-page.tsx');
 const edition = read('src', 'renderer', 'components', 'news', 'edition.tsx');
 
 describe('the host', () => {

@@ -14,7 +14,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { FrontPageView, sourcesColophon } from '@/components/news/front-page-view';
 import { fallbackPaper } from '@/lib/news/fallback';
-import { nextVisit } from '@/lib/home/wardrobe';
 import {
   STALE_RETRY_MS,
   loadFallbackNotes,
@@ -37,11 +36,6 @@ export function FrontPage() {
   const lastAt = useRef(0);
   const asking = useRef(false);
   const now = useMemo(() => new Date(), [paper]);
-
-  // The doors' ducks change on each visit to the home, never mid-visit.
-  useEffect(() => {
-    nextVisit();
-  }, []);
 
   useEffect(() => {
     let gone = false;

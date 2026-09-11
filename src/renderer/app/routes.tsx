@@ -15,14 +15,14 @@ import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
 import AgentsPage from '@/pages/yeaboi/agents/agents-page';
-import SessionsPage from '@/pages/yeaboi/sessions-page';
 import AnalysisPage from '@/pages/yeaboi/analysis/analysis-page';
 import AnalysisResultsPage from '@/pages/yeaboi/analysis/analysis-results-page';
 import AnalysisSetupPage from '@/pages/yeaboi/analysis/analysis-setup-page';
 import CeremoniesPage from '@/pages/yeaboi/ceremonies/ceremonies-page';
 import CeremoniesSlackPage from '@/pages/yeaboi/ceremonies/ceremonies-slack-page';
 import FeedbackPage from '@/pages/yeaboi/feedback-page';
-import HomePage from '@/pages/yeaboi/home-page';
+import HomePage from '@/pages/home/home-page';
+import NewsPage from '@/pages/news/news-page';
 import MusicPage from '@/pages/yeaboi/music-page';
 import PlaceholderPage from '@/pages/yeaboi/placeholder-page';
 import EngineerPage from '@/pages/yeaboi/performance/engineer-page';
@@ -134,7 +134,7 @@ function Root() {
 // not named here mounts the placeholder so nav, palette and manifest agree.
 const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
-  '/runs': <SessionsPage />,
+  '/news': <NewsPage />,
   '/music': <MusicPage />,
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
@@ -228,6 +228,8 @@ export const router = createHashRouter([
     element: <Root />,
     children: [
       { path: '/', element: <Navigate to="/home" replace /> },
+      // The run list folded into the home, which lists every mode and what has run.
+      { path: '/runs', element: <Navigate to="/home" replace /> },
       ...yeaboiRoutes,
       // The standalone planning pages folded into the session flow; anything
       // that still links to them (an old tray notice, muscle memory) lands on

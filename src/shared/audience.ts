@@ -107,8 +107,8 @@ function matches(pathname: string, prefix: string): boolean {
 }
 
 /** The worlds a pathname belongs to, canonical owner first; `[]` for shared
- *  chrome (`/home`, `/runs`, `/settings*`, `/whats-new`, `/feedback`,
- *  `/setup`). `/runs` is every world's run history, so it belongs to none.
+ *  chrome (`/home`, `/news`, `/settings*`, `/whats-new`, `/feedback`,
+ *  `/setup`). The home is every world's menu, so it belongs to none.
  *  Note `/usage`
  *  is the app's own LLM spend for scrum runs — workspace-side; the agentwatch
  *  usage report is `/agents/usage`. */
