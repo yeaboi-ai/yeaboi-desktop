@@ -13,15 +13,50 @@ known=tests/known-failures.txt
 actual=$(mktemp)
 trap 'rm -f "$actual"' EXIT
 
-uv run pytest tests/ -q -m "not slow" -p no:randomly 2>&1 | tee /dev/stderr \
-  | grep -E '^(FAILED|ERROR) tests/' | sed -E 's/^(FAILED|ERROR) //; s/ - .*//' | sort -u > "$actual"
+# Both are extras rather than uv groups, so `uv run` alone installs neither.
+# `voice` is ~200MB and only four test files need it — but without it those
+# four fail to import, and a collection error is not a failure pytest reports
+# in the FAILED lines this script compares. Install it and run the whole suite.
+output=$(mktemp)
+trap 'rm -f "$actual" "$output"' EXIT
+uv run --extra dev --extra voice pytest tests/ -q -m "not slow" -p no:randomly 2>&1 | tee "$output" /dev/stderr >/dev/null
+
+# A run that never collected anything would otherwise look like a clean sweep:
+# no FAILED lines means an empty set, which reads as "everything got fixed".
+if ! grep -qE '^[0-9]+ (passed|failed)|=+ .* (passed|failed)' "$output"; then
+  echo ""
+  echo "pytest did not produce a summary line — the run did not happen. Last output:"
+  tail -20 "$output"
+  exit 1
+fi
+
+# A module that will not import yields an ERROR at collection, not a FAILED
+# line, so it would otherwise pass through this comparison unseen.
+if grep -qE 'errors? during collection|^ERROR tests/.*\.py$' "$output"; then
+  echo ""
+  echo "Test modules failed to import:"
+  grep -E '^ERROR tests/' "$output" | sed 's/^/  /'
+  exit 1
+fi
+
+grep -E '^(FAILED|ERROR) tests/' "$output" | sed -E 's/^(FAILED|ERROR) //; s/ - .*//' | sort -u > "$actual"
 
 expected=$(mktemp)
-trap 'rm -f "$actual" "$expected"' EXIT
-grep -v '^#' "$known" | grep -v '^[[:space:]]*$' | sort -u > "$expected"
+flaky=$(mktemp)
+trap 'rm -f "$actual" "$output" "$expected" "$flaky"' EXIT
 
-new=$(comm -13 "$expected" "$actual")
-fixed=$(comm -23 "$expected" "$actual")
+# Everything before the [flaky] marker must keep failing; everything after it
+# may do either, because it is nondeterministic.
+sed -n '1,/^\[flaky\]/p' "$known" | grep -v '^#' | grep -v '^\[flaky\]' | grep -v '^[[:space:]]*$' | sort -u > "$expected"
+sed -n '/^\[flaky\]/,$p' "$known" | grep -v '^#' | grep -v '^\[flaky\]' | grep -v '^[[:space:]]*$' | sort -u > "$flaky"
+
+# A flaky test failing is not news either way, so drop it from both sides.
+actual_stable=$(mktemp)
+trap 'rm -f "$actual" "$output" "$expected" "$flaky" "$actual_stable"' EXIT
+comm -23 "$actual" "$flaky" > "$actual_stable"
+
+new=$(comm -13 "$expected" "$actual_stable")
+fixed=$(comm -23 "$expected" "$actual_stable")
 
 status=0
 if [[ -n "$new" ]]; then

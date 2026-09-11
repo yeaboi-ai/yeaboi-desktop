@@ -1,11 +1,12 @@
 # Tests that were already failing when the backend first got a CI job.
-# scripts/check-tests.sh fails the build on anything NOT listed here, and
-# on anything listed here that has started passing — a list nobody prunes
-# is a list that hides the next regression. Fix one, delete its line.
+# scripts/check-tests.sh fails the build on anything NOT listed here, and on
+# anything listed here that has started passing — a list nobody prunes is a
+# list that hides the next regression. Fix one, delete its line.
 #
-# The three test_sessions.py entries are one flake, not three bugs: they pass
-# alone and fail in a full run when the shared rate limiter answers 429. They
-# are listed so the job is usable; the limiter is the thing to fix.
+# Lines under [flaky] are exempt from the second half of that: they are
+# nondeterministic, so insisting they keep failing is as wrong as insisting
+# they pass. They are listed to say so out loud, not to be tolerated forever.
+
 tests/test_agent.py::test_extract_queues_pending_suggestions
 tests/test_agent.py::test_extract_skips_invalid_sections
 tests/test_facilitator.py::test_facilitator_returns_meta_with_model_and_latency
@@ -22,10 +23,14 @@ tests/test_organizations_danger_zone.py::test_transfer_ownership_requires_admin[
 tests/test_organizations_summary.py::test_summary_requires_org_membership[asyncio]
 tests/test_organizations_summary.py::test_summary_returns_expected_shape[asyncio]
 tests/test_organizations_summary.py::test_summary_seat_usage_pct[asyncio]
-tests/test_sessions.py::test_explain_term_falls_back_without_ai_provider
-tests/test_sessions.py::test_facilitator_skipped_in_observer_mode_emits_ws_event
-tests/test_sessions.py::test_summarize_recent_falls_back_without_ai_provider
 tests/test_ticket_templates.py::test_list_seeds_system_templates[asyncio]
 tests/test_wireframe_references.py::test_loans_screen_routes_to_finance_reference
 tests/test_wireframe_samples.py::test_loan_screen_routes_to_sample
 tests/test_wireframe_samples.py::test_reference_router_prefers_live_sample_for_loans
+
+[flaky]
+# All three pass alone and fail in a full run when the AI provider answers
+# 429 under load. One cause, three symptoms; the load-shedding is the fix.
+tests/test_sessions.py::test_explain_term_falls_back_without_ai_provider
+tests/test_sessions.py::test_facilitator_skipped_in_observer_mode_emits_ws_event
+tests/test_sessions.py::test_summarize_recent_falls_back_without_ai_provider
