@@ -282,3 +282,20 @@ export function previewLine(preview: Pick<ContextPreview, 'sources' | 'window'>)
       : '';
   return [...counts, ...(range ? [range] : [])].join(', ');
 }
+
+/** The tags the reader added on top of the mode's defaults. */
+export function customTags(scope: ContextScope, defaults: readonly string[] = []): string[] {
+  return scope.tags.filter((tag) => !defaults.includes(tag));
+}
+
+/**
+ * The three keys a run body carries once a scope was chosen. Nothing when the
+ * sidecar has no context routes, so an older engine sees the body it always saw.
+ */
+export function runBody(scope: ContextScope | null, available: boolean): Record<string, unknown> {
+  if (!available || !scope) return {};
+  const body: Record<string, unknown> = { context: serializeScope(scope), tags: [...scope.tags] };
+  const project = scope.projects[0]?.trim();
+  if (project) body['project_label'] = project;
+  return body;
+}

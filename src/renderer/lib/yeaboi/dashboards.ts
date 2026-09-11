@@ -115,7 +115,13 @@ export function runStandup(
   sessionId: string,
   deliver: boolean,
   onLine: (line: RunLine) => void,
-  opts: { solo?: boolean; projectId?: string } = {},
+  opts: {
+    solo?: boolean;
+    projectId?: string;
+    context?: unknown;
+    project_label?: string;
+    tags?: string[];
+  } = {},
 ): Promise<void> {
   const body: Record<string, unknown> = {
     session_id: sessionId,
@@ -123,6 +129,9 @@ export function runStandup(
     solo: opts.solo ?? false,
   };
   if (opts.projectId) body.project_id = opts.projectId;
+  if (opts.context !== undefined) body.context = opts.context;
+  if (opts.project_label) body.project_label = opts.project_label;
+  if (opts.tags) body.tags = opts.tags;
   return apiStream('/api/standup/run', body, (line) => onLine(line as RunLine));
 }
 
@@ -175,6 +184,10 @@ export interface RunRequest {
   model: string | null;
   /** An engine project (`proj-<8hex>`) the run shares context through. */
   project_id?: string;
+  /** What this run may read from earlier sessions — see lib/context/scope.ts. */
+  context?: unknown;
+  project_label?: string;
+  tags?: string[];
 }
 
 export function loadAnalysisOptions(): Promise<AnalysisOptions> {

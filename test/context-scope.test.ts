@@ -9,12 +9,14 @@ import {
   WINDOW_PRESETS,
   addTag,
   allSources,
+  customTags,
   defaultScope,
   isIncognito,
   noSources,
   normalizeTag,
   previewLine,
   removeTag,
+  runBody,
   scopeSummary,
   serializeScope,
   setProject,
@@ -198,5 +200,48 @@ describe('the summaries', () => {
     ]) {
       expect(text).not.toMatch(/[·→—]/);
     }
+  });
+});
+
+describe('runBody', () => {
+  const scope: ContextScope = {
+    sources: ['standup', 'retro'],
+    window: { kind: 'sprints', count: 2 },
+    projects: ['Atlas'],
+    tags: ['mode:standup', 'q3'],
+    limits: {},
+  };
+
+  it('carries the scope, the project label and the tags once the routes exist', () => {
+    expect(runBody(scope, true)).toEqual({
+      context: {
+        sources: ['standup', 'retro'],
+        window: { kind: 'sprints', count: 2 },
+        projects: ['Atlas'],
+        tags: ['mode:standup', 'q3'],
+        limits: {},
+      },
+      project_label: 'Atlas',
+      tags: ['mode:standup', 'q3'],
+    });
+  });
+
+  it('leaves the project label out when there is none', () => {
+    const body = runBody({ ...scope, projects: [] }, true);
+    expect(body).not.toHaveProperty('project_label');
+    expect(body).toHaveProperty('context');
+  });
+
+  it('is empty for an older sidecar, so the run body is what it always was', () => {
+    expect(runBody(scope, false)).toEqual({});
+    expect(runBody(null, true)).toEqual({});
+  });
+});
+
+describe('customTags', () => {
+  it('is the tags the reader added on top of the defaults', () => {
+    const scope = defaultScope(OPTIONS);
+    expect(customTags(scope, OPTIONS.defaults.tags)).toEqual([]);
+    expect(customTags(addTag(scope, 'Q3 launch'), OPTIONS.defaults.tags)).toEqual(['q3-launch']);
   });
 });

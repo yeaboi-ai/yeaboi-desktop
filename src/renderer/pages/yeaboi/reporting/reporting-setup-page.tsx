@@ -22,6 +22,8 @@ import {
   resolveWindow,
   runReport,
 } from '@/lib/yeaboi/modes';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -58,6 +60,7 @@ const inputClass =
 function ReportingSetupBody() {
   const router = useRouter();
   const { audience } = useAudience();
+  const reads = useContextScope('reporting');
   const [options, setOptions] = useState<ReportingOptions | null>(null);
   const [period, setPeriod] = useState('');
   const [theme, setTheme] = useState('midnight');
@@ -115,7 +118,13 @@ function ReportingSetupBody() {
     let state = emptyModeRun();
     setRun(state);
     try {
-      const body: Record<string, unknown> = { period, theme, sources, solo: audience === 'solo' };
+      const body: Record<string, unknown> = {
+        period,
+        theme,
+        sources,
+        solo: audience === 'solo',
+        ...reads.body(),
+      };
       if (period === QUARTER && sprints) {
         // Empty checks and no sprint list are different answers: with no list
         // at all the backend already handed back the calendar-quarter window.
@@ -295,6 +304,14 @@ function ReportingSetupBody() {
           ))}
         </div>
       </Section>
+
+      <ContextPicker
+        mode="reporting"
+        options={reads.options}
+        scope={reads.scope}
+        onChange={reads.setScope}
+        disabled={busy}
+      />
 
       <div className="flex items-center gap-2">
         <Button disabled={busy || !canRun} onClick={() => void start()}>
