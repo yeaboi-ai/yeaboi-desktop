@@ -10,11 +10,8 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { stampLastViewedSession } from '@/lib/api/teams';
 import { X, Trash2, Pencil, ClipboardList, FileText, Check, RotateCcw } from 'lucide-react';
 import { EditProjectDialog } from '@/components/edit-project-dialog';
-import { DashboardGrid } from '@/components/project-layout-grid';
 import { FirstRunCard } from '@/components/projects/first-run-card';
 import { RunLinksPanel } from '@/components/projects/run-links-panel';
-import { HiddenPanelsMenu } from '@/components/layout-toolbar';
-import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-layout';
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
 import { DemoTour } from '@/components/onboarding/demo-tour';
 import { PageShell } from '@/components/page-shell';
@@ -1009,20 +1006,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [boardSummary, setBoardSummary] = useState<BoardSummary | null>(null);
   const [analyticsMetrics, setAnalyticsMetrics] = useState<AnalyticsSummary | null>(null);
   const [engMetrics, setEngMetrics] = useState<EngMetricsSummary | null>(null);
-  const [diagrams, setDiagrams] = useState<
-    Array<{
-      session_id: string;
-      session_title: string | null;
-      diagram: {
-        type: string;
-        title?: string;
-        nodes?: unknown[];
-        tables?: unknown[];
-        screens?: unknown[];
-      };
-      created_at: string | null;
-    }>
-  >([]);
   const [iterations, setIterations] = useState<
     Array<{
       id: string;
@@ -1038,52 +1021,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   >([]);
   const [activeIterationId, setActiveIterationId] = useState<string | null>(null);
 
-  // Dashboard layout customisation
-  const dashboardPanels: DashboardPanelDef[] = useMemo(
-    () => [
-      { id: 'sessions', label: 'Sessions' },
-      { id: 'blueprint', label: 'Blueprint' },
-      { id: 'plan', label: 'Plan' },
-      { id: 'diagrams', label: 'Diagrams' },
-      { id: 'board', label: 'Board' },
-      { id: 'analytics', label: 'Analytics' },
-      { id: 'repository', label: 'Repository' },
-    ],
-    [],
-  );
-
-  const {
-    layouts: dashboardLayouts,
-    hiddenPanels: hiddenPanelDefs,
-    onLayoutChange,
-    hidePanel,
-    showPanel,
-    toggleExpand,
-    isExpanded,
-    visiblePanels,
-  } = useDashboardLayout(dashboardPanels, `project_dashboard_layout_${id}`);
-
-  // Get board panel dimensions for size-responsive rendering
-  const boardLayout = useMemo(() => {
-    const lg = dashboardLayouts.lg;
-    if (!lg) return { w: 1, h: 3 };
-    const item = lg.find((i: { i: string }) => i.i === 'board');
-    return item ? { w: item.w, h: item.h } : { w: 1, h: 3 };
-  }, [dashboardLayouts]);
-
-  const analyticsLayout = useMemo(() => {
-    const lg = dashboardLayouts.lg;
-    if (!lg) return { w: 1, h: 3 };
-    const item = lg.find((i: { i: string }) => i.i === 'analytics');
-    return item ? { w: item.w, h: item.h } : { w: 1, h: 3 };
-  }, [dashboardLayouts]);
-
-  const sessionsLayout = useMemo(() => {
-    const lg = dashboardLayouts.lg;
-    if (!lg) return { w: 1, h: 3 };
-    const item = lg.find((i: { i: string }) => i.i === 'sessions');
-    return item ? { w: item.w, h: item.h } : { w: 1, h: 3 };
-  }, [dashboardLayouts]);
+  // The panels stack in one column; the wide layout is the only one.
+  const boardLayout = { w: 12, h: 3 };
+  const analyticsLayout = { w: 12, h: 3 };
+  const sessionsLayout = { w: 12, h: 3 };
 
   useEffect(() => {
     if (!ready) return;
@@ -1096,7 +1037,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         blueprintResp,
         boardResp,
         iterResp,
-        diagramsResp,
         analyticsResp,
         engResp,
       ] = await Promise.all([
@@ -1106,7 +1046,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         authFetch(`/api/sessions/${id}/blueprint`),
         authFetch(`/api/board-proxy?sessionId=${id}`),
         authFetch(`/api/sessions/${id}/iterations`),
-        authFetch(`/api/sessions/${id}/diagrams`),
         authFetch(`/api/analytics-proxy?endpoint=aggregate&sessionId=${id}`),
         authFetch(`/api/analytics-proxy?endpoint=engineering&sessionId=${id}`),
       ]);
@@ -1128,8 +1067,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
 
       if (boardResp.ok) setBoardSummary(await boardResp.json());
-
-      if (diagramsResp.ok) setDiagrams(await diagramsResp.json());
 
       if (iterResp.ok) {
         const iters = await iterResp.json();
@@ -1542,14 +1479,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-10 animate-fade-in stagger-2 relative z-[100]">
-          <div className="h-px bg-border flex-1" />
-          {!firstRun && hiddenPanelDefs.length > 0 && (
-            <div className="ml-4">
-              <HiddenPanelsMenu hiddenPanels={hiddenPanelDefs} onShow={showPanel} />
-            </div>
-          )}
-        </div>
+        <div className="h-px bg-border mb-10 animate-fade-in stagger-2" />
 
         {/* Active sessions — prominent at the top */}
         {activeSessions.length > 0 && (
@@ -1589,16 +1519,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <RunLinksPanel />
             </div>
 
-            {/* Customisable Dashboard grid */}
+            {/* The panels, one column */}
             <div className="mb-10 animate-slide-up stagger-3">
-              <DashboardGrid
-                layouts={dashboardLayouts}
-                onLayoutChange={onLayoutChange}
-                visiblePanelIds={visiblePanels.map((p) => p.id)}
-                onHide={hidePanel}
-                onToggleExpand={toggleExpand}
-                isExpanded={isExpanded}
-              >
+              <div className="space-y-6">
                 {/* Panel: Releases */}
                 <div key="sessions" className="h-full">
                   <DashboardPanel label="Releases">
@@ -1934,66 +1857,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   </DashboardPanel>
                 </div>
 
-                {/* Panel: Diagrams */}
-                <div key="diagrams" className="h-full">
-                  <DashboardPanel label="Diagrams">
-                    {diagrams.length === 0 ? (
-                      <p className="text-xs text-muted-foreground/50 font-body">
-                        No diagrams yet. Start a session and ask for a flow, architecture, or ERD
-                        diagram.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {diagrams.slice(0, 6).map((d) => {
-                          const typeLabels: Record<string, string> = {
-                            flow: 'User Flow',
-                            architecture: 'Architecture',
-                            erd: 'Data Model',
-                            wireframe: 'Wireframes',
-                          };
-                          const typeColors: Record<string, string> = {
-                            flow: 'text-blue-400',
-                            architecture: 'text-success',
-                            erd: 'text-violet-400',
-                            wireframe: 'text-amber-400',
-                          };
-                          const nodeCount =
-                            d.diagram.nodes?.length ??
-                            d.diagram.tables?.length ??
-                            d.diagram.screens?.length ??
-                            0;
-                          return (
-                            <Link
-                              key={d.session_id}
-                              href={`/projects/${project?.id}/sessions/${d.session_id}`}
-                              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-white/[0.03] transition-colors group"
-                            >
-                              <div className="min-w-0">
-                                <span
-                                  className={`text-[10px] font-body font-medium uppercase tracking-wide ${typeColors[d.diagram.type] ?? 'text-white/50'}`}
-                                >
-                                  {typeLabels[d.diagram.type] ?? d.diagram.type}
-                                </span>
-                                <p className="text-xs font-body text-foreground/80 truncate">
-                                  {d.diagram.title || d.session_title || 'Untitled'}
-                                </p>
-                              </div>
-                              <span className="text-[10px] font-body text-muted-foreground/40 shrink-0 ml-2">
-                                {nodeCount} nodes
-                              </span>
-                            </Link>
-                          );
-                        })}
-                        {diagrams.length > 6 && (
-                          <p className="text-[10px] font-body text-muted-foreground/40 px-3">
-                            +{diagrams.length - 6} more
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </DashboardPanel>
-                </div>
-
                 {/* Panel: Board */}
                 <div key="board" className="h-full">
                   <DashboardPanel label="Board">
@@ -2054,7 +1917,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <DeliverablesPanel projectId={id} />
                   </DashboardPanel>
                 </div>
-              </DashboardGrid>
+              </div>
             </div>
           </>
         )}

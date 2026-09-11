@@ -1,29 +1,14 @@
 'use client';
 
-// The live planning session: the canvas as the base layer (diagrams,
-// wireframes, the AI's drawing surface), with chat and the living blueprint
-// as floating drawers over it — the web app's layout, restored. The same
-// status-gated fullscreen states wrap it (resume / review / recap), and
-// canvasFullscreen hides all chrome (Escape brings it back).
+// The live planning session: the chat and the living blueprint side by side,
+// with the same status-gated fullscreen states around them (resume / review /
+// recap).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  Check,
-  ClipboardList,
-  Copy,
-  FileText,
-  MessageSquareText,
-  MonitorPlay,
-  Pencil,
-  X,
-} from 'lucide-react';
-import CanvasEngine from '@/components/canvas/CanvasEngine';
-import { CanvasErrorBoundary } from '@/components/canvas/CanvasErrorBoundary';
-import { SimulatorViewport, type SimScreen } from '@/components/canvas/simulator-viewport';
+import { Check, ClipboardList, Copy, FileText, MessageSquareText, Pencil, X } from 'lucide-react';
 import { CallLayer } from '@/components/session/call-layer';
 import { useCallState } from './use-call-state';
-import { useCanvasState } from './use-canvas-state';
 import { ChatPanel } from '@/components/session/chat-panel';
 import { ParticipantList } from '@/components/session/participant-list';
 import { ReviewScreen } from '@/components/session/review-screen';
@@ -110,13 +95,8 @@ export default function SessionPage() {
     ai,
   });
 
-  // ── The canvas base layer ──────────────────────────────────────────────
-  const canvas = useCanvasState({ sessionId, authFetch, ready: data.ready, events });
-
   // ── The call (LiveKit) ─────────────────────────────────────────────────
   const call = useCallState({ sessionId, authFetch });
-  const [canvasFullscreen, setCanvasFullscreen] = useState(false);
-  const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
 
   // ── Page chrome state ──────────────────────────────────────────────────
@@ -351,16 +331,6 @@ export default function SessionPage() {
         },
       },
       {
-        id: 'canvas.fullscreen',
-        label: 'Canvas fullscreen',
-        keys: 'f',
-        group: 'Navigation',
-        run: (e) => {
-          e.preventDefault();
-          setCanvasFullscreen((o) => !o);
-        },
-      },
-      {
         id: 'ui.ai-settings',
         label: 'AI settings',
         keys: 's',
@@ -389,16 +359,6 @@ export default function SessionPage() {
   );
   useSessionShortcuts(sessionShortcuts);
 
-  // Escape walks out of canvas fullscreen — the one key everyone tries.
-  useEffect(() => {
-    if (!canvasFullscreen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setCanvasFullscreen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [canvasFullscreen]);
-
   const readOnly = session?.status === 'completed' || session?.status === 'archived';
 
   const resolvePersonaAvatar = useCallback(
@@ -417,35 +377,6 @@ export default function SessionPage() {
       return { videoPreviewUrl: null, slug: persona.slug };
     },
     [blueprintPersonas],
-  );
-
-  // Wirescreens with real HTML are what the device simulator can run.
-  const simScreens: SimScreen[] = useMemo(
-    () =>
-      canvas.nodes
-        .filter((node) => {
-          const html = (node.data as { html?: unknown })?.html;
-          return (
-            node.type === 'wirescreen' &&
-            !(node.id ?? '').startsWith('__skeleton') &&
-            typeof html === 'string' &&
-            html.length > 0
-          );
-        })
-        .map((node) => {
-          const nodeData = node.data as Record<string, unknown>;
-          return {
-            id: node.id,
-            name: String(nodeData['label'] ?? node.id),
-            kind: (nodeData['kind'] as string) || 'screen',
-            html: String(nodeData['html'] ?? ''),
-            device: nodeData['device'],
-            triggerFrom: nodeData['triggerFrom'],
-            width: nodeData['width'],
-            height: nodeData['height'],
-          } as SimScreen;
-        }),
-    [canvas.nodes],
   );
 
   // ── Status-gated fullscreen states ─────────────────────────────────────
@@ -489,10 +420,8 @@ export default function SessionPage() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background flex flex-col">
-      {/* ── Header bar (gone in canvas fullscreen; Escape brings it back) ── */}
-      <header
-        className={`flex items-center gap-3 px-4 h-14 shrink-0 border-b border-border/60 bg-background/90 ${canvasFullscreen ? 'hidden' : ''}`}
-      >
+      {/* ── Header bar ── */}
+      <header className="flex items-center gap-3 px-4 h-14 shrink-0 border-b border-border/60 bg-background/90">
         <button
           onClick={() => router.push(`/sessions/${projectId}`)}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-foreground/80 hover:bg-foreground/[0.05] transition-all shrink-0"
@@ -648,15 +577,6 @@ export default function SessionPage() {
             Wrap up session
           </button>
         )}
-        {simScreens.length > 0 && (
-          <button
-            onClick={() => setSimulatorOpen((o) => !o)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${simulatorOpen ? 'text-foreground bg-foreground/[0.08]' : 'text-muted-foreground/70 hover:text-foreground/80'}`}
-            title="Run the wireframes in the device simulator"
-          >
-            <MonitorPlay className="h-3.5 w-3.5" />
-          </button>
-        )}
         <button
           onClick={() => setChatOpen((o) => !o)}
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${chatOpen ? 'text-foreground bg-foreground/[0.08]' : 'text-muted-foreground/70 hover:text-foreground/80'}`}
@@ -673,38 +593,10 @@ export default function SessionPage() {
         </button>
       </header>
 
-      {/* ── Canvas base layer + floating drawers ── */}
-      <div className="flex-1 relative min-h-0">
-        <div className="absolute inset-0 z-0 isolate">
-          <CanvasErrorBoundary>
-            <CanvasEngine
-              key={canvas.canvasEpoch}
-              initialNodes={canvas.nodes}
-              initialEdges={canvas.edges}
-              onNodesChange={(nodes) => canvas.setNodes(nodes)}
-              onEdgesChange={(edges) => canvas.setEdges(edges)}
-              sessionId={sessionId}
-              authFetch={authFetch}
-              onClearCanvas={canvas.clear}
-              chatOpen={chatOpen && !canvasFullscreen}
-              blueprintOpen={sidePaneOpen && !canvasFullscreen}
-              fullscreen={canvasFullscreen}
-              onToggleFullscreen={() => setCanvasFullscreen((v) => !v)}
-            />
-          </CanvasErrorBoundary>
-          <SimulatorViewport
-            open={simulatorOpen}
-            sessionId={sessionId}
-            screens={simScreens}
-            onClose={() => setSimulatorOpen(false)}
-            leftInset={chatOpen && !canvasFullscreen ? 420 : 0}
-            rightInset={sidePaneOpen && !canvasFullscreen ? 440 : 0}
-          />
-        </div>
-
-        {/* Chat drawer (left, floating over the canvas) */}
-        {chatOpen && !canvasFullscreen && (
-          <div className="absolute left-0 top-0 bottom-0 z-10 w-[420px] flex flex-col border-r border-border/60 bg-background/95 backdrop-blur-sm">
+      {/* ── The two panes: chat, and the blueprint beside it ── */}
+      <div className="flex-1 flex min-h-0">
+        {chatOpen && (
+          <div className="flex-1 min-w-0 flex flex-col border-r border-border/60 bg-background">
             {ai.agentIntent && (
               <AgentIntentStrip
                 intent={ai.agentIntent.intent}
@@ -746,8 +638,8 @@ export default function SessionPage() {
           </div>
         )}
 
-        {sidePaneOpen && !canvasFullscreen && (
-          <aside className="absolute right-0 top-0 bottom-0 z-10 w-[440px] border-l border-border/60 flex flex-col min-h-0 bg-background/95 backdrop-blur-sm">
+        {sidePaneOpen && (
+          <aside className="w-[440px] shrink-0 flex flex-col min-h-0 bg-background">
             <div className="flex items-center gap-1 px-3 h-10 shrink-0 border-b border-border/40">
               {(['blueprint', 'debug'] as const).map((t) => (
                 <button
