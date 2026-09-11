@@ -685,9 +685,10 @@ export function NikoBar() {
               ref={scrollRef}
               onScroll={readFade}
               data-fade={fade}
-              // The overhang is per side and lives on the bubbles: the duck
-              // leans out to the left, you lean out to the right.
-              className={`quiet-scroll flex min-h-0 flex-1 flex-col px-1 py-1 ${
+              // Wider than the composer, with the extra as padding: the rows
+              // lean out into it. Without the room `overflow-y-auto` clips the
+              // horizontal too, and the duck was cut off at the edge.
+              className={`quiet-scroll -mx-12 flex min-h-0 flex-1 flex-col px-12 py-1 ${
                 settling ? 'overflow-hidden' : 'overflow-y-auto'
               }`}
             >

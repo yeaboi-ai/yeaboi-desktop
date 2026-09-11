@@ -88,9 +88,10 @@ function AssistantBubble({ message, isStreaming, onAnswer }: NikoMessageProps) {
   const empty = !typed && !hasTools && !message.bubble;
 
   return (
-    // And the duck leans out the other way, so the conversation sits across
-    // the composer rather than inside the channel it cuts.
-    <div className="group -ml-3 flex justify-start gap-2">
+    // Far enough that the BUBBLE clears the composer's left edge, not just the
+    // duck: he is 24px wide with a gap in front of it, so a small nudge only
+    // moved him out and left what he says still inside the channel.
+    <div className="group -ml-[42px] flex justify-start gap-2">
       <DuckMark size={24} state={isStreaming ? 'urgent' : 'idle'} className="mt-0.5 shrink-0" />
       <div className="flex max-w-[85%] flex-col items-start gap-1.5">
         <div
