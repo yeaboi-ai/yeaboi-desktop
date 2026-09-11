@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useAuthFetch, getStoredTeamId } from '@/hooks/use-auth-fetch';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { stampLastViewedProject } from '@/lib/api/teams';
+import { stampLastViewedSession } from '@/lib/api/teams';
 import { X, Trash2, Pencil, ClipboardList, FileText, Check, RotateCcw } from 'lucide-react';
 import { EditProjectDialog } from '@/components/edit-project-dialog';
 import { DashboardGrid } from '@/components/project-layout-grid';
@@ -1181,7 +1181,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     if (!project?.id || !ready) return;
     const teamId = getStoredTeamId();
     if (!teamId) return;
-    void stampLastViewedProject({ teamId, projectId: project.id, authFetch });
+    void stampLastViewedSession({ teamId, sessionId: project.id, authFetch });
   }, [project?.id, ready, authFetch]);
 
   const handleDeleteSession = useCallback(

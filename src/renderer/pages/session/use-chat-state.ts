@@ -203,7 +203,7 @@ export function useChatState({
 
       const formData = new FormData();
       formData.append('file', file);
-      const resp = await authFetch(`/api/sessions/${sessionId}/attachments`, {
+      const resp = await authFetch(`/api/sessions/${sessionId}/chat-attachments`, {
         method: 'POST',
         body: formData,
       });

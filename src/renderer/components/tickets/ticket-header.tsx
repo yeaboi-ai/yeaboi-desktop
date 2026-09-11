@@ -20,8 +20,8 @@ import { TemplateBadge } from './template-badge';
 
 interface Props {
   card: Card;
-  projectKey: string | null;
-  projectName: string | null;
+  sessionKey: string | null;
+  sessionName: string | null;
   saving: boolean;
   saved: boolean;
   onTitleChange: (title: string) => void;
@@ -41,8 +41,8 @@ interface Props {
 
 export function TicketHeader({
   card,
-  projectKey,
-  projectName,
+  sessionKey,
+  sessionName,
   saving,
   saved,
   onTitleChange,
@@ -55,7 +55,7 @@ export function TicketHeader({
 }: Props) {
   const friendly =
     card.friendly_id ??
-    formatTicketKey({ key: projectKey, number: card.number ?? null }) ??
+    formatTicketKey({ key: sessionKey, number: card.number ?? null }) ??
     card.id.slice(0, 8);
 
   const templates = useTicketTemplates();
@@ -91,8 +91,8 @@ export function TicketHeader({
     }
   };
 
-  const boardHref = card.project_id
-    ? `/board?project=${card.project_id}&card=${card.id}`
+  const boardHref = card.session_id
+    ? `/board?project=${card.session_id}&card=${card.id}`
     : `/board?card=${card.id}`;
 
   return (
@@ -105,10 +105,10 @@ export function TicketHeader({
               <ArrowLeft className="h-3 w-3" /> Board
             </Link>
           )}
-          {projectName && (
+          {sessionName && (
             <>
               <span className="opacity-50">/</span>
-              <span className="truncate max-w-[180px]">{projectName}</span>
+              <span className="truncate max-w-[180px]">{sessionName}</span>
             </>
           )}
           <span className="opacity-50">/</span>

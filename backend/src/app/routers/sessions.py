@@ -120,7 +120,6 @@ async def create_from_review(
         await db.commit()
 
     # Generate tasks in background
-    session_id = session_obj.id if session_obj else None
     asyncio.create_task(_generate_tasks_on_complete(session_id))
 
     return {"status": "creating", "session_id": session_id}
@@ -138,10 +137,8 @@ async def _generate_tasks_on_complete(session_id: str) -> None:
             org_id = proj_result.scalar_one_or_none()
 
             bp = await get_or_create_blueprint(session_id, db)
-            board = await generate_tasks_from_blueprint(
-                session_id, bp.content, db, org_id=org_id, session_id=session_id
-            )
-            logger.info("Generated kanban board with %d columns for project %s", len(board.columns), session_id)
+            board = await generate_tasks_from_blueprint(session_id, bp.content, db, org_id=org_id)
+            logger.info("Generated kanban board with %d columns for session %s", len(board.columns), session_id)
     except Exception as e:
         logger.error("Failed to generate tasks on session complete: %s", e, exc_info=True)
 
@@ -584,10 +581,11 @@ async def commit_stories(
         select(Session).where(Session.id == session_id, Session.status == "reviewing")
     )
     session_obj = sess_result.scalar_one_or_none()
-    session_id = session_obj.id if session_obj else None
 
     from ..services.task_generator import persist_tasks_to_board
 
+    # The path parameter, not the row: a session that is not under review has
+    # no row here, and the board still belongs to the session that was asked for.
     _board, task_count = await persist_tasks_to_board(session_id, tasks_dicts, db)
 
     if session_obj:
@@ -1488,6 +1486,31 @@ async def create_session(
     db.add(session)
     await db.flush()
 
+    # The iteration above was forked for THIS session, but it is written under
+    # the session it forked from — and every blueprint read keys on the
+    # session's own id, so leaving it there opens the follow-up on an empty
+    # blueprint and starts a second v1 in the same iteration. Re-own it, unless
+    # some other session already sits on it.
+    if new_iter.session_id != session.id:
+        from ..models.blueprint import BlueprintSnapshot
+
+        bound_elsewhere = (
+            await db.execute(
+                select(Session.id).where(
+                    Session.iteration_id == new_iter.id,
+                    Session.id != session.id,
+                )
+            )
+        ).first()
+        if not bound_elsewhere:
+            new_iter.session_id = session.id
+            await db.execute(
+                BlueprintSnapshot.__table__.update()
+                .where(BlueprintSnapshot.iteration_id == new_iter.id)
+                .values(session_id=session.id)
+            )
+            await db.flush()
+
     # Auto-add creator as host
     participant = Participant(session_id=session.id, user_id=user.id, role="host")
     db.add(participant)
@@ -1605,7 +1628,7 @@ async def create_session(
     # do not: the reading is already in the blueprint by then.
     if is_first_session and attachment_rows:
         asyncio.create_task(
-            _read_project_screenshots_safe(session.id, org.id, new_iter.id)
+            _read_project_screenshots_safe(session_id, session.id, org.id, new_iter.id)
         )
 
     # Reload with participants and user info
@@ -1756,14 +1779,19 @@ async def update_session(
     if not privileged and session.owner_id != user.id:
         raise HTTPException(status_code=403, detail="Only the host or a co-host can update the session")
 
+    # One column, one table. A session carries the workspace's words and the
+    # conversation's on the same `status`, so every legal move is here rather
+    # than split across two guards — the split is what let a session created
+    # through POST /api/sessions (status "active") reach no state at all.
     VALID_TRANSITIONS = {
-        "created": {"lobby", "live"},
-        "lobby": {"live"},
+        "created": {"lobby", "live", "completed"},
+        "active": {"lobby", "live", "completed"},
+        "lobby": {"live", "completed"},
         "live": {"paused", "completed", "reviewing"},
         "reviewing": {"completed", "live"},  # "live" lets the wizard cancel back to filling
         "paused": {"live", "completed"},
-        "completed": {"archived"},
-        "archived": set(),
+        "completed": {"active", "archived"},  # "active" is the ledger's Reopen
+        "archived": {"active"},
     }
     update_data = body.model_dump(exclude_unset=True)
     # The workspace half: granularity + modifier slugs are checked against the
@@ -1811,25 +1839,19 @@ async def update_session(
 
         update_data["references"] = dedupe_references(update_data["references"])
 
-    # A session carries two vocabularies on one column: the workspace's
-    # (active | completed) and the conversation's lifecycle above. An unknown
-    # word is rejected outright; a known one still has to be a legal move.
-    _WORKSPACE_STATES = {"active", "completed"}
     if "status" in update_data:
         wanted = update_data["status"]
-        known = _WORKSPACE_STATES | set(VALID_TRANSITIONS)
-        if wanted not in known:
+        if wanted not in VALID_TRANSITIONS:
             raise HTTPException(
                 status_code=422,
-                detail=f"unknown status '{wanted}'; expected one of {sorted(known)}",
+                detail=f"unknown status '{wanted}'; expected one of {sorted(VALID_TRANSITIONS)}",
             )
-        if wanted not in _WORKSPACE_STATES:
-            allowed = VALID_TRANSITIONS.get(session.status, set())
-            if wanted not in allowed:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Cannot transition from '{session.status}' to '{wanted}'. Allowed: {allowed}",
-                )
+        allowed = VALID_TRANSITIONS.get(session.status, set())
+        if wanted != session.status and wanted not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot transition from '{session.status}' to '{wanted}'. Allowed: {sorted(allowed)}",
+            )
 
     # Strip voice fields from ai_config — these are managed via Studio personas now
     if "ai_config" in update_data and isinstance(update_data["ai_config"], dict):
@@ -1951,211 +1973,6 @@ async def join_session(
         session = result.scalar_one()
 
     return _serialize_session(session)
-
-
-@router.delete("/api/sessions/{session_id}", status_code=204)
-async def delete_session(
-    session_id: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> None:
-    result = await db.execute(select(Session).where(Session.id == session_id))
-    session = result.scalar_one_or_none()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    # Verify ownership via project
-    result = await db.execute(select(Session).where(Session.id == session.id, Session.id.isnot(None)))
-    if not result.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Only the project owner can delete sessions")
-
-    from sqlalchemy import delete as sa_delete
-    from sqlalchemy import func as sa_func
-
-    from ..models.blueprint import BlueprintIteration, BlueprintSnapshot
-    from ..models.board import Board, BoardColumn, Card
-    from ..models.feedback import Feedback
-    from ..models.session import TranscriptEntry
-    from ..models.session_event import SessionContext, SessionEvent
-    from ..models.vocabulary import TranscriptionCorrection
-    from ..schemas.blueprint import EMPTY_BLUEPRINT
-
-    async def _purge_session_children(session_ids: list[str]) -> None:
-        """Remove or null out all rows referencing sessions.id for the given ids.
-
-        These tables have FK → sessions.id without DB-level cascade; the bulk
-        Session delete (or ORM delete without ORM cascade coverage) will fail
-        unless we clear them first.
-        """
-        if not session_ids:
-            return
-        await db.execute(sa_delete(ChatMessage).where(ChatMessage.session_id.in_(session_ids)))
-        await db.execute(sa_delete(Participant).where(Participant.session_id.in_(session_ids)))
-        await db.execute(sa_delete(TranscriptEntry).where(TranscriptEntry.session_id.in_(session_ids)))
-        await db.execute(sa_delete(SessionEvent).where(SessionEvent.session_id.in_(session_ids)))
-        await db.execute(sa_delete(SessionContext).where(SessionContext.session_id.in_(session_ids)))
-        await db.execute(
-            TranscriptionCorrection.__table__.update()
-            .where(TranscriptionCorrection.session_id.in_(session_ids))
-            .values(session_id=None)
-        )
-        await db.execute(
-            Feedback.__table__.update().where(Feedback.session_id.in_(session_ids)).values(session_id=None)
-        )
-        await db.execute(Card.__table__.update().where(Card.session_id.in_(session_ids)).values(session_id=None))
-
-    # Check if this session is bound to a locked iteration
-    bound_to_locked = False
-    if session.iteration_id:
-        iter_result = await db.execute(
-            select(BlueprintIteration).where(
-                BlueprintIteration.id == session.iteration_id,
-                BlueprintIteration.status == "locked",
-            )
-        )
-        bound_locked_iter = iter_result.scalar_one_or_none()
-        if bound_locked_iter:
-            bound_to_locked = True
-            # Detach session from iteration before any deletions
-            session.iteration_id = None
-            await db.flush()
-
-    # If this is the completing session, cascade-delete the iteration and descendants
-    if bound_to_locked and session.status == "completed":
-        locked_iter = bound_locked_iter
-
-        # Collect this iteration and all descendants (BFS)
-        iter_ids_to_delete = [locked_iter.id]
-        queue = [locked_iter.id]
-        while queue:
-            parent_id = queue.pop()
-            child_result = await db.execute(
-                select(BlueprintIteration.id).where(BlueprintIteration.forked_from_id == parent_id)
-            )
-            child_ids = list(child_result.scalars().all())
-            iter_ids_to_delete.extend(child_ids)
-            queue.extend(child_ids)
-
-        # 1. Delete child sessions bound to these iterations (except current)
-        child_sess_result = await db.execute(
-            select(Session.id).where(
-                Session.iteration_id.in_(iter_ids_to_delete),
-                Session.id != session_id,
-            )
-        )
-        child_session_ids = list(child_sess_result.scalars().all())
-
-        if child_session_ids:
-            # Null out snapshot references to these sessions (SET NULL doesn't fire on bulk delete)
-            await db.execute(
-                BlueprintSnapshot.__table__.update()
-                .where(BlueprintSnapshot.session_id.in_(child_session_ids))
-                .values(session_id=None)
-            )
-            await _purge_session_children(child_session_ids)
-            await db.execute(sa_delete(Session).where(Session.id.in_(child_session_ids)))
-
-        # 2. Delete boards scoped to these iterations
-        board_ids_result = await db.execute(select(Board.id).where(Board.iteration_id.in_(iter_ids_to_delete)))
-        board_ids = list(board_ids_result.scalars().all())
-        if board_ids:
-            col_ids_result = await db.execute(select(BoardColumn.id).where(BoardColumn.board_id.in_(board_ids)))
-            col_ids = list(col_ids_result.scalars().all())
-            if col_ids:
-                await db.execute(sa_delete(Card).where(Card.column_id.in_(col_ids)))
-            await db.execute(sa_delete(BoardColumn).where(BoardColumn.board_id.in_(board_ids)))
-            await db.execute(sa_delete(Board).where(Board.id.in_(board_ids)))
-
-        # 3. Delete snapshots
-        await db.execute(sa_delete(BlueprintSnapshot).where(BlueprintSnapshot.iteration_id.in_(iter_ids_to_delete)))
-
-        # 4. Delete iterations in reverse order (children before parents for self-FK)
-        for iter_id in reversed(iter_ids_to_delete):
-            await db.execute(sa_delete(BlueprintIteration).where(BlueprintIteration.id == iter_id))
-
-        logger.info(
-            "Cascade-deleted %d iterations for session %s",
-            len(iter_ids_to_delete),
-            session_id,
-        )
-
-    # Check if this is the last session for the project
-    count_result = await db.execute(
-        select(sa_func.count())
-        .select_from(Session)
-        .where(
-            Session.id == session.id,
-            Session.id != session_id,
-        )
-    )
-    remaining_sessions = count_result.scalar() or 0
-
-    if remaining_sessions == 0:
-        # Last session — delete ALL remaining blueprint data and start fresh
-        # The current session still holds sessions.iteration_id → one of the iterations
-        # we're about to delete; detach it first so the bulk iteration delete is unblocked.
-        if session.iteration_id is not None:
-            session.iteration_id = None
-            await db.flush()
-        # Null out session_id references on snapshots (avoid FK issues)
-        await db.execute(
-            BlueprintSnapshot.__table__.update()
-            .where(BlueprintSnapshot.session_id == session.id)
-            .values(session_id=None)
-        )
-        await db.execute(sa_delete(BlueprintSnapshot).where(BlueprintSnapshot.session_id == session.id))
-        # Clear self-FK references first, then delete remaining iterations
-        await db.execute(
-            BlueprintIteration.__table__.update()
-            .where(BlueprintIteration.session_id == session.id)
-            .values(forked_from_id=None)
-        )
-        await db.execute(sa_delete(BlueprintIteration).where(BlueprintIteration.session_id == session.id))
-        reset = BlueprintSnapshot(
-            session_id=session.id,
-            version_number=1,
-            content=EMPTY_BLUEPRINT.copy(),
-            created_by="system_reset",
-        )
-        db.add(reset)
-    elif not bound_to_locked:
-        # Not the last session, and not bound to a locked iteration — revert changes
-        # (Skip revert for sessions on locked iterations — blueprint is frozen)
-        from ..services.blueprint_service import revert_session_changes
-
-        await revert_session_changes(session.id, db)
-
-    await log_audit(
-        db,
-        org_id=session.org_id,
-        user_id=user.id,
-        action="delete",
-        resource_type="session",
-        resource_id=session_id,
-        metadata={"session_id": session.id, "title": session.title},
-    )
-    # Capture fields before session is deleted
-    _session_title = session.title
-    _session_id = session.id
-
-    # Clear child-row references to this session (tables without DB-level cascade).
-    await _purge_session_children([session_id])
-    # Remove any Slack "session created" messages for this session BEFORE the
-    # FK CASCADE wipes the announcement rows (we need those rows to know which
-    # messages to delete).
-    try:
-        from ..services.slack_session_announcements import delete_announcements_for_session
-
-        await delete_announcements_for_session(db, session_id)
-    except Exception:
-        logger.exception("Slack session-announcement cleanup failed for %s", session_id)
-    await db.delete(session)
-    await db.commit()
-    logger.info("Session deleted: %s (remaining: %d)", session_id, remaining_sessions)
-
-    # Dispatch Slack event (best-effort)
-    # Slack session_deleted notification removed by design — too noisy
-    # alongside session_created, which was also removed.
-    _ = (_session_id, _session_title)  # silence unused locals
 
 
 SECTION_MAP = {
@@ -3033,9 +2850,13 @@ async def _generate_welcome_back(
 
 
 async def _read_project_screenshots_safe(
-    session_id: str, org_id: str, iteration_id: str
+    source_session_id: str, session_id: str, org_id: str, iteration_id: str
 ) -> None:
-    """Background: read the project's screenshots into the blueprint's UI/UX section.
+    """Background: read a session's screenshots into its blueprint's UI/UX section.
+
+    Two ids, because a follow-up reads the shots its parent was described with
+    and writes them into its own blueprint. They are the same id for a session
+    that is nobody's continuation.
 
     One unreadable image must never cost the session its opening, so every
     failure here is logged and dropped.
@@ -3050,7 +2871,7 @@ async def _read_project_screenshots_safe(
                 (
                     await db.execute(
                         select(SessionAttachment)
-                        .where(SessionAttachment.session_id == session_id)
+                        .where(SessionAttachment.session_id == source_session_id)
                         .order_by(SessionAttachment.created_at.asc(), SessionAttachment.id.asc())
                         .limit(MAX_READ_SCREENSHOTS)
                     )

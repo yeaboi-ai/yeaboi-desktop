@@ -56,7 +56,7 @@ describe('ledgerSections', () => {
   it('puts active rows first and done ones under Completed, newest first', () => {
     const { rows, completed } = ledgerSections([
       row('a', '2026-09-01T00:00:00Z'),
-      row('b', '2026-09-03T00:00:00Z', 'done'),
+      row('b', '2026-09-03T00:00:00Z', 'completed'),
       row('c', '2026-09-02T00:00:00Z', 'active'),
     ]);
     expect(rows.map((r) => r.id)).toEqual(['c', 'a']);
@@ -118,7 +118,7 @@ describe('the rows’ actions', () => {
       ['status', 'Mark done'],
       ['delete', 'Delete'],
     ]);
-    expect(rowActions('done').map((a) => a.label)).toEqual(['Rename', 'Reopen', 'Delete']);
+    expect(rowActions('completed').map((a) => a.label)).toEqual(['Rename', 'Reopen', 'Delete']);
   });
 
   it('counts the sessions in progress in words', () => {

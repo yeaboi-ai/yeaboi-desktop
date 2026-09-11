@@ -86,8 +86,8 @@ function GlobalBoardContent() {
             new Map(
               board.columns.flatMap((col) =>
                 col.cards
-                  .filter((c) => c.project_id && c.project_name)
-                  .map((c) => [c.project_id!, c.project_name!] as [string, string]),
+                  .filter((c) => c.session_id && c.session_name)
+                  .map((c) => [c.session_id!, c.session_name!] as [string, string]),
               ),
             ),
           )
@@ -95,7 +95,7 @@ function GlobalBoardContent() {
     [board],
   );
 
-  // Extract all sessions from cards, with their project_id
+  // Extract all sessions from cards, with their session_id
   const allSessions = useMemo(() => {
     if (!board) return [];
     const map = new Map<string, SessionOption>();
@@ -105,7 +105,7 @@ function GlobalBoardContent() {
           map.set(c.session_id, {
             id: c.session_id,
             title: c.session_title,
-            projectId: c.project_id,
+            projectId: c.session_id,
           });
         }
       }),
@@ -170,7 +170,7 @@ function GlobalBoardContent() {
       ...col,
       cards: sortCards(
         col.cards.filter((card) => {
-          if (selectedProject && card.project_id !== selectedProject) return false;
+          if (selectedProject && card.session_id !== selectedProject) return false;
           if (selectedSession && card.session_id !== selectedSession) return false;
           if (assigneeFilter && card.assignee_id !== assigneeFilter) return false;
           if (labelFilter.length > 0 && !labelFilter.some((l) => card.labels?.includes(l)))

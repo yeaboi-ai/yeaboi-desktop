@@ -206,8 +206,8 @@ def screenshot_reads(monkeypatch):
     """Record every scheduling of the vision task instead of running it."""
     calls: list[tuple] = []
 
-    async def _record(session_id, org_id, iteration_id):
-        calls.append((session_id, org_id, iteration_id))
+    async def _record(source_session_id, session_id, org_id, iteration_id):
+        calls.append((source_session_id, session_id, org_id, iteration_id))
 
     from src.app.routers import sessions as sessions_router
 
@@ -242,8 +242,11 @@ async def test_the_first_session_reads_the_project_screenshots(
     )
     assert resp.status_code == 201
     assert len(screenshot_reads) == 1
-    read_session, _org, iteration_id = screenshot_reads[0]
-    assert read_session == resp.json()["id"]
+    read_from, written_to, _org, iteration_id = screenshot_reads[0]
+    # The shots belong to the session this one continues; the reading of them
+    # belongs to the new session's own blueprint. Two ids, deliberately.
+    assert read_from == session_id
+    assert written_to == resp.json()["id"]
     # The reading lands on the iteration the seeding used, not on a resolved guess.
     assert iteration_id
 
@@ -261,7 +264,7 @@ async def test_a_later_session_does_not_read_them_again(
     )
     assert first.status_code == 201
     assert len(screenshot_reads) == 1
-    iteration_id = screenshot_reads[0][2]
+    iteration_id = screenshot_reads[0][3]
 
     # A second session is refused while the first release is open, so lock it.
     await db_session.execute(

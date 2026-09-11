@@ -1,9 +1,10 @@
-// A platform project's status, and the pure rules the two Projects lists and
-// the project page share. Done is explicit: the owner marks it, and archive
-// and delete stay separate. A row with no status predates the column and
-// counts as active.
+// A session's status, and the pure rules the ledger and the session page
+// share. Completed is explicit: the owner marks it, and archive and delete
+// stay separate. A row with no status predates the column and counts as
+// active. The word is the backend's — one column now carries both the
+// workspace's states and the conversation's, so "done" cannot mean one of them.
 
-export type ProjectStatus = 'active' | 'done';
+export type ProjectStatus = 'active' | 'completed';
 
 export interface StatusRow {
   status?: string | null;
@@ -12,7 +13,7 @@ export interface StatusRow {
 }
 
 export function isDone(p: Pick<StatusRow, 'status'>): boolean {
-  return p.status === 'done';
+  return p.status === 'completed';
 }
 
 const stamp = (row: StatusRow): string => row.updated_at ?? row.created_at;
@@ -33,7 +34,7 @@ export function statusWord(status: string | null | undefined): string {
 
 /** The status the one control moves the project to. */
 export function nextStatus(status: string | null | undefined): ProjectStatus {
-  return isDone({ status }) ? 'active' : 'done';
+  return isDone({ status }) ? 'active' : 'completed';
 }
 
 /** What the one control says. */

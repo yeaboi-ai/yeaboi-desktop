@@ -210,8 +210,8 @@ class TicketDetailResponse(BaseModel):
     """
 
     card: CardResponse
-    project_key: str | None = None
-    project_name: str | None = None
+    session_key: str | None = None
+    session_name: str | None = None
     board_id: str | None = None
     board_columns: list[TicketBoardColumnLite] = []
     attachments: list[TicketAttachmentResponse] = []

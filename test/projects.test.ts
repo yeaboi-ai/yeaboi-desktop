@@ -17,7 +17,7 @@ const row = (id: string, created_at: string, over: Record<string, unknown> = {})
 
 describe('isDone', () => {
   it('is true only for the explicit word', () => {
-    expect(isDone({ status: 'done' })).toBe(true);
+    expect(isDone({ status: 'completed' })).toBe(true);
     expect(isDone({ status: 'active' })).toBe(false);
     expect(isDone({ status: null })).toBe(false);
     expect(isDone({})).toBe(false);
@@ -34,7 +34,7 @@ describe('splitProjects', () => {
   it('puts done rows under Completed', () => {
     const { active, done } = splitProjects([
       row('a', '2026-09-01T00:00:00', { status: 'active' }),
-      row('b', '2026-09-02T00:00:00', { status: 'done' }),
+      row('b', '2026-09-02T00:00:00', { status: 'completed' }),
     ]);
     expect(active.map((r) => r.id)).toEqual(['a']);
     expect(done.map((r) => r.id)).toEqual(['b']);
@@ -58,21 +58,21 @@ describe('splitProjects', () => {
 
 describe('nextStatus', () => {
   it('toggles between the two words', () => {
-    expect(nextStatus('active')).toBe('done');
-    expect(nextStatus('done')).toBe('active');
-    expect(nextStatus(undefined)).toBe('done');
+    expect(nextStatus('active')).toBe('completed');
+    expect(nextStatus('completed')).toBe('active');
+    expect(nextStatus(undefined)).toBe('completed');
   });
 });
 
 describe('the words', () => {
   it('state the status in sentence case', () => {
-    expect(statusWord('done')).toBe('Completed');
+    expect(statusWord('completed')).toBe('Completed');
     expect(statusWord('active')).toBe('In progress');
     expect(statusWord(undefined)).toBe('In progress');
   });
 
   it('name the action that moves it', () => {
-    expect(statusActionLabel('done')).toBe('Reopen');
+    expect(statusActionLabel('completed')).toBe('Reopen');
     expect(statusActionLabel('active')).toBe('Mark done');
     expect(statusActionLabel(null)).toBe('Mark done');
   });

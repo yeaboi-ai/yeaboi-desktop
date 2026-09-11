@@ -889,8 +889,8 @@ async def get_ticket_detail(
 
     return TicketDetailResponse(
         card=CardResponse.model_validate(card),
-        project_key=project.key if project else None,
-        project_name=project.name if project else None,
+        session_key=project.key if project else None,
+        session_name=project.name if project else None,
         board_id=board_id,
         board_columns=[
             TicketBoardColumnLite(

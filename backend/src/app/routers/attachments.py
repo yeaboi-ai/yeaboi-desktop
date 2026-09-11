@@ -54,8 +54,11 @@ def _format_size(size: int) -> str:
         return f"{size / (1024 * 1024):.1f} MB"
 
 
+# Not `/attachments` — that is the session's own reference screenshots
+# (session_attachments.py). This one posts a file into the conversation and
+# answers with the chat message it became.
 @router.post(
-    "/api/sessions/{session_id}/attachments",
+    "/api/sessions/{session_id}/chat-attachments",
     status_code=201,
     response_model=ChatMessageResponse,
 )

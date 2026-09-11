@@ -268,9 +268,14 @@ async def delete_project(
         await db.execute(delete(BoardColumn).where(BoardColumn.board_id.in_(board_ids)))
     await db.execute(delete(Board).where(Board.session_id == session_id))
 
-    # Blueprints (snapshots before iterations due to FK) + harness configs
+    # Blueprints (snapshots before iterations due to FK) + harness configs.
+    # The session points back at its iteration, so that pointer is cleared
+    # before the iteration goes or the delete leaves a dangling reference.
     await db.execute(delete(BlueprintSnapshot).where(BlueprintSnapshot.session_id == session_id))
     await db.execute(delete(BlueprintSuggestion).where(BlueprintSuggestion.session_id == session_id))
+    await db.execute(
+        Session.__table__.update().where(Session.id == session_id).values(iteration_id=None)
+    )
     await db.execute(delete(BlueprintIteration).where(BlueprintIteration.session_id == session_id))
     await db.execute(delete(HarnessConfig).where(HarnessConfig.session_id == session_id))
     await db.execute(delete(SessionOutput).where(SessionOutput.session_id == session_id))
@@ -291,7 +296,23 @@ async def delete_project(
             delete(SessionAttachment).where(SessionAttachment.session_id == session_id)
         )
 
-    # Finally delete the project
+    # Slack's "session created" messages are found through the announcement
+    # rows, so they go before the cascade takes those rows with the session.
+    try:
+        from ..services.slack_session_announcements import delete_announcements_for_session
+
+        await delete_announcements_for_session(db, session_id)
+    except Exception:
+        logger.exception("Slack session-announcement cleanup failed for %s", session_id)
+
+    # A session seeded from this one outlives it; it just stops naming a parent.
+    await db.execute(
+        Session.__table__.update()
+        .where(Session.continued_from_id == session_id)
+        .values(continued_from_id=None)
+    )
+
+    # Finally delete the session
     await log_audit(
         db,
         org_id=project.org_id,

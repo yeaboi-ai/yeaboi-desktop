@@ -20,7 +20,7 @@ class RepoAnalysisJob(TimestampMixin, Base):
     __table_args__ = (
         # We look these up by (session_id, status, completed_at) when checking
         # TTL — the index keeps that path cheap even with many historic rows.
-        Index("ix_repo_analysis_jobs_project_status", "session_id", "status"),
+        Index("ix_repo_analysis_jobs_session_status", "session_id", "status"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)

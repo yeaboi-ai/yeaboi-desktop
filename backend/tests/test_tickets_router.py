@@ -28,8 +28,8 @@ async def test_resolve_by_uuid(client, auth_headers):
     assert body["card"]["id"] == card_id
     assert body["card"]["friendly_id"]
     assert body["board_id"] == ctx["board"]["id"]
-    assert body["project_key"]
-    assert body["project_name"] == "Acme Storefront"
+    assert body["session_key"]
+    assert body["session_name"] == "Acme Storefront"
     assert body["attachments"] == []
     assert body["links"] == []
     assert body["events"] == []

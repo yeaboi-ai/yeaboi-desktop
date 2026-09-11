@@ -236,6 +236,10 @@ def create_app() -> FastAPI:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
     app.include_router(me_router)
+    # Ahead of the session routers: its one static path, /api/sessions/
+    # deepgram-token, is otherwise captured by /api/sessions/{session_id},
+    # which FastAPI matches first because it is registered first.
+    app.include_router(livekit_router)
     app.include_router(session_workspace_router)
     app.include_router(sessions_router)
     app.include_router(blueprints_router)
@@ -256,7 +260,6 @@ def create_app() -> FastAPI:
     app.include_router(harness_router)
     app.include_router(session_outputs_router)
     app.include_router(orchestrator_router)
-    app.include_router(livekit_router)
     app.include_router(transcripts_router)
     app.include_router(uploads_router)
     app.include_router(voice_notes_router)

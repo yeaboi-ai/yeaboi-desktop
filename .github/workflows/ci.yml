@@ -57,6 +57,42 @@ jobs:
       # survives with exit 0) into a red job.
       - run: npm run build:check
 
+  backend:
+    name: The vendored backend's tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The migration guard diffs against the base branch, which a shallow
+          # clone cannot reach.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      # The suite had failures before it had a job here, so this compares the
+      # failing set against backend/tests/known-failures.txt rather than
+      # requiring green — both ways, so the list cannot quietly rot. The two
+      # migrations that remove projects are the reason this job exists: they
+      # run unattended inside every installed app's startup, and nothing else
+      # in CI touches them.
+      - run: ./scripts/check-tests.sh
+        working-directory: backend
+      - run: uv run ruff check src tests
+        working-directory: backend
+        continue-on-error: true
+      # Only the migrations this branch touches: history predates the policy.
+      - run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref || 'main' }}"
+          git diff --name-only FETCH_HEAD...HEAD -- 'backend/alembic/versions/*.py' \
+            | sed 's|^backend/||' > /tmp/changed-migrations
+          if [ -s /tmp/changed-migrations ]; then
+            cd backend && xargs ./scripts/check-sqlite-safe-migrations.sh < /tmp/changed-migrations
+          else
+            echo "no migrations changed"
+          fi
+
   tooling:
     name: The shared tooling pin is honoured
     runs-on: ubuntu-latest

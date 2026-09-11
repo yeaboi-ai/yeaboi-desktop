@@ -79,21 +79,46 @@ _RENAME = (
 )
 
 
-#: (table, column) pairs whose foreign key is re-created against sessions once
-#: every rename has landed. project_outputs/attachments appear under their new
+#: (table, column, ondelete) whose foreign key is re-created against sessions
+#: once every rename has landed. The ondelete is not decoration: the reflected
+#: constraint is copied verbatim by batch mode, so a key re-created without one
+#: leaves a migrated database behaving differently from a fresh one. Each value
+#: here is the model's own. project_outputs/attachments appear under their new
 #: names — the table rename happens before this pass.
 _REPOINT = (
-    ("blueprint_snapshots", "session_id"),
-    ("boards", "session_id"),
-    ("blueprint_iterations", "session_id"),
-    ("harness_configs", "session_id"),
-    ("notifications", "session_id"),
-    ("ticket_templates", "session_id"),
-    ("repo_analysis_jobs", "session_id"),
-    ("session_outputs", "session_id"),
-    ("session_attachments", "session_id"),
-    ("integration_project_mappings", "internal_session_id"),
-    ("teams", "last_viewed_session_id"),
+    ("blueprint_snapshots", "session_id", None),
+    ("boards", "session_id", None),
+    ("blueprint_iterations", "session_id", None),
+    ("harness_configs", "session_id", None),
+    ("notifications", "session_id", "CASCADE"),
+    ("ticket_templates", "session_id", None),
+    ("repo_analysis_jobs", "session_id", "CASCADE"),
+    ("session_outputs", "session_id", None),
+    ("session_attachments", "session_id", "CASCADE"),
+    ("integration_project_mappings", "internal_session_id", "CASCADE"),
+    ("teams", "last_viewed_session_id", "SET NULL"),
+)
+
+#: Indexes a fresh install gets from the models and the renames do not leave
+#: behind: (name, table, columns).
+_INDEXES = (
+    ("ix_cards_session_id", "cards", ["session_id"]),
+    ("ix_session_attachments_session_id", "session_attachments", ["session_id"]),
+)
+
+#: Index names the renames carry over from the projects era. Dropped so a
+#: migrated database has the same set as a fresh one.
+_STALE_INDEXES = (
+    "ix_ticket_templates_project_id",
+    "ix_project_attachments_project_id",
+    "ix_project_attachments_session_id",
+    "ix_project_outputs_session_id",
+    "ix_blueprint_iterations_session_id",
+    "ix_blueprint_snapshots_session_id",
+    "ix_boards_session_id",
+    "ix_harness_configs_session_id",
+    "ix_notifications_session_id",
+    "ix_repo_analysis_jobs_session_id",
 )
 
 
@@ -123,8 +148,13 @@ def upgrade() -> None:
             batch.drop_column("project_id")
     with op.batch_alter_table("cards") as batch:
         batch.create_unique_constraint("uq_cards_session_number", ["session_id", "number"])
-    with op.batch_alter_table("blueprint_suggestions") as batch:
+    # The column was the nullable "which conversation raised this" and is now
+    # the owner, so it loses both its nullability and the SET NULL that went
+    # with being optional.
+    with op.batch_alter_table("blueprint_suggestions", naming_convention=_FK_NAMING) as batch:
+        batch.drop_constraint(_fk_name("blueprint_suggestions", "session_id", "sessions"), type_="foreignkey")
         batch.alter_column("session_id", existing_type=sa.String(36), nullable=False)
+        batch.create_foreign_key("fk_blueprint_suggestions_session", "sessions", ["session_id"], ["id"])
 
     for table, unique in _RENAME:
         with op.batch_alter_table(table, naming_convention=_FK_NAMING) as batch:
@@ -154,9 +184,24 @@ def upgrade() -> None:
     # Second pass, once every column has settled under its new name: point the
     # renamed columns at sessions. A foreign key added in the same batch as the
     # rename that created its column is silently dropped, so it has to be here.
-    for table, column in _REPOINT:
+    for table, column, ondelete in _REPOINT:
         with op.batch_alter_table(table) as batch:
-            batch.create_foreign_key(f"fk_{table}_{column}", "sessions", [column], ["id"])
+            batch.create_foreign_key(
+                f"fk_{table}_{column}", "sessions", [column], ["id"], ondelete=ondelete
+            )
+
+    # The session gained columns that point somewhere; a plain add_column gave
+    # them no key. use_alter on team_id mirrors the model — sessions and teams
+    # reference each other.
+    with op.batch_alter_table("sessions") as batch:
+        batch.create_foreign_key("fk_sessions_owner_id", "users", ["owner_id"], ["id"])
+        batch.create_foreign_key("fk_sessions_team_id", "teams", ["team_id"], ["id"])
+        batch.create_foreign_key("fk_sessions_continued_from_id", "sessions", ["continued_from_id"], ["id"])
+
+    for name, table, columns in _INDEXES:
+        op.create_index(name, table, columns)
+    for name in _STALE_INDEXES:
+        op.execute(sa.text(f"DROP INDEX IF EXISTS {name}"))
 
     op.drop_table("projects")
 
