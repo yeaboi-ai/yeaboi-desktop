@@ -196,9 +196,25 @@ const STATUS_WORDS: Record<string, string> = {
 
 /** What the last retro left behind. The point of a retro is what it changed,
  *  so this is what a page about retros is read for. */
+/** One number per action, so its lean and its colour are the same every time
+ *  the page draws. Random would re-deal the wall on every render, which is a
+ *  pile of paper that shuffles itself while you read it. */
+function deal(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return Math.abs(hash);
+}
+
+/** A pad's worth. Desaturated rather than highlighter — they sit on a near
+ *  black screen, and full-strength paper colours glow on it. */
+const PAPER = ['#e0cd8c', '#b7cca6', '#a8c2d6', '#d9b2b6'];
+
 function OpenActions({ rows }: { rows: RetroActionItem[] }) {
   return (
-    <section className="flex flex-col rounded-2xl p-5 ring-1 ring-border/60">
+    // No frame, and hard left. Paper on a wall is the object; a box drawn
+    // around it is a second object saying the same thing more quietly, and
+    // padding where the box was is the box's ghost.
+    <section className="flex flex-col py-5">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-[19px] leading-none text-foreground">Open actions</h2>
         {rows.length > 0 && (
@@ -212,13 +228,24 @@ function OpenActions({ rows }: { rows: RetroActionItem[] }) {
           Nothing outstanding — the last retro closed everything it opened.
         </p>
       ) : (
-        <ul className="mt-3 divide-y divide-border/40">
+        // Paper on a wall, not rows in a table. They are what the last retro
+        // asked of you and they are meant to be in the way — a list of two
+        // lines between rules reads as a footnote to the panel it is in.
+        <ul className="mt-4 flex flex-wrap content-start gap-3">
           {rows.map((row) => (
-            <li key={row.id} className="flex items-baseline gap-3 py-2 first:pt-0">
-              <span className="min-w-0 flex-1 font-body text-[13px] leading-snug text-foreground">
-                {row.text}
-              </span>
-              <span className="shrink-0 font-code text-[11px] text-muted-foreground/70">
+            <li
+              key={row.id}
+              style={{
+                // Pinned by hand, so no two sit the same way — and the same
+                // way every render, or the wall reshuffles while you read it.
+                rotate: `${((deal(row.id) % 13) - 6) / 2}deg`,
+                translate: `${(deal(`${row.id}x`) % 7) - 3}px ${(deal(`${row.id}y`) % 9) - 4}px`,
+                backgroundColor: PAPER[deal(row.id) % PAPER.length],
+              }}
+              className="flex min-h-[104px] w-[148px] flex-col rounded-sm p-3 text-[#1c1c1c] shadow-lg transition-[rotate,translate] duration-200 ease-out hover:translate-y-[-2px] hover:rotate-0"
+            >
+              <span className="font-body text-[12.5px] leading-snug">{row.text}</span>
+              <span className="mt-auto pt-2 font-code text-[10px] text-black/55">
                 {row.author}
                 {row.status && STATUS_WORDS[row.status] ? ` · ${STATUS_WORDS[row.status]}` : ''}
               </span>
