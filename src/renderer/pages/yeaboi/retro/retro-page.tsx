@@ -33,6 +33,7 @@ import { ResultActions } from '@/components/yeaboi/result-actions';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BoardHost, useBoard } from '@/components/yeaboi/board-host';
 import { RetroBoard } from '@/components/yeaboi/retro-board';
+import { ScrollBox } from '@/components/yeaboi/scroll-box';
 import { Panel, Surface } from '@/components/yeaboi/surface';
 import { Button } from '@/components/ui/button';
 
@@ -48,9 +49,6 @@ const LEDGER_LIMIT = 30;
 /** One ledger row, in px. Asking for the rest scrolls that many rows rather
  *  than growing the box, so the ledger is the same size either way. */
 const LEDGER_ROW = 49;
-
-/** How far the fade at a scrolled edge reaches. */
-const FADE = 28;
 
 const GRID_TITLES: Record<string, string> = {
   went_well: 'Went well',
@@ -206,50 +204,6 @@ function BoardPanel({
         )}
       </div>
     </section>
-  );
-}
-
-/**
- * A box that scrolls at a fixed height, fading whichever edge has more past it.
- *
- * The fade is a mask rather than a gradient laid over the rows: the page has no
- * ground of its own here, so an overlay would be a smear of one colour on
- * whatever happens to be behind it.
- */
-function ScrollBox({
-  height,
-  className,
-  children,
-}: {
-  height: number;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  const [edge, setEdge] = useState({ top: false, bottom: false });
-
-  const read = (el: HTMLElement | null) => {
-    if (!el) return;
-    setEdge((was) => {
-      const top = el.scrollTop > 2;
-      const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 2;
-      return was.top === top && was.bottom === bottom ? was : { top, bottom };
-    });
-  };
-
-  const from = edge.top ? `transparent 0, #000 ${FADE}px` : '#000 0';
-  const to = edge.bottom ? `#000 calc(100% - ${FADE}px), transparent 100%` : '#000 100%';
-  const mask = `linear-gradient(to bottom, ${from}, ${to})`;
-
-  return (
-    <div
-      ref={read}
-      data-wheel
-      onScroll={(event) => read(event.currentTarget)}
-      style={{ height, maskImage: mask, WebkitMaskImage: mask }}
-      className={`slim-scroll overflow-y-auto overscroll-contain pr-2 ${className ?? ''}`}
-    >
-      {children}
-    </div>
   );
 }
 
@@ -485,7 +439,7 @@ function RetroBody() {
           <div className="mt-auto">
             <div className="mb-2 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-[15px] leading-none text-muted-foreground">
-                Recent retros
+                Recent sessions
               </h2>
               <span className="font-code text-[11px] text-muted-foreground tabular-nums">
                 {runs.length}

@@ -109,13 +109,18 @@ export function ResultActions({
       <MaskSetting refer={refer} anonNote={anonNote} onAnonymize={onAnonymize} />
     ) : null;
 
+  const shown = (can?.export ? 1 : 0) + (can?.share ? 1 : 0);
+
   return (
-    // Two of the row's tracks for the two controls it holds, split on the
-    // row's own gap so they come out the width of every button beside them.
-    <div className={fill ? 'col-span-2 space-y-3' : 'space-y-3'}>
+    // A track of the row for each control it holds, split on the row's own
+    // gap, so they come out the width of every button beside them. A kind that
+    // only exports takes one track, not two with a hole in it.
+    <div className={fill ? (shown > 1 ? 'col-span-2 space-y-3' : 'space-y-3') : 'space-y-3'}>
       <div
         className={
-          fill ? 'grid grid-cols-2 items-center gap-2' : 'flex flex-wrap items-center gap-2'
+          fill
+            ? 'grid grid-flow-col auto-cols-fr items-center gap-2'
+            : 'flex flex-wrap items-center gap-2'
         }
       >
         {can?.export && (
