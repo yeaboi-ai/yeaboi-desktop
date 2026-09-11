@@ -61,12 +61,12 @@ MAX_WAVES = 6
 WAVE_MAX_TOKENS = 3072
 
 
-async def _load_blueprint(project_id: str, db) -> dict[str, str]:
+async def _load_blueprint(session_id: str, db) -> dict[str, str]:
     """Load the project's blueprint content. Imported lazily to keep this
     module's import graph small at module-import time."""
     from .blueprint_service import get_or_create_blueprint
 
-    bp = await get_or_create_blueprint(project_id, db)
+    bp = await get_or_create_blueprint(session_id, db)
     return bp.content or {}
 
 
@@ -277,7 +277,7 @@ async def run_wave_generation(job_id: str) -> None:
         await db.commit()
 
         try:
-            blueprint = await _load_blueprint(job.project_id, db)
+            blueprint = await _load_blueprint(job.session_id, db)
             blueprint_text = _blueprint_to_text(blueprint)
             if blueprint_text == "No blueprint content available.":
                 job.status = "failed"

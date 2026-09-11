@@ -15,14 +15,14 @@ export const DESCRIBE_COPY = {
   RESTING_TAIL: 'you build on it in the conversation.',
   /** Under the composer once there are words. */
   NAMING_LEAD: 'yeaboi names it from this and opens with it',
-  /** The first-run card on a project that has had no session yet. */
-  CARD_TITLE: 'Nothing has run inside this project yet',
+  /** The first-run card on a session whose conversation has not started. */
+  CARD_TITLE: 'This session has not started yet',
   CARD_BODY:
     'What you wrote is above, and the first session opens with it — add to it there, or start from it as it is. Nothing is lost.',
   CARD_ACTION: 'Start the conversation',
-  CARD_MODES: 'Or run a mode inside this project',
+  CARD_MODES: 'Or start a run of your own',
   /** Under the session idea box, while it still carries the description. */
-  CARRIED: 'From your project description. Use it as it is, or build on it here.',
+  CARRIED: 'From your description. Use it as it is, or build on it here.',
 } as const;
 
 /** The note under the composer, in the sheet's own two tones: the promise in

@@ -3,7 +3,7 @@
   "//productName": "The display name everywhere: app.getName() in a dev run, CFBundleName and the installer filenames through electron-builder.",
   "productName": "yeaboi.ai",
   "//version": "The app's own semver, independent of the bundled yeaboi wheel. electron-updater compares it, so it must only ever go up: the last shared-version release was 3.32.0, which is why the independent line starts at 4.0.0. auto-version.yml bumps it on a release-worthy PR, together with the matching head entry in src/renderer/lib/yeaboi/shell-changelog.json; by hand, `node scripts/bump-version.mjs <level>` does the same — the release workflow refuses a mismatch.",
-  "version": "4.7.0",
+  "version": "5.0.0",
   "private": true,
   "description": "yeaboi desktop — the duck-branded planning app",
   "type": "module",

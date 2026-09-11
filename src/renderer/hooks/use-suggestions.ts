@@ -53,7 +53,7 @@ export function useSuggestions({
     if (!projectId || !ready || !enabled) return;
     setLoading(true);
     try {
-      const url = `/api/projects/${projectId}/blueprint-suggestions?session_id=${sessionId}`;
+      const url = `/api/sessions/${sessionId}/blueprint-suggestions`;
       const resp = await authFetch(url);
       if (resp.ok) {
         const data = (await resp.json()) as Suggestion[];
@@ -121,7 +121,7 @@ export function useSuggestions({
       setPending((prev) => prev.filter((s) => s.id !== id));
       try {
         const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint-suggestions/${id}/accept`,
+          `/api/sessions/${projectId}/blueprint-suggestions/${id}/accept`,
           {
             method: 'POST',
             body: JSON.stringify({
@@ -150,7 +150,7 @@ export function useSuggestions({
       setPending((prev) => prev.filter((s) => s.id !== id));
       try {
         const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint-suggestions/${id}/reject`,
+          `/api/sessions/${projectId}/blueprint-suggestions/${id}/reject`,
           { method: 'POST' },
         );
         if (!resp.ok) {
@@ -173,7 +173,7 @@ export function useSuggestions({
       setPending((prev) => prev.filter((s) => s.section !== section));
       try {
         const resp = await authFetch(
-          `/api/projects/${projectId}/blueprint-suggestions/bulk-accept`,
+          `/api/sessions/${projectId}/blueprint-suggestions/bulk-accept`,
           {
             method: 'POST',
             body: JSON.stringify({ section, session_id: sessionId }),

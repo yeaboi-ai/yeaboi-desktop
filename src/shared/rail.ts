@@ -5,7 +5,7 @@
 // stored blob, the renderer can clamp the same blob again with the routes it
 // knows (`known`), and the tests cover both in the node lane.
 
-import { AUDIENCES, projectsHref, type Audience } from './audience';
+import { AUDIENCES, sessionsHref, type Audience } from './audience';
 import { isPersonaId, type PersonaId } from './personas';
 
 /** The drawn glyphs a rail icon may pick from. Renderer-side, lib/nav/rail-icons.ts
@@ -131,20 +131,26 @@ export function isRailLucideName(value: unknown): value is RailLucideName {
   return typeof value === 'string' && (RAIL_LUCIDE_ICONS as readonly string[]).includes(value);
 }
 
-/** The two ways to work, as every world's rail starts. */
+/** Where every world's rail starts: your sessions, their runs, the board. */
 export function railDefaultsFor(audience: Audience): RailItem[] {
   return [
     {
-      id: 'projects',
-      route: projectsHref(audience),
-      label: 'Projects',
-      icon: { kind: 'lucide', name: 'LayoutGrid' },
+      id: 'sessions',
+      route: sessionsHref(audience),
+      label: 'Sessions',
+      icon: { kind: 'lucide', name: 'NotebookPen' },
     },
     {
-      id: 'sessions',
-      route: '/sessions',
-      label: 'Sessions',
+      id: 'runs',
+      route: '/runs',
+      label: 'Runs',
       icon: { kind: 'lucide', name: 'Sunrise' },
+    },
+    {
+      id: 'board',
+      route: '/board',
+      label: 'Board',
+      icon: { kind: 'lucide', name: 'SquareKanban' },
     },
   ];
 }

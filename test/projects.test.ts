@@ -4,12 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   isDone,
   nextStatus,
-  runsByEngineProject,
   splitProjects,
   statusActionLabel,
   statusWord,
-  traceFor,
-  traceSentence,
 } from '../src/renderer/lib/yeaboi/projects';
 
 const row = (id: string, created_at: string, over: Record<string, unknown> = {}) => ({
@@ -78,60 +75,5 @@ describe('the words', () => {
     expect(statusActionLabel('done')).toBe('Reopen');
     expect(statusActionLabel('active')).toBe('Mark done');
     expect(statusActionLabel(null)).toBe('Mark done');
-  });
-});
-
-describe('runsByEngineProject', () => {
-  const run = (project_id: string | null, mode: string) => ({ project_id, mode });
-
-  it('groups runs by engine project as card keys, through the aliases', () => {
-    const ran = runsByEngineProject([
-      run('proj-1', 'standup'),
-      run('proj-1', 'planning'),
-      run('proj-1', 'standup'),
-      run('proj-2', 'poker'),
-    ]);
-    expect([...(ran.get('proj-1') ?? [])].sort()).toEqual(['daily-standup', 'project-planning']);
-    expect([...(ran.get('proj-2') ?? [])]).toEqual(['poker']);
-  });
-
-  it('leaves one-off runs out', () => {
-    expect(runsByEngineProject([run(null, 'standup'), run('', 'retro')]).size).toBe(0);
-  });
-});
-
-describe('traceFor', () => {
-  const steps = [
-    { key: 'project-planning', label: 'Plan' },
-    { key: 'daily-standup', label: 'Standup' },
-    { key: 'poker', label: 'Poker' },
-  ];
-
-  it('keeps the flow order and marks what has run', () => {
-    expect(traceFor(steps, new Set(['daily-standup']))).toEqual([
-      { key: 'project-planning', label: 'Plan', ran: false },
-      { key: 'daily-standup', label: 'Standup', ran: true },
-      { key: 'poker', label: 'Poker', ran: false },
-    ]);
-  });
-
-  it('marks nothing when no runs are known', () => {
-    expect(traceFor(steps, undefined).every((step) => !step.ran)).toBe(true);
-  });
-});
-
-describe('traceSentence', () => {
-  it('says which steps have run inside and which have not', () => {
-    expect(
-      traceSentence([
-        { key: 'a', label: 'Plan', ran: true },
-        { key: 'b', label: 'Standup', ran: true },
-        { key: 'c', label: 'Poker', ran: false },
-      ]),
-    ).toBe('Plan and Standup have run inside; Poker has not.');
-    expect(traceSentence([{ key: 'a', label: 'Plan', ran: false }])).toBe(
-      'Nothing has run inside yet.',
-    );
-    expect(traceSentence([{ key: 'a', label: 'Plan', ran: true }])).toBe('Plan has run inside.');
   });
 });

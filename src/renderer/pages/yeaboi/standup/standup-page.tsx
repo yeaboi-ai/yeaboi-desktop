@@ -32,8 +32,6 @@ import {
 import { appendSpoken } from '@/lib/yeaboi/voice';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
-import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
 import { MicButton } from '@/components/yeaboi/mic-button';
 import { ResultActions } from '@/components/yeaboi/result-actions';
 import { Badge } from '@/components/ui/badge';
@@ -111,8 +109,6 @@ const inputClass =
 
 function StandupBody() {
   const { audience } = useAudience();
-  const scope = useProjectScope();
-  const [scopeNote, setScopeNote] = useState('');
   const [data, setData] = useState<StandupDashboard | null>(null);
   const [error, setError] = useState('');
   const [run, setRun] = useState(emptyRun());
@@ -150,14 +146,6 @@ function StandupBody() {
     setError('');
     let state = emptyRun();
     setRun(state);
-    // A project that cannot be scoped still gets its standup, as a one-off.
-    let projectId = '';
-    setScopeNote('');
-    try {
-      projectId = await scope.engineId();
-    } catch (e) {
-      setScopeNote(`${(e as Error).message} This run is a one-off instead.`);
-    }
     try {
       await runStandup(
         data.session_id,
@@ -166,7 +154,7 @@ function StandupBody() {
           state = reduceRun(state, line);
           setRun(state);
         },
-        { solo: audience === 'solo', projectId },
+        { solo: audience === 'solo' },
       );
     } catch (e) {
       setError((e as Error).message);
@@ -191,21 +179,10 @@ function StandupBody() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl text-foreground">Daily Standup</h1>
-          {scope.scoped && (
-            <div className="mt-1">
-              <ProjectScopeLine
-                name={
-                  scope.project?.name ?? (scope.loading ? 'this project' : 'an unknown project')
-                }
-                onClear={scope.clear}
-              />
-            </div>
-          )}
           <p className="text-[13px] text-muted-foreground mt-1">
-            {data.session_name || 'No project yet'}
+            {data.session_name || 'No session yet'}
             {report ? `, ${report.date}` : ', nothing generated yet'}
           </p>
-          {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <Button
@@ -227,19 +204,19 @@ function StandupBody() {
             {showRuns ? 'Hide past runs' : `Past runs (${data.history.length})`}
           </Button>
           <Link
-            href={scope.href('/team/standup/setup')}
+            href="/team/standup/setup"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Setup
           </Link>
           <Link
-            href={scope.href('/team/standup/schedule')}
+            href="/team/standup/schedule"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Schedule
           </Link>
           <Link
-            href={scope.href('/team/standup/review')}
+            href="/team/standup/review"
             className="text-[12px] text-muted-foreground hover:text-foreground"
           >
             Transcript review

@@ -21,9 +21,8 @@ from ..db import get_db, get_session_factory
 from ..deps import get_current_org, get_current_user
 from ..middleware.rate_limit import limiter
 from ..models.organization import Organization
-from ..models.project import Project
-from ..models.project_attachment import ProjectAttachment
 from ..models.session import ChatMessage, Participant, Session
+from ..models.session_attachment import SessionAttachment
 from ..models.user import User
 from ..schemas.session import (
     AIEditElementRequest,
@@ -78,24 +77,24 @@ logger = logging.getLogger(__name__)
 MAX_READ_SCREENSHOTS = 4
 
 
-@router.post("/api/projects/{project_id}/create-from-review")
+@router.post("/api/sessions/{session_id}/create-from-review")
 async def create_from_review(
-    project_id: str,
+    session_id: str,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
     """Generate tasks + scaffold from blueprint after review screen approval."""
 
     # Verify project exists
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     # Find the reviewing session and complete it
     session_result = await db.execute(
         select(Session).where(
-            Session.project_id == project_id,
+            Session.id == session_id,
             Session.status == "reviewing",
         )
     )
@@ -116,18 +115,18 @@ async def create_from_review(
             action="lock",
             resource_type="iteration",
             resource_id=session_obj.iteration_id,
-            metadata={"project_id": project_id, "session_id": session_obj.id},
+            metadata={"session_id": session_obj.id},
         )
         await db.commit()
 
     # Generate tasks in background
     session_id = session_obj.id if session_obj else None
-    asyncio.create_task(_generate_tasks_on_complete(project_id, session_id=session_id))
+    asyncio.create_task(_generate_tasks_on_complete(session_id))
 
-    return {"status": "creating", "project_id": project_id}
+    return {"status": "creating", "session_id": session_id}
 
 
-async def _generate_tasks_on_complete(project_id: str, session_id: str | None = None) -> None:
+async def _generate_tasks_on_complete(session_id: str) -> None:
     """Background task: generate kanban cards from the blueprint when a session completes."""
     try:
         from ..services.task_generator import generate_tasks_from_blueprint
@@ -135,14 +134,14 @@ async def _generate_tasks_on_complete(project_id: str, session_id: str | None = 
         session_factory = get_session_factory()
         async with session_factory() as db:
             # Get org_id for AI provider routing
-            proj_result = await db.execute(select(Project.org_id).where(Project.id == project_id))
+            proj_result = await db.execute(select(Session.org_id).where(Session.id == session_id))
             org_id = proj_result.scalar_one_or_none()
 
-            bp = await get_or_create_blueprint(project_id, db)
+            bp = await get_or_create_blueprint(session_id, db)
             board = await generate_tasks_from_blueprint(
-                project_id, bp.content, db, org_id=org_id, session_id=session_id
+                session_id, bp.content, db, org_id=org_id, session_id=session_id
             )
-            logger.info("Generated kanban board with %d columns for project %s", len(board.columns), project_id)
+            logger.info("Generated kanban board with %d columns for project %s", len(board.columns), session_id)
     except Exception as e:
         logger.error("Failed to generate tasks on session complete: %s", e, exc_info=True)
 
@@ -218,9 +217,9 @@ class _RegenerateSingleTaskBody(BaseModel):
 # through /stories/commit, which stays). Kept for one release so an older
 # shell build against this wheel keeps working; delete with task_generator*,
 # task_generation_job and their tables in the follow-up sweep.
-@router.post("/api/projects/{project_id}/stories/preview")
+@router.post("/api/sessions/{session_id}/stories/preview")
 async def preview_stories(
-    project_id: str,
+    session_id: str,
     body: _PreviewStoriesBody | None = None,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
@@ -237,14 +236,14 @@ async def preview_stories(
     previous attempt. Both fields are optional; an empty body matches the
     original behaviour.
     """
-    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session_id))
     project = proj_result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     from ..services.task_generator import preview_tasks_from_blueprint
 
-    bp = await get_or_create_blueprint(project_id, db)
+    bp = await get_or_create_blueprint(session_id, db)
     if not bp.content or not any((v or "").strip() for v in bp.content.values()):
         raise HTTPException(
             status_code=422,
@@ -266,7 +265,7 @@ async def preview_stories(
             feedback_context=feedback_context,
         )
     except Exception as exc:
-        logger.exception("Task preview failed for project %s", project_id)
+        logger.exception("Task preview failed for project %s", session_id)
         raise HTTPException(
             status_code=502,
             detail=f"AI provider could not generate tasks: {exc.__class__.__name__}: {exc}",
@@ -291,9 +290,9 @@ async def preview_stories(
     return {"tasks": tasks, "templates": templates_payload}
 
 
-@router.post("/api/projects/{project_id}/stories/preview-async")
+@router.post("/api/sessions/{session_id}/stories/preview-async")
 async def preview_stories_async(
-    project_id: str,
+    session_id: str,
     background_tasks: BackgroundTasks,
     body: _PreviewStoriesBody | None = None,
     user: User = Depends(get_current_user),
@@ -314,8 +313,6 @@ async def preview_stories_async(
     from ..models.task_generation_job import TaskGenerationJob
     from ..services.generation_styles import (
         DEFAULT_GRANULARITY,
-        GRANULARITY_SLUGS,
-        MODIFIER_SLUGS,
         STYLE_SLUGS,
     )
     from ..services.granularity_service import (
@@ -326,12 +323,12 @@ async def preview_stories_async(
     from ..services.repo_conventions_analyzer import RepoAnalysisError, ensure_repo_profile
     from ..services.task_generator_waves import run_wave_generation
 
-    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session_id))
     project = proj_result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
-    bp = await get_or_create_blueprint(project_id, db)
+    bp = await get_or_create_blueprint(session_id, db)
     if not bp.content or not any((v or "").strip() for v in bp.content.values()):
         raise HTTPException(
             status_code=422,
@@ -339,7 +336,7 @@ async def preview_stories_async(
         )
 
     sess_result = await db.execute(
-        select(Session).where(Session.project_id == project_id, Session.status == "reviewing")
+        select(Session).where(Session.id == session_id, Session.status == "reviewing")
     )
     session_obj = sess_result.scalar_one_or_none()
     if not session_obj:
@@ -348,7 +345,7 @@ async def preview_stories_async(
         # status (mirrors how preview_stories tolerates other states).
         sess_result = await db.execute(
             select(Session)
-            .where(Session.project_id == project_id)
+            .where(Session.id == session_id)
             .order_by(Session.created_at.desc())
         )
         session_obj = sess_result.scalars().first()
@@ -423,7 +420,7 @@ async def preview_stories_async(
             repo_profile = await ensure_repo_profile(project=project, db=db)
         except RepoAnalysisError as exc:
             logger.warning(
-                "follow_practices dropped for project %s: %s", project_id, exc
+                "follow_practices dropped for project %s: %s", session_id, exc
             )
             chosen_modifiers = [m for m in chosen_modifiers if m != "follow_practices"]
             warning = (
@@ -462,8 +459,7 @@ async def preview_stories_async(
         await db.commit()
 
     job = TaskGenerationJob(
-        project_id=project_id,
-        session_id=session_obj.id,
+        session_id=session_id,
         org_id=org.id,
         status="pending",
         current_wave=0,
@@ -550,9 +546,9 @@ async def cancel_job(
     return {"id": job.id, "status": job.status}
 
 
-@router.post("/api/projects/{project_id}/stories/commit")
+@router.post("/api/sessions/{session_id}/stories/commit")
 async def commit_stories(
-    project_id: str,
+    session_id: str,
     body: _CommitStoriesBody,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -563,10 +559,10 @@ async def commit_stories(
     and optionally edited the task list. Replaces the legacy create-from-review
     flow which would re-call Claude and ignore the user's edits.
     """
-    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session_id))
     project = proj_result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     tasks_dicts = [t.model_dump() for t in body.tasks]
     n = len(tasks_dicts)
@@ -585,14 +581,14 @@ async def commit_stories(
                 )
 
     sess_result = await db.execute(
-        select(Session).where(Session.project_id == project_id, Session.status == "reviewing")
+        select(Session).where(Session.id == session_id, Session.status == "reviewing")
     )
     session_obj = sess_result.scalar_one_or_none()
     session_id = session_obj.id if session_obj else None
 
     from ..services.task_generator import persist_tasks_to_board
 
-    _board, task_count = await persist_tasks_to_board(project_id, tasks_dicts, db, session_id=session_id)
+    _board, task_count = await persist_tasks_to_board(session_id, tasks_dicts, db)
 
     if session_obj:
         from ..services.blueprint_service import lock_iteration
@@ -607,16 +603,16 @@ async def commit_stories(
             action="lock",
             resource_type="iteration",
             resource_id=session_obj.iteration_id,
-            metadata={"project_id": project_id, "session_id": session_obj.id, "task_count": task_count},
+            metadata={"session_id": session_obj.id, "task_count": task_count},
         )
         await db.commit()
 
-    return {"task_count": task_count, "session_id": session_id, "project_id": project_id}
+    return {"task_count": task_count, "session_id": session_id}
 
 
-@router.post("/api/projects/{project_id}/stories/preview/regenerate-task")
+@router.post("/api/sessions/{session_id}/stories/preview/regenerate-task")
 async def regenerate_single_story(
-    project_id: str,
+    session_id: str,
     body: _RegenerateSingleTaskBody,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
@@ -630,10 +626,10 @@ async def regenerate_single_story(
     (depends_on_indices, related_to_indices, wave, sequence) are preserved
     so the dep graph stays intact.
     """
-    proj_result = await db.execute(select(Project).where(Project.id == project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session_id))
     project = proj_result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     from ..services.task_generator import REGEN_FIELDS_ALLOWED, regenerate_single_task
 
@@ -646,7 +642,7 @@ async def regenerate_single_story(
     if not body.fields:
         raise HTTPException(status_code=400, detail="`fields` must be a non-empty list")
 
-    bp = await get_or_create_blueprint(project_id, db)
+    bp = await get_or_create_blueprint(session_id, db)
 
     try:
         new_task = await regenerate_single_task(
@@ -661,7 +657,7 @@ async def regenerate_single_story(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        logger.exception("Single-task regen failed for project %s", project_id)
+        logger.exception("Single-task regen failed for project %s", session_id)
         raise HTTPException(
             status_code=502,
             detail=f"AI provider could not regenerate task: {exc.__class__.__name__}: {exc}",
@@ -773,7 +769,6 @@ def _should_run_chat_facilitator(
 async def _extract_blueprint_background(
     *,
     session_id: str,
-    project_id: str,
     messages_history: list[dict],
     blueprint_content: dict,
     org_id: str | None,
@@ -792,15 +787,14 @@ async def _extract_blueprint_background(
     async with session_factory() as db:
         try:
             applied = await _extract_blueprint_inline(
-                project_id,
+                session_id,
                 messages_history,
                 blueprint_content,
                 db,
                 org_id=org_id,
-                session_id=session_id,
             )
             if applied:
-                latest_bp = await get_or_create_blueprint(project_id, db)
+                latest_bp = await get_or_create_blueprint(session_id, db)
                 for bp_update in applied:
                     await manager.send_to(
                         session_id,
@@ -817,23 +811,22 @@ async def _extract_blueprint_background(
         except Exception as extract_err:
             logger.error(
                 "facilitator.extract_failed",
-                extra={"session_id": session_id, "project_id": project_id, "err": str(extract_err)},
+                extra={"session_id": session_id, "err": str(extract_err)},
                 exc_info=True,
             )
 
 
 async def _extract_blueprint_inline(
-    project_id: str,
+    session_id: str,
     messages: list[dict],
     current_bp: dict,
     db: AsyncSession,
     org_id: str | None = None,
-    session_id: str | None = None,
 ) -> list[dict]:
     """Extract blueprint info from conversation using AI. Runs inline with same DB session."""
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    logger.info("[EXTRACT] Starting extraction for project %s, %s messages", project_id, len(messages))
+    logger.info("[EXTRACT] Starting extraction for project %s, %s messages", session_id, len(messages))
 
     # Chat-only: this fallback extraction runs after the facilitator handles a
     # *typed* chat message and is meant to catch blueprint-relevant facts the
@@ -862,7 +855,7 @@ async def _extract_blueprint_inline(
 
     bp_lines = []
     section_labels = {
-        "project_overview": "Project Overview",
+        "project_overview": "Session Overview",
         "goals_constraints": "Goals & Constraints",
         "users_personas": "Users & Personas",
         "architecture": "Architecture",
@@ -925,7 +918,7 @@ async def _extract_blueprint_inline(
             # source (chat extraction). "ai_extraction" maps to "Voice Agent"
             # in `blueprint_authors.py` and would mislabel typed-chat-derived
             # writes as voice-derived.
-            await update_section(project_id, section, content, "ai_facilitator", db, session_id=session_id)
+            await update_section(session_id, section, content, "ai_facilitator", db, from_conversation=True)
             applied.append({"section": section, "content": content, "source": source})
         else:
             logger.debug("Skipping invalid: section=%r", section)
@@ -938,9 +931,20 @@ def _serialize_session(session: Session) -> dict:
     """Serialize a session with participant user info."""
     return {
         "id": session.id,
-        "project_id": session.project_id,
         "org_id": session.org_id,
         "status": session.status,
+        # The workspace half — one row, one shape.
+        "name": session.name,
+        "description": session.description,
+        "repo_url": session.repo_url,
+        "owner_id": session.owner_id,
+        "team_id": session.team_id,
+        "is_demo": session.is_demo,
+        "key": session.key,
+        "default_generation_style": session.default_generation_style,
+        "default_modifiers": list(session.default_modifiers or []),
+        "references": list(session.references or []),
+        "continued_from_id": session.continued_from_id,
         "title": session.title,
         "initial_idea": session.initial_idea,
         "join_code": session.join_code,
@@ -968,9 +972,9 @@ def _serialize_session(session: Session) -> dict:
     }
 
 
-@router.post("/api/projects/{project_id}/sessions/check-relevance")
+@router.post("/api/sessions/{session_id}/check-relevance")
 async def check_session_relevance(
-    project_id: str,
+    session_id: str,
     body: SessionCreate,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
@@ -980,18 +984,18 @@ async def check_session_relevance(
     if not body.initial_idea or not body.initial_idea.strip():
         return {"relevant": True, "reason": ""}
 
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
     ai = await get_ai_client(org.id, db, task="fast")
 
     prompt = (
-        f"Project name: {project.name}\n"
-        f"Project description: {project.description or 'No description'}\n\n"
+        f"Session name: {project.name}\n"
+        f"Session description: {project.description or 'No description'}\n\n"
         f"Proposed session idea: {body.initial_idea}\n\n"
         "Is this session idea related to this project? "
         "Be lenient — refinements, new features, pivots within scope, "
@@ -1022,26 +1026,26 @@ async def check_session_relevance(
         return {"relevant": True, "reason": ""}  # Fail open
 
 
-@router.get("/api/projects/{project_id}/session-suggestions")
+@router.get("/api/sessions/{session_id}/session-suggestions")
 async def session_suggestions(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Suggest what the next session should focus on, based on blueprint gaps."""
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
-    bp = await get_or_create_blueprint(project_id, db)
+    bp = await get_or_create_blueprint(session_id, db)
     from ..schemas.blueprint import ITERATION_TYPES as _ITER_TYPES_MAP
     from ..services.blueprint_service import get_active_iteration as _get_active_iter
     from ..services.facilitator import PERSONA_FOCUS_SECTIONS, SECTION_LABELS, assess_coverage
 
     # Resolve iteration type sections for scoped coverage
-    _active = await _get_active_iter(project_id, db)
+    _active = await _get_active_iter(session_id, db)
     _sections_filter = None
     if _active and _active.iteration_type and _active.iteration_type in _ITER_TYPES_MAP:
         _sections_filter = _ITER_TYPES_MAP[_active.iteration_type]["sections"]
@@ -1119,7 +1123,7 @@ async def session_suggestions(
     from ..services.blueprint_template_service import ensure_org_blueprints, get_org_personas, get_org_templates
 
     await ensure_org_blueprints(org.id, db)
-    active_iter = await get_active_iteration(project_id, db)
+    active_iter = await get_active_iteration(session_id, db)
     parent_oos = None
 
     # Build types list from DB templates
@@ -1161,13 +1165,13 @@ async def session_suggestions(
             ]
 
     # Check if first release is complete (v1 locked)
-    all_iters = await list_iterations(project_id, db)
+    all_iters = await list_iterations(session_id, db)
     first_release_complete = bool(all_iters and all_iters[0].status == "locked")
 
     # Find active (live/paused) sessions for warnings
     active_sess_result = await db.execute(
         select(Session).where(
-            Session.project_id == project_id,
+            Session.id == session_id,
             Session.status.in_(["live", "paused"]),
         )
     )
@@ -1220,7 +1224,7 @@ async def get_resume_info(
     from ..services.blueprint_template_service import get_org_personas, get_template_sections
     from ..services.facilitator import SECTION_LABELS, assess_coverage
 
-    bp = await get_or_create_blueprint(session_obj.project_id, db, iteration_id=session_obj.iteration_id)
+    bp = await get_or_create_blueprint(session_obj.id, db, iteration_id=session_obj.iteration_id)
 
     # Get iteration type sections filter from DB
     sections_filter = None
@@ -1291,9 +1295,9 @@ async def get_resume_info(
     }
 
 
-@router.post("/api/projects/{project_id}/detect-iteration-type")
+@router.post("/api/sessions/{session_id}/detect-iteration-type")
 async def detect_iteration_type(
-    project_id: str,
+    session_id: str,
     body: dict,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
@@ -1333,24 +1337,26 @@ async def detect_iteration_type(
         return {"type": "large_feature", "confidence": 0.5}
 
 
-@router.post("/api/projects/{project_id}/sessions", status_code=201, response_model=SessionResponse)
+@router.post("/api/sessions/{session_id}/continuations", status_code=201, response_model=SessionResponse)
 async def create_session(
-    project_id: str,
+    session_id: str,
     body: SessionCreate,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> Session:
     # Verify project exists and get its details
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.id.isnot(None)))
+    result = await db.execute(select(Session).where(Session.id == session_id, Session.id.isnot(None)))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
-    # Asked before this session exists: only the first one reads the project's
+    # Asked before this session exists: only the first one reads the session's
     # screenshots, because what it finds stays in the blueprint for the rest.
     is_first_session = not (
-        await db.execute(select(Session.id).where(Session.project_id == project_id).limit(1))
+        await db.execute(
+            select(Session.id).where(Session.continued_from_id == session_id).limit(1)
+        )
     ).scalar_one_or_none()
 
     # Auto-generate a short title from initial_idea if no title provided
@@ -1407,11 +1413,11 @@ async def create_session(
         list_iterations,
     )
 
-    existing_iters = await list_iterations(project_id, db)
+    existing_iters = await list_iterations(session_id, db)
 
     if not existing_iters:
         # First session ever — create v1
-        new_iter = await get_or_create_iteration(project_id, db, org_id=org.id)
+        new_iter = await get_or_create_iteration(session_id, db, org_id=org.id)
         if body.iteration_type:
             new_iter.iteration_type = body.iteration_type
             await db.flush()
@@ -1446,7 +1452,7 @@ async def create_session(
         else:
             # v1 is locked — create a new iteration forked from the latest locked
             new_iter = await create_iteration(
-                project_id,
+                session_id,
                 db,
                 user.id,
                 org_id=org.id,
@@ -1464,7 +1470,12 @@ async def create_session(
             effective_focus_sections = [str(s) for s in target_sections]
 
     session = Session(
-        project_id=project_id,
+        # A continuation carries the session it follows, and inherits what the
+        # workspace is: its name, owner, team and ticket key.
+        continued_from_id=session_id,
+        name=project.name,
+        owner_id=project.owner_id,
+        team_id=project.team_id,
         org_id=org.id,
         title=title,
         initial_idea=body.initial_idea,
@@ -1494,9 +1505,9 @@ async def create_session(
     attachment_rows = (
         (
             await db.execute(
-                select(ProjectAttachment)
-                .where(ProjectAttachment.project_id == project_id)
-                .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
+                select(SessionAttachment)
+                .where(SessionAttachment.session_id == session_id)
+                .order_by(SessionAttachment.created_at.asc(), SessionAttachment.id.asc())
             )
         )
         .scalars()
@@ -1506,7 +1517,7 @@ async def create_session(
     if shots_line:
         context_parts.append(shots_line)
     if context_parts:
-        await get_or_create_blueprint(project_id, db, iteration_id=new_iter.id)
+        await get_or_create_blueprint(session_id, db, iteration_id=new_iter.id)
         combined = "\n".join(context_parts)
         # Use AI to distribute info across sections
         try:
@@ -1540,24 +1551,22 @@ async def create_session(
             for section, content in sections.items():
                 if section in BLUEPRINT_SECTIONS_LIST and content and isinstance(content, str):
                     await update_section(
-                        project_id,
+                        session_id,
                         section,
                         content.strip(),
                         "intake",
                         db,
-                        session_id=session.id,
                         iteration_id=new_iter.id,
                     )
         except Exception as e:
             logger.warning("Failed to distribute blueprint seed: %s", e)
             # Fallback: dump everything into project_overview
             await update_section(
-                project_id,
+                session_id,
                 "project_overview",
                 combined,
                 "intake",
                 db,
-                session_id=session.id,
                 iteration_id=new_iter.id,
             )
 
@@ -1568,10 +1577,10 @@ async def create_session(
         action="create",
         resource_type="session",
         resource_id=session.id,
-        metadata={"project_id": project_id, "title": title},
+        metadata={"session_id": session_id, "title": title},
     )
     await db.commit()
-    logger.info("Session created: %s (project=%s, host=%s)", session.id, project_id, user.id)
+    logger.info("Session created: %s (project=%s, host=%s)", session.id, session_id, user.id)
     # Slack session_created notification removed by design — was too noisy
     # for active users iterating on multiple sessions.
 
@@ -1596,7 +1605,7 @@ async def create_session(
     # do not: the reading is already in the blueprint by then.
     if is_first_session and attachment_rows:
         asyncio.create_task(
-            _read_project_screenshots_safe(session.id, project_id, org.id, new_iter.id)
+            _read_project_screenshots_safe(session.id, org.id, new_iter.id)
         )
 
     # Reload with participants and user info
@@ -1608,20 +1617,20 @@ async def create_session(
     return _serialize_session(result.scalar_one())
 
 
-@router.get("/api/projects/{project_id}/sessions", response_model=list[SessionResponse])
+@router.get("/api/sessions/{session_id}/continuations", response_model=list[SessionResponse])
 async def list_sessions(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[Session]:
     # Verify project access
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.id.isnot(None)))
+    result = await db.execute(select(Session).where(Session.id == session_id, Session.id.isnot(None)))
     if not result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     result = await db.execute(
         select(Session)
-        .where(Session.project_id == project_id)
+        .where(Session.continued_from_id == session_id)
         .options(selectinload(Session.participants).selectinload(Participant.user))
         .order_by(Session.created_at.desc())
     )
@@ -1643,14 +1652,18 @@ async def get_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Check user is participant or project owner
-    is_participant = any(p.user_id == user.id for p in session.participants)
-    if not is_participant:
-        result = await db.execute(select(Project).where(Project.id == session.project_id, Project.id.isnot(None)))
-        if not result.scalar_one_or_none():
-            raise HTTPException(status_code=404, detail="Session not found")
+    # The detail read is the one that carries the workspace's screenshots and
+    # whether the reader is on its team — everywhere else they are not loaded.
+    from ..models.organization import TeamMember
+    from .session_workspace import session_attachment_rows
 
-    return _serialize_session(session)
+    team_check = await db.execute(
+        select(TeamMember).where(TeamMember.team_id == session.team_id, TeamMember.user_id == user.id)
+    )
+    row = _serialize_session(session)
+    row["is_own_team"] = team_check.scalar_one_or_none() is not None
+    row["attachments"] = await session_attachment_rows(session.id, db)
+    return row
 
 
 @router.post(
@@ -1685,7 +1698,7 @@ async def complete_blueprint_review(
 
     is_participant = any(p.user_id == user.id for p in session.participants)
     if not is_participant:
-        proj_check = await db.execute(select(Project).where(Project.id == session.project_id))
+        proj_check = await db.execute(select(Session).where(Session.id == session.id))
         if not proj_check.scalar_one_or_none():
             raise HTTPException(status_code=404, detail="Session not found")
 
@@ -1733,12 +1746,14 @@ async def update_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Host or co_host can update (W4.3.5).
+    # Host or co_host can update the conversation (W4.3.5); the owner can always
+    # edit the workspace half of their own session, which has no participants
+    # until someone joins.
     privileged = next(
         (p for p in session.participants if p.user_id == user.id and p.role in ("host", "co_host")),
         None,
     )
-    if not privileged:
+    if not privileged and session.owner_id != user.id:
         raise HTTPException(status_code=403, detail="Only the host or a co-host can update the session")
 
     VALID_TRANSITIONS = {
@@ -1751,13 +1766,70 @@ async def update_session(
         "archived": set(),
     }
     update_data = body.model_dump(exclude_unset=True)
-    if "status" in update_data:
-        allowed = VALID_TRANSITIONS.get(session.status, set())
-        if update_data["status"] not in allowed:
+    # The workspace half: granularity + modifier slugs are checked against the
+    # org's own editable rows (admin-created customs are first-class) before any
+    # mutation lands. A legacy caller that sends a MODIFIER slug in the
+    # single-axis `default_generation_style` field is re-routed rather than
+    # refused.
+    if "default_generation_style" in update_data or "default_modifiers" in update_data:
+        from ..services.granularity_service import ensure_org_granularities, get_org_granularities
+        from ..services.modifier_service import ensure_org_modifiers, get_org_modifiers
+
+        await ensure_org_granularities(session.org_id, db)
+        await ensure_org_modifiers(session.org_id, db)
+        org_gran_slugs = {r.slug for r in await get_org_granularities(session.org_id, db)}
+        org_mod_slugs = {r.slug for r in await get_org_modifiers(session.org_id, db)}
+
+        style_val = update_data.get("default_generation_style")
+        if isinstance(style_val, str) and style_val not in org_gran_slugs and style_val in org_mod_slugs:
+            existing_mods = list(update_data.get("default_modifiers") or session.default_modifiers or [])
+            if style_val not in existing_mods:
+                existing_mods.append(style_val)
+            update_data["default_modifiers"] = existing_mods
+            update_data["default_generation_style"] = None
+        elif isinstance(style_val, str) and style_val not in org_gran_slugs:
             raise HTTPException(
-                status_code=400,
-                detail=f"Cannot transition from '{session.status}' to '{update_data['status']}'. Allowed: {allowed}",
+                status_code=422,
+                detail=f"Unknown granularity {style_val!r}. Valid: {sorted(org_gran_slugs)}",
             )
+
+        mods_val = update_data.get("default_modifiers")
+        if isinstance(mods_val, list):
+            bad = [m for m in mods_val if m not in org_mod_slugs]
+            if bad:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Unknown modifier(s) {bad}. Valid: {sorted(org_mod_slugs)}",
+                )
+            seen: set[str] = set()
+            update_data["default_modifiers"] = [m for m in mods_val if not (m in seen or seen.add(m))]
+
+    if "references" in update_data:
+        if update_data["references"] is None:
+            raise HTTPException(status_code=422, detail="references must be a list")
+        from .session_workspace import dedupe_references
+
+        update_data["references"] = dedupe_references(update_data["references"])
+
+    # A session carries two vocabularies on one column: the workspace's
+    # (active | completed) and the conversation's lifecycle above. An unknown
+    # word is rejected outright; a known one still has to be a legal move.
+    _WORKSPACE_STATES = {"active", "completed"}
+    if "status" in update_data:
+        wanted = update_data["status"]
+        known = _WORKSPACE_STATES | set(VALID_TRANSITIONS)
+        if wanted not in known:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unknown status '{wanted}'; expected one of {sorted(known)}",
+            )
+        if wanted not in _WORKSPACE_STATES:
+            allowed = VALID_TRANSITIONS.get(session.status, set())
+            if wanted not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot transition from '{session.status}' to '{wanted}'. Allowed: {allowed}",
+                )
 
     # Strip voice fields from ai_config — these are managed via Studio personas now
     if "ai_config" in update_data and isinstance(update_data["ai_config"], dict):
@@ -1800,7 +1872,7 @@ async def update_session(
     # Dispatch Slack event when session is completed (best-effort)
     if session.status == "completed" and old_status != "completed":
         try:
-            _proj_result = await db.execute(select(Project).where(Project.id == session.project_id))
+            _proj_result = await db.execute(select(Session).where(Session.id == session.id))
             _proj = _proj_result.scalar_one_or_none()
             if _proj:
                 await dispatch_event(
@@ -1810,7 +1882,6 @@ async def update_session(
                     payload={
                         "session_id": session.id,
                         "title": session.title,
-                        "project_id": session.project_id,
                         "summary": None,
                     },
                 )
@@ -1821,7 +1892,7 @@ async def update_session(
     if transitioning_to_completed:
         import asyncio
 
-        asyncio.create_task(_generate_tasks_on_complete(session.project_id, session_id=session.id))
+        asyncio.create_task(_generate_tasks_on_complete(session.id))
 
         # W6.6.3 — also run the extraction pass. Use a fresh DB session because
         # the request-scoped `db` will be closed by the time the task runs.
@@ -1893,7 +1964,7 @@ async def delete_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     # Verify ownership via project
-    result = await db.execute(select(Project).where(Project.id == session.project_id, Project.id.isnot(None)))
+    result = await db.execute(select(Session).where(Session.id == session.id, Session.id.isnot(None)))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Only the project owner can delete sessions")
 
@@ -2012,7 +2083,7 @@ async def delete_session(
         select(sa_func.count())
         .select_from(Session)
         .where(
-            Session.project_id == session.project_id,
+            Session.id == session.id,
             Session.id != session_id,
         )
     )
@@ -2028,19 +2099,19 @@ async def delete_session(
         # Null out session_id references on snapshots (avoid FK issues)
         await db.execute(
             BlueprintSnapshot.__table__.update()
-            .where(BlueprintSnapshot.project_id == session.project_id)
+            .where(BlueprintSnapshot.session_id == session.id)
             .values(session_id=None)
         )
-        await db.execute(sa_delete(BlueprintSnapshot).where(BlueprintSnapshot.project_id == session.project_id))
+        await db.execute(sa_delete(BlueprintSnapshot).where(BlueprintSnapshot.session_id == session.id))
         # Clear self-FK references first, then delete remaining iterations
         await db.execute(
             BlueprintIteration.__table__.update()
-            .where(BlueprintIteration.project_id == session.project_id)
+            .where(BlueprintIteration.session_id == session.id)
             .values(forked_from_id=None)
         )
-        await db.execute(sa_delete(BlueprintIteration).where(BlueprintIteration.project_id == session.project_id))
+        await db.execute(sa_delete(BlueprintIteration).where(BlueprintIteration.session_id == session.id))
         reset = BlueprintSnapshot(
-            project_id=session.project_id,
+            session_id=session.id,
             version_number=1,
             content=EMPTY_BLUEPRINT.copy(),
             created_by="system_reset",
@@ -2051,7 +2122,7 @@ async def delete_session(
         # (Skip revert for sessions on locked iterations — blueprint is frozen)
         from ..services.blueprint_service import revert_session_changes
 
-        await revert_session_changes(session.project_id, session_id, db)
+        await revert_session_changes(session.id, db)
 
     await log_audit(
         db,
@@ -2060,11 +2131,11 @@ async def delete_session(
         action="delete",
         resource_type="session",
         resource_id=session_id,
-        metadata={"project_id": session.project_id, "title": session.title},
+        metadata={"session_id": session.id, "title": session.title},
     )
     # Capture fields before session is deleted
     _session_title = session.title
-    _session_project_id = session.project_id
+    _session_id = session.id
 
     # Clear child-row references to this session (tables without DB-level cascade).
     await _purge_session_children([session_id])
@@ -2084,7 +2155,7 @@ async def delete_session(
     # Dispatch Slack event (best-effort)
     # Slack session_deleted notification removed by design — too noisy
     # alongside session_created, which was also removed.
-    _ = (_session_project_id, _session_title)  # silence unused locals
+    _ = (_session_id, _session_title)  # silence unused locals
 
 
 SECTION_MAP = {
@@ -2110,10 +2181,9 @@ async def _handle_slash_command(
     db: AsyncSession,
 ) -> ChatMessage:
     """Process a slash command and return a system/AI message."""
-    from ..models.project import Project
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    proj_result = await db.execute(select(Project).where(Project.id == session.project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session.id))
     project = proj_result.scalar_one_or_none()
     org_id = project.org_id if project else None
 
@@ -2160,7 +2230,7 @@ async def _handle_slash_command(
 
                     async with get_session_factory()() as bg_db:
                         ai = await _get_ai(oid, bg_db, task="fast")
-                        bp = await get_or_create_blueprint(session.project_id, bg_db)
+                        bp = await get_or_create_blueprint(session.id, bg_db)
                         cov = assess_coverage(bp.content)
                         scores = cov["scores"]
 
@@ -2352,8 +2422,6 @@ async def _handle_slash_command(
                     org_id,
                     db,
                     task="fast",
-                    session_id=session_id,
-                    project_id=session.project_id,
                 )
                 response_text = await ai.chat(
                     system=(
@@ -2375,7 +2443,7 @@ async def _handle_slash_command(
             asyncio.create_task(_run_facilitator_safe(session_id, f"FOCUS: Discuss the {arg} section in depth."))
 
     elif cmd == "blueprint":
-        blueprint = await get_or_create_blueprint(session.project_id, db)
+        blueprint = await get_or_create_blueprint(session.id, db)
         filled = [k for k, v in blueprint.content.items() if v and v.strip()]
         empty = [k for k, v in blueprint.content.items() if not v or not v.strip()]
         response_text = f"**Blueprint status: {len(filled)}/{len(filled) + len(empty)} sections filled**\n\n"
@@ -2402,9 +2470,9 @@ async def _handle_slash_command(
 
     elif cmd == "extract":
         response_text = "Extracting blueprint from conversation..."
-        from ..models.project import Project as P
+        from ..models.session import Session as P
 
-        proj_row = await db.execute(select(P.org_id).where(P.id == session.project_id))
+        proj_row = await db.execute(select(P.org_id).where(P.id == session.id))
         row = proj_row.one_or_none()
         if row:
             result = await db.execute(
@@ -2414,8 +2482,8 @@ async def _handle_slash_command(
                 .limit(15)
             )
             msgs = [{"content": m.content, "message_type": m.message_type} for m in reversed(result.scalars().all())]
-            blueprint = await get_or_create_blueprint(session.project_id, db)
-            asyncio.create_task(_extract_safe(session.project_id, msgs, blueprint.content, db, row.org_id))
+            blueprint = await get_or_create_blueprint(session.id, db)
+            asyncio.create_task(_extract_safe(session.id, msgs, blueprint.content, db, row.org_id))
 
     elif cmd in ("design-system", "wireframe", "generate-tasks", "estimate"):
         # These send the command as a prompt to the facilitator
@@ -2470,10 +2538,10 @@ async def _handle_slash_command(
         )
 
     elif cmd == "export":
-        blueprint = await get_or_create_blueprint(session.project_id, db)
-        lines = ["# Project Blueprint\n"]
+        blueprint = await get_or_create_blueprint(session.id, db)
+        lines = ["# Session Blueprint\n"]
         section_labels = {
-            "project_overview": "Project Overview",
+            "project_overview": "Session Overview",
             "goals_constraints": "Goals & Constraints",
             "users_personas": "Users & Personas",
             "team_capacity": "Team & Capacity",
@@ -2529,9 +2597,9 @@ async def _handle_slash_command(
     return msg
 
 
-async def _extract_safe(project_id, messages, content, db, org_id):
+async def _extract_safe(session_id, messages, content, db, org_id):
     try:
-        await _extract_blueprint_inline(project_id, messages, content, db, org_id)
+        await _extract_blueprint_inline(session_id, messages, content, db, org_id)
     except Exception as e:
         logger.error("Extraction error: %s", e, exc_info=True)
 
@@ -2622,7 +2690,7 @@ async def send_message(
 
             sender_name = user.display_name or user.name or user.email or "Someone"
             preview = body.content if len(body.content) <= 140 else body.content[:137] + "…"
-            link = f"/projects/{session.project_id}/sessions/{session_id}"
+            link = f"/sessions/{session_id}"
             for uid in mentioned_user_ids:
                 await notify(
                     user_id=uid,
@@ -2630,7 +2698,7 @@ async def send_message(
                     body=preview,
                     type="mention",
                     link=link,
-                    project_id=session.project_id,
+                    session_id=session.id,
                     db=db,
                 )
             await db.commit()
@@ -2702,7 +2770,7 @@ async def send_message(
 
     # Resolve @mentions and dispatch Slack notifications (best-effort)
     try:
-        _proj_result = await db.execute(select(Project).where(Project.id == session.project_id))
+        _proj_result = await db.execute(select(Session).where(Session.id == session.id))
         _proj = _proj_result.scalar_one_or_none()
         if _proj and session.org_id:
             _mentioned_ids = await resolve_mentions(db, session.org_id, body.content)
@@ -2747,8 +2815,8 @@ async def send_message(
         from ..services import pipeline_runs
         from ..services.intent_classifier import classify_intent
 
-        # Project's org_id is what the AI client routes through.
-        proj_r2 = await db.execute(select(Project.org_id).where(Project.id == session.project_id))
+        # Session's org_id is what the AI client routes through.
+        proj_r2 = await db.execute(select(Session.org_id).where(Session.id == session.id))
         intent_oid = proj_r2.scalar_one_or_none()
         # `has_active_pipeline` covers both runs already registered AND
         # runs the previous turn has asked for but hasn't yet wired up
@@ -2868,7 +2936,7 @@ async def resume_session(
         return {"status": "no_messages"}
 
     # Get project context
-    proj_result = await db.execute(select(Project).where(Project.id == session.project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == session.id))
     project = proj_result.scalar_one_or_none()
 
     user_name = user.display_name or user.name or user.email.split("@")[0]
@@ -2965,7 +3033,7 @@ async def _generate_welcome_back(
 
 
 async def _read_project_screenshots_safe(
-    session_id: str, project_id: str, org_id: str, iteration_id: str
+    session_id: str, org_id: str, iteration_id: str
 ) -> None:
     """Background: read the project's screenshots into the blueprint's UI/UX section.
 
@@ -2981,9 +3049,9 @@ async def _read_project_screenshots_safe(
             rows = (
                 (
                     await db.execute(
-                        select(ProjectAttachment)
-                        .where(ProjectAttachment.project_id == project_id)
-                        .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
+                        select(SessionAttachment)
+                        .where(SessionAttachment.session_id == session_id)
+                        .order_by(SessionAttachment.created_at.asc(), SessionAttachment.id.asc())
                         .limit(MAX_READ_SCREENSHOTS)
                     )
                 )
@@ -3007,20 +3075,19 @@ async def _read_project_screenshots_safe(
                 return
             # One snapshot for the lot, on top of whatever the seeding left —
             # update_section only replaces or merges bullets, and these are prose.
-            blueprint = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+            blueprint = await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
             existing = (blueprint.content or {}).get("ui_ux") or ""
             await update_section(
-                project_id,
+                session_id,
                 "ui_ux",
                 "\n\n".join([existing.strip(), *readings]).strip(),
                 "ai-vision",
                 db,
-                session_id=session_id,
                 iteration_id=iteration_id,
             )
             logger.info("Read %d project screenshots into ui_ux for session %s", len(readings), session_id)
     except Exception as e:  # noqa: BLE001 — background task
-        logger.error("Project screenshot reading error: %s", e, exc_info=True)
+        logger.error("Session screenshot reading error: %s", e, exc_info=True)
 
 
 async def _generate_intro_safe(
@@ -3078,9 +3145,9 @@ async def _generate_intro(
             return
 
         # Build context from project name + description + session idea
-        context_parts = [f"Project name: {project_name}"]
+        context_parts = [f"Session name: {project_name}"]
         if project_desc:
-            context_parts.append(f"Project description: {project_desc}")
+            context_parts.append(f"Session description: {project_desc}")
         if initial_idea:
             context_parts.append(f"Session idea: {initial_idea}")
         # What the project points at, and the screenshots it was described with,
@@ -3102,12 +3169,12 @@ async def _generate_intro(
                 await db.execute(
                     select(_func.count())
                     .select_from(Session)
-                    .where(Session.project_id == session_obj.project_id)
+                    .where(Session.id == session_obj.id)
                 )
             ).scalar() or 0
             is_first_session = prior_sessions_count <= 1
 
-            bp = await get_or_create_blueprint(session_obj.project_id, db)
+            bp = await get_or_create_blueprint(session_obj.id, db)
             # If session has a focus scope, only consider those sections when
             # picking "empty" and "filled" — we shouldn't nag the user about
             # sections they've explicitly scoped out.
@@ -3963,7 +4030,6 @@ async def send_recap_email(
         transcript_lines=transcript_lines,
         org_id=session.org_id,
         session_id=session.id,
-        project_id=session.project_id,
     )
     return {"recipients": len(recipients), "sent": sent}
 
@@ -3984,7 +4050,7 @@ async def analyze_image(
     # Get org_id for provider routing
     session_result_pre = await db.execute(select(Session).where(Session.id == session_id))
     s = session_result_pre.scalar_one_or_none()
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == s.project_id)) if s else None
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == s.id)) if s else None
     oid = proj_r.scalar_one_or_none() if proj_r else None
 
     ai = await get_ai_client(oid, db, task="fast")
@@ -3994,7 +4060,7 @@ async def analyze_image(
     session_result = await db.execute(select(Session).where(Session.id == session_id))
     session_obj = session_result.scalar_one_or_none()
     if session_obj:
-        await update_section(session_obj.project_id, "ui_ux", analysis, "ai-vision", db, session_id=session_id)
+        await update_section(session_obj.id, "ui_ux", analysis, "ai-vision", db, from_conversation=True)
 
     return {"analysis": analysis}
 
@@ -4039,14 +4105,14 @@ async def generate_design_system(
     if not session_obj:
         raise HTTPException(status_code=404)
 
-    blueprint = await get_or_create_blueprint(session_obj.project_id, db)
+    blueprint = await get_or_create_blueprint(session_obj.id, db)
 
     conv = "\n".join([f"{'User' if m.user_id else 'AI'}: {m.content}" for m in messages[-15:]])
 
     from ..services import design_library_service as dls
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == session_obj.project_id))
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == session_obj.id))
     oid = proj_r.scalar_one_or_none()
 
     initial_idea = (blueprint.content or {}).get("initial_idea") or ""
@@ -4343,7 +4409,7 @@ async def build_design_handoff(
 
     project_name = body.get("project_name")
     if not project_name:
-        proj_r = await db.execute(select(Project.name).where(Project.id == session_obj.project_id))
+        proj_r = await db.execute(select(Session.name).where(Session.id == session_obj.id))
         project_name = proj_r.scalar_one_or_none() or "Untitled"
 
     from ..services.design_handoff_service import build_handoff
@@ -4393,7 +4459,7 @@ async def generate_wireframe(
 
     session_r = await db.execute(select(Session).where(Session.id == session_id))
     s_obj = session_r.scalar_one_or_none()
-    proj_r2 = await db.execute(select(Project.org_id).where(Project.id == s_obj.project_id)) if s_obj else None
+    proj_r2 = await db.execute(select(Session.org_id).where(Session.id == s_obj.session_id)) if s_obj else None
     oid2 = proj_r2.scalar_one_or_none() if proj_r2 else None
 
     ai = await get_ai_client(oid2, db, task="fast")
@@ -4503,7 +4569,7 @@ async def enhance_wireframe(
     # Build the regeneration prompt
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == sess.project_id))
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == sess.id))
     oid = proj_r.scalar_one_or_none()
     ai = await get_ai_client(oid, db, task="fast")
 
@@ -4954,7 +5020,7 @@ async def redesign_single_screen(
 
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == sess.project_id))
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == sess.id))
     oid = proj_r.scalar_one_or_none()
     ai = await get_ai_client_for_role(oid, db, "wireframe")
 
@@ -5238,7 +5304,7 @@ async def edit_single_screen(
 
     from ..services.ai_provider import get_ai_client, get_ai_client_for_role  # noqa: F401
 
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == sess.project_id))
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == sess.id))
     oid = proj_r.scalar_one_or_none()
     ai = await get_ai_client_for_role(oid, db, "edit")
 
@@ -5736,9 +5802,9 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
                 logger.error("Facilitator: session %s not found in DB — aborting", session_id)
                 return
 
-            logger.info("Facilitator: fetching blueprint for project %s", session_obj.project_id)
+            logger.info("Facilitator: fetching blueprint for project %s", session_obj.id)
             blueprint = await get_or_create_blueprint(
-                session_obj.project_id,
+                session_obj.id,
                 db,
                 iteration_id=session_obj.iteration_id,
             )
@@ -5820,10 +5886,9 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
                 # starting persona so they count as "used" once we move on.
                 runtime_state = _record_active_persona(runtime_state, persona)
             # Get org_id + team_id from the project for AI provider routing + directory context
-            from ..models.project import Project
 
             proj_result = await db.execute(
-                select(Project.org_id, Project.team_id).where(Project.id == session_obj.project_id)
+                select(Session.org_id, Session.team_id).where(Session.id == session_obj.id)
             )
             proj_row = proj_result.one_or_none()
             org_id = proj_row.org_id if proj_row else None
@@ -6032,12 +6097,12 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
             # Capture the snapshot id BEFORE this turn's updates so we can
             # stamp each blueprint_update event with an "undo target". The
             # frontend renders an "Undo" button under the AI bubble that
-            # POSTs /api/projects/{id}/blueprint/restore/{this_id} to revert
+            # POSTs /api/sessions/{id}/blueprint/restore/{this_id} to revert
             # the whole turn in one click.
             pre_turn_snapshot_id: str | None = None
             if result["blueprint_updates"]:
                 pre_turn_blueprint = await get_or_create_blueprint(
-                    session_obj.project_id,
+                    session_obj.id,
                     db,
                     iteration_id=session_obj.iteration_id,
                 )
@@ -6050,12 +6115,11 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
             for bp_update in result["blueprint_updates"]:
                 source = bp_update.get("source", "user_stated")
                 snapshot = await update_section(
-                    session_obj.project_id,
+                    session_obj.id,
                     bp_update["section"],
                     bp_update["content"],
                     "ai_facilitator",
                     db,
-                    session_id=session_id,
                     source=source,
                     mode="merge",
                 )
@@ -6168,7 +6232,6 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
                     asyncio.create_task(
                         _extract_blueprint_background(
                             session_id=session_id,
-                            project_id=session_obj.project_id,
                             messages_history=messages_history,
                             blueprint_content=blueprint.content,
                             org_id=org_id,
@@ -6207,7 +6270,7 @@ async def _run_facilitator(session_id: str, initial_idea: str | None, intent: ob
                             diag_session = diag_result.scalar_one_or_none()
                             if diag_session:
                                 proj_r = await db.execute(
-                                    select(Project.org_id).where(Project.id == diag_session.project_id)
+                                    select(Session.org_id).where(Session.id == diag_session.id)
                                 )
                                 edit_oid = proj_r.scalar_one_or_none()
                                 await _apply_edit_intent_inline(
@@ -6777,7 +6840,7 @@ async def _extract_diagram_inline_inner(
     conv = "\n".join(f"[{m.get('message_type', 'user')}]: {m['content']}" for m in recent)
 
     # Get org_id for provider routing
-    proj_r = await db.execute(select(Project.org_id).where(Project.id == session_obj.project_id))
+    proj_r = await db.execute(select(Session.org_id).where(Session.id == session_obj.id))
     oid = proj_r.scalar_one_or_none()
 
     # Load diagram harness for the AI
@@ -6845,7 +6908,7 @@ async def _extract_diagram_inline_inner(
         try:
             from ..services.blueprint_service import get_or_create_blueprint
 
-            bp = await get_or_create_blueprint(session_obj.project_id, db, iteration_id=session_obj.iteration_id)
+            bp = await get_or_create_blueprint(session_obj.id, db, iteration_id=session_obj.iteration_id)
             ui_ux_content = (bp.content or {}).get("ui_ux", "") or ""
             has_substantive_ui = len(ui_ux_content.strip()) >= 80
             has_existing_wireframe = "wireframe" in all_diagrams and bool(
@@ -6989,7 +7052,7 @@ async def _extract_diagram_inline_inner(
                     from ..services import design_library_service as dls
 
                     bp = await get_or_create_blueprint(
-                        session_obj.project_id, db, iteration_id=session_obj.iteration_id
+                        session_obj.id, db, iteration_id=session_obj.iteration_id
                     )
                     initial_idea = (bp.content or {}).get("initial_idea") or ""
                     inline_brief = f"{initial_idea}\n\nCONVERSATION:\n{conv[-1500:]}".strip()

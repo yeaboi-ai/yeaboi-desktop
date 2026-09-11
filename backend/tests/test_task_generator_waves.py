@@ -144,30 +144,23 @@ def _make_ai_with_responses(responses: list[dict]) -> AsyncMock:
 @pytest.fixture
 async def seeded_project_and_session(client, auth_headers):
     """Create a project + reviewing session with a non-empty blueprint."""
-    proj = await client.post("/api/projects", json={"name": "P-waves"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-waves"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "A wave-driven kanban planner."},
         headers=auth_headers,
     )
-    sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
-        json={"initial_idea": "wave test"},
-        headers=auth_headers,
-    )
-    session_id = sess.json()["id"]
     await client.patch(
         f"/api/sessions/{session_id}",
         json={"status": "reviewing"},
         headers=auth_headers,
     )
-    return project_id, session_id
+    return session_id
 
 
-async def _make_job(db_session, project_id, session_id, org_id):
+async def _make_job(db_session, session_id, org_id):
     job = TaskGenerationJob(
-        project_id=project_id,
         session_id=session_id,
         org_id=org_id,
         status="pending",
@@ -183,17 +176,30 @@ def _patch_factory(db_engine):
     """Return a session_factory bound to the test engine for the worker."""
     return async_sessionmaker(db_engine, expire_on_commit=False)
 
+async def _make_job(db_session, session_id, org_id):
+    job = TaskGenerationJob(
+        session_id=session_id,
+        org_id=org_id,
+        status="pending",
+        partial_tasks=[],
+    )
+    db_session.add(job)
+    await db_session.commit()
+    await db_session.refresh(job)
+    return job
+
+
 
 async def test_worker_completes_after_first_wave_when_model_signals_complete(
     client, auth_headers, db_session, db_engine, seeded_project_and_session
 ):
     """If Wave 0 returns complete=true, the loop exits immediately."""
-    project_id, session_id = seeded_project_and_session
+    session_id = seeded_project_and_session
     # Look up org_id via the project.
-    from src.app.models.project import Project
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
-    job = await _make_job(db_session, project_id, session_id, proj.org_id)
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
+    job = await _make_job(db_session, session_id, proj.org_id)
 
     wave_0 = {
         "tasks": [
@@ -224,11 +230,11 @@ async def test_worker_completes_after_first_wave_when_model_signals_complete(
 async def test_worker_chains_multiple_waves_until_complete(
     client, auth_headers, db_session, db_engine, seeded_project_and_session
 ):
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
-    job = await _make_job(db_session, project_id, session_id, proj.org_id)
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
+    job = await _make_job(db_session, session_id, proj.org_id)
 
     wave_0 = {"tasks": [{"title": "Setup", "depends_on_indices": []}], "complete": False}
     wave_1 = {"tasks": [{"title": "Auth", "depends_on_indices": [0]}], "complete": False}
@@ -255,11 +261,11 @@ async def test_worker_chains_multiple_waves_until_complete(
 
 async def test_worker_hits_max_waves_cap(client, auth_headers, db_session, db_engine, seeded_project_and_session):
     """If the model never signals complete, the loop stops at MAX_WAVES."""
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
-    job = await _make_job(db_session, project_id, session_id, proj.org_id)
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
+    job = await _make_job(db_session, session_id, proj.org_id)
 
     wave_0 = {"tasks": [{"title": "T0", "depends_on_indices": []}], "complete": False}
     wave_n = {"tasks": [{"title": "TN", "depends_on_indices": [0]}], "complete": False}
@@ -283,11 +289,11 @@ async def test_worker_hits_max_waves_cap(client, auth_headers, db_session, db_en
 async def test_worker_marks_failed_on_ai_exception(
     client, auth_headers, db_session, db_engine, seeded_project_and_session
 ):
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
-    job = await _make_job(db_session, project_id, session_id, proj.org_id)
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
+    job = await _make_job(db_session, session_id, proj.org_id)
 
     ai = AsyncMock()
     ai.provider = "test"
@@ -319,11 +325,11 @@ async def test_worker_empty_wave_terminates_cleanly(
 ):
     """An empty tasks list with complete=False should still end the loop —
     we don't want to spin forever asking the model for more."""
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
-    job = await _make_job(db_session, project_id, session_id, proj.org_id)
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
+    job = await _make_job(db_session, session_id, proj.org_id)
 
     wave_0 = {"tasks": [{"title": "Setup", "depends_on_indices": []}], "complete": False}
     wave_1_empty = {"tasks": [], "complete": False}
@@ -346,7 +352,7 @@ async def test_worker_empty_wave_terminates_cleanly(
 
 
 async def test_preview_async_returns_job_id(client, auth_headers, seeded_project_and_session):
-    project_id, _ = seeded_project_and_session
+    session_id = seeded_project_and_session
 
     # The route fires a BackgroundTask that uses its own session factory
     # (pointing at the real engine, not the test engine). We're only testing
@@ -359,7 +365,7 @@ async def test_preview_async_returns_job_id(client, auth_headers, seeded_project
         new=_noop,
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             headers=auth_headers,
         )
     assert resp.status_code == 200
@@ -368,11 +374,11 @@ async def test_preview_async_returns_job_id(client, auth_headers, seeded_project
 
 
 async def test_preview_async_rejects_empty_blueprint(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P-empty"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-empty"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     # No blueprint patch — blueprint stays empty.
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview-async",
+        f"/api/sessions/{session_id}/stories/preview-async",
         headers=auth_headers,
     )
     assert resp.status_code == 422
@@ -384,12 +390,11 @@ async def test_get_job_status_404_for_unknown(client, auth_headers):
 
 
 async def test_cancel_endpoint_flips_status(client, auth_headers, db_session, seeded_project_and_session):
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     job = TaskGenerationJob(
-        project_id=project_id,
         session_id=session_id,
         org_id=proj.org_id,
         status="running",
@@ -408,13 +413,12 @@ async def test_preview_async_is_idempotent_for_same_session(
     client, auth_headers, db_session, seeded_project_and_session
 ):
     """A second preview-async on the same session reuses the in-flight job."""
-    project_id, session_id = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     # Pre-create a running job so the second call sees it.
     job = TaskGenerationJob(
-        project_id=project_id,
         session_id=session_id,
         org_id=proj.org_id,
         status="running",
@@ -425,7 +429,7 @@ async def test_preview_async_is_idempotent_for_same_session(
     await db_session.refresh(job)
 
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview-async",
+        f"/api/sessions/{session_id}/stories/preview-async",
         headers=auth_headers,
     )
     assert resp.status_code == 200
@@ -436,9 +440,9 @@ async def test_preview_async_is_idempotent_for_same_session(
 
 
 async def test_preview_async_rejects_unknown_granularity(client, auth_headers, seeded_project_and_session):
-    project_id, _ = seeded_project_and_session
+    session_id = seeded_project_and_session
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview-async",
+        f"/api/sessions/{session_id}/stories/preview-async",
         json={"granularity": "not_a_thing"},
         headers=auth_headers,
     )
@@ -447,9 +451,9 @@ async def test_preview_async_rejects_unknown_granularity(client, auth_headers, s
 
 
 async def test_preview_async_rejects_unknown_modifier(client, auth_headers, seeded_project_and_session):
-    project_id, _ = seeded_project_and_session
+    session_id = seeded_project_and_session
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview-async",
+        f"/api/sessions/{session_id}/stories/preview-async",
         json={"modifiers": ["spike_first", "not_a_modifier"]},
         headers=auth_headers,
     )
@@ -461,7 +465,7 @@ async def test_preview_async_stamps_granularity_and_modifiers_on_job(
     client, auth_headers, db_session, seeded_project_and_session
 ):
     """The body's granularity + modifiers both land on the job for the worker."""
-    project_id, _ = seeded_project_and_session
+    session_id = seeded_project_and_session
 
     async def _noop(job_id: str) -> None:
         return None
@@ -471,7 +475,7 @@ async def test_preview_async_stamps_granularity_and_modifiers_on_job(
         new=_noop,
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             json={"granularity": "many_small", "modifiers": ["spike_first", "story_driven"]},
             headers=auth_headers,
         )
@@ -492,7 +496,7 @@ async def test_preview_async_legacy_style_field_reroutes_modifier(
     """Older clients sending the legacy single-axis ``style`` field must keep
     working — a modifier slug there gets routed into the modifiers list, and
     granularity stays at the default."""
-    project_id, _ = seeded_project_and_session
+    session_id = seeded_project_and_session
 
     async def _noop(job_id: str) -> None:
         return None
@@ -502,7 +506,7 @@ async def test_preview_async_legacy_style_field_reroutes_modifier(
         new=_noop,
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             json={"style": "vertical_slices"},
             headers=auth_headers,
         )
@@ -521,10 +525,10 @@ async def test_preview_async_uses_project_defaults_when_body_empty(
     client, auth_headers, db_session, seeded_project_and_session
 ):
     """No `granularity` / `modifiers` in the body → fall back to project defaults."""
-    project_id, _ = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     proj.default_generation_style = "minimal"
     proj.default_modifiers = ["wave_optimised"]
     await db_session.commit()
@@ -537,7 +541,7 @@ async def test_preview_async_uses_project_defaults_when_body_empty(
         new=_noop,
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             headers=auth_headers,
         )
     assert resp.status_code == 200
@@ -557,11 +561,11 @@ async def test_preview_async_follow_practices_modifier_drops_on_failure(
     """When ``follow_practices`` is requested as a modifier and the repo analyzer
     raises, the route returns a warning and dispatches the job WITHOUT that
     modifier — other modifiers + granularity still apply."""
-    project_id, _ = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
     from src.app.services.repo_conventions_analyzer import RepoAnalysisError
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     proj.repo_url = "https://github.com/acme/widget"
     await db_session.commit()
 
@@ -582,7 +586,7 @@ async def test_preview_async_follow_practices_modifier_drops_on_failure(
         ),
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             json={
                 "granularity": "many_small",
                 "modifiers": ["spike_first", "follow_practices"],
@@ -607,10 +611,10 @@ async def test_preview_async_follow_practices_modifier_stashes_profile_on_succes
 ):
     """Successful repo analysis → the profile snapshot lands on the job and
     follow_practices stays in the modifiers list."""
-    project_id, _ = seeded_project_and_session
-    from src.app.models.project import Project
+    session_id = seeded_project_and_session
+    from src.app.models.session import Session
 
-    proj = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    proj = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     proj.repo_url = "https://github.com/acme/widget"
     await db_session.commit()
 
@@ -630,7 +634,7 @@ async def test_preview_async_follow_practices_modifier_stashes_profile_on_succes
         ),
     ):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview-async",
+            f"/api/sessions/{session_id}/stories/preview-async",
             json={"granularity": "balanced", "modifiers": ["follow_practices"]},
             headers=auth_headers,
         )

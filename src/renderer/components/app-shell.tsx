@@ -9,8 +9,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
-  // Full-screen pages — no sidebar
-  const isFullScreen = pathname?.includes('/sessions/') && !pathname?.endsWith('/new');
+  // Full-screen pages — no sidebar. Explicit, not a substring test: the
+  // session workspace at /sessions/:id keeps the frame; only the room and the
+  // recap are bare.
+  const isFullScreen = /^\/sessions\/[^/]+\/(room|completed)$/.test(pathname ?? '');
   const isAuth = pathname?.startsWith('/auth');
   const isInvite = pathname?.startsWith('/invite');
   const isOnboarding = pathname?.startsWith('/onboarding');

@@ -128,7 +128,7 @@ describe('the promise is said on every screen it passes through', () => {
   it('the first-run card offers the conversation the description opens', () => {
     const card = read('components/projects/first-run-card.tsx');
     expect(card).toContain('DESCRIBE_COPY.CARD_BODY');
-    expect(card).toContain('/sessions/new');
+    expect(card).toContain('/new');
   });
 
   it('the card heads and acts in different words', () => {

@@ -58,8 +58,8 @@ export default function BlueprintPage() {
     (async () => {
       try {
         const [projResp, itersResp] = await Promise.all([
-          authFetch(`/api/projects/${projectId}`),
-          authFetch(`/api/projects/${projectId}/iterations`),
+          authFetch(`/api/sessions/${projectId}`),
+          authFetch(`/api/sessions/${projectId}/iterations`),
         ]);
         if (cancelled) return;
         if (projResp.ok) {
@@ -91,9 +91,9 @@ export default function BlueprintPage() {
     setLoading(true);
     try {
       const [snapResp, covResp] = await Promise.all([
-        authFetch(`/api/projects/${projectId}/blueprint?iteration_id=${activeIterationId}`),
+        authFetch(`/api/sessions/${projectId}/blueprint?iteration_id=${activeIterationId}`),
         authFetch(
-          `/api/projects/${projectId}/blueprint/coverage?iteration_id=${activeIterationId}`,
+          `/api/sessions/${projectId}/blueprint/coverage?iteration_id=${activeIterationId}`,
         ),
       ]);
       if (snapResp.ok) {
@@ -102,7 +102,7 @@ export default function BlueprintPage() {
         // Fetch the detail by id to get provenance.
         const bp = await snapResp.json();
         const detailResp = await authFetch(
-          `/api/projects/${projectId}/blueprint/snapshots/${bp.id}`,
+          `/api/sessions/${projectId}/blueprint/snapshots/${bp.id}`,
         );
         if (detailResp.ok) {
           setSnapshot(await detailResp.json());
@@ -164,7 +164,7 @@ export default function BlueprintPage() {
       <div className="border-b border-border/40">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-3 text-sm">
           <Link
-            href={`/projects/${projectId}`}
+            href={`/sessions/${projectId}`}
             className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -225,7 +225,7 @@ export default function BlueprintPage() {
         <GeneratePlanDialog
           projectId={projectId}
           onClose={() => setGenerating(false)}
-          onGenerated={() => router.push(`/projects/${projectId}/plan`)}
+          onGenerated={() => router.push(`/sessions/${projectId}/plan`)}
         />
       )}
     </div>

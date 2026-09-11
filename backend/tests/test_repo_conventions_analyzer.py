@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
 from src.app.models.repo_analysis_job import RepoAnalysisJob
+from src.app.models.session import Session
 from src.app.services.repo_conventions_analyzer import (
     PROFILE_TTL,
     RepoAnalysisError,
@@ -102,11 +102,11 @@ def _ai_returning(payload: dict) -> AsyncMock:
     return mock
 
 
-async def _seed_project(db_session, client, auth_headers) -> Project:
-    proj = await client.post("/api/projects", json={"name": "P-repo"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+async def _seed_project(db_session, client, auth_headers) -> Session:
+    proj = await client.post("/api/sessions", json={"name": "P-repo"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     project = (
-        await db_session.execute(select(Project).where(Project.id == project_id))
+        await db_session.execute(select(Session).where(Session.id == session_id))
     ).scalar_one()
     project.repo_url = "https://github.com/acme/widget"
     await db_session.commit()
@@ -150,7 +150,7 @@ async def test_ensure_repo_profile_fetches_and_persists(client, auth_headers, db
     # A complete RepoAnalysisJob row should exist for the project.
     job = (
         await db_session.execute(
-            select(RepoAnalysisJob).where(RepoAnalysisJob.project_id == project.id)
+            select(RepoAnalysisJob).where(RepoAnalysisJob.session_id == project.id)
         )
     ).scalar_one()
     assert job.status == "complete"
@@ -163,7 +163,7 @@ async def test_ensure_repo_profile_reuses_fresh_cache(client, auth_headers, db_s
     project = await _seed_project(db_session, client, auth_headers)
     # Pre-seed a fresh cached profile.
     fresh = RepoAnalysisJob(
-        project_id=project.id,
+        session_id=project.id,
         org_id=project.org_id,
         status="complete",
         repo_full_name="acme/widget",
@@ -191,7 +191,7 @@ async def test_ensure_repo_profile_invalidates_when_repo_url_changes(client, aut
     """A cached row for owner/repo-A must not satisfy a request for owner/repo-B."""
     project = await _seed_project(db_session, client, auth_headers)
     stale = RepoAnalysisJob(
-        project_id=project.id,
+        session_id=project.id,
         org_id=project.org_id,
         status="complete",
         repo_full_name="acme/old-widget",
@@ -233,7 +233,7 @@ async def test_ensure_repo_profile_invalidates_when_repo_url_changes(client, aut
     # A fresh row with the new repo_full_name should now exist.
     rows = (
         await db_session.execute(
-            select(RepoAnalysisJob).where(RepoAnalysisJob.project_id == project.id)
+            select(RepoAnalysisJob).where(RepoAnalysisJob.session_id == project.id)
         )
     ).scalars().all()
     assert any(r.repo_full_name == "acme/widget" and r.status == "complete" for r in rows)
@@ -243,7 +243,7 @@ async def test_ensure_repo_profile_invalidates_when_repo_url_changes(client, aut
 async def test_ensure_repo_profile_invalidates_when_ttl_expired(client, auth_headers, db_session):
     project = await _seed_project(db_session, client, auth_headers)
     expired = RepoAnalysisJob(
-        project_id=project.id,
+        session_id=project.id,
         org_id=project.org_id,
         status="complete",
         repo_full_name="acme/widget",
@@ -344,7 +344,7 @@ async def test_ensure_repo_profile_raises_on_bad_ai_json(client, auth_headers, d
     failed = (
         await db_session.execute(
             select(RepoAnalysisJob)
-            .where(RepoAnalysisJob.project_id == project.id, RepoAnalysisJob.status == "failed")
+            .where(RepoAnalysisJob.session_id == project.id, RepoAnalysisJob.status == "failed")
         )
     ).scalar_one_or_none()
     assert failed is not None

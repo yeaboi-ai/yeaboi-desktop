@@ -44,12 +44,12 @@ def _validate_slug(slug: str) -> str:
 class OrgCreate(BaseModel):
     name: str
     slug: str
-    seed_demo_project: bool = True
+    seed_demo_session: bool = True
 
 
 class OrgCreateResponse(BaseModel):
     """Response shape for `POST /api/orgs`. Declared explicitly so renaming
-    `demo_project_id` server-side is a typed change the framework notices."""
+    `demo_session_id` server-side is a typed change the framework notices."""
 
     id: str
     name: str
@@ -58,7 +58,7 @@ class OrgCreateResponse(BaseModel):
     billing_email: str | None
     created_at: datetime
     updated_at: datetime
-    demo_project_id: str | None = None
+    demo_session_id: str | None = None
 
 
 class OrgUpdate(BaseModel):
@@ -155,14 +155,14 @@ async def create_org(
     # project" — the user still gets an org + team and can keep onboarding.
     # Without this, a seed crash would roll back the whole org-create
     # transaction and the user would hit a 409 on retry.
-    demo_project_id: str | None = None
-    if body.seed_demo_project:
+    demo_session_id: str | None = None
+    if body.seed_demo_session:
         try:
             async with db.begin_nested():
-                demo_project = await seed_demo_workspace(
+                demo_session = await seed_demo_workspace(
                     db, org_id=org.id, team_id=team.id, user_id=user.id
                 )
-                demo_project_id = demo_project.id
+                demo_session_id = demo_session.id
         except Exception:
             logger.exception(
                 "Demo workspace seed failed for org %s — continuing without it",
@@ -191,7 +191,7 @@ async def create_org(
         "billing_email": org.billing_email,
         "created_at": org.created_at,
         "updated_at": org.updated_at,
-        "demo_project_id": demo_project_id,
+        "demo_session_id": demo_session_id,
     }
 
 

@@ -452,7 +452,7 @@ async def get_session_blueprint(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    bp = await get_or_create_blueprint(session.project_id, db)
+    bp = await get_or_create_blueprint(session.id, db)
     return {"content": bp.content, "version_number": bp.version_number}
 
 
@@ -478,12 +478,12 @@ async def get_session_coverage(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    bp = await get_or_create_blueprint(session.project_id, db)
+    bp = await get_or_create_blueprint(session.id, db)
 
     sections_filter: list[str] | None = None
-    iteration = await get_active_iteration(session.project_id, db)
+    iteration = await get_active_iteration(session.id, db)
     if iteration and iteration.iteration_type:
-        org = iteration.org_id or iteration.project_id
+        org = iteration.org_id
         sections_filter = await get_template_sections(org, iteration.iteration_type, db)
 
     cov = assess_coverage(bp.content, sections_filter=sections_filter)
@@ -495,20 +495,6 @@ async def get_session_coverage(
         "sections": list(cov["scores"].keys()),
         "version_number": bp.version_number,
     }
-
-
-@router.get("/sessions/{session_id}/project-id")
-async def get_session_project_id(
-    session_id: str,
-    db: AsyncSession = Depends(get_db),
-    _: None = Depends(_verify_secret),
-) -> dict:
-    """Return the project_id for a session so the agent can update its blueprint."""
-    result = await db.execute(select(Session).where(Session.id == session_id))
-    session = result.scalar_one_or_none()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return {"project_id": session.project_id}
 
 
 class InternalBlueprintUpdate(BaseModel):
@@ -547,12 +533,11 @@ async def update_blueprint_from_agent(
 
     try:
         bp = await update_section(
-            session.project_id,
+            session.id,
             body.section,
             body.content,
             "ai-agent",
             db,
-            session_id=session_id,
             mode=body.mode,
             expected_version=body.expected_version,
         )
@@ -634,11 +619,10 @@ async def create_blueprint_suggestion_from_agent(
         raise HTTPException(status_code=404, detail="Session not found")
 
     suggestion = await create_suggestion(
-        session.project_id,
+        session.id,
         body.section,
         body.content,
         db,
-        session_id=session_id,
         source_message_ids=body.source_message_ids,
         supersedes_bullet=body.supersedes_bullet,
     )
@@ -652,7 +636,6 @@ async def create_blueprint_suggestion_from_agent(
             "type": "suggestion_added",
             "payload": {
                 "id": suggestion.id,
-                "project_id": suggestion.project_id,
                 "session_id": suggestion.session_id,
                 "section": suggestion.section,
                 "content": suggestion.content,

@@ -10,7 +10,6 @@ from src.app.models.generation_modifier import GenerationModifier
 from src.app.services.granularity_service import SYSTEM_GENERATION_GRANULARITIES
 from src.app.services.modifier_service import SYSTEM_GENERATION_MODIFIERS
 
-
 # ── granularity ─────────────────────────────────────────────────────────────
 
 

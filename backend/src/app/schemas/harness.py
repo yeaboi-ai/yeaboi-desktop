@@ -15,7 +15,7 @@ class HarnessPreviewResponse(BaseModel):
 
 class HarnessStatusResponse(BaseModel):
     id: str
-    project_id: str
+    session_id: str
     status: str
     repo_url: str | None
     repo_name: str | None

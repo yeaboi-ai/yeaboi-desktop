@@ -112,7 +112,7 @@ async def create_ticket_template(
     existing = await db.execute(
         select(TicketTemplate).where(
             TicketTemplate.org_id == org.id,
-            TicketTemplate.project_id.is_(body.project_id),
+            TicketTemplate.session_id.is_(body.session_id),
             TicketTemplate.slug == slug,
             TicketTemplate.deleted_at.is_(None),
         )
@@ -122,7 +122,7 @@ async def create_ticket_template(
 
     template = TicketTemplate(
         org_id=org.id,
-        project_id=body.project_id,
+        session_id=body.session_id,
         slug=slug,
         name=body.name.strip(),
         description=body.description,

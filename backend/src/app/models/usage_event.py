@@ -51,7 +51,6 @@ class UsageEvent(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False)
-    project_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("projects.id"), nullable=True)
     session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"), nullable=True)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     operation: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -65,7 +64,6 @@ class UsageEvent(Base):
 
     __table_args__ = (
         Index("ix_usage_events_org_occurred", "org_id", "occurred_at"),
-        Index("ix_usage_events_project_occurred", "project_id", "occurred_at"),
         Index("ix_usage_events_session", "session_id"),
         Index("ix_usage_events_provider_occurred", "provider", "occurred_at"),
     )

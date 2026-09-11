@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 class NikoContextPayload(BaseModel):
     page: str
-    project_id: str | None = None
     session_id: str | None = None
     board_id: str | None = None
     selected_card_id: str | None = None

@@ -127,7 +127,7 @@ export async function previewImport(
   projectId: string,
   mapped: MappedStory[],
 ): Promise<ImportPreview> {
-  const response = await authFetch(`/api/projects/${projectId}/board`);
+  const response = await authFetch(`/api/sessions/${projectId}/board`);
   if (!response.ok) throw new Error(`could not read the board (${response.status})`);
   const board = (await response.json()) as { columns?: { cards?: BoardCard[] }[] };
   const byRef = new Map<string, BoardCard>();
@@ -154,7 +154,7 @@ export async function runImport(
 ): Promise<ImportSummary> {
   let created = 0;
   if (preview.create.length) {
-    const response = await authFetch(`/api/projects/${projectId}/stories/commit`, {
+    const response = await authFetch(`/api/sessions/${projectId}/stories/commit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks: preview.create.map((row) => row.task) }),

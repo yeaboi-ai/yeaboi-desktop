@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from src.app.models.organization import Organization, Team, TeamMember
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.models.user import User
 
 
@@ -37,18 +37,18 @@ async def auth_user_as_team_member(db_session, sample_team, auth_headers):
 async def test_patch_last_viewed_stamps_project(
     client, auth_headers, sample_team, sample_user, db_session, auth_user_as_team_member
 ):
-    project = Project(org_id=sample_team.org_id, team_id=sample_team.id, name="Acme Web", owner_id=sample_user.id)
+    project = Session(org_id=sample_team.org_id, team_id=sample_team.id, name="Acme Web", owner_id=sample_user.id)
     db_session.add(project)
     await db_session.commit()
 
     resp = await client.patch(
         f"/api/teams/{sample_team.id}/last-viewed",
         headers=auth_headers,
-        json={"project_id": project.id},
+        json={"session_id": project.id},
     )
     assert resp.status_code == 204
     await db_session.refresh(sample_team)
-    assert sample_team.last_viewed_project_id == project.id
+    assert sample_team.last_viewed_session_id == project.id
 
 
 @pytest.mark.asyncio
@@ -65,7 +65,7 @@ async def test_patch_last_viewed_not_member_rejects(
     resp = await client.patch(
         f"/api/teams/{other_team.id}/last-viewed",
         headers=auth_headers,
-        json={"project_id": "00000000-0000-0000-0000-000000000000"},
+        json={"session_id": "00000000-0000-0000-0000-000000000000"},
     )
     assert resp.status_code == 403
 
@@ -79,14 +79,14 @@ async def test_patch_last_viewed_cross_org_project_rejects(
     await db_session.flush()
     # cross-org project — needs a valid team_id/owner_id but they belong to other_org scope;
     # we reuse sample_team and sample_user for convenience (FK just needs to exist)
-    project = Project(org_id=other_org.id, team_id=sample_team.id, name="Cross-org", owner_id=sample_user.id)
+    project = Session(org_id=other_org.id, team_id=sample_team.id, name="Cross-org", owner_id=sample_user.id)
     db_session.add(project)
     await db_session.commit()
 
     resp = await client.patch(
         f"/api/teams/{sample_team.id}/last-viewed",
         headers=auth_headers,
-        json={"project_id": project.id},
+        json={"session_id": project.id},
     )
     assert resp.status_code == 400
 
@@ -98,7 +98,7 @@ async def test_patch_last_viewed_missing_project(
     resp = await client.patch(
         f"/api/teams/{sample_team.id}/last-viewed",
         headers=auth_headers,
-        json={"project_id": "00000000-0000-0000-0000-000000000000"},
+        json={"session_id": "00000000-0000-0000-0000-000000000000"},
     )
     assert resp.status_code == 404
 
@@ -107,7 +107,7 @@ async def test_patch_last_viewed_missing_project(
 async def test_patch_last_viewed_idempotent(
     client, auth_headers, sample_team, sample_user, db_session, auth_user_as_team_member
 ):
-    project = Project(org_id=sample_team.org_id, team_id=sample_team.id, name="Idem", owner_id=sample_user.id)
+    project = Session(org_id=sample_team.org_id, team_id=sample_team.id, name="Idem", owner_id=sample_user.id)
     db_session.add(project)
     await db_session.commit()
 
@@ -115,7 +115,7 @@ async def test_patch_last_viewed_idempotent(
         resp = await client.patch(
             f"/api/teams/{sample_team.id}/last-viewed",
             headers=auth_headers,
-            json={"project_id": project.id},
+            json={"session_id": project.id},
         )
         assert resp.status_code == 204
 
@@ -127,6 +127,6 @@ async def test_patch_last_viewed_malformed_project_id(
     resp = await client.patch(
         f"/api/teams/{sample_team.id}/last-viewed",
         headers=auth_headers,
-        json={"project_id": "not-a-uuid"},
+        json={"session_id": "not-a-uuid"},
     )
     assert resp.status_code == 422

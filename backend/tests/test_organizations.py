@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
+from src.app.models.session import Session
 
 ORGS_URL = "/api/orgs"
 
@@ -20,11 +20,11 @@ async def test_create_org_seeds_demo_project_by_default(client, auth_headers, db
     assert resp.status_code == 201
     body = resp.json()
     assert body["slug"] == "acme"
-    assert body["demo_project_id"] is not None
+    assert body["demo_session_id"] is not None
 
     project = (
         await db_session.execute(
-            select(Project).where(Project.id == body["demo_project_id"])
+            select(Session).where(Session.id == body["demo_session_id"])
         )
     ).scalar_one()
     assert project.is_demo is True
@@ -35,15 +35,15 @@ async def test_create_org_seeds_demo_project_by_default(client, auth_headers, db
 async def test_create_org_skips_seed_when_disabled(client, auth_headers, db_session):
     resp = await client.post(
         ORGS_URL,
-        json={"name": "Beta", "slug": "beta", "seed_demo_project": False},
+        json={"name": "Beta", "slug": "beta", "seed_demo_session": False},
         headers=auth_headers,
     )
     assert resp.status_code == 201
-    assert resp.json()["demo_project_id"] is None
+    assert resp.json()["demo_session_id"] is None
 
     projects = (
         await db_session.execute(
-            select(Project).where(Project.org_id == resp.json()["id"])
+            select(Session).where(Session.org_id == resp.json()["id"])
         )
     ).scalars().all()
     assert projects == []

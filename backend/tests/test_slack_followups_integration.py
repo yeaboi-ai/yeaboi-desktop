@@ -40,7 +40,7 @@ async def test_end_to_end(
     db_session, sample_org, sample_user, slack_integration
 ):
     from src.app.models.organization import Team, TeamMember
-    from src.app.models.project import Project
+    from src.app.models.session import Session
 
     team_a = Team(org_id=sample_org.id, name="A", slug="a")
     team_b = Team(org_id=sample_org.id, name="B", slug="b")
@@ -50,7 +50,7 @@ async def test_end_to_end(
         TeamMember(team_id=team_a.id, user_id=sample_user.id, role="admin"),
         TeamMember(team_id=team_b.id, user_id=sample_user.id, role="admin"),
     ])
-    project_b = Project(org_id=sample_org.id, team_id=team_b.id, name="B project", owner_id=sample_user.id)
+    project_b = Session(org_id=sample_org.id, team_id=team_b.id, name="B project", owner_id=sample_user.id)
     db_session.add(project_b)
 
     db_session.add_all([
@@ -67,6 +67,6 @@ async def test_end_to_end(
 
     with patch("src.app.services.slack_dispatcher._post_to_channel", side_effect=fake_post):
         await dispatch_event(db_session, "scan_complete", team_a.id, {"title": "done", "provider_label": "GitHub"})
-        await dispatch_event(db_session, "card_failed", team_b.id, {"card_title": "broken", "project_id": project_b.id, "error": "boom"})
+        await dispatch_event(db_session, "card_failed", team_b.id, {"card_title": "broken", "session_id": project_b.id, "error": "boom"})
 
     assert posted_channels == ["C_A", "C_B"]

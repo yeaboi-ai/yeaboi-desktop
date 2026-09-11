@@ -20,13 +20,11 @@ import { useAuthFetch } from '@/hooks/use-auth-fetch';
 import { useAudience } from '@/components/providers/audience-provider';
 import { callTool, newOpId, onAmbientEvent } from '@/lib/yeaboi/api';
 import { mapBlueprintToIntake, type IntakeArgs } from '@/lib/yeaboi/blueprint-intake';
-import { ensureEngineProject, type EngineLinkable } from '@/lib/yeaboi/engine-project';
 import { mapPlan, previewImport, runImport } from '@/lib/yeaboi/board-bridge';
 import type { Plan } from '@/lib/yeaboi/plan';
 import { duckQuip } from '@/lib/duck-events';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
-import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 
 interface ProgressLine {
   op_id?: string;
@@ -105,9 +103,7 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   // Sibling state, not part of Phase: phases are replaced wholesale on
   // transitions and the toggles must survive an error → retry round-trip.
-  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const opIdRef = useRef('');
-  const projectRef = useRef<EngineLinkable | null>(null);
 
   useEffect(() => () => watchProgress(null), []);
 
@@ -116,27 +112,25 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
     let stale = false;
     (async () => {
       const [projectResp, blueprintResp, iterationsResp] = await Promise.all([
-        authFetch(`/api/projects/${projectId}`),
-        authFetch(`/api/projects/${projectId}/blueprint`),
-        authFetch(`/api/projects/${projectId}/iterations`),
+        authFetch(`/api/sessions/${projectId}`),
+        authFetch(`/api/sessions/${projectId}/blueprint`),
+        authFetch(`/api/sessions/${projectId}/iterations`),
       ]);
       if (!projectResp.ok || !blueprintResp.ok || !iterationsResp.ok) {
-        throw new Error('could not read the project blueprint');
+        throw new Error('could not read the session blueprint');
       }
       const project = (await projectResp.json()) as {
         name: string;
         description?: string | null;
         repo_url?: string | null;
-        yeaboi_project_id?: string | null;
       };
-      projectRef.current = { id: projectId, ...project };
       const snapshot = (await blueprintResp.json()) as {
         id: string;
         content: Record<string, string>;
       };
       const iterations = (await iterationsResp.json()) as { id: string }[];
       const iteration = iterations[iterations.length - 1];
-      if (!iteration) throw new Error('the project has no blueprint iteration');
+      if (!iteration) throw new Error('the session has no blueprint iteration');
 
       let args: IntakeArgs;
       try {
@@ -186,26 +180,12 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
       });
     });
     try {
-      // The engine-side project link (minted lazily here on the first run).
-      // Scoping is an enrichment — a sidecar hiccup degrades to an unscoped
-      // plan rather than blocking the generation the user asked for.
-      let engineProjectId = '';
-      try {
-        if (projectRef.current) {
-          engineProjectId = await ensureEngineProject(authFetch, projectRef.current);
-          projectRef.current.yeaboi_project_id = engineProjectId;
-        }
-      } catch (e) {
-        console.warn('engine-project: could not resolve, generating unscoped', e);
-      }
       const envelope = await callTool<Plan>(
         'plan_generate',
         {
           description: args.description,
           answers: args.answers,
           project_context: args.project_context,
-          ...(engineProjectId ? { project_id: engineProjectId } : {}),
-          ...(contextDeps !== null ? { context_deps: contextDeps } : {}),
           // A Solo-world plan is for one developer: the intake defaults the team questions.
           ...(audience === 'solo' ? { solo: true } : {}),
         },
@@ -218,7 +198,7 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
       if (!sessionId) throw new Error('the engine returned a plan with no session id');
 
       // Record which run made this plan, then land the stories on the board.
-      const patch = await authFetch(`/api/projects/${projectId}/iterations/${iterationId}`, {
+      const patch = await authFetch(`/api/sessions/${projectId}/iterations/${iterationId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ yeaboi_session_id: sessionId, plan_source_snapshot_id: snapshotId }),
@@ -285,14 +265,6 @@ export function GeneratePlanDialog({ projectId, onClose, onGenerated }: Generate
               ))}
             </ul>
           </div>
-        )}
-
-        {phase.kind === 'ready' && (
-          <ContextSourcesPanel
-            value={contextDeps}
-            onChange={setContextDeps}
-            note="Inherit uses the project's saved default when one is set."
-          />
         )}
 
         {running && (

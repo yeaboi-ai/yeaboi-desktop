@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy import select
 
-from src.app.models.organization import OrgMember, TeamMember
+from src.app.models.organization import OrgMember
 from src.app.models.user import User
 
 

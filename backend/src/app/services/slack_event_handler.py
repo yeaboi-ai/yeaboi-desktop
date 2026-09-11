@@ -27,7 +27,7 @@ from .ai_provider import get_ai_client
 from .chat_tools import run_tool_loop
 from .connectors.slack_notifier import _load_slack_token, _post_to_channel, _set_thinking_status
 from .slack_team_resolver import resolve_team_from_channel
-from .slack_templates import project_picker_block, session_created_block
+from .slack_templates import session_created_block, session_picker_block
 from .slack_user_resolver import resolve_user_id
 
 logger = logging.getLogger(__name__)
@@ -354,13 +354,13 @@ async def _dispatch_ask(
         title = question.strip() or "New session"
         if thread_ts:
             await _set_thinking_status(token, channel_id, thread_ts, status="")
-        blocks = project_picker_block(title=title, projects=picker_options, source="mention")
+        blocks = session_picker_block(title=title, sessions=picker_options, source="mention")
         import json as _json
         logger.warning("Posting picker blocks: %s", _json.dumps(blocks))
         ok = await _post_to_channel(
             token,
             channel_id,
-            text=f"Which project should go under: {title[:80]}?",
+            text=f"Which session should {title[:80]} continue?",
             blocks=blocks,
             thread_ts=None,
         )
@@ -370,7 +370,7 @@ async def _dispatch_ask(
             await _post_to_channel(
                 token,
                 channel_id,
-                text=f"Which project should this session go under? Options: {names}",
+                text=f"Which session should this one continue? Options: {names}",
                 blocks=None,
                 thread_ts=None,
             )
@@ -384,14 +384,14 @@ async def _dispatch_ask(
     if session_result:
         app_url = get_settings().app_url.rstrip("/")
         session_url = (
-            f"{app_url}/projects/{session_result['project_id']}/sessions/{session_result['id']}"
+            f"{app_url}/sessions/{session_result['id']}"
         )
         logger.info(
             "Slack session created",
             extra={
                 "team_id": team.id,
-                "project_id": session_result["project_id"],
                 "session_id": session_result["id"],
+                "continued_from_id": session_result["continued_from_id"],
                 "channel_id": channel_id,
                 "surface": "event",
             },
@@ -406,7 +406,7 @@ async def _dispatch_ask(
             blocks=session_created_block(
                 slack_user_id=slack_user_id,
                 title=session_result["title"] or "New session",
-                project_name=session_result["project"],
+                continues_from=session_result["continues_from"],
                 session_url=session_url,
             ),
             thread_ts=None,  # top-level — broadcast to channel
@@ -527,7 +527,7 @@ def _find_successful_session_create(tool_results: list[dict]) -> dict | None:
     for entry in tool_results:
         if entry.get("name") == "create_session":
             result = entry.get("result")
-            if isinstance(result, dict) and "id" in result and "project_id" in result:
+            if isinstance(result, dict) and "id" in result and "continued_from_id" in result:
                 return result
     return None
 

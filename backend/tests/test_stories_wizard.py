@@ -17,17 +17,17 @@ from src.app.services.task_generator import (
 
 
 async def _create_project_with_session(client, auth_headers, status: str = "live") -> tuple[str, str]:
-    proj = await client.post("/api/projects", json={"name": "P-stories"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-stories"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Build a kanban-driven planning tool"},
         headers=auth_headers,
     )
     session_id = create_resp.json()["id"]
     if status != "live":
         await client.patch(f"/api/sessions/{session_id}", json={"status": status}, headers=auth_headers)
-    return project_id, session_id
+    return session_id, session_id
 
 
 def _ai_returning(tasks: list[dict]) -> AsyncMock:
@@ -127,15 +127,15 @@ async def test_preview_returns_empty_on_invalid_json(db_session):
 async def test_persist_resolves_dependency_indices_to_card_ids(client, auth_headers, db_session):
     """The two-pass persist must turn 0-based depends_on_indices into actual
     UUID lists pointing at the persisted Card rows."""
-    proj = await client.post("/api/projects", json={"name": "P-persist"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-persist"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     tasks = [
         {"title": "Setup", "wave": 0, "depends_on_indices": [], "related_to_indices": []},
         {"title": "Auth", "wave": 1, "depends_on_indices": [0], "related_to_indices": []},
         {"title": "Profile", "wave": 2, "depends_on_indices": [1], "related_to_indices": [0]},
     ]
-    _board, count = await persist_tasks_to_board(project_id, tasks, db_session)
+    _board, count = await persist_tasks_to_board(session_id, tasks, db_session)
     assert count == 3
 
     cards = (await db_session.execute(select(Card).order_by(Card.position))).scalars().all()
@@ -156,8 +156,8 @@ async def test_persist_children_inherit_parent_wave(client, auth_headers, db_ses
     `wave` from the actual depends_on_indices DAG (overriding any AI-supplied
     value). So to land a parent in wave 2 we need to give it a dep chain.
     """
-    proj = await client.post("/api/projects", json={"name": "P-child"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-child"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     tasks = [
         {"title": "Foundations", "depends_on_indices": []},  # wave 0
@@ -168,7 +168,7 @@ async def test_persist_children_inherit_parent_wave(client, auth_headers, db_ses
             "children": [{"title": "Child A"}, {"title": "Child B"}],
         },
     ]
-    await persist_tasks_to_board(project_id, tasks, db_session)
+    await persist_tasks_to_board(session_id, tasks, db_session)
     cards = (await db_session.execute(select(Card))).scalars().all()
     children = [c for c in cards if c.parent_card_id is not None]
     assert len(children) == 2
@@ -181,21 +181,21 @@ async def test_persist_children_inherit_parent_wave(client, auth_headers, db_ses
 
 async def test_stories_preview_requires_auth(client):
     proj_id = "nonexistent"  # auth fails before project lookup
-    resp = await client.post(f"/api/projects/{proj_id}/stories/preview")
+    resp = await client.post(f"/api/sessions/{proj_id}/stories/preview")
     assert resp.status_code == 401
 
 
 async def test_stories_preview_404_for_missing_project(client, auth_headers):
-    resp = await client.post("/api/projects/nope/stories/preview", headers=auth_headers)
+    resp = await client.post("/api/sessions/nope/stories/preview", headers=auth_headers)
     assert resp.status_code == 404
 
 
 async def test_stories_preview_returns_task_list(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P-prev"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-prev"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     # preview returns [] for empty blueprints — seed one section so the AI is called.
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "A planning tool that turns voice sessions into kanban boards."},
         headers=auth_headers,
     )
@@ -205,7 +205,7 @@ async def test_stories_preview_returns_task_list(client, auth_headers):
         {"title": "Add auth", "wave": 1, "sequence": 0, "depends_on_indices": [0]},
     ]
     with patch("src.app.services.task_generator.get_ai_client", AsyncMock(return_value=_ai_returning(raw_tasks))):
-        resp = await client.post(f"/api/projects/{project_id}/stories/preview", headers=auth_headers)
+        resp = await client.post(f"/api/sessions/{session_id}/stories/preview", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert "tasks" in data
@@ -226,10 +226,10 @@ async def test_stories_preview_forwards_regeneration_feedback(client, auth_heade
     """When the wizard's Regenerate dialog supplies feedback, the AI prompt
     must include both the free-form text and the disliked task titles so the
     next attempt can avoid repeating the same misses."""
-    proj = await client.post("/api/projects", json={"name": "P-feedback"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-feedback"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "Turn voice sessions into a kanban board."},
         headers=auth_headers,
     )
@@ -238,7 +238,7 @@ async def test_stories_preview_forwards_regeneration_feedback(client, auth_heade
     mock_ai = _ai_returning(raw_tasks)
     with patch("src.app.services.task_generator.get_ai_client", AsyncMock(return_value=mock_ai)):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview",
+            f"/api/sessions/{session_id}/stories/preview",
             json={
                 "feedback": "Tasks were too granular — give me bigger chunks.",
                 "disliked_titles": ["Setup repo", "Add auth"],
@@ -258,8 +258,8 @@ async def test_stories_preview_forwards_regeneration_feedback(client, auth_heade
 
 
 async def test_regenerate_single_task_rejects_unknown_fields(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P-regen-bad"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-regen-bad"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     body = {
         "task": {"title": "x"},
         "fields": ["title", "wave"],  # wave is system-managed
@@ -267,7 +267,7 @@ async def test_regenerate_single_task_rejects_unknown_fields(client, auth_header
         "context_titles": [],
     }
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview/regenerate-task",
+        f"/api/sessions/{session_id}/stories/preview/regenerate-task",
         json=body,
         headers=auth_headers,
     )
@@ -276,10 +276,10 @@ async def test_regenerate_single_task_rejects_unknown_fields(client, auth_header
 
 
 async def test_regenerate_single_task_rejects_empty_fields(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P-regen-empty"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-regen-empty"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     resp = await client.post(
-        f"/api/projects/{project_id}/stories/preview/regenerate-task",
+        f"/api/sessions/{session_id}/stories/preview/regenerate-task",
         json={"task": {"title": "x"}, "fields": [], "feedback": "", "context_titles": []},
         headers=auth_headers,
     )
@@ -289,10 +289,10 @@ async def test_regenerate_single_task_rejects_empty_fields(client, auth_headers)
 async def test_regenerate_single_task_swaps_only_requested_fields(client, auth_headers):
     """Regenerated fields take the AI's new value; everything else (including
     system-managed deps/wave) survives untouched."""
-    proj = await client.post("/api/projects", json={"name": "P-regen-ok"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-regen-ok"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "Build a planning platform."},
         headers=auth_headers,
     )
@@ -324,7 +324,7 @@ async def test_regenerate_single_task_swaps_only_requested_fields(client, auth_h
 
     with patch("src.app.services.task_generator.get_ai_client", AsyncMock(return_value=mock_ai)):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview/regenerate-task",
+            f"/api/sessions/{session_id}/stories/preview/regenerate-task",
             json={
                 "task": existing,
                 "fields": ["description", "acceptance_criteria"],
@@ -363,10 +363,10 @@ async def test_regenerate_single_task_injects_template_guidance(client, auth_hea
     template spec so the rewrite respects user customisations (prompt_fragment,
     default_priority, default_labels, acceptance_criteria_template, etc).
     Without this, regen would diverge from what the user set up in the studio."""
-    proj = await client.post("/api/projects", json={"name": "P-template-regen"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-template-regen"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "Build a thing."},
         headers=auth_headers,
     )
@@ -391,7 +391,7 @@ async def test_regenerate_single_task_injects_template_guidance(client, auth_hea
 
     with patch("src.app.services.task_generator.get_ai_client", AsyncMock(return_value=mock_ai)):
         resp = await client.post(
-            f"/api/projects/{project_id}/stories/preview/regenerate-task",
+            f"/api/sessions/{session_id}/stories/preview/regenerate-task",
             json={
                 "task": existing,
                 "fields": ["description"],
@@ -414,17 +414,17 @@ async def test_regenerate_single_task_injects_template_guidance(client, auth_hea
 async def test_stories_preview_without_body_skips_feedback_block(client, auth_headers):
     """First-time previews (no body) should not inject the feedback section
     — that prefix only belongs on regenerations."""
-    proj = await client.post("/api/projects", json={"name": "P-fresh"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-fresh"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "Build a planning platform."},
         headers=auth_headers,
     )
 
     mock_ai = _ai_returning([{"title": "x"}])
     with patch("src.app.services.task_generator.get_ai_client", AsyncMock(return_value=mock_ai)):
-        resp = await client.post(f"/api/projects/{project_id}/stories/preview", headers=auth_headers)
+        resp = await client.post(f"/api/sessions/{session_id}/stories/preview", headers=auth_headers)
     assert resp.status_code == 200
     sent_prompt = mock_ai.chat.await_args.kwargs["messages"][0]["content"]
     assert "REGENERATION FEEDBACK" not in sent_prompt
@@ -434,24 +434,24 @@ async def test_stories_preview_without_body_skips_feedback_block(client, auth_he
 
 
 async def test_stories_commit_rejects_invalid_dependency_index(client, auth_headers):
-    project_id, _ = await _create_project_with_session(client, auth_headers, status="live")
+    session_id, _ = await _create_project_with_session(client, auth_headers, status="live")
     bad = {"tasks": [{"title": "A", "depends_on_indices": [5]}]}
-    resp = await client.post(f"/api/projects/{project_id}/stories/commit", json=bad, headers=auth_headers)
+    resp = await client.post(f"/api/sessions/{session_id}/stories/commit", json=bad, headers=auth_headers)
     assert resp.status_code == 400
     assert "depends_on_indices" in resp.json()["detail"]
 
 
 async def test_stories_commit_rejects_self_related_index(client, auth_headers):
-    project_id, _ = await _create_project_with_session(client, auth_headers, status="live")
+    session_id, _ = await _create_project_with_session(client, auth_headers, status="live")
     bad = {"tasks": [{"title": "A", "related_to_indices": [0]}]}
-    resp = await client.post(f"/api/projects/{project_id}/stories/commit", json=bad, headers=auth_headers)
+    resp = await client.post(f"/api/sessions/{session_id}/stories/commit", json=bad, headers=auth_headers)
     assert resp.status_code == 400
 
 
 async def test_stories_commit_persists_and_completes_session(client, auth_headers, db_engine):
     """Happy path: commit transitions reviewing → completed AND persists Cards
     with the wizard-edited task list (no AI re-call)."""
-    project_id, session_id = await _create_project_with_session(client, auth_headers, status="live")
+    session_id, session_id = await _create_project_with_session(client, auth_headers, status="live")
     # Move session into reviewing so commit can transition it.
     resp = await client.patch(
         f"/api/sessions/{session_id}", json={"status": "reviewing"}, headers=auth_headers
@@ -464,7 +464,7 @@ async def test_stories_commit_persists_and_completes_session(client, auth_header
             {"title": "Auth", "wave": 1, "depends_on_indices": [0], "related_to_indices": []},
         ]
     }
-    resp = await client.post(f"/api/projects/{project_id}/stories/commit", json=body, headers=auth_headers)
+    resp = await client.post(f"/api/sessions/{session_id}/stories/commit", json=body, headers=auth_headers)
     assert resp.status_code == 200, resp.text
     data = resp.json()
     assert data["task_count"] == 2
@@ -492,10 +492,10 @@ async def test_stories_commit_persists_and_completes_session(client, auth_header
 
 async def test_reviewing_can_return_to_live(client, auth_headers):
     """The wizard's 'Go back and fill these in' CTA needs reviewing → live."""
-    proj = await client.post("/api/projects", json={"name": "P-rev"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-rev"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )
@@ -514,10 +514,10 @@ async def test_reviewing_can_return_to_live(client, auth_headers):
 
 async def test_reviewing_cannot_jump_to_paused(client, auth_headers):
     """Only completed and live are valid from reviewing; paused is not."""
-    proj = await client.post("/api/projects", json={"name": "P-rev2"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P-rev2"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     create = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "x"},
         headers=auth_headers,
     )

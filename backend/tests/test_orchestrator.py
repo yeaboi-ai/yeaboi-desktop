@@ -7,7 +7,7 @@ import pytest
 from src.app.models.base import gen_uuid
 from src.app.models.board import Board, BoardColumn, Card
 from src.app.models.organization import Organization, Team
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.models.user import User
 from src.app.orchestrator.agent_runner import run_agent
 from src.app.orchestrator.prompt_assembler import assemble_prompt
@@ -51,10 +51,10 @@ def test_reviewing_can_send_back():
 
 
 def test_prompt_assembly():
-    prompt = assemble_prompt("Fix login bug", "Users can't log in", "investigating", "# My Project")
+    prompt = assemble_prompt("Fix login bug", "Users can't log in", "investigating", "# My Session")
     assert "Fix login bug" in prompt
     assert "investigating" in prompt.lower() or "investigate" in prompt.lower()
-    assert "My Project" in prompt
+    assert "My Session" in prompt
 
 
 def test_prompt_assembly_without_agents_md():
@@ -112,9 +112,9 @@ async def _setup_card_fixtures(db_session):
     db_session.add(user)
     await db_session.flush()
 
-    project = Project(
+    project = Session(
         id=gen_uuid(),
-        name="Test Project",
+        name="Test Session",
         org_id=org.id,
         team_id=team.id,
         owner_id=user.id,
@@ -122,7 +122,7 @@ async def _setup_card_fixtures(db_session):
     db_session.add(project)
     await db_session.flush()
 
-    board = Board(id=gen_uuid(), project_id=project.id, org_id=org.id)
+    board = Board(id=gen_uuid(), session_id=project.id, org_id=org.id)
     db_session.add(board)
     await db_session.flush()
 
@@ -264,10 +264,10 @@ async def test_get_column_id_by_role_uses_flag_first(db_session):
     user = User(id=gen_uuid(), email="flag@example.com", name="Flag User")
     db_session.add(user)
     await db_session.flush()
-    project = Project(id=gen_uuid(), name="Flag Project", org_id=org.id, team_id=team.id, owner_id=user.id)
+    project = Session(id=gen_uuid(), name="Flag Session", org_id=org.id, team_id=team.id, owner_id=user.id)
     db_session.add(project)
     await db_session.flush()
-    board = Board(id=gen_uuid(), project_id=project.id, org_id=org.id)
+    board = Board(id=gen_uuid(), session_id=project.id, org_id=org.id)
     db_session.add(board)
     await db_session.flush()
 
@@ -301,10 +301,10 @@ async def test_get_column_id_by_role_falls_back_to_name(db_session):
     user = User(id=gen_uuid(), email="fb@example.com", name="FB User")
     db_session.add(user)
     await db_session.flush()
-    project = Project(id=gen_uuid(), name="FB Project", org_id=org.id, team_id=team.id, owner_id=user.id)
+    project = Session(id=gen_uuid(), name="FB Session", org_id=org.id, team_id=team.id, owner_id=user.id)
     db_session.add(project)
     await db_session.flush()
-    board = Board(id=gen_uuid(), project_id=project.id, org_id=org.id)
+    board = Board(id=gen_uuid(), session_id=project.id, org_id=org.id)
     db_session.add(board)
     await db_session.flush()
 
@@ -331,10 +331,10 @@ async def test_get_column_id_by_role_returns_none_when_missing(db_session):
     user = User(id=gen_uuid(), email="empty@example.com", name="Empty User")
     db_session.add(user)
     await db_session.flush()
-    project = Project(id=gen_uuid(), name="Empty Project", org_id=org.id, team_id=team.id, owner_id=user.id)
+    project = Session(id=gen_uuid(), name="Empty Session", org_id=org.id, team_id=team.id, owner_id=user.id)
     db_session.add(project)
     await db_session.flush()
-    board = Board(id=gen_uuid(), project_id=project.id, org_id=org.id)
+    board = Board(id=gen_uuid(), session_id=project.id, org_id=org.id)
     db_session.add(board)
     await db_session.commit()
 

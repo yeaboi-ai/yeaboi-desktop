@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 MAX_REFERENCES = 24
 
 
-class ProjectReference(BaseModel):
+class SessionReference(BaseModel):
     """One thing the project points at. `source` is the connector key (`jira`,
     `github`, `aws`, `link`…), `subject` what the desktop stores (`PROJ-123`,
     `owner/repo`), `label` the words a chip shows."""
@@ -34,7 +34,7 @@ class ProjectReference(BaseModel):
         return text
 
 
-class ProjectAttachmentResponse(BaseModel):
+class SessionAttachmentResponse(BaseModel):
     id: str
     filename: str
     mime_type: str
@@ -45,13 +45,13 @@ class ProjectAttachmentResponse(BaseModel):
     created_at: datetime
 
 
-class ProjectCreate(BaseModel):
+class SessionCreate(BaseModel):
     name: str | None = None
     description: str | None = None
-    references: list[ProjectReference] | None = Field(default=None, max_length=MAX_REFERENCES)
+    references: list[SessionReference] | None = Field(default=None, max_length=MAX_REFERENCES)
 
 
-class ProjectUpdate(BaseModel):
+class SessionUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     repo_url: str | None = None
@@ -61,14 +61,13 @@ class ProjectUpdate(BaseModel):
     default_generation_style: str | None = None
     default_modifiers: list[str] | None = Field(default=None)
     # Engine link (proj-<8hex>): set once by the renderer after project_create.
-    yeaboi_project_id: str | None = None
     # "active" | "done"; the router rejects anything else.
     status: str | None = None
     # Replaces the whole list; deduped on (source, subject) by the router.
-    references: list[ProjectReference] | None = Field(default=None, max_length=MAX_REFERENCES)
+    references: list[SessionReference] | None = Field(default=None, max_length=MAX_REFERENCES)
 
 
-class ProjectResponse(BaseModel):
+class SessionResponse(BaseModel):
     id: str
     name: str
     description: str | None
@@ -80,10 +79,9 @@ class ProjectResponse(BaseModel):
     is_demo: bool = False
     default_generation_style: str | None = None
     default_modifiers: list[str] = Field(default_factory=list)
-    yeaboi_project_id: str | None = None
     status: str = "active"
-    references: list[ProjectReference] = Field(default_factory=list)
+    references: list[SessionReference] = Field(default_factory=list)
     # Only the detail GET fills this; None elsewhere means "not loaded", not "none".
-    attachments: list[ProjectAttachmentResponse] | None = None
+    attachments: list[SessionAttachmentResponse] | None = None
 
     model_config = {"from_attributes": True}

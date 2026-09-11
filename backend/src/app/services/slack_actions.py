@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import get_settings
 from ..models.board import Board, BoardColumn, Card
 from ..models.organization import Team
-from ..models.project import Project
 from ..models.session import Participant, Session
 from .connectors.slack_notifier import _load_slack_token, _post_to_channel
 from .slack_team_resolver import resolve_team_from_channel
@@ -133,10 +132,10 @@ async def _dispatch_action(
         # No-op
         logger.info("session_completed:ack received — no action needed")
 
-    elif action_id.startswith("session_create_pick_project"):
+    elif action_id.startswith("session_create_pick"):
         # Action IDs are suffixed per button (e.g. ":0", ":1") because Slack
         # requires uniqueness within a message. Match by prefix.
-        await _handle_pick_project(
+        await _handle_pick_session(
             db, value, user_id, team, response_url, token, channel_id, slack_user_id, message_ts
         )
 
@@ -167,7 +166,7 @@ async def _handle_pr_approve(db: AsyncSession, card_id: str, response_url: str) 
         await _post_error(response_url, "No PR URL found on this card.")
         return
 
-    # Find the project to get the repo_url
+    # Find the session to get the repo_url
     board_result = await db.execute(
         select(Board)
         .join(BoardColumn, BoardColumn.board_id == Board.id)
@@ -176,20 +175,20 @@ async def _handle_pr_approve(db: AsyncSession, card_id: str, response_url: str) 
     )
     board = board_result.scalar_one_or_none()
 
-    project = None
+    session = None
     if board:
-        project_result = await db.execute(select(Project).where(Project.id == board.project_id))
-        project = project_result.scalar_one_or_none()
+        session_result = await db.execute(select(Session).where(Session.id == board.session_id))
+        session = session_result.scalar_one_or_none()
 
-    if not project or not project.repo_url:
-        await _post_error(response_url, "No repository configured for this project.")
+    if not session or not session.repo_url:
+        await _post_error(response_url, "No repository configured for this session.")
         return
 
     try:
         from ..orchestrator.workspace import merge_pull_request
 
         merged = await asyncio.get_event_loop().run_in_executor(
-            None, merge_pull_request, project.repo_url, pr_url
+            None, merge_pull_request, session.repo_url, pr_url
         )
         if merged:
             card.agent_status = "done"
@@ -258,7 +257,7 @@ async def _handle_card_mark_done(
     logger.info("Marked card %s as done (column=%s)", card.id, done_col.id)
 
 
-async def _handle_pick_project(
+async def _handle_pick_session(
     db: AsyncSession,
     value: str,
     user_id: str,
@@ -269,31 +268,39 @@ async def _handle_pick_project(
     slack_user_id: str,
     message_ts: str = "",
 ) -> None:
-    """Picker button → create session in chosen project and post public message."""
+    """Picker button → continue the chosen session and post a public message."""
     try:
         decoded = json.loads(value)
-        project_id = decoded.get("project_id")
+        session_id = decoded.get("session_id")
         title = decoded.get("title") or ""
         source = decoded.get("source", "slash")
     except (json.JSONDecodeError, AttributeError):
         await _post_error(response_url, "Invalid picker payload.")
         return
 
-    if not project_id or not title:
-        await _post_error(response_url, "Missing project_id or title.")
+    if not session_id or not title:
+        await _post_error(response_url, "Missing session_id or title.")
         return
 
-    # Defensive: project must exist, not soft-deleted, and belong to the team's org.
-    project = (
-        await db.execute(select(Project).where(Project.id == project_id))
+    # Defensive: it must exist, not be soft-deleted, and belong to the team's org.
+    source = (
+        await db.execute(select(Session).where(Session.id == session_id))
     ).scalar_one_or_none()
-    if not project or project.deleted_at is not None or project.org_id != team.org_id:
+    if not source or source.deleted_at is not None or source.org_id != team.org_id:
         await _post_error(
-            response_url, "That project is no longer available. Please try `/planr session` again."
+            response_url, "That session is no longer available. Please try `/planr session` again."
         )
         return
 
-    session = Session(project_id=project.id, org_id=team.org_id, title=title)
+    # A new session, seeded from the one it follows.
+    session = Session(
+        continued_from_id=source.id,
+        name=title or source.name,
+        team_id=source.team_id,
+        owner_id=source.owner_id,
+        org_id=team.org_id,
+        title=title,
+    )
     db.add(session)
     await db.flush()
     db.add(Participant(session_id=session.id, user_id=user_id, role="facilitator"))
@@ -301,14 +308,14 @@ async def _handle_pick_project(
     await db.refresh(session)
 
     app_url = get_settings().app_url.rstrip("/")
-    session_url = f"{app_url}/projects/{project.id}/sessions/{session.id}"
+    session_url = f"{app_url}/sessions/{session.id}"
 
     logger.info(
         "Slack session created",
         extra={
             "team_id": team.id,
-            "project_id": project.id,
             "session_id": session.id,
+            "continued_from_id": source.id,
             "channel_id": channel_id,
             "surface": "picker",
         },
@@ -317,7 +324,7 @@ async def _handle_pick_project(
     blocks = session_created_block(
         slack_user_id=slack_user_id,
         title=title,
-        project_name=project.name,
+        continues_from=source.name,
         session_url=session_url,
     )
     posted_ts = await _post_to_channel(

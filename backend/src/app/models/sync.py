@@ -63,7 +63,7 @@ class IntegrationProjectMapping(TimestampMixin, Base):
     __tablename__ = "integration_project_mappings"
     __table_args__ = (
         UniqueConstraint(
-            "integration_id", "internal_project_id", name="uq_integration_project_mappings_integration_project"
+            "integration_id", "internal_session_id", name="uq_integration_session_mappings_integration_session"
         ),
     )
 
@@ -71,8 +71,8 @@ class IntegrationProjectMapping(TimestampMixin, Base):
     integration_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("org_integrations.id", ondelete="CASCADE"), nullable=False
     )
-    internal_project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    internal_session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False
     )
 
     external_project_key: Mapped[str] = mapped_column(String(120), nullable=False)

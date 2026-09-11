@@ -13,7 +13,7 @@ async def notify(
     body: str | None = None,
     type: str = "info",
     link: str | None = None,
-    project_id: str | None = None,
+    session_id: str | None = None,
     db: AsyncSession | None = None,
 ) -> None:
     """Create a notification for a user."""
@@ -28,7 +28,7 @@ async def notify(
                 body=body,
                 type=type,
                 link=link,
-                project_id=project_id,
+                session_id=session_id,
             )
             db.add(n)
             await db.commit()
@@ -39,6 +39,6 @@ async def notify(
             body=body,
             type=type,
             link=link,
-            project_id=project_id,
+            session_id=session_id,
         )
         db.add(n)

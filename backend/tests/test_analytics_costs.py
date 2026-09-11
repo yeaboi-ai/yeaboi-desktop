@@ -16,8 +16,8 @@ async def _bootstrap_auth_org(client, auth_headers, db_session):
     """First-touch the API so the JWT-resolved user + org are auto-provisioned,
     then look up the resulting Organization row to get its id."""
     # Any authenticated GET that goes through `get_current_org` will create
-    # the user + default org. /api/projects is the cheapest such endpoint.
-    resp = await client.get("/api/projects", headers=auth_headers)
+    # the user + default org. /api/sessions is the cheapest such endpoint.
+    resp = await client.get("/api/sessions", headers=auth_headers)
     assert resp.status_code == 200, resp.text
     from sqlalchemy import select
 
@@ -312,12 +312,7 @@ class TestAggregateIncludesCostAndScope:
         # Need at least one Session row in the org for /aggregate to populate
         # the cost block (it short-circuits with an empty CostBreakdown when
         # the org has no sessions). Create one via the API so the FK is happy.
-        proj = await client.post("/api/projects", json={"name": "Agg Test"}, headers=auth_headers)
-        await client.post(
-            f"/api/projects/{proj.json()['id']}/sessions",
-            json={"initial_idea": "test"},
-            headers=auth_headers,
-        )
+        await client.post("/api/sessions", json={"name": "Agg Test"}, headers=auth_headers)
 
         resp = await client.get("/api/analytics/aggregate", headers=auth_headers)
         assert resp.status_code == 200

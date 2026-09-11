@@ -43,9 +43,9 @@ class Team(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_viewed_project_id: Mapped[str | None] = mapped_column(
+    last_viewed_session_id: Mapped[str | None] = mapped_column(
         String(36),
-        ForeignKey("projects.id", ondelete="SET NULL"),
+        ForeignKey("sessions.id", ondelete="SET NULL"),
         nullable=True,
     )
 

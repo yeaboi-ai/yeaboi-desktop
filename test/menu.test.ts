@@ -49,11 +49,9 @@ describe('menu bar', () => {
     }
   });
 
-  it('sends both worlds to the workspace projects list', () => {
-    // `/agents/projects` is still a page, reached from the rail catalogue —
-    // it is no longer any world's Projects door.
-    expect(goPages('solo').find((p) => p.label === 'Projects')?.route).toBe('/projects');
-    expect(goPages('team').find((p) => p.label === 'Projects')?.route).toBe('/projects');
+  it('sends both worlds to the same sessions ledger', () => {
+    expect(goPages('solo').find((p) => p.label === 'Sessions')?.route).toBe('/sessions');
+    expect(goPages('team').find((p) => p.label === 'Sessions')?.route).toBe('/sessions');
   });
 
   it('claims every shortcut once', () => {

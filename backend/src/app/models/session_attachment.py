@@ -6,15 +6,15 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base, TimestampMixin, gen_uuid
 
 
-class ProjectAttachment(TimestampMixin, Base):
+class SessionAttachment(TimestampMixin, Base):
     """A screenshot attached to a project. Same storage pool and shape as
     CardAttachment, minus the text extraction: only images are accepted."""
 
-    __tablename__ = "project_attachments"
+    __tablename__ = "session_attachments"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
     uploaded_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
 

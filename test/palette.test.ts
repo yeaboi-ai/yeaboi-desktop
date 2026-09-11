@@ -22,9 +22,9 @@ import {
   modGlyph,
   modKeyName,
   pageHits,
-  projectHits,
+  workspaceHits,
   rankHits,
-  sessionHits,
+  runHits,
   settingHits,
   settingsTabFor,
   worldOf,
@@ -180,21 +180,21 @@ describe('pageHits', () => {
   });
 });
 
-describe('projectHits', () => {
-  it("opens a project in the world's own list", () => {
-    const projects = [{ id: 'p1', name: 'Pond' }];
-    expect(projectHits(projects, 'team')[0]!.href).toBe('/projects/p1');
-    expect(projectHits(projects, 'solo')[0]!.href).toBe('/projects/p1');
-    expect(projectHits(projects, 'team')[0]!.title).toBe('Pond');
-    expect(projectHits(projects, 'team')[0]!.group).toBe('projects');
+describe('workspaceHits', () => {
+  it("opens a session in the world's own list", () => {
+    const rows = [{ id: 'p1', name: 'Pond' }];
+    expect(workspaceHits(rows, 'team')[0]!.href).toBe('/sessions/p1');
+    expect(workspaceHits(rows, 'solo')[0]!.href).toBe('/sessions/p1');
+    expect(workspaceHits(rows, 'team')[0]!.title).toBe('Pond');
+    expect(workspaceHits(rows, 'team')[0]!.group).toBe('sessions');
   });
 });
 
-describe('sessionHits', () => {
+describe('runHits', () => {
   const cards = [{ key: 'daily-standup', title: 'Daily Standup' }];
 
   it('says the mode and the day, and lands where the mode lists the run', () => {
-    const [hit] = sessionHits(shapeSessions([row({ title: 'Standup 3 Sep' })], cards, NOW));
+    const [hit] = runHits(shapeSessions([row({ title: 'Standup 3 Sep' })], cards, NOW));
     expect(hit!.title).toBe('Standup 3 Sep');
     expect(hit!.detail).toBe('Daily Standup, yesterday');
     expect(hit!.href).toBe('/team/standup');
@@ -203,13 +203,13 @@ describe('sessionHits', () => {
   });
 
   it('says only the day when the run has no title of its own', () => {
-    const [hit] = sessionHits(shapeSessions([row({})], cards, NOW));
+    const [hit] = runHits(shapeSessions([row({})], cards, NOW));
     expect(hit!.title).toBe('Daily Standup');
     expect(hit!.detail).toBe('yesterday');
   });
 
   it('falls back to the sessions glyph for a mode it does not know', () => {
-    const [hit] = sessionHits(shapeSessions([row({ mode: 'poker' })], cards, NOW));
+    const [hit] = runHits(shapeSessions([row({ mode: 'poker' })], cards, NOW));
     expect(hit!.icon).toBe('Sunrise');
   });
 });
@@ -260,12 +260,12 @@ describe('actionHits', () => {
     expect(titles).not.toContain('Switch to Team');
   });
 
-  it("starts a project in the world's own list", () => {
-    expect(actionHits('team', null).find((hit) => hit.title === 'New project')?.href).toBe(
-      '/projects?new=1',
+  it("starts a session in the world's own list", () => {
+    expect(actionHits('team', null).find((hit) => hit.title === 'New session')?.href).toBe(
+      '/sessions?new=1',
     );
-    expect(actionHits('solo', null).find((hit) => hit.title === 'New project')?.href).toBe(
-      '/projects?new=1',
+    expect(actionHits('solo', null).find((hit) => hit.title === 'New session')?.href).toBe(
+      '/sessions?new=1',
     );
   });
 
@@ -294,7 +294,7 @@ describe('rankHits', () => {
     ...pageHits(DESTINATIONS, CAPS, 'team'),
     ...settingHits([field({})]),
     ...actionHits('team', { kind: 'idle' }),
-    ...projectHits([{ id: 'p1', name: 'Pond' }], 'team'),
+    ...workspaceHits([{ id: 'p1', name: 'Pond' }], 'team'),
   ];
   const titles = (query: string) => rankHits(hits, query).map((hit) => hit.title);
 
@@ -374,10 +374,10 @@ describe('groupHits', () => {
     const order = PALETTE_GROUPS.map((group) => group.key);
     const hits: PaletteHit[] = [
       ...actionHits('team', null),
-      ...projectHits([{ id: 'p1', name: 'Pond' }], 'team'),
+      ...workspaceHits([{ id: 'p1', name: 'Pond' }], 'team'),
     ];
     const sections = groupHits(hits);
-    expect(sections.map((section) => section.key)).toEqual(['projects', 'actions']);
+    expect(sections.map((section) => section.key)).toEqual(['sessions', 'actions']);
     for (const section of sections) expect(order).toContain(section.key);
     expect(groupHits([])).toEqual([]);
   });

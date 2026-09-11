@@ -22,7 +22,7 @@ from .schedule_math import compute_next_run
 logger = logging.getLogger(__name__)
 
 
-def _project_id_for(sub: ReportSubscription) -> str | None:
+def _session_id_for(sub: ReportSubscription) -> str | None:
     return sub.scope_id if sub.scope_kind == "project" else None
 
 
@@ -51,7 +51,6 @@ async def run_subscription(db: AsyncSession, subscription_id: str) -> Subscripti
         report = await build_report(
             db,
             org=org,
-            project_id=_project_id_for(sub),
             session_id=_session_id_for(sub),
         )
 

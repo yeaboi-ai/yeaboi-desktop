@@ -51,10 +51,10 @@ def routing() -> dict:
 
 
 async def _make_session(client, auth_headers, name: str = "HP") -> str:
-    proj = await client.post("/api/projects", json={"name": name}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": name}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "observability dashboard"},
         headers=auth_headers,
     )

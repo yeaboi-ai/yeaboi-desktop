@@ -299,7 +299,7 @@ def compute_output_suggestions(blueprint: dict) -> list[dict]:
     Returns one entry per fully-matured output type. The chat path broadcasts
     each as a `suggest_output` WS event; the frontend renders a small chip
     near the chat (mirroring the persona-switch chip pattern). The user
-    accepts (→ POST /api/projects/{id}/outputs/{type}/generate) or dismisses
+    accepts (→ POST /api/sessions/{id}/outputs/{type}/generate) or dismisses
     locally — no server-side dismissal tracking.
 
     Maturity is computed via :func:`output_maturity.maturity_for`. An output

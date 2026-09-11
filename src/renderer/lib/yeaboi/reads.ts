@@ -1,7 +1,6 @@
-// What each run inside a project reads from the runs before it, and what it
-// leaves for the next. Mirrors `projects/flow.py` in the yeaboi package; the
-// two tables are kept equal by hand. The Agents world's reports scope by
-// repo, not by what earlier runs left, so it has no flow.
+// What each mode leaves behind for the modes after it — the sentences under
+// the ledger that say what the flow is for. The Agents world's reports scope
+// by repo rather than by what earlier runs left, so it has no flow.
 
 import type { Audience } from '@shared/audience';
 import { SOLO_EXCLUDED } from './capabilities';
@@ -9,8 +8,6 @@ import { SOLO_EXCLUDED } from './capabilities';
 export interface FlowStep {
   key: string;
   label: string;
-  /** Context tokens, the vocabulary of `context-deps.ts`. */
-  reads: readonly string[];
   leaves: string;
 }
 
@@ -18,38 +15,32 @@ export const FLOW: readonly FlowStep[] = [
   {
     key: 'project-planning',
     label: 'Plan',
-    reads: ['retro', 'standup', 'analysis'],
-    leaves: 'the sprint plan every other run frames itself with',
+    leaves: 'a sprint plan with epics, stories and tasks',
   },
   {
     key: 'team-analysis',
     label: 'Analysis',
-    reads: [],
-    leaves: 'the team profile a scoped plan starts from',
+    leaves: 'a team profile a plan can start from',
   },
   {
     key: 'daily-standup',
     label: 'Standup',
-    reads: ['plan'],
     leaves: 'blockers and a confidence trend',
   },
   {
     key: 'poker',
     label: 'Poker',
-    reads: ['plan', 'standup', 'retro', 'analysis'],
-    leaves: 'estimates sized to this project',
+    leaves: 'estimates the team agreed on',
   },
   {
     key: 'retro',
     label: 'Retro',
-    reads: ['retro', 'standup'],
     leaves: 'action items and carry-over',
   },
   {
     key: 'reporting',
     label: 'Report',
-    reads: ['plan'],
-    leaves: 'a report about this project alone',
+    leaves: 'a report you can send as it is',
   },
 ];
 

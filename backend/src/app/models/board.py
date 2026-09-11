@@ -10,7 +10,7 @@ class Board(TimestampMixin, Base):
     __tablename__ = "boards"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), nullable=False)
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False)
     iteration_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("blueprint_iterations.id"))
 
@@ -49,7 +49,7 @@ class BoardColumn(TimestampMixin, Base):
 class Card(TimestampMixin, Base):
     __tablename__ = "cards"
     __table_args__ = (
-        UniqueConstraint("project_id", "number", name="uq_cards_project_number"),
+        UniqueConstraint("session_id", "number", name="uq_cards_session_number"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
@@ -74,12 +74,10 @@ class Card(TimestampMixin, Base):
     agent_branch: Mapped[str | None] = mapped_column(String(255))
     agent_log: Mapped[list] = mapped_column(JSON, default=list)
 
-    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"))
-
-    # Denormalized FK to projects so friendly_id rendering and per-project counters
-    # don't need a 3-table join through BoardColumn → Board → project_id every time.
-    project_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("projects.id"), index=True)
-    # Per-project monotonic ticket number. Stored alongside friendly_id for indexability.
+    # The session this card belongs to. Denormalized so friendly_id rendering and
+    # the per-session counter don't need a join through BoardColumn → Board.
+    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"), index=True)
+    # Per-session monotonic ticket number. Stored alongside friendly_id for indexability.
     number: Mapped[int | None] = mapped_column(Integer, index=True)
     # Denormalized "PROJ-123". Frozen at create-time and unique-indexed for typeahead/deep-link lookup.
     friendly_id: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)

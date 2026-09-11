@@ -9,7 +9,7 @@ OutputStatus = Literal["not_generated", "generating", "ready", "failed"]
 
 class ProjectOutputResponse(BaseModel):
     id: str
-    project_id: str
+    session_id: str
     output_type: OutputType
     status: OutputStatus
     payload: dict | None = None

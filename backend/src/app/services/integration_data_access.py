@@ -71,7 +71,7 @@ _DECLARATIONS: dict[str, DataAccessDeclaration] = {
     },
     "jira": {
         "reads": [
-            "Project metadata: key, name, lead, issue counts",
+            "Session metadata: key, name, lead, issue counts",
             "Sprint metadata for projects with scrum boards",
             "Up to the 200 most recent issues per project (summary, status, "
             "assignee, labels, story points)",

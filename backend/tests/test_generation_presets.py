@@ -8,7 +8,6 @@ from sqlalchemy import select
 from src.app.models.generation_preset import GenerationPreset
 from src.app.services.preset_service import SYSTEM_GENERATION_PRESETS, slugify
 
-
 # ── service-level unit tests ────────────────────────────────────────────────
 
 

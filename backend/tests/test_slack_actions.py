@@ -1,4 +1,4 @@
-"""Tests for slack_actions.handle — specifically the session_create_pick_project action."""
+"""Tests for slack_actions.handle — specifically the session_create_pick action."""
 
 import json
 from unittest.mock import AsyncMock, patch
@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
 from src.app.models.session import Session
 from src.app.services.slack_actions import handle
 
@@ -15,7 +14,7 @@ from src.app.services.slack_actions import handle
 async def test_picker_click_creates_session_and_posts_public_message(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -32,8 +31,8 @@ async def test_picker_click_creates_session_and_posts_public_message(
         "response_url": "https://hooks.slack.example/abc",
         "actions": [
             {
-                "action_id": "session_create_pick_project",
-                "value": json.dumps({"project_id": project.id, "title": "Chosen"}),
+                "action_id": "session_create_pick",
+                "value": json.dumps({"session_id": project.id, "title": "Chosen"}),
             }
         ],
     }
@@ -63,8 +62,8 @@ async def test_picker_click_creates_session_and_posts_public_message(
     assert channel_id_arg == "C_CHAN"
     assert blocks_arg, "expected Block Kit blocks to be posted"
 
-    # Verify a session was actually created with the right project
-    result_db = await db_session.execute(select(Session).where(Session.project_id == project.id))
+    # A new session was created, continuing the one that was picked
+    result_db = await db_session.execute(select(Session).where(Session.continued_from_id == project.id))
     session = result_db.scalar_one()
     assert session.title == "Chosen"
 
@@ -81,8 +80,8 @@ async def test_picker_click_rejects_stale_project(
         "response_url": "https://hooks.slack.example/r",
         "actions": [
             {
-                "action_id": "session_create_pick_project",
-                "value": json.dumps({"project_id": "00000000-0000-0000-0000-000000000000", "title": "X"}),
+                "action_id": "session_create_pick",
+                "value": json.dumps({"session_id": "00000000-0000-0000-0000-000000000000", "title": "X"}),
             }
         ],
     }
@@ -122,7 +121,7 @@ async def test_picker_click_rejects_cross_org_project(
     other_org = Organization(name="Other", slug="other-picker")
     db_session.add(other_org)
     await db_session.flush()
-    foreign = Project(
+    foreign = Session(
         org_id=other_org.id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -139,8 +138,8 @@ async def test_picker_click_rejects_cross_org_project(
         "response_url": "https://hooks.slack.example/r",
         "actions": [
             {
-                "action_id": "session_create_pick_project",
-                "value": json.dumps({"project_id": foreign.id, "title": "Y"}),
+                "action_id": "session_create_pick",
+                "value": json.dumps({"session_id": foreign.id, "title": "Y"}),
             }
         ],
     }
@@ -177,7 +176,7 @@ async def test_picker_click_invalid_value_errors_gracefully(db_session, sample_t
         "channel": {"id": "C"},
         "team": {"id": "T"},
         "response_url": "https://hooks.slack.example/r",
-        "actions": [{"action_id": "session_create_pick_project", "value": "not-json"}],
+        "actions": [{"action_id": "session_create_pick", "value": "not-json"}],
     }
 
     post_error = AsyncMock()
@@ -203,7 +202,7 @@ async def test_picker_click_invalid_value_errors_gracefully(db_session, sample_t
 async def test_picker_click_falls_back_to_ephemeral_when_channel_post_fails(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -220,8 +219,8 @@ async def test_picker_click_falls_back_to_ephemeral_when_channel_post_fails(
         "response_url": "https://hooks.slack.example/abc",
         "actions": [
             {
-                "action_id": "session_create_pick_project",
-                "value": json.dumps({"project_id": project.id, "title": "Fallback"}),
+                "action_id": "session_create_pick",
+                "value": json.dumps({"session_id": project.id, "title": "Fallback"}),
             }
         ],
     }
@@ -255,5 +254,5 @@ async def test_picker_click_falls_back_to_ephemeral_when_channel_post_fails(
         fallback_text = post_error.await_args.args[1]
     else:
         fallback_text = post_error.await_args.kwargs.get("text", "")
-    assert "/projects/" in fallback_text
+    assert "/sessions/" in fallback_text
     assert "/sessions/" in fallback_text

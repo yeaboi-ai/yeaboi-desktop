@@ -7,7 +7,6 @@ from sqlalchemy import select
 
 from src.app.models.base import gen_uuid
 from src.app.models.organization import Organization, Team
-from src.app.models.project import Project
 from src.app.models.session import Session
 from src.app.models.session_event import SessionContext, SessionEvent
 from src.app.models.user import User
@@ -21,7 +20,7 @@ from src.app.services.event_writer import (
 
 
 async def _make_session(db) -> str:
-    """Insert minimal User / Org / Team / Project / Session rows and return the session id."""
+    """Insert minimal User / Org / Team / Session / Session rows and return the session id."""
     user = User(id=gen_uuid(), email=f"{gen_uuid()}@test.com", name="Test User")
     org = Organization(id=gen_uuid(), name="Test Org", slug=gen_uuid()[:8])
     db.add_all([user, org])
@@ -31,9 +30,9 @@ async def _make_session(db) -> str:
     db.add(team)
     await db.flush()
 
-    project = Project(
+    project = Session(
         id=gen_uuid(),
-        name="Test Project",
+        name="Test Session",
         owner_id=user.id,
         org_id=org.id,
         team_id=team.id,
@@ -43,7 +42,6 @@ async def _make_session(db) -> str:
 
     session = Session(
         id=gen_uuid(),
-        project_id=project.id,
         org_id=org.id,
     )
     db.add(session)

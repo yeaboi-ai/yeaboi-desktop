@@ -4,14 +4,14 @@ import secrets
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db
 from ..deps import get_current_org, get_current_user
 from ..models.blueprint import BlueprintIteration, BlueprintSnapshot
 from ..models.organization import Organization
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..schemas.blueprint import (
     BLUEPRINT_SECTIONS,
@@ -49,35 +49,35 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["blueprints"])
 
 
-async def _verify_project_access(project_id: str, user: User, db: AsyncSession) -> Project:
+async def _verify_session_access(session_id: str, user: User, db: AsyncSession) -> Session:
     # All team members can access any project
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
     return project
 
 
-@router.get("/api/projects/{project_id}/blueprint", response_model=BlueprintSnapshotResponse)
+@router.get("/api/sessions/{session_id}/blueprint", response_model=BlueprintSnapshotResponse)
 async def get_blueprint(
-    project_id: str,
+    session_id: str,
     iteration_id: str | None = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintSnapshot:
-    await _verify_project_access(project_id, user, db)
-    return await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+    await _verify_session_access(session_id, user, db)
+    return await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
 
 
-@router.patch("/api/projects/{project_id}/blueprint/sections/{section_name}", response_model=BlueprintSnapshotResponse)
+@router.patch("/api/sessions/{session_id}/blueprint/sections/{section_name}", response_model=BlueprintSnapshotResponse)
 async def edit_blueprint_section(
-    project_id: str,
+    session_id: str,
     section_name: str,
     body: BlueprintSectionUpdate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintSnapshot:
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
 
     if section_name not in BLUEPRINT_SECTIONS:
         raise HTTPException(status_code=400, detail=f"Invalid section. Must be one of: {BLUEPRINT_SECTIONS}")
@@ -88,11 +88,11 @@ async def edit_blueprint_section(
         user_id=user.id,
         action="update",
         resource_type="blueprint",
-        resource_id=project_id,
+        resource_id=session_id,
         metadata={"section": section_name},
     )
     bp = await update_section(
-        project_id,
+        session_id,
         section_name,
         body.content,
         user.id,
@@ -105,11 +105,8 @@ async def edit_blueprint_section(
     # the user's manual edit immediately, instead of narrating stale state
     # until the next agent extraction.
     try:
-        from ..models.session import Session as SessionModel
         from ..ws.manager import manager
 
-        result = await db.execute(select(SessionModel.id).where(SessionModel.project_id == project_id))
-        session_ids = [row[0] for row in result.all()]
         event = {
             "type": "blueprint_update",
             "payload": {
@@ -119,8 +116,7 @@ async def edit_blueprint_section(
                 "source": "user",
             },
         }
-        for sid in session_ids:
-            await manager.broadcast(sid, event)
+        await manager.broadcast(session_id, event)
     except Exception:
         # Broadcast is best-effort — never let it break the user's save.
         pass
@@ -129,11 +125,11 @@ async def edit_blueprint_section(
 
 
 @router.get(
-    "/api/projects/{project_id}/blueprint/snapshots",
+    "/api/sessions/{session_id}/blueprint/snapshots",
     response_model=list[BlueprintSnapshotListItem],
 )
 async def list_snapshots(
-    project_id: str,
+    session_id: str,
     iteration_id: str | None = None,
     limit: int = 50,
     before_version: int | None = None,
@@ -154,10 +150,10 @@ async def list_snapshots(
     """
     from ..services.blueprint_authors import changed_sections, resolve_labels
 
-    await _verify_project_access(project_id, user, db)
+    await _verify_session_access(session_id, user, db)
     limit = max(1, min(limit, 200))
 
-    stmt = select(BlueprintSnapshot).where(BlueprintSnapshot.project_id == project_id)
+    stmt = select(BlueprintSnapshot).where(BlueprintSnapshot.session_id == session_id)
     if iteration_id:
         stmt = stmt.where(BlueprintSnapshot.iteration_id == iteration_id)
     if before_version is not None:
@@ -184,11 +180,11 @@ async def list_snapshots(
 
 
 @router.get(
-    "/api/projects/{project_id}/blueprint/snapshots/{snapshot_id}",
+    "/api/sessions/{session_id}/blueprint/snapshots/{snapshot_id}",
     response_model=BlueprintSnapshotDetail,
 )
 async def get_snapshot_detail(
-    project_id: str,
+    session_id: str,
     snapshot_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -196,12 +192,12 @@ async def get_snapshot_detail(
     """Full snapshot — content + diff_from_previous + label."""
     from ..services.blueprint_authors import resolve_labels
 
-    await _verify_project_access(project_id, user, db)
+    await _verify_session_access(session_id, user, db)
 
     result = await db.execute(
         select(BlueprintSnapshot).where(
             BlueprintSnapshot.id == snapshot_id,
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
         )
     )
     snap = result.scalar_one_or_none()
@@ -211,7 +207,6 @@ async def get_snapshot_detail(
     labels = await resolve_labels([snap.created_by], db)
     return BlueprintSnapshotDetail(
         id=snap.id,
-        project_id=snap.project_id,
         version_number=snap.version_number,
         iteration_id=snap.iteration_id,
         session_id=snap.session_id,
@@ -226,11 +221,11 @@ async def get_snapshot_detail(
 
 
 @router.get(
-    "/api/projects/{project_id}/blueprint/snapshots/{snapshot_id}/diff",
+    "/api/sessions/{session_id}/blueprint/snapshots/{snapshot_id}/diff",
     response_model=BlueprintSnapshotDiff,
 )
 async def get_snapshot_diff(
-    project_id: str,
+    session_id: str,
     snapshot_id: str,
     against: str = "current",
     user: User = Depends(get_current_user),
@@ -245,12 +240,12 @@ async def get_snapshot_diff(
         (version_number - 1) in the same iteration.
       - ``<snapshot_id>``: compare to a specific snapshot id.
     """
-    await _verify_project_access(project_id, user, db)
+    await _verify_session_access(session_id, user, db)
 
     src_result = await db.execute(
         select(BlueprintSnapshot).where(
             BlueprintSnapshot.id == snapshot_id,
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
         )
     )
     src = src_result.scalar_one_or_none()
@@ -261,7 +256,7 @@ async def get_snapshot_diff(
         cur_result = await db.execute(
             select(BlueprintSnapshot)
             .where(
-                BlueprintSnapshot.project_id == project_id,
+                BlueprintSnapshot.session_id == session_id,
                 BlueprintSnapshot.iteration_id == src.iteration_id,
             )
             .order_by(BlueprintSnapshot.version_number.desc())
@@ -272,7 +267,7 @@ async def get_snapshot_diff(
         prev_result = await db.execute(
             select(BlueprintSnapshot)
             .where(
-                BlueprintSnapshot.project_id == project_id,
+                BlueprintSnapshot.session_id == session_id,
                 BlueprintSnapshot.iteration_id == src.iteration_id,
                 BlueprintSnapshot.version_number < src.version_number,
             )
@@ -284,7 +279,7 @@ async def get_snapshot_diff(
         tgt_result = await db.execute(
             select(BlueprintSnapshot).where(
                 BlueprintSnapshot.id == against,
-                BlueprintSnapshot.project_id == project_id,
+                BlueprintSnapshot.session_id == session_id,
             )
         )
         target = tgt_result.scalar_one_or_none()
@@ -310,21 +305,21 @@ async def get_snapshot_diff(
     )
 
 
-@router.post("/api/projects/{project_id}/blueprint/restore/{snapshot_id}", response_model=BlueprintSnapshotResponse)
+@router.post("/api/sessions/{session_id}/blueprint/restore/{snapshot_id}", response_model=BlueprintSnapshotResponse)
 async def restore_blueprint(
-    project_id: str,
+    session_id: str,
     snapshot_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintSnapshot:
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
 
     # Capture the prior latest content so we can compute per-section diffs
     # to broadcast — clients need to know which sections actually changed.
     iter_for_target = await db.execute(
         select(BlueprintSnapshot.iteration_id).where(
             BlueprintSnapshot.id == snapshot_id,
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
         )
     )
     target_iteration_id = iter_for_target.scalar_one_or_none()
@@ -333,7 +328,7 @@ async def restore_blueprint(
         latest_result = await db.execute(
             select(BlueprintSnapshot.content)
             .where(
-                BlueprintSnapshot.project_id == project_id,
+                BlueprintSnapshot.session_id == session_id,
                 BlueprintSnapshot.iteration_id == target_iteration_id,
             )
             .order_by(BlueprintSnapshot.version_number.desc())
@@ -342,7 +337,7 @@ async def restore_blueprint(
         prior_content = latest_result.scalar_one_or_none() or {}
 
     try:
-        result = await restore_snapshot(project_id, snapshot_id, db, user_id=user.id)
+        result = await restore_snapshot(session_id, snapshot_id, db, user_id=user.id)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -359,7 +354,7 @@ async def restore_blueprint(
         resource_type="blueprint",
         resource_id=snapshot_id,
         metadata={
-            "project_id": project_id,
+            "session_id": session_id,
             "from_version": source_snapshot.version_number,
             "to_version": new_snapshot.version_number,
         },
@@ -369,11 +364,7 @@ async def restore_blueprint(
     # agent's WS subscriber) refresh immediately instead of narrating the
     # state we just rolled back over.
     try:
-        from ..models.session import Session as SessionModel
         from ..ws.manager import manager
-
-        sess_result = await db.execute(select(SessionModel.id).where(SessionModel.project_id == project_id))
-        session_ids = [row[0] for row in sess_result.all()]
 
         new_content = new_snapshot.content or {}
         changed_slugs = [
@@ -391,8 +382,7 @@ async def restore_blueprint(
                     "source": "restore",
                 },
             }
-            for sid in session_ids:
-                await manager.broadcast(sid, event)
+            await manager.broadcast(session_id, event)
     except Exception:
         # Broadcast failures must never block the restore response.
         pass
@@ -400,16 +390,16 @@ async def restore_blueprint(
     return new_snapshot
 
 
-@router.get("/api/projects/{project_id}/blueprint/coverage")
+@router.get("/api/sessions/{session_id}/blueprint/coverage")
 async def get_coverage(
-    project_id: str,
+    session_id: str,
     iteration_id: str | None = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Get coverage scores for each blueprint section."""
-    await _verify_project_access(project_id, user, db)
-    bp = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+    await _verify_session_access(session_id, user, db)
+    bp = await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
 
     from ..services.blueprint_service import get_or_create_iteration
     from ..services.blueprint_template_service import get_template_sections
@@ -421,13 +411,13 @@ async def get_coverage(
         iter_result = await db.execute(select(BlueprintIteration).where(BlueprintIteration.id == iteration_id))
         iteration = iter_result.scalar_one_or_none()
     else:
-        iteration = await get_or_create_iteration(project_id, db)
+        iteration = await get_or_create_iteration(session_id, db)
 
     if iteration and iteration.iteration_type:
         # Look up project's org_id for template query
-        from ..models.project import Project as _Proj
+        from ..models.session import Session as _Proj
 
-        proj_result = await db.execute(select(_Proj.org_id).where(_Proj.id == project_id))
+        proj_result = await db.execute(select(_Proj.org_id).where(_Proj.id == session_id))
         proj_org_id = proj_result.scalar_one_or_none()
         if proj_org_id:
             sections_filter = await get_template_sections(proj_org_id, iteration.iteration_type, db)
@@ -464,9 +454,9 @@ async def get_coverage(
     return result
 
 
-@router.post("/api/projects/{project_id}/blueprint/suggest-defaults")
+@router.post("/api/sessions/{session_id}/blueprint/suggest-defaults")
 async def suggest_defaults(
-    project_id: str,
+    session_id: str,
     body: dict | None = None,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
@@ -479,8 +469,8 @@ async def suggest_defaults(
     treats any section scoring < 80 as a gap (not just empty ones). If omitted,
     falls back to "all completely empty sections".
     """
-    await _verify_project_access(project_id, user, db)
-    bp = await get_or_create_blueprint(project_id, db)
+    await _verify_session_access(session_id, user, db)
+    bp = await get_or_create_blueprint(session_id, db)
 
     requested_sections = (body or {}).get("sections") if isinstance(body, dict) else None
     if requested_sections is not None:
@@ -508,7 +498,7 @@ async def suggest_defaults(
     from ..services.ai_provider import get_ai_client
 
     section_labels = {
-        "project_overview": "Project Overview",
+        "project_overview": "Session Overview",
         "goals_constraints": "Goals & Constraints",
         "users_personas": "Users & Personas",
         "team_capacity": "Team & Capacity",
@@ -568,36 +558,36 @@ async def suggest_defaults(
 
 
 @router.get(
-    "/api/projects/{project_id}/iterations",
+    "/api/sessions/{session_id}/iterations",
     response_model=list[BlueprintIterationResponse],
 )
 async def get_iterations(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[BlueprintIteration]:
     """List all blueprint iterations for a project."""
-    await _verify_project_access(project_id, user, db)
-    return await list_iterations(project_id, db)
+    await _verify_session_access(session_id, user, db)
+    return await list_iterations(session_id, db)
 
 
 @router.post(
-    "/api/projects/{project_id}/iterations",
+    "/api/sessions/{session_id}/iterations",
     status_code=201,
     response_model=BlueprintIterationResponse,
 )
 async def create_new_iteration(
-    project_id: str,
+    session_id: str,
     body: dict | None = None,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintIteration:
     """Create a new iteration by forking from the current one."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
     iteration_type = (body or {}).get("iteration_type")
     iteration = await create_iteration(
-        project_id,
+        session_id,
         db,
         user.id,
         org_id=org.id,
@@ -613,7 +603,7 @@ async def create_new_iteration(
             event_type="blueprint_iteration",
             team_id=project.team_id,
             payload={
-                "project_id": project_id,
+                "session_id": session_id,
                 "iteration_type": iteration_type,
                 "author_name": author_name,
             },
@@ -625,22 +615,22 @@ async def create_new_iteration(
 
 
 @router.patch(
-    "/api/projects/{project_id}/iterations/{iteration_id}",
+    "/api/sessions/{session_id}/iterations/{iteration_id}",
     response_model=BlueprintIterationResponse,
 )
 async def update_iteration(
-    project_id: str,
+    session_id: str,
     iteration_id: str,
     body: BlueprintIterationUpdate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintIteration:
     """Update iteration label."""
-    await _verify_project_access(project_id, user, db)
+    await _verify_session_access(session_id, user, db)
     result = await db.execute(
         select(BlueprintIteration).where(
             BlueprintIteration.id == iteration_id,
-            BlueprintIteration.project_id == project_id,
+            BlueprintIteration.session_id == session_id,
         )
     )
     iteration = result.scalar_one_or_none()
@@ -661,17 +651,17 @@ async def update_iteration(
 
 
 @router.post(
-    "/api/projects/{project_id}/iterations/{iteration_id}/lock",
+    "/api/sessions/{session_id}/iterations/{iteration_id}/lock",
     response_model=BlueprintIterationResponse,
 )
 async def lock_iteration_endpoint(
-    project_id: str,
+    session_id: str,
     iteration_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BlueprintIteration:
     """Lock an iteration (freeze it)."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
     try:
         iteration = await lock_iteration(iteration_id, db, user.id)
         await log_audit(
@@ -681,7 +671,7 @@ async def lock_iteration_endpoint(
             action="lock",
             resource_type="iteration",
             resource_id=iteration_id,
-            metadata={"project_id": project_id},
+            metadata={"session_id": session_id},
         )
         await db.commit()
         return iteration
@@ -693,30 +683,24 @@ async def lock_iteration_endpoint(
 
 
 async def _broadcast_suggestion_event(
-    project_id: str,
+    session_id: str,
     db: AsyncSession,
     event: dict,
 ) -> None:
-    """Fan out a suggestion-related event to every active session for the
-    project. Best-effort — broadcast failures must never block the user's
-    accept/reject."""
+    """Fan a suggestion-related event out to the session. Best-effort —
+    broadcast failures must never block the user's accept/reject."""
     try:
-        from ..models.session import Session as SessionModel
         from ..ws.manager import manager
 
-        result = await db.execute(select(SessionModel.id).where(SessionModel.project_id == project_id))
-        session_ids = [row[0] for row in result.all()]
-        for sid in session_ids:
-            await manager.broadcast(sid, event)
+        await manager.broadcast(session_id, event)
     except Exception:
-        logger.debug("Suggestion event broadcast failed for project %s", project_id, exc_info=True)
+        logger.debug("Suggestion event broadcast failed for project %s", session_id, exc_info=True)
 
 
 def _serialize_suggestion(s) -> dict:
     return {
         "id": s.id,
-        "project_id": s.project_id,
-        "session_id": s.session_id,
+        "session_id": s.id,
         "section": s.section,
         "content": s.content,
         "edited_content": s.edited_content,
@@ -728,37 +712,36 @@ def _serialize_suggestion(s) -> dict:
 
 
 @router.get(
-    "/api/projects/{project_id}/blueprint-suggestions",
+    "/api/sessions/{session_id}/blueprint-suggestions",
     response_model=list[SuggestionRead],
 )
 async def list_blueprint_suggestions(
-    project_id: str,
-    session_id: str | None = None,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List pending suggestions for a project (optionally scoped to a session)."""
-    await _verify_project_access(project_id, user, db)
-    return await list_pending_suggestions(project_id, db, session_id=session_id)
+    """List a session's pending suggestions."""
+    await _verify_session_access(session_id, user, db)
+    return await list_pending_suggestions(session_id, db)
 
 
 @router.post(
-    "/api/projects/{project_id}/blueprint-suggestions/{suggestion_id}/accept",
+    "/api/sessions/{session_id}/blueprint-suggestions/{suggestion_id}/accept",
     response_model=SuggestionRead,
 )
 async def accept_blueprint_suggestion(
-    project_id: str,
+    session_id: str,
     suggestion_id: str,
     body: SuggestionAccept,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Accept a suggestion: merge into the blueprint, mark accepted."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
 
     result = await accept_suggestion(
         suggestion_id,
-        project_id,
+        session_id,
         user.id,
         db,
         edited_content=body.edited_content,
@@ -774,13 +757,13 @@ async def accept_blueprint_suggestion(
         user_id=user.id,
         action="accept_suggestion",
         resource_type="blueprint",
-        resource_id=project_id,
+        resource_id=session_id,
         metadata={"section": suggestion.section, "suggestion_id": suggestion.id},
     )
 
     stored_content = snapshot.content.get(suggestion.section, "")
     await _broadcast_suggestion_event(
-        project_id,
+        session_id,
         db,
         {
             "type": "blueprint_update",
@@ -793,7 +776,7 @@ async def accept_blueprint_suggestion(
         },
     )
     await _broadcast_suggestion_event(
-        project_id,
+        session_id,
         db,
         {
             "type": "suggestion_resolved",
@@ -805,19 +788,19 @@ async def accept_blueprint_suggestion(
 
 
 @router.post(
-    "/api/projects/{project_id}/blueprint-suggestions/{suggestion_id}/reject",
+    "/api/sessions/{session_id}/blueprint-suggestions/{suggestion_id}/reject",
     response_model=SuggestionRead,
 )
 async def reject_blueprint_suggestion(
-    project_id: str,
+    session_id: str,
     suggestion_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Reject a suggestion: mark rejected, no blueprint change."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
 
-    suggestion = await reject_suggestion(suggestion_id, project_id, user.id, db)
+    suggestion = await reject_suggestion(suggestion_id, session_id, user.id, db)
     if suggestion is None:
         raise HTTPException(status_code=404, detail="Suggestion not found or not pending")
 
@@ -827,12 +810,12 @@ async def reject_blueprint_suggestion(
         user_id=user.id,
         action="reject_suggestion",
         resource_type="blueprint",
-        resource_id=project_id,
+        resource_id=session_id,
         metadata={"section": suggestion.section, "suggestion_id": suggestion.id},
     )
 
     await _broadcast_suggestion_event(
-        project_id,
+        session_id,
         db,
         {
             "type": "suggestion_resolved",
@@ -842,20 +825,20 @@ async def reject_blueprint_suggestion(
     return suggestion
 
 
-@router.post("/api/projects/{project_id}/blueprint-suggestions/bulk-accept")
+@router.post("/api/sessions/{session_id}/blueprint-suggestions/bulk-accept")
 async def bulk_accept_blueprint_suggestions(
-    project_id: str,
+    session_id: str,
     body: SuggestionBulkAccept,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Accept all pending suggestions in a section as one merged update."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_session_access(session_id, user, db)
 
     if body.section not in BLUEPRINT_SECTIONS:
         raise HTTPException(status_code=400, detail=f"Invalid section: {body.section}")
 
-    accepted, snapshot = await bulk_accept_section(project_id, body.section, user.id, db, session_id=body.session_id)
+    accepted, snapshot = await bulk_accept_section(session_id, body.section, user.id, db)
 
     if not accepted:
         return {"accepted": [], "version_number": None}
@@ -866,7 +849,7 @@ async def bulk_accept_blueprint_suggestions(
         user_id=user.id,
         action="bulk_accept_suggestions",
         resource_type="blueprint",
-        resource_id=project_id,
+        resource_id=session_id,
         metadata={
             "section": body.section,
             "count": len(accepted),
@@ -877,7 +860,7 @@ async def bulk_accept_blueprint_suggestions(
     if snapshot is not None:
         stored_content = snapshot.content.get(body.section, "")
         await _broadcast_suggestion_event(
-            project_id,
+            session_id,
             db,
             {
                 "type": "blueprint_update",
@@ -891,7 +874,7 @@ async def bulk_accept_blueprint_suggestions(
         )
     for s in accepted:
         await _broadcast_suggestion_event(
-            project_id,
+            session_id,
             db,
             {
                 "type": "suggestion_resolved",
@@ -912,7 +895,7 @@ async def bulk_accept_blueprint_suggestions(
 # one, change both. (Kept inline rather than re-importing to avoid coupling the
 # router to facilitator constants.)
 _SECTION_LABELS = {
-    "project_overview": "Project Overview",
+    "project_overview": "Session Overview",
     "goals_constraints": "Goals & Constraints",
     "users_personas": "Users & Personas",
     "team_capacity": "Team & Capacity",
@@ -928,7 +911,7 @@ _SECTION_LABELS = {
 }
 
 
-def _render_markdown(project: Project, iteration: BlueprintIteration, snap: BlueprintSnapshot) -> str:
+def _render_markdown(project: Session, iteration: BlueprintIteration, snap: BlueprintSnapshot) -> str:
     """Render a blueprint snapshot as Markdown for export.
 
     Sections without content are skipped to keep the export readable; the
@@ -953,11 +936,11 @@ def _render_markdown(project: Project, iteration: BlueprintIteration, snap: Blue
     return "\n".join(lines).rstrip() + "\n"
 
 
-async def _resolve_iteration(project_id: str, iteration_id: str, db: AsyncSession) -> BlueprintIteration:
+async def _resolve_iteration(session_id: str, iteration_id: str, db: AsyncSession) -> BlueprintIteration:
     result = await db.execute(
         select(BlueprintIteration).where(
             BlueprintIteration.id == iteration_id,
-            BlueprintIteration.project_id == project_id,
+            BlueprintIteration.session_id == session_id,
         )
     )
     iteration = result.scalar_one_or_none()
@@ -967,11 +950,11 @@ async def _resolve_iteration(project_id: str, iteration_id: str, db: AsyncSessio
 
 
 @router.post(
-    "/api/projects/{project_id}/blueprint-iterations/{iteration_id}/share",
+    "/api/sessions/{session_id}/blueprint-iterations/{iteration_id}/share",
     response_model=BlueprintShareResponse,
 )
 async def enable_iteration_share(
-    project_id: str,
+    session_id: str,
     iteration_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -982,8 +965,8 @@ async def enable_iteration_share(
     token. The token is generated lazily on first share, so iterations that
     were never shared have ``share_token=None``.
     """
-    project = await _verify_project_access(project_id, user, db)
-    iteration = await _resolve_iteration(project_id, iteration_id, db)
+    project = await _verify_session_access(session_id, user, db)
+    iteration = await _resolve_iteration(session_id, iteration_id, db)
 
     if not iteration.share_token:
         iteration.share_token = secrets.token_urlsafe(32)
@@ -996,7 +979,7 @@ async def enable_iteration_share(
         action="enable_share",
         resource_type="blueprint_iteration",
         resource_id=iteration_id,
-        metadata={"project_id": project_id},
+        metadata={"session_id": session_id},
     )
     await db.commit()
     return BlueprintShareResponse(
@@ -1007,11 +990,11 @@ async def enable_iteration_share(
 
 
 @router.delete(
-    "/api/projects/{project_id}/blueprint-iterations/{iteration_id}/share",
+    "/api/sessions/{session_id}/blueprint-iterations/{iteration_id}/share",
     response_model=BlueprintShareResponse,
 )
 async def disable_iteration_share(
-    project_id: str,
+    session_id: str,
     iteration_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1021,8 +1004,8 @@ async def disable_iteration_share(
     The token is intentionally preserved so re-enabling later returns the
     same URL (less surprising for shared links someone bookmarked).
     """
-    project = await _verify_project_access(project_id, user, db)
-    iteration = await _resolve_iteration(project_id, iteration_id, db)
+    project = await _verify_session_access(session_id, user, db)
+    iteration = await _resolve_iteration(session_id, iteration_id, db)
 
     iteration.share_enabled = False
 
@@ -1033,7 +1016,7 @@ async def disable_iteration_share(
         action="disable_share",
         resource_type="blueprint_iteration",
         resource_id=iteration_id,
-        metadata={"project_id": project_id},
+        metadata={"session_id": session_id},
     )
     await db.commit()
     return BlueprintShareResponse(
@@ -1043,16 +1026,16 @@ async def disable_iteration_share(
     )
 
 
-@router.get("/api/projects/{project_id}/blueprint/export.md")
+@router.get("/api/sessions/{session_id}/blueprint/export.md")
 async def export_blueprint_markdown(
-    project_id: str,
+    session_id: str,
     iteration_id: str | None = None,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Plain Markdown export of the current (or specified) iteration."""
-    project = await _verify_project_access(project_id, user, db)
-    snap = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+    project = await _verify_session_access(session_id, user, db)
+    snap = await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
     iter_result = await db.execute(select(BlueprintIteration).where(BlueprintIteration.id == snap.iteration_id))
     iteration = iter_result.scalar_one_or_none()
     if not iteration:
@@ -1108,11 +1091,10 @@ async def public_blueprint(
 
 
 @router.get(
-    "/api/projects/{project_id}/sessions/{session_id}/blueprint-diff",
+    "/api/sessions/{session_id}/blueprint-diff",
     response_model=SessionBlueprintDiff,
 )
 async def get_session_blueprint_diff(
-    project_id: str,
     session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -1126,26 +1108,23 @@ async def get_session_blueprint_diff(
     Current = the latest snapshot in the iteration.
     """
     from ..models.blueprint import BlueprintSuggestion
-    from ..models.session import Session as SessionModel
 
-    await _verify_project_access(project_id, user, db)
+    sess = await _verify_session_access(session_id, user, db)
+    # A session that never opened a conversation has no iteration stamped on
+    # it; its blueprint lives on the active one.
+    iteration_id = sess.iteration_id
+    if iteration_id is None:
+        from ..services.blueprint_service import get_active_iteration
 
-    sess_result = await db.execute(
-        select(SessionModel).where(
-            SessionModel.id == session_id,
-            SessionModel.project_id == project_id,
-        )
-    )
-    sess = sess_result.scalar_one_or_none()
-    if not sess:
-        raise HTTPException(status_code=404, detail="Session not found")
+        active = await get_active_iteration(session_id, db)
+        iteration_id = active.id if active else None
 
     # Current = latest snapshot in the session's iteration.
     cur_result = await db.execute(
         select(BlueprintSnapshot)
         .where(
-            BlueprintSnapshot.project_id == project_id,
-            BlueprintSnapshot.iteration_id == sess.iteration_id,
+            BlueprintSnapshot.session_id == session_id,
+            BlueprintSnapshot.iteration_id == iteration_id,
         )
         .order_by(BlueprintSnapshot.version_number.desc())
         .limit(1)
@@ -1159,12 +1138,9 @@ async def get_session_blueprint_diff(
     base_result = await db.execute(
         select(BlueprintSnapshot)
         .where(
-            BlueprintSnapshot.project_id == project_id,
-            BlueprintSnapshot.iteration_id == sess.iteration_id,
-            or_(
-                BlueprintSnapshot.session_id != session_id,
-                BlueprintSnapshot.session_id.is_(None),
-            ),
+            BlueprintSnapshot.session_id == session_id,
+            BlueprintSnapshot.iteration_id == iteration_id,
+            BlueprintSnapshot.from_conversation.is_(False),
         )
         .order_by(BlueprintSnapshot.version_number.desc())
         .limit(1)
@@ -1182,7 +1158,6 @@ async def get_session_blueprint_diff(
 
     pending_count = await db.scalar(
         select(func.count(BlueprintSuggestion.id)).where(
-            BlueprintSuggestion.project_id == project_id,
             BlueprintSuggestion.session_id == session_id,
             BlueprintSuggestion.status == "pending",
         )

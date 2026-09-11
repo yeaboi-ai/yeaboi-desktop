@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from ..config import get_settings
 from ..db import _get_engine
+from ..local_bootstrap import read_backup_marker
 from ..middleware.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
@@ -97,3 +98,14 @@ async def readiness(request: Request) -> dict:
         status_code=status_code,
         content={"status": overall, "checks": checks},
     )
+
+
+@router.get("/api/local/backup")
+@limiter.limit("60/minute")
+async def last_backup(request: Request) -> dict:
+    """What the projects purge saved before it ran, so the app can say where.
+
+    `backup` is null on any install the purge never touched — a fresh one, or
+    a server not running against a local SQLite file.
+    """
+    return {"backup": read_backup_marker()}

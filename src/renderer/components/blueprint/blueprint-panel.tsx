@@ -197,7 +197,7 @@ export function BlueprintPanel({
             )}
             {projectId && (
               <Link
-                href={`/projects/${projectId}/blueprint`}
+                href={`/sessions/${projectId}/blueprint`}
                 className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-muted-foreground/70 hover:text-foreground/80 hover:bg-foreground/[0.05] transition-colors"
                 title="Open the full blueprint page"
               >

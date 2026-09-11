@@ -1,7 +1,7 @@
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.blueprint import BlueprintIteration, BlueprintSnapshot, BlueprintSuggestion
@@ -18,11 +18,11 @@ class ConcurrentBlueprintUpdate(Exception):
 # ─── Iteration Management ───────────────────────────────────────────────────
 
 
-async def get_or_create_iteration(project_id: str, db: AsyncSession, org_id: str | None = None) -> BlueprintIteration:
+async def get_or_create_iteration(session_id: str, db: AsyncSession, org_id: str | None = None) -> BlueprintIteration:
     """Get the latest iteration for a project, or create the first one."""
     result = await db.execute(
         select(BlueprintIteration)
-        .where(BlueprintIteration.project_id == project_id)
+        .where(BlueprintIteration.session_id == session_id)
         .order_by(BlueprintIteration.iteration_number.desc())
         .limit(1)
     )
@@ -30,7 +30,7 @@ async def get_or_create_iteration(project_id: str, db: AsyncSession, org_id: str
 
     if not iteration:
         iteration = BlueprintIteration(
-            project_id=project_id,
+            session_id=session_id,
             org_id=org_id,
             iteration_number=1,
             label="v1",
@@ -42,12 +42,12 @@ async def get_or_create_iteration(project_id: str, db: AsyncSession, org_id: str
     return iteration
 
 
-async def get_active_iteration(project_id: str, db: AsyncSession) -> BlueprintIteration | None:
+async def get_active_iteration(session_id: str, db: AsyncSession) -> BlueprintIteration | None:
     """Get the latest unlocked (planning) iteration, or None if all locked."""
     result = await db.execute(
         select(BlueprintIteration)
         .where(
-            BlueprintIteration.project_id == project_id,
+            BlueprintIteration.session_id == session_id,
             BlueprintIteration.status == "planning",
         )
         .order_by(BlueprintIteration.iteration_number.desc())
@@ -56,11 +56,11 @@ async def get_active_iteration(project_id: str, db: AsyncSession) -> BlueprintIt
     return result.scalar_one_or_none()
 
 
-async def list_iterations(project_id: str, db: AsyncSession) -> list[BlueprintIteration]:
+async def list_iterations(session_id: str, db: AsyncSession) -> list[BlueprintIteration]:
     """List all iterations for a project, ordered by number."""
     result = await db.execute(
         select(BlueprintIteration)
-        .where(BlueprintIteration.project_id == project_id)
+        .where(BlueprintIteration.session_id == session_id)
         .order_by(BlueprintIteration.iteration_number.asc())
     )
     return list(result.scalars().all())
@@ -83,14 +83,14 @@ async def lock_iteration(iteration_id: str, db: AsyncSession, user_id: str) -> B
     logger.info(
         "Iteration locked: %s (project=%s, v%s)",
         iteration.id,
-        iteration.project_id,
+        iteration.session_id,
         iteration.iteration_number,
     )
     return iteration
 
 
 async def create_iteration(
-    project_id: str,
+    session_id: str,
     db: AsyncSession,
     user_id: str,
     org_id: str | None = None,
@@ -102,20 +102,20 @@ async def create_iteration(
     - Copies the latest blueprint content to the new iteration
     - Stores the parent's out_of_scope as context for the new iteration
     """
-    current = await get_or_create_iteration(project_id, db, org_id)
+    current = await get_or_create_iteration(session_id, db, org_id)
 
     # Lock current if it's still planning
     if current.status == "planning":
         await lock_iteration(current.id, db, user_id)
 
     # Get current blueprint content
-    current_bp = await get_or_create_blueprint(project_id, db, iteration_id=current.id)
+    current_bp = await get_or_create_blueprint(session_id, db, iteration_id=current.id)
     parent_oos = current_bp.content.get("out_of_scope", "")
 
     # Create new iteration
     new_number = current.iteration_number + 1
     new_iteration = BlueprintIteration(
-        project_id=project_id,
+        session_id=session_id,
         org_id=org_id or current.org_id,
         iteration_number=new_number,
         label=f"v{new_number}",
@@ -136,7 +136,7 @@ async def create_iteration(
     forked_bullet_sources.pop("out_of_scope", None)
 
     snapshot = BlueprintSnapshot(
-        project_id=project_id,
+        session_id=session_id,
         org_id=org_id or current.org_id,
         iteration_id=new_iteration.id,
         version_number=1,
@@ -150,7 +150,7 @@ async def create_iteration(
 
     logger.info(
         "Iteration created: %s v%s (forked from %s)",
-        project_id,
+        session_id,
         new_number,
         current.id,
     )
@@ -161,7 +161,7 @@ async def create_iteration(
 
 
 async def get_or_create_blueprint(
-    project_id: str,
+    session_id: str,
     db: AsyncSession,
     iteration_id: str | None = None,
 ) -> BlueprintSnapshot:
@@ -170,13 +170,13 @@ async def get_or_create_blueprint(
     If iteration_id is None, uses the latest iteration.
     """
     if not iteration_id:
-        iteration = await get_or_create_iteration(project_id, db)
+        iteration = await get_or_create_iteration(session_id, db)
         iteration_id = iteration.id
 
     result = await db.execute(
         select(BlueprintSnapshot)
         .where(
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
             BlueprintSnapshot.iteration_id == iteration_id,
         )
         .order_by(BlueprintSnapshot.version_number.desc())
@@ -186,7 +186,7 @@ async def get_or_create_blueprint(
 
     if not snapshot:
         snapshot = BlueprintSnapshot(
-            project_id=project_id,
+            session_id=session_id,
             iteration_id=iteration_id,
             version_number=1,
             content=EMPTY_BLUEPRINT.copy(),
@@ -200,16 +200,16 @@ async def get_or_create_blueprint(
 
 
 async def update_section(
-    project_id: str,
+    session_id: str,
     section_name: str,
     content: str,
     created_by: str,
     db: AsyncSession,
-    session_id: str | None = None,
     source: str | None = None,
     iteration_id: str | None = None,
     mode: str = "replace",
     expected_version: int | None = None,
+    from_conversation: bool = False,
 ) -> BlueprintSnapshot:
     """Update a blueprint section, creating a new snapshot.
 
@@ -228,7 +228,7 @@ async def update_section(
     from .blueprint_merge import compute_bullet_sources, detect_removed, merge_bullets
 
     if not iteration_id:
-        iteration = await get_or_create_iteration(project_id, db)
+        iteration = await get_or_create_iteration(session_id, db)
         iteration_id = iteration.id
     else:
         # Verify iteration is not locked
@@ -237,7 +237,7 @@ async def update_section(
         if iteration and iteration.status == "locked":
             raise ValueError(f"Cannot update locked iteration {iteration.label}")
 
-    current = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+    current = await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
 
     if expected_version is not None and current.version_number != expected_version:
         raise ConcurrentBlueprintUpdate(f"Blueprint moved from v{expected_version} to v{current.version_number}")
@@ -291,19 +291,19 @@ async def update_section(
     # Get next version number scoped to this iteration
     result = await db.execute(
         select(func.max(BlueprintSnapshot.version_number)).where(
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
             BlueprintSnapshot.iteration_id == iteration_id,
         )
     )
     max_version = result.scalar() or 0
 
     snapshot = BlueprintSnapshot(
-        project_id=project_id,
+        session_id=session_id,
+        from_conversation=from_conversation,
         iteration_id=iteration_id,
         version_number=max_version + 1,
         content=new_content,
         created_by=created_by,
-        session_id=session_id,
         section_sources=new_sources,
         bullet_sources=new_bullet_sources,
         diff_from_previous={
@@ -318,7 +318,7 @@ async def update_section(
     logger.info(
         "Blueprint section updated: %s for project %s (iteration %s)",
         section_name,
-        project_id,
+        session_id,
         iteration_id,
     )
     await db.refresh(snapshot)
@@ -357,7 +357,7 @@ async def check_readiness(
 
     sections_filter = None
     if iteration.iteration_type:
-        org = iteration.org_id or iteration.project_id
+        org = iteration.org_id
         sections_filter = await get_template_sections(org, iteration.iteration_type, db)
 
     cov = assess_coverage(content, sections_filter=sections_filter)
@@ -378,15 +378,8 @@ async def check_readiness(
         ]
         if newly_completed:
             try:
-                from sqlalchemy import select as _select
-
-                from ..models.session import Session as _SessionModel
                 from ..ws.manager import manager
 
-                result = await db.execute(
-                    _select(_SessionModel.id).where(_SessionModel.project_id == iteration.project_id)
-                )
-                session_ids = [row[0] for row in result.all()]
                 for slug in newly_completed:
                     event = {
                         "type": "section_completed",
@@ -395,8 +388,7 @@ async def check_readiness(
                             "score": new_scores.get(slug, 0),
                         },
                     }
-                    for sid in session_ids:
-                        await manager.broadcast(sid, event)
+                    await manager.broadcast(iteration.session_id, event)
                 logger.info(
                     "Section(s) crossed completion threshold for iteration %s: %s",
                     iteration.id,
@@ -422,26 +414,22 @@ async def check_readiness(
 
 
 async def revert_session_changes(
-    project_id: str,
     session_id: str,
     db: AsyncSession,
     iteration_id: str | None = None,
 ) -> BlueprintSnapshot | None:
     """Revert blueprint to the state before a session made changes."""
     if not iteration_id:
-        iteration = await get_or_create_iteration(project_id, db)
+        iteration = await get_or_create_iteration(session_id, db)
         iteration_id = iteration.id
 
     # Find the latest snapshot NOT created by this session
     result = await db.execute(
         select(BlueprintSnapshot)
         .where(
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
             BlueprintSnapshot.iteration_id == iteration_id,
-            or_(
-                BlueprintSnapshot.session_id != session_id,
-                BlueprintSnapshot.session_id.is_(None),
-            ),
+            BlueprintSnapshot.from_conversation.is_(False),
         )
         .order_by(BlueprintSnapshot.version_number.desc())
         .limit(1)
@@ -451,20 +439,20 @@ async def revert_session_changes(
     if not pre_session:
         return None
 
-    current = await get_or_create_blueprint(project_id, db, iteration_id=iteration_id)
+    current = await get_or_create_blueprint(session_id, db, iteration_id=iteration_id)
     if current.content == pre_session.content:
         return None
 
     max_result = await db.execute(
         select(func.max(BlueprintSnapshot.version_number)).where(
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
             BlueprintSnapshot.iteration_id == iteration_id,
         )
     )
     max_version = max_result.scalar() or 0
 
     snapshot = BlueprintSnapshot(
-        project_id=project_id,
+        session_id=session_id,
         iteration_id=iteration_id,
         version_number=max_version + 1,
         content=dict(pre_session.content),
@@ -476,7 +464,7 @@ async def revert_session_changes(
 
 
 async def restore_snapshot(
-    project_id: str,
+    session_id: str,
     snapshot_id: str,
     db: AsyncSession,
     user_id: str | None = None,
@@ -499,7 +487,7 @@ async def restore_snapshot(
     result = await db.execute(
         select(BlueprintSnapshot).where(
             BlueprintSnapshot.id == snapshot_id,
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
         )
     )
     target = result.scalar_one_or_none()
@@ -517,14 +505,14 @@ async def restore_snapshot(
 
     result = await db.execute(
         select(func.max(BlueprintSnapshot.version_number)).where(
-            BlueprintSnapshot.project_id == project_id,
+            BlueprintSnapshot.session_id == session_id,
             BlueprintSnapshot.iteration_id == iteration_id,
         )
     )
     max_version = result.scalar() or 0
 
     snapshot = BlueprintSnapshot(
-        project_id=project_id,
+        session_id=session_id,
         iteration_id=iteration_id,
         version_number=max_version + 1,
         content=dict(target.content),
@@ -545,7 +533,7 @@ async def restore_snapshot(
     logger.info(
         "Blueprint restored to snapshot %s for project %s (v%s -> v%s) by %s",
         snapshot_id,
-        project_id,
+        session_id,
         target.version_number,
         snapshot.version_number,
         user_id or "system",
@@ -558,11 +546,10 @@ async def restore_snapshot(
 
 
 async def create_suggestion(
-    project_id: str,
+    session_id: str,
     section: str,
     content: str,
     db: AsyncSession,
-    session_id: str | None = None,
     source_message_ids: list[str] | None = None,
     supersedes_bullet: str | None = None,
 ) -> BlueprintSuggestion:
@@ -576,7 +563,6 @@ async def create_suggestion(
     strips the named bullet before merging.
     """
     suggestion = BlueprintSuggestion(
-        project_id=project_id,
         session_id=session_id,
         section=section,
         content=content,
@@ -602,7 +588,7 @@ async def create_suggestion(
     await db.refresh(suggestion)
     logger.info(
         "Blueprint suggestion created: project=%s section=%s session=%s id=%s%s",
-        project_id,
+        session_id,
         section,
         session_id,
         suggestion.id,
@@ -612,17 +598,14 @@ async def create_suggestion(
 
 
 async def list_pending_suggestions(
-    project_id: str,
+    session_id: str,
     db: AsyncSession,
-    session_id: str | None = None,
 ) -> list[BlueprintSuggestion]:
-    """List pending suggestions for a project, optionally scoped to one session."""
+    """List a session's pending suggestions."""
     stmt = select(BlueprintSuggestion).where(
-        BlueprintSuggestion.project_id == project_id,
+        BlueprintSuggestion.session_id == session_id,
         BlueprintSuggestion.status == "pending",
     )
-    if session_id is not None:
-        stmt = stmt.where(BlueprintSuggestion.session_id == session_id)
     stmt = stmt.order_by(BlueprintSuggestion.created_at.asc())
     result = await db.execute(stmt)
     return list(result.scalars().all())
@@ -630,13 +613,13 @@ async def list_pending_suggestions(
 
 async def _get_pending_suggestion(
     suggestion_id: str,
-    project_id: str,
+    session_id: str,
     db: AsyncSession,
 ) -> BlueprintSuggestion | None:
     result = await db.execute(
         select(BlueprintSuggestion).where(
             BlueprintSuggestion.id == suggestion_id,
-            BlueprintSuggestion.project_id == project_id,
+            BlueprintSuggestion.session_id == session_id,
         )
     )
     return result.scalar_one_or_none()
@@ -644,7 +627,7 @@ async def _get_pending_suggestion(
 
 async def accept_suggestion(
     suggestion_id: str,
-    project_id: str,
+    session_id: str,
     user_id: str,
     db: AsyncSession,
     edited_content: str | None = None,
@@ -666,7 +649,7 @@ async def accept_suggestion(
     """
     from .blueprint_merge import _normalize, split_bullets
 
-    suggestion = await _get_pending_suggestion(suggestion_id, project_id, db)
+    suggestion = await _get_pending_suggestion(suggestion_id, session_id, db)
     if suggestion is None or suggestion.status != "pending":
         return None
 
@@ -677,7 +660,7 @@ async def accept_suggestion(
         # bullet, plus the new bullet. Going through mode='replace' lets
         # update_section's detect_removed catch the dropped bullet and add
         # it to iteration.removed_bullets so the agent won't re-emit it.
-        current = await get_or_create_blueprint(project_id, db)
+        current = await get_or_create_blueprint(session_id, db)
         section_text = current.content.get(suggestion.section) or ""
         target_norm = _normalize(suggestion.supersedes_bullet)
         kept = [raw for raw, norm in split_bullets(section_text) if norm != target_norm]
@@ -686,25 +669,25 @@ async def accept_suggestion(
         # subsequent 'replace' write).
         new_section = "\n".join(kept + [final_content.strip()])
         snapshot = await update_section(
-            project_id,
+            session_id,
             suggestion.section,
             new_section,
             "ai_extraction",
             db,
-            session_id=suggestion.session_id,
             source="ai_inferred",
             mode="replace",
+            from_conversation=True,
         )
     else:
         snapshot = await update_section(
-            project_id,
+            session_id,
             suggestion.section,
             final_content,
             "ai_extraction",
             db,
-            session_id=suggestion.session_id,
             source="ai_inferred",
             mode="merge",
+            from_conversation=True,
         )
 
     suggestion.status = "accepted"
@@ -719,12 +702,12 @@ async def accept_suggestion(
 
 async def reject_suggestion(
     suggestion_id: str,
-    project_id: str,
+    session_id: str,
     user_id: str,
     db: AsyncSession,
 ) -> BlueprintSuggestion | None:
     """Mark a pending suggestion as rejected — no blueprint change."""
-    suggestion = await _get_pending_suggestion(suggestion_id, project_id, db)
+    suggestion = await _get_pending_suggestion(suggestion_id, session_id, db)
     if suggestion is None or suggestion.status != "pending":
         return None
     suggestion.status = "rejected"
@@ -736,11 +719,10 @@ async def reject_suggestion(
 
 
 async def bulk_accept_section(
-    project_id: str,
+    session_id: str,
     section: str,
     user_id: str,
     db: AsyncSession,
-    session_id: str | None = None,
 ) -> tuple[list[BlueprintSuggestion], BlueprintSnapshot | None]:
     """Accept all pending suggestions for one section in a single merged
     update. Cuts down WS noise and snapshot churn when the user clicks
@@ -750,7 +732,7 @@ async def bulk_accept_section(
     only if there were zero pending suggestions to accept.
     """
     stmt = select(BlueprintSuggestion).where(
-        BlueprintSuggestion.project_id == project_id,
+        BlueprintSuggestion.session_id == session_id,
         BlueprintSuggestion.status == "pending",
         BlueprintSuggestion.section == section,
     )
@@ -768,14 +750,14 @@ async def bulk_accept_section(
     # removed.
     combined = "\n".join((s.edited_content or s.content) for s in pending)
     snapshot = await update_section(
-        project_id,
+        session_id,
         section,
         combined,
         "ai_extraction",
         db,
-        session_id=session_id,
         source="ai_inferred",
         mode="merge",
+        from_conversation=True,
     )
 
     now = datetime.now(UTC)

@@ -13,10 +13,10 @@ EMPTY_BLUEPRINT = {
 
 
 async def test_get_blueprint_creates_initial(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
-    resp = await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["version_number"] == 1
@@ -24,15 +24,15 @@ async def test_get_blueprint_creates_initial(client, auth_headers):
 
 
 async def test_update_blueprint_section(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     # Get initial blueprint
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
 
     # Update a section
     resp = await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "We are building a planning platform"},
         headers=auth_headers,
     )
@@ -42,39 +42,39 @@ async def test_update_blueprint_section(client, auth_headers):
 
 
 async def test_list_blueprint_snapshots(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js + FastAPI"},
         headers=auth_headers,
     )
 
-    resp = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()) == 2
 
 
 async def test_restore_blueprint_snapshot(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     # Create initial + update
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js + FastAPI"},
         headers=auth_headers,
     )
 
     # Get snapshots — list returns newest-first; pick v1 by version_number
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     v1_id = next(s["id"] for s in snapshots.json() if s["version_number"] == 1)
 
     # Restore v1
-    resp = await client.post(f"/api/projects/{project_id}/blueprint/restore/{v1_id}", headers=auth_headers)
+    resp = await client.post(f"/api/sessions/{session_id}/blueprint/restore/{v1_id}", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["content"]["tech_stack"] == ""  # Restored to empty
     assert resp.json()["version_number"] == 3  # New version created
@@ -87,12 +87,12 @@ async def test_dispatch_event_called_on_blueprint_iteration(client, auth_headers
     """dispatch_event is called with blueprint_iteration when a new iteration is created."""
     from unittest.mock import AsyncMock, patch
 
-    proj = await client.post("/api/projects", json={"name": "Iter Test"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "Iter Test"}, headers=auth_headers)
+    session_id = proj.json()["id"]
 
     with patch("src.app.routers.blueprints.dispatch_event", new_callable=AsyncMock) as mock_dispatch:
         resp = await client.post(
-            f"/api/projects/{project_id}/iterations",
+            f"/api/sessions/{session_id}/iterations",
             json={},
             headers=auth_headers,
         )
@@ -112,16 +112,16 @@ async def test_list_snapshots_includes_label_and_changed_sections(client, auth_h
     """The list response carries a resolved author label and the slugs the
     snapshot itself changed (relative to its predecessor). This matches what
     the expanded diff view shows so the chip and the diff stay consistent."""
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js"},
         headers=auth_headers,
     )
 
-    resp = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    resp = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     assert resp.status_code == 200
     rows = resp.json()
     # Newest-first.
@@ -141,18 +141,18 @@ async def test_list_snapshots_includes_label_and_changed_sections(client, auth_h
 
 
 async def test_list_snapshots_paginates_with_before_version(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     for i in range(4):
         await client.patch(
-            f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+            f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
             json={"content": f"v{i}"},
             headers=auth_headers,
         )
 
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots",
+        f"/api/sessions/{session_id}/blueprint/snapshots",
         params={"limit": 2},
         headers=auth_headers,
     )
@@ -161,7 +161,7 @@ async def test_list_snapshots_paginates_with_before_version(client, auth_headers
 
     smallest = min(r["version_number"] for r in page1)
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots",
+        f"/api/sessions/{session_id}/blueprint/snapshots",
         params={"limit": 10, "before_version": smallest},
         headers=auth_headers,
     )
@@ -171,20 +171,20 @@ async def test_list_snapshots_paginates_with_before_version(client, auth_headers
 
 
 async def test_get_snapshot_detail_returns_content_and_label(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- React"},
         headers=auth_headers,
     )
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     snap_id = snapshots.json()[0]["id"]
 
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots/{snap_id}",
+        f"/api/sessions/{session_id}/blueprint/snapshots/{snap_id}",
         headers=auth_headers,
     )
     assert resp.status_code == 200
@@ -197,27 +197,27 @@ async def test_get_snapshot_detail_returns_content_and_label(client, auth_header
 
 
 async def test_snapshot_diff_against_current_returns_only_changed_sections(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     # v2 — set tech_stack
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js"},
         headers=auth_headers,
     )
     # v3 — set ui_ux
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/ui_ux",
+        f"/api/sessions/{session_id}/blueprint/sections/ui_ux",
         json={"content": "Dark mode"},
         headers=auth_headers,
     )
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     v1 = next(s for s in snapshots.json() if s["version_number"] == 1)
 
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots/{v1['id']}/diff",
+        f"/api/sessions/{session_id}/blueprint/snapshots/{v1['id']}/diff",
         params={"against": "current"},
         headers=auth_headers,
     )
@@ -238,16 +238,16 @@ async def test_restore_blocked_on_locked_iteration(client, auth_headers, db_engi
 
     from src.app.models.blueprint import BlueprintIteration
 
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js"},
         headers=auth_headers,
     )
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     v1_id = next(s["id"] for s in snapshots.json() if s["version_number"] == 1)
 
     # Lock the iteration directly via the DB.
@@ -257,7 +257,7 @@ async def test_restore_blocked_on_locked_iteration(client, auth_headers, db_engi
             __import__("sqlalchemy")
             .select(BlueprintIteration)
             .where(
-                BlueprintIteration.project_id == project_id,
+                BlueprintIteration.session_id == session_id,
             )
         )
         it = result.scalar_one()
@@ -265,7 +265,7 @@ async def test_restore_blocked_on_locked_iteration(client, auth_headers, db_engi
         await session.commit()
 
     resp = await client.post(
-        f"/api/projects/{project_id}/blueprint/restore/{v1_id}",
+        f"/api/sessions/{session_id}/blueprint/restore/{v1_id}",
         headers=auth_headers,
     )
     assert resp.status_code == 400
@@ -277,25 +277,25 @@ async def test_restore_broadcasts_blueprint_update_per_changed_section(client, a
     a restore so they refresh their local state immediately."""
     from src.app.ws.manager import manager
 
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "T"},
         headers=auth_headers,
     )
     session_id = sess_resp.json()["id"]
 
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     # v2 — set tech_stack
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js"},
         headers=auth_headers,
     )
     # v3 — set ui_ux
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/ui_ux",
+        f"/api/sessions/{session_id}/blueprint/sections/ui_ux",
         json={"content": "Dark mode"},
         headers=auth_headers,
     )
@@ -313,13 +313,13 @@ async def test_restore_broadcasts_blueprint_update_per_changed_section(client, a
     manager.internal_watchers[session_id].append(fake)
     try:
         snapshots = await client.get(
-            f"/api/projects/{project_id}/blueprint/snapshots",
+            f"/api/sessions/{session_id}/blueprint/snapshots",
             headers=auth_headers,
         )
         v1_id = next(s["id"] for s in snapshots.json() if s["version_number"] == 1)
 
         resp = await client.post(
-            f"/api/projects/{project_id}/blueprint/restore/{v1_id}",
+            f"/api/sessions/{session_id}/blueprint/restore/{v1_id}",
             headers=auth_headers,
         )
         assert resp.status_code == 200
@@ -341,11 +341,11 @@ async def test_restore_clears_removed_bullets_and_sets_user_author(client, auth_
 
     from src.app.models.blueprint import BlueprintIteration
 
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- React\n- Node"},
         headers=auth_headers,
     )
@@ -357,18 +357,18 @@ async def test_restore_clears_removed_bullets_and_sets_user_author(client, auth_
             __import__("sqlalchemy")
             .select(BlueprintIteration)
             .where(
-                BlueprintIteration.project_id == project_id,
+                BlueprintIteration.session_id == session_id,
             )
         )
         it = result.scalar_one()
         it.removed_bullets = {"tech_stack": ["vue frontend"]}
         await session.commit()
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     v1_id = next(s["id"] for s in snapshots.json() if s["version_number"] == 1)
 
     resp = await client.post(
-        f"/api/projects/{project_id}/blueprint/restore/{v1_id}",
+        f"/api/sessions/{session_id}/blueprint/restore/{v1_id}",
         headers=auth_headers,
     )
     assert resp.status_code == 200
@@ -380,7 +380,7 @@ async def test_restore_clears_removed_bullets_and_sets_user_author(client, auth_
             __import__("sqlalchemy")
             .select(BlueprintIteration)
             .where(
-                BlueprintIteration.project_id == project_id,
+                BlueprintIteration.session_id == session_id,
             )
         )
         it = result.scalar_one()
@@ -389,27 +389,27 @@ async def test_restore_clears_removed_bullets_and_sets_user_author(client, auth_
     # The new snapshot must NOT be attributed to "system" — it should carry
     # a real user UUID. The list endpoint resolves that to a label that's
     # different from the raw value.
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     latest = snapshots.json()[0]
     assert latest["created_by"] not in ("system", "system_revert", "ai_extraction")
     assert latest["created_by_label"]
 
 
 async def test_snapshot_diff_against_previous(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "Next.js"},
         headers=auth_headers,
     )
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     latest_id = snapshots.json()[0]["id"]
 
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots/{latest_id}/diff",
+        f"/api/sessions/{session_id}/blueprint/snapshots/{latest_id}/diff",
         params={"against": "previous"},
         headers=auth_headers,
     )
@@ -421,15 +421,15 @@ async def test_snapshot_diff_against_previous(client, auth_headers):
 
 
 async def test_blueprint_share_issue_and_revoke(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
 
-    iters = await client.get(f"/api/projects/{project_id}/iterations", headers=auth_headers)
+    iters = await client.get(f"/api/sessions/{session_id}/iterations", headers=auth_headers)
     iter_id = iters.json()[0]["id"]
 
     enable = await client.post(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     assert enable.status_code == 200
@@ -440,14 +440,14 @@ async def test_blueprint_share_issue_and_revoke(client, auth_headers):
 
     # Idempotent — re-enabling returns the same token
     enable_again = await client.post(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     assert enable_again.json()["share_token"] == token
 
     # Revoke — token preserved, share_enabled flipped off
     revoke = await client.delete(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     assert revoke.status_code == 200
@@ -461,14 +461,14 @@ async def test_public_blueprint_404_when_token_unknown(client):
 
 
 async def test_public_blueprint_410_when_sharing_revoked(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
-    iters = await client.get(f"/api/projects/{project_id}/iterations", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
+    iters = await client.get(f"/api/sessions/{session_id}/iterations", headers=auth_headers)
     iter_id = iters.json()[0]["id"]
 
     enabled = await client.post(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     token = enabled.json()["share_token"]
@@ -477,7 +477,7 @@ async def test_public_blueprint_410_when_sharing_revoked(client, auth_headers):
     assert ok.status_code == 200
 
     await client.delete(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     revoked = await client.get(f"/api/public/blueprint/{token}")
@@ -487,19 +487,19 @@ async def test_public_blueprint_410_when_sharing_revoked(client, auth_headers):
 
 
 async def test_public_blueprint_returns_content_and_provenance(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- Next.js\n- Postgres"},
         headers=auth_headers,
     )
 
-    iters = await client.get(f"/api/projects/{project_id}/iterations", headers=auth_headers)
+    iters = await client.get(f"/api/sessions/{session_id}/iterations", headers=auth_headers)
     iter_id = iters.json()[0]["id"]
     enabled = await client.post(
-        f"/api/projects/{project_id}/blueprint-iterations/{iter_id}/share",
+        f"/api/sessions/{session_id}/blueprint-iterations/{iter_id}/share",
         headers=auth_headers,
     )
     token = enabled.json()["share_token"]
@@ -515,29 +515,29 @@ async def test_public_blueprint_returns_content_and_provenance(client, auth_head
 
 
 async def test_blueprint_export_markdown_round_trips(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "Mira"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "Mira"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/project_overview",
+        f"/api/sessions/{session_id}/blueprint/sections/project_overview",
         json={"content": "A planning platform"},
         headers=auth_headers,
     )
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- Next.js\n- FastAPI"},
         headers=auth_headers,
     )
 
     resp = await client.get(
-        f"/api/projects/{project_id}/blueprint/export.md",
+        f"/api/sessions/{session_id}/blueprint/export.md",
         headers=auth_headers,
     )
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/markdown")
     body = resp.text
     assert "# Mira" in body
-    assert "## Project Overview" in body
+    assert "## Session Overview" in body
     assert "A planning platform" in body
     assert "## Tech Stack" in body
     assert "- Next.js" in body
@@ -551,10 +551,10 @@ async def test_section_completed_broadcast_when_section_crosses_threshold(client
     WS event so the in-session blueprint panel can flash its checkmark."""
     from src.app.ws.manager import manager
 
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "T"},
         headers=auth_headers,
     )
@@ -580,7 +580,7 @@ async def test_section_completed_broadcast_when_section_crosses_threshold(client
             "real-time audio/video, Resend for email."
         )
         await client.patch(
-            f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+            f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
             json={"content": rich},
             headers=auth_headers,
         )
@@ -599,10 +599,10 @@ async def test_section_completed_does_not_refire_for_already_complete_section(cl
     celebration event — completion is a one-shot signal per crossing."""
     from src.app.ws.manager import manager
 
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess_resp = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "T"},
         headers=auth_headers,
     )
@@ -617,7 +617,7 @@ async def test_section_completed_does_not_refire_for_already_complete_section(cl
     # Bring tech_stack above the threshold before we start spying so the
     # first crossing event doesn't count for this test.
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": rich},
         headers=auth_headers,
     )
@@ -635,7 +635,7 @@ async def test_section_completed_does_not_refire_for_already_complete_section(cl
     try:
         # Second edit — still above threshold; should NOT emit section_completed.
         await client.patch(
-            f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+            f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
             json={"content": rich + " Sentry for error tracking."},
             headers=auth_headers,
         )
@@ -651,22 +651,22 @@ async def test_section_completed_does_not_refire_for_already_complete_section(cl
 
 
 async def test_user_edit_records_bullet_level_provenance(client, auth_headers):
-    proj = await client.post("/api/projects", json={"name": "P"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "P"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
     await client.patch(
-        f"/api/projects/{project_id}/blueprint/sections/tech_stack",
+        f"/api/sessions/{session_id}/blueprint/sections/tech_stack",
         json={"content": "- React\n- Postgres"},
         headers=auth_headers,
     )
 
     snapshots = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots",
+        f"/api/sessions/{session_id}/blueprint/snapshots",
         headers=auth_headers,
     )
     latest_id = snapshots.json()[0]["id"]
     detail = await client.get(
-        f"/api/projects/{project_id}/blueprint/snapshots/{latest_id}",
+        f"/api/sessions/{session_id}/blueprint/snapshots/{latest_id}",
         headers=auth_headers,
     )
     assert detail.status_code == 200
@@ -680,19 +680,19 @@ async def test_user_edit_records_bullet_level_provenance(client, auth_headers):
 async def test_iteration_patch_round_trips_plan_link(client, auth_headers):
     """PATCHing yeaboi_session_id stores the link, stamps plan_generated_at
     server-side, and the iterations list returns all three plan fields."""
-    proj = await client.post("/api/projects", json={"name": "Plan Link"}, headers=auth_headers)
-    project_id = proj.json()["id"]
-    await client.get(f"/api/projects/{project_id}/blueprint", headers=auth_headers)
-    iters = await client.get(f"/api/projects/{project_id}/iterations", headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "Plan Link"}, headers=auth_headers)
+    session_id = proj.json()["id"]
+    await client.get(f"/api/sessions/{session_id}/blueprint", headers=auth_headers)
+    iters = await client.get(f"/api/sessions/{session_id}/iterations", headers=auth_headers)
     iter_id = iters.json()[0]["id"]
     assert iters.json()[0]["yeaboi_session_id"] is None
     assert iters.json()[0]["plan_generated_at"] is None
 
-    snapshots = await client.get(f"/api/projects/{project_id}/blueprint/snapshots", headers=auth_headers)
+    snapshots = await client.get(f"/api/sessions/{session_id}/blueprint/snapshots", headers=auth_headers)
     snapshot_id = snapshots.json()[0]["id"]
 
     resp = await client.patch(
-        f"/api/projects/{project_id}/iterations/{iter_id}",
+        f"/api/sessions/{session_id}/iterations/{iter_id}",
         json={"yeaboi_session_id": "session-abc123", "plan_source_snapshot_id": snapshot_id},
         headers=auth_headers,
     )
@@ -704,7 +704,7 @@ async def test_iteration_patch_round_trips_plan_link(client, auth_headers):
 
     # Re-generation overwrites the pointer and refreshes the stamp.
     resp = await client.patch(
-        f"/api/projects/{project_id}/iterations/{iter_id}",
+        f"/api/sessions/{session_id}/iterations/{iter_id}",
         json={"yeaboi_session_id": "session-def456"},
         headers=auth_headers,
     )
@@ -712,7 +712,7 @@ async def test_iteration_patch_round_trips_plan_link(client, auth_headers):
 
     # A label-only PATCH leaves the plan link untouched.
     resp = await client.patch(
-        f"/api/projects/{project_id}/iterations/{iter_id}",
+        f"/api/sessions/{session_id}/iterations/{iter_id}",
         json={"label": "v1-renamed"},
         headers=auth_headers,
     )

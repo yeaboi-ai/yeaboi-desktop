@@ -13,7 +13,7 @@ from ..db import get_db
 from ..deps import get_current_user, require_admin
 from ..logging_config import propagate_context
 from ..models.board import Board, BoardColumn, Card
-from ..models.project import Project
+from ..models.session import Session
 from ..models.user import User
 from ..orchestrator.runner import is_running, start_orchestrator, stop_orchestrator
 from ..orchestrator.state_machine import can_transition
@@ -27,31 +27,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["orchestrator"])
 
 
-async def _verify_project_access(project_id: str, user: User, db: AsyncSession) -> Project:
-    result = await db.execute(select(Project).where(Project.id == project_id, Project.owner_id == user.id))
+async def _verify_project_access(session_id: str, user: User, db: AsyncSession) -> Session:
+    result = await db.execute(select(Session).where(Session.id == session_id, Session.owner_id == user.id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
     return project
 
 
 # ─── Orchestrator Lifecycle ──────────────────────────────────────────────────
 
 
-@router.post("/api/projects/{project_id}/orchestrator/start", response_model=OrchestratorStatusResponse)
+@router.post("/api/sessions/{session_id}/orchestrator/start", response_model=OrchestratorStatusResponse)
 async def orchestrator_start(
     request: Request,
-    project_id: str,
+    session_id: str,
     body: OrchestratorStartRequest,
     background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> OrchestratorStatusResponse:
     """Start the orchestrator polling loop for a project. Admin only."""
-    project = await _verify_project_access(project_id, user, db)
+    project = await _verify_project_access(session_id, user, db)
 
-    if not is_running(project_id):
-        background_tasks.add_task(propagate_context(start_orchestrator, project_id))
+    if not is_running(session_id):
+        background_tasks.add_task(propagate_context(start_orchestrator, session_id))
 
     await log_audit(
         db,
@@ -59,45 +59,45 @@ async def orchestrator_start(
         user_id=user.id,
         action="start",
         resource_type="orchestrator",
-        resource_id=project_id,
+        resource_id=session_id,
         ip_address=get_client_ip(request),
     )
     await db.commit()
-    return OrchestratorStatusResponse(running=True, project_id=project_id)
+    return OrchestratorStatusResponse(running=True, session_id=session_id)
 
 
-@router.post("/api/projects/{project_id}/orchestrator/stop", response_model=OrchestratorStatusResponse)
+@router.post("/api/sessions/{session_id}/orchestrator/stop", response_model=OrchestratorStatusResponse)
 async def orchestrator_stop(
     request: Request,
-    project_id: str,
+    session_id: str,
     user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ) -> OrchestratorStatusResponse:
     """Stop the orchestrator polling loop for a project. Admin only."""
-    project = await _verify_project_access(project_id, user, db)
-    stop_orchestrator(project_id)
+    project = await _verify_project_access(session_id, user, db)
+    stop_orchestrator(session_id)
     await log_audit(
         db,
         org_id=project.org_id,
         user_id=user.id,
         action="stop",
         resource_type="orchestrator",
-        resource_id=project_id,
+        resource_id=session_id,
         ip_address=get_client_ip(request),
     )
     await db.commit()
-    return OrchestratorStatusResponse(running=False, project_id=project_id)
+    return OrchestratorStatusResponse(running=False, session_id=session_id)
 
 
-@router.get("/api/projects/{project_id}/orchestrator/status", response_model=OrchestratorStatusResponse)
+@router.get("/api/sessions/{session_id}/orchestrator/status", response_model=OrchestratorStatusResponse)
 async def orchestrator_status(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> OrchestratorStatusResponse:
     """Get the current running state of the orchestrator for a project."""
-    await _verify_project_access(project_id, user, db)
-    return OrchestratorStatusResponse(running=is_running(project_id), project_id=project_id)
+    await _verify_project_access(session_id, user, db)
+    return OrchestratorStatusResponse(running=is_running(session_id), session_id=session_id)
 
 
 # ─── Agent Approval ──────────────────────────────────────────────────────────
@@ -123,7 +123,7 @@ async def agent_approve(
     board_result = await db.execute(select(Board).where(Board.id == current_column.board_id))
     board = board_result.scalar_one()
 
-    project_result = await db.execute(select(Project).where(Project.id == board.project_id))
+    project_result = await db.execute(select(Session).where(Session.id == board.session_id))
     project = project_result.scalar_one()
 
     if body.action == "approve":
@@ -250,14 +250,14 @@ async def agent_retry(
     return card
 
 
-@router.post("/api/projects/{project_id}/orchestrator/retry-all")
+@router.post("/api/sessions/{session_id}/orchestrator/retry-all")
 async def retry_all_stalled(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Reset all stalled cards (reviewing/implementing for 10+ min) back to pending."""
-    result = await db.execute(select(Board).where(Board.project_id == project_id))
+    result = await db.execute(select(Board).where(Board.session_id == session_id))
     board = result.scalar_one_or_none()
     if not board:
         raise HTTPException(status_code=404)
@@ -288,10 +288,10 @@ async def retry_all_stalled(
     await db.commit()
 
     # Auto-start orchestrator
-    if stalled and not is_running(project_id):
+    if stalled and not is_running(session_id):
         import asyncio
 
-        asyncio.create_task(start_orchestrator(project_id))
+        asyncio.create_task(start_orchestrator(session_id))
 
     return {"reset": len(stalled)}
 
@@ -321,7 +321,7 @@ async def get_pr_diff(
     board_result = await db.execute(select(Board).where(Board.id == column.board_id))
     b = board_result.scalar_one()
 
-    proj_result = await db.execute(select(Project).where(Project.id == b.project_id))
+    proj_result = await db.execute(select(Session).where(Session.id == b.session_id))
     project = proj_result.scalar_one()
 
     if not project.repo_url:
@@ -375,7 +375,7 @@ async def _get_card_for_user(card_id: str, user: User, db: AsyncSession) -> Card
         select(Card)
         .join(BoardColumn, BoardColumn.id == Card.column_id)
         .join(Board, Board.id == BoardColumn.board_id)
-        .join(Project, Project.id == Board.project_id)
-        .where(Card.id == card_id, Project.owner_id == user.id)
+        .join(Session, Session.id == Board.session_id)
+        .where(Card.id == card_id, Session.owner_id == user.id)
     )
     return result.scalar_one_or_none()

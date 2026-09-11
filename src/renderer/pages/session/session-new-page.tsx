@@ -202,7 +202,7 @@ export default function NewSessionPage() {
   // Fetch session suggestions and iteration status on mount
   useEffect(() => {
     if (!ready) return;
-    authFetch(`/api/projects/${projectId}/session-suggestions`)
+    authFetch(`/api/sessions/${projectId}/session-suggestions`)
       .then(async (resp) => {
         if (resp.ok) {
           const data = await resp.json();
@@ -227,7 +227,7 @@ export default function NewSessionPage() {
       })
       .catch(() => {});
     // Check if all iterations are locked
-    authFetch(`/api/projects/${projectId}/iterations`)
+    authFetch(`/api/sessions/${projectId}/iterations`)
       .then(async (resp) => {
         if (resp.ok) {
           const iters = await resp.json();
@@ -247,7 +247,7 @@ export default function NewSessionPage() {
       clearTimeout(detectTimer.current);
       detectTimer.current = setTimeout(async () => {
         try {
-          const resp = await authFetch(`/api/projects/${projectId}/detect-iteration-type`, {
+          const resp = await authFetch(`/api/sessions/${projectId}/detect-iteration-type`, {
             method: 'POST',
             body: JSON.stringify({ text }),
           });
@@ -273,7 +273,7 @@ export default function NewSessionPage() {
     // Update the active iteration's type if one was selected
     if (selectedType && coverage?.hasBlueprint) {
       await authFetch(
-        `/api/projects/${projectId}/iterations/${(await authFetch(`/api/projects/${projectId}/iterations`).then((r) => r.json())).find((i: { status: string }) => i.status === 'planning')?.id}`,
+        `/api/sessions/${projectId}/iterations/${(await authFetch(`/api/sessions/${projectId}/iterations`).then((r) => r.json())).find((i: { status: string }) => i.status === 'planning')?.id}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -287,7 +287,7 @@ export default function NewSessionPage() {
     // in backend/src/app/schemas/session.py. Free-form mode sends an empty
     // sections list so the iteration-type default applies (no override).
     const isFreeForm = focusTarget.mode === 'free_form';
-    const resp = await authFetch(`/api/projects/${projectId}/sessions`, {
+    const resp = await authFetch(`/api/sessions/${projectId}/continuations`, {
       method: 'POST',
       body: JSON.stringify({
         initial_idea: idea || undefined,
@@ -300,7 +300,7 @@ export default function NewSessionPage() {
     });
     if (resp.ok) {
       const session = await resp.json();
-      router.push(`/projects/${projectId}/sessions/${session.id}?new=1`);
+      router.push(`/sessions/${session.id}/room?new=1`);
     } else {
       setError(`Failed to create session: ${resp.status}`);
     }
@@ -313,7 +313,7 @@ export default function NewSessionPage() {
       // Check relevance if user provided an idea (skip if it still carries the
       // project description — those words were auto-populated, not typed here)
       if (idea.trim() && !carriesDescription(idea, projectDesc)) {
-        const checkResp = await authFetch(`/api/projects/${projectId}/sessions/check-relevance`, {
+        const checkResp = await authFetch(`/api/sessions/${projectId}/check-relevance`, {
           method: 'POST',
           body: JSON.stringify({ initial_idea: idea }),
         });
@@ -322,13 +322,13 @@ export default function NewSessionPage() {
           if (!relevant) {
             const proceed = await confirm({
               title: 'Off-Topic Session',
-              message: reason || "This doesn't seem related to this project.",
+              message: reason || "This doesn't seem related to this session.",
               confirmLabel: 'Continue Anyway',
-              cancelLabel: 'Create New Project',
+              cancelLabel: 'Create a new session',
               variant: 'warning',
             });
             if (!proceed) {
-              router.push('/projects');
+              router.push('/sessions');
               return;
             }
           }
@@ -348,7 +348,7 @@ export default function NewSessionPage() {
     setSuggestion(null);
     setEditing(false);
     try {
-      const resp = await authFetch('/api/projects/rewrite-idea', {
+      const resp = await authFetch('/api/sessions/rewrite-idea', {
         method: 'POST',
         body: JSON.stringify({ text: idea.trim(), project_id: projectId }),
       });
@@ -440,9 +440,7 @@ export default function NewSessionPage() {
             </p>
             {activeSessions.length > 0 && (
               <button
-                onClick={() =>
-                  router.push(`/projects/${projectId}/sessions/${activeSessions[0].id}`)
-                }
+                onClick={() => router.push(`/sessions/${activeSessions[0].id}/room`)}
                 className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-body font-medium hover:bg-primary/90 transition-colors"
               >
                 Go to active session
@@ -461,9 +459,7 @@ export default function NewSessionPage() {
                 You have {activeSessions.length} active release
                 {activeSessions.length > 1 ? 's' : ''}.{' '}
                 <button
-                  onClick={() =>
-                    router.push(`/projects/${projectId}/sessions/${activeSessions[0].id}`)
-                  }
+                  onClick={() => router.push(`/sessions/${activeSessions[0].id}/room`)}
                   className="text-primary hover:text-primary/80 underline"
                 >
                   Resume {activeSessions[0].title || activeSessions[0].release_name || 'session'}

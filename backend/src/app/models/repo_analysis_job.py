@@ -18,14 +18,14 @@ from .base import Base, TimestampMixin, gen_uuid
 class RepoAnalysisJob(TimestampMixin, Base):
     __tablename__ = "repo_analysis_jobs"
     __table_args__ = (
-        # We look these up by (project_id, status, completed_at) when checking
+        # We look these up by (session_id, status, completed_at) when checking
         # TTL — the index keeps that path cheap even with many historic rows.
-        Index("ix_repo_analysis_jobs_project_status", "project_id", "status"),
+        Index("ix_repo_analysis_jobs_project_status", "session_id", "status"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    session_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False
     )
     org_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id"), nullable=False)
     # 'pending' | 'running' | 'complete' | 'failed'

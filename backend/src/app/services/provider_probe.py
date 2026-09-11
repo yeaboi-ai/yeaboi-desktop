@@ -65,7 +65,7 @@ async def _probe_openai_compat(api_key: str, base_url: str | None, model: str) -
     )
 
 
-def _build_probes_for_settings(settings) -> dict[str, "asyncio.coroutine"]:
+def _build_probes_for_settings(settings) -> dict[str, asyncio.coroutine]:
     """Map provider name → coroutine factory for that provider's probe.
 
     Only includes providers we have a platform key for — others can't be

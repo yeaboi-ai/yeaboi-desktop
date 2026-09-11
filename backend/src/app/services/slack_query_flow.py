@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_session_factory
 from ..models.organization import Team
-from ..models.project import Project
 from ..models.session import Session
 from .connectors.slack_notifier import _load_slack_token, _post_to_channel
 from .slack_team_resolver import resolve_team_from_channel
@@ -255,7 +254,7 @@ async def handle_session_create(
     """Handle `/planr session <title>` — create a session or render picker."""
     from ..config import get_settings
     from ..models.session import Participant
-    from .slack_templates import over_project_limit_block, project_picker_block, session_created_block
+    from .slack_templates import over_session_limit_block, session_created_block, session_picker_block
 
     title = (fields.get("rest") or "").strip()
     if not title:
@@ -275,27 +274,30 @@ async def handle_session_create(
         candidates = await list_candidate_projects(team_id, db, limit=11)  # 11 to detect ">10"
         if not candidates:
             return _ephemeral(
-                "No projects in your org yet. Create one in the web app first."
+                "No sessions in your org yet. Start one in the web app first."
             )
         if len(candidates) > 10:
             app_url = get_settings().app_url.rstrip("/")
             return {
                 "response_type": "ephemeral",
-                "blocks": over_project_limit_block(projects_url=f"{app_url}/projects"),
+                "blocks": over_session_limit_block(sessions_url=f"{app_url}/sessions"),
             }
         return {
             "response_type": "ephemeral",
-            "blocks": project_picker_block(
+            "blocks": session_picker_block(
                 title=title,
-                projects=[{"id": p.id, "name": p.name} for p in candidates],
+                sessions=[{"id": p.id, "name": p.name} for p in candidates],
             ),
         }
 
-    # Happy path: create the session
+    # Happy path: a new session, seeded from the one it follows.
     session = Session(
-        project_id=project.id,
         org_id=team.org_id,
         title=title,
+        name=title or project.name,
+        team_id=project.team_id,
+        owner_id=project.owner_id,
+        continued_from_id=project.id,
     )
     db.add(session)
     await db.flush()
@@ -305,13 +307,13 @@ async def handle_session_create(
     await db.refresh(session)
 
     app_url = get_settings().app_url.rstrip("/")
-    session_url = f"{app_url}/projects/{project.id}/sessions/{session.id}"
+    session_url = f"{app_url}/sessions/{session.id}"
     logger.info(
         "Slack session created",
         extra={
             "team_id": team.id,
-            "project_id": project.id,
             "session_id": session.id,
+            "continued_from_id": project.id,
             "channel_id": fields.get("channel_id"),
             "surface": "slash",
         },
@@ -321,13 +323,13 @@ async def handle_session_create(
         "blocks": session_created_block(
             slack_user_id=fields.get("user_id", ""),
             title=title,
-            project_name=project.name,
+            continues_from=project.name,
             session_url=session_url,
         ),
     }
 
 
-async def resolve_project(team_id: str, db: AsyncSession) -> Project | None:
+async def resolve_project(team_id: str, db: AsyncSession) -> Session | None:
     """Return the team's current project, or None if ambiguous/empty.
 
     None means the caller should show a picker (slash command) or ask the LLM
@@ -338,7 +340,7 @@ async def resolve_project(team_id: str, db: AsyncSession) -> Project | None:
       - no active projects in the org
       - multiple active projects and no valid stamp to disambiguate
 
-    Returns a Project when:
+    Returns a Session when:
       - team has a valid stamped project (exists, not soft-deleted, same org)
       - org has exactly one active project
 
@@ -353,14 +355,14 @@ async def resolve_project(team_id: str, db: AsyncSession) -> Project | None:
         )
         return None
 
-    if team.last_viewed_project_id:
+    if team.last_viewed_session_id:
         project = (
-            await db.execute(select(Project).where(Project.id == team.last_viewed_project_id))
+            await db.execute(select(Session).where(Session.id == team.last_viewed_session_id))
         ).scalar_one_or_none()
         if project and project.deleted_at is None and project.org_id == team.org_id:
             return project
         # stale stamp — clear it
-        team.last_viewed_project_id = None
+        team.last_viewed_session_id = None
         await db.flush()
         logger.warning(
             "Slack session project fallback",
@@ -369,9 +371,9 @@ async def resolve_project(team_id: str, db: AsyncSession) -> Project | None:
 
     projects = (
         await db.execute(
-            select(Project)
-            .where(Project.org_id == team.org_id, Project.deleted_at.is_(None))
-            .order_by(Project.updated_at.desc())
+            select(Session)
+            .where(Session.org_id == team.org_id, Session.deleted_at.is_(None))
+            .order_by(Session.updated_at.desc())
             .limit(2)  # only need to distinguish 0 / 1 / many; picker uses list_candidate_projects
         )
     ).scalars().all()
@@ -391,15 +393,15 @@ async def resolve_project(team_id: str, db: AsyncSession) -> Project | None:
     return None
 
 
-async def list_candidate_projects(team_id: str, db: AsyncSession, limit: int = 10) -> list[Project]:
+async def list_candidate_projects(team_id: str, db: AsyncSession, limit: int = 10) -> list[Session]:
     """Return top-N candidate projects for the picker (most recently updated)."""
     team = (await db.execute(select(Team).where(Team.id == team_id))).scalar_one_or_none()
     if team is None:
         return []
     result = await db.execute(
-        select(Project)
-        .where(Project.org_id == team.org_id, Project.deleted_at.is_(None))
-        .order_by(Project.updated_at.desc())
+        select(Session)
+        .where(Session.org_id == team.org_id, Session.deleted_at.is_(None))
+        .order_by(Session.updated_at.desc())
         .limit(limit)
     )
     return list(result.scalars().all())

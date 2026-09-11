@@ -89,7 +89,7 @@ ARCHETYPES: dict[str, list[ArchetypeScreen]] = {
     ],
     "productivity-tool": [
         {"id": "inbox",        "name": "Inbox",         "intent": "Today's items + quick capture",                           "kind": "screen", "tier": "hero"},
-        {"id": "project",      "name": "Project View",  "intent": "Items grouped by project / list",                         "kind": "screen", "tier": "hero"},
+        {"id": "project",      "name": "Session View",  "intent": "Items grouped by project / list",                         "kind": "screen", "tier": "hero"},
         {"id": "item_detail",  "name": "Item Detail",   "intent": "Single task + sub-items + notes",                         "kind": "screen", "tier": "hero"},
         {"id": "calendar",     "name": "Calendar",      "intent": "Time-based view of items",                                "kind": "screen", "tier": "secondary"},
         {"id": "search",       "name": "Search",        "intent": "Find anything across projects",                           "kind": "screen", "tier": "secondary"},
@@ -108,9 +108,9 @@ ARCHETYPES: dict[str, list[ArchetypeScreen]] = {
     ],
     "developer-tool": [
         {"id": "project_list", "name": "Projects",      "intent": "List of all projects",                                    "kind": "screen", "tier": "hero"},
-        {"id": "project_detail","name":"Project Detail","intent": "Single project: deployments, env, domains",               "kind": "screen", "tier": "hero"},
+        {"id": "project_detail","name":"Session Detail","intent": "Single project: deployments, env, domains",               "kind": "screen", "tier": "hero"},
         {"id": "deployment",   "name": "Deployment",    "intent": "Build logs + status + rollback",                          "kind": "screen", "tier": "hero"},
-        {"id": "settings",     "name": "Settings",      "intent": "Project + team settings",                                 "kind": "screen", "tier": "secondary"},
+        {"id": "settings",     "name": "Settings",      "intent": "Session + team settings",                                 "kind": "screen", "tier": "secondary"},
         {"id": "billing",      "name": "Billing",       "intent": "Plan + usage + invoices",                                 "kind": "screen", "tier": "optional"},
         {"id": "login",        "name": "Login",         "intent": "OAuth (GitHub / GitLab common)",                          "kind": "screen", "tier": "secondary"},
     ],

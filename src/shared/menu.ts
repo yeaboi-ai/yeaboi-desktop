@@ -2,7 +2,7 @@
 // and shortcut. Pure, so the main process builds the menu from it and the
 // renderer's tests hold every route here registered and reachable.
 
-import { projectsHref, type Audience } from './audience';
+import { sessionsHref, type Audience } from './audience';
 
 export interface MenuPage {
   label: string;
@@ -22,16 +22,16 @@ export interface MenuCommand {
 export const PALETTE_COMMAND: MenuCommand = { label: 'Find anything…', accelerator: 'CmdOrCtrl+K' };
 
 export const FILE_PAGES: readonly MenuPage[] = [
-  { label: 'New project…', route: '/projects?new=1', accelerator: 'CmdOrCtrl+N' },
-  { label: 'New session…', route: '/sessions', accelerator: 'CmdOrCtrl+Shift+N' },
+  { label: 'New session…', route: '/sessions?new=1', accelerator: 'CmdOrCtrl+N' },
+  { label: 'New run…', route: '/runs', accelerator: 'CmdOrCtrl+Shift+N' },
 ];
 
 /** The Go menu: the rail's rows and the board, per world. */
 export function goPages(audience: Audience): readonly MenuPage[] {
   return [
     { label: 'Home', route: '/home' },
-    { label: 'Projects', route: projectsHref(audience), accelerator: 'CmdOrCtrl+P' },
-    { label: 'Sessions', route: '/sessions' },
+    { label: 'Sessions', route: sessionsHref(audience), accelerator: 'CmdOrCtrl+P' },
+    { label: 'Runs', route: '/runs' },
     { label: 'Music', route: '/music' },
     { label: 'Settings', route: '/settings', accelerator: 'CmdOrCtrl+S' },
     { label: 'Board', route: '/board', accelerator: 'CmdOrCtrl+B' },

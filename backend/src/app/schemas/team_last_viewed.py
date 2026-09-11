@@ -4,4 +4,4 @@ from pydantic import BaseModel
 
 
 class LastViewedRequest(BaseModel):
-    project_id: UUID
+    session_id: UUID

@@ -24,10 +24,6 @@ import {
 } from '@/lib/yeaboi/modes';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
-import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
-import { scopedRunBody } from '@/lib/yeaboi/project-scope';
-import { ContextSourcesPanel, type ContextDeps } from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
 import { useAudience } from '@/components/providers/audience-provider';
 
@@ -62,8 +58,6 @@ const inputClass =
 function ReportingSetupBody() {
   const router = useRouter();
   const { audience } = useAudience();
-  const scope = useProjectScope();
-  const [scopeNote, setScopeNote] = useState('');
   const [options, setOptions] = useState<ReportingOptions | null>(null);
   const [period, setPeriod] = useState('');
   const [theme, setTheme] = useState('midnight');
@@ -72,7 +66,6 @@ function ReportingSetupBody() {
   const [checked, setChecked] = useState<number[]>([]);
   const [range, setRange] = useState({ start: '', end: '' });
   const [run, setRun] = useState<ModeRunState>(emptyModeRun());
-  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -123,7 +116,6 @@ function ReportingSetupBody() {
     setRun(state);
     try {
       const body: Record<string, unknown> = { period, theme, sources, solo: audience === 'solo' };
-      if (contextDeps !== null) body.context_deps = contextDeps;
       if (period === QUARTER && sprints) {
         // Empty checks and no sprint list are different answers: with no list
         // at all the backend already handed back the calendar-quarter window.
@@ -136,21 +128,13 @@ function ReportingSetupBody() {
         body.window_start = range.start;
         body.window_end = range.end;
       }
-      // A project that cannot be scoped still gets its report, as a one-off.
-      let engineId = '';
-      setScopeNote('');
-      try {
-        engineId = await scope.engineId();
-      } catch (e) {
-        setScopeNote(`${(e as Error).message} This report is a one-off instead.`);
-      }
-      await runReport(scopedRunBody(body, engineId), (line) => {
+      await runReport(body, (line) => {
         state = reduceModeRun(state, line);
         setRun(state);
       });
       if (state.done) {
         quip('report_done');
-        router.push(engineId ? `/projects/${scope.projectId}` : '/team/reporting');
+        router.push('/team/reporting');
       }
     } catch (e) {
       setError((e as Error).message);
@@ -165,19 +149,10 @@ function ReportingSetupBody() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl text-foreground">New report</h1>
-          {scope.scoped && (
-            <div className="mt-1">
-              <ProjectScopeLine
-                name={scope.project?.name ?? 'this project'}
-                onClear={scope.clear}
-              />
-            </div>
-          )}
           <p className="text-[13px] text-muted-foreground mt-1">{options.sources.summary}</p>
-          {scopeNote && <p className="text-[12px] text-muted-foreground mt-1">{scopeNote}</p>}
         </div>
         <Link
-          href={scope.scoped ? `/projects/${scope.projectId}` : '/team/reporting'}
+          href="/team/reporting"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back
@@ -300,14 +275,6 @@ function ReportingSetupBody() {
           </div>
         </Section>
       )}
-
-      <Section title="Context">
-        <ContextSourcesPanel
-          value={contextDeps}
-          onChange={setContextDeps}
-          note="The plan source frames the report with the project's latest sprint plan."
-        />
-      </Section>
 
       <Section title="Presentation theme">
         <div className="flex flex-wrap gap-2">

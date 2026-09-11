@@ -13,13 +13,6 @@ import { callTool } from '@/lib/yeaboi/api';
 import { loadStandup } from '@/lib/yeaboi/dashboards';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
-import { ProjectScopeLine } from '@/components/yeaboi/project-scope-line';
-import { useProjectScope } from '@/hooks/yeaboi/use-project-scope';
-import {
-  ContextSourcesPanel,
-  serializeContextSpec,
-  type ContextDeps,
-} from '@/components/yeaboi/context-sources';
 import { Button } from '@/components/ui/button';
 
 interface Config {
@@ -95,10 +88,8 @@ const inputClass =
   'mt-1 w-full rounded-lg bg-secondary/40 border border-border/40 px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40';
 
 function StandupSetupBody() {
-  const scope = useProjectScope();
   const [sessionId, setSessionId] = useState('');
   const [config, setConfig] = useState<Config | null>(null);
-  const [contextDeps, setContextDeps] = useState<ContextDeps>(null);
   const [candidates, setCandidates] = useState<string[] | null>(null);
   const [owners, setOwners] = useState<{ github_owners: string[]; azdo_projects: string[] } | null>(
     null,
@@ -111,17 +102,10 @@ function StandupSetupBody() {
     loadStandup().then(
       async (dash) => {
         setSessionId(dash.session_id);
-        const envelope = await callTool<{
-          config: (Config & { context_deps?: string[] | null }) | null;
-        }>('standup_config_get', {
+        const envelope = await callTool<{ config: Config | null }>('standup_config_get', {
           session_id: dash.session_id,
         });
-        // context_deps rides sibling state: the get returns a list (or null =
-        // inherit) while the set speaks the inherit/none/csv string grammar,
-        // so it must not travel in the ...config spread.
-        const { context_deps: loadedDeps, ...loaded } = envelope.data?.config ?? {};
-        setConfig({ ...EMPTY, ...loaded });
-        setContextDeps(loadedDeps ?? null);
+        setConfig({ ...EMPTY, ...(envelope.data?.config ?? {}) });
       },
       (e: Error) => setError(e.message),
     );
@@ -169,7 +153,6 @@ function StandupSetupBody() {
     const envelope = await callTool('standup_config_set', {
       session_id: sessionId,
       ...config,
-      context_deps: serializeContextSpec(contextDeps),
     });
     setBusy('');
     if (envelope.ok) setNote('Saved.');
@@ -187,11 +170,6 @@ function StandupSetupBody() {
     <div className="space-y-4">
       <div>
         <h1 className="font-display text-2xl text-foreground">Standup setup</h1>
-        {scope.scoped && (
-          <div className="mt-1">
-            <ProjectScopeLine name={scope.project?.name ?? 'this project'} onClear={scope.clear} />
-          </div>
-        )}
         <p className="text-[13px] text-muted-foreground mt-1">
           What the standup reads, and who it reads it for.
         </p>
@@ -389,14 +367,6 @@ function StandupSetupBody() {
         </label>
       </Section>
 
-      <Section title="Context">
-        <ContextSourcesPanel
-          value={contextDeps}
-          onChange={setContextDeps}
-          note="Saved with the setup — every standup run for this session reads it."
-        />
-      </Section>
-
       {error && <Notice title="Could not save" items={[error]} />}
       {note && <p className="text-[11px] text-muted-foreground">{note}</p>}
 
@@ -405,7 +375,7 @@ function StandupSetupBody() {
           {busy === 'save' ? 'Saving…' : 'Save setup'}
         </Button>
         <Link
-          href={scope.href('/team/standup')}
+          href="/team/standup"
           className="text-[12px] text-muted-foreground hover:text-foreground"
         >
           Back to the standup

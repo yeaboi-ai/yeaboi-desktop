@@ -12,7 +12,7 @@ import { X, Trash2, Pencil, ClipboardList, FileText, Check, RotateCcw } from 'lu
 import { EditProjectDialog } from '@/components/edit-project-dialog';
 import { DashboardGrid } from '@/components/project-layout-grid';
 import { FirstRunCard } from '@/components/projects/first-run-card';
-import { RunInsidePanel } from '@/components/projects/run-inside-panel';
+import { RunLinksPanel } from '@/components/projects/run-links-panel';
 import { HiddenPanelsMenu } from '@/components/layout-toolbar';
 import { useDashboardLayout, type DashboardPanelDef } from '@/hooks/use-project-layout';
 import { DeliverablesPanel } from '@/components/deliverables/deliverables-panel';
@@ -822,7 +822,7 @@ function BlueprintSectionList({
       {sessions.length > 0 && filledSections < sections.length && (
         <div className="mt-3 pt-3 border-t border-border">
           <Link
-            href={`/projects/${projectId}/sessions/${sessions[0]?.id}`}
+            href={`/sessions/${sessions[0]?.id}/room`}
             className="text-[10px] font-body text-primary/70 hover:text-primary transition-colors"
           >
             Continue planning →
@@ -869,9 +869,7 @@ function SessionItem({
 
   const isActive = s.status === 'live' || s.status === 'lobby';
   const isCompletedView = s.status === 'completed' || s.status === 'archived';
-  const sessionHref = isCompletedView
-    ? `/projects/${projectId}/sessions/${s.id}/completed`
-    : `/projects/${projectId}/sessions/${s.id}`;
+  const sessionHref = isCompletedView ? `/sessions/${s.id}/completed` : `/sessions/${s.id}/room`;
 
   function startEdit(e: React.MouseEvent) {
     e.preventDefault();
@@ -999,7 +997,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const [project, setProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
-  // Undefined until the sessions fetch settles, the way run-inside-panel.tsx
+  // Undefined until the sessions fetch settles, the way run-links-panel.tsx
   // holds its list: a failed or slow read must not read as "none yet".
   const [sessionsRead, setSessionsRead] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1102,15 +1100,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         analyticsResp,
         engResp,
       ] = await Promise.all([
-        authFetch(`/api/projects/${id}`),
-        authFetch(`/api/projects/${id}/sessions`),
+        authFetch(`/api/sessions/${id}`),
+        authFetch(`/api/sessions/${id}/continuations`),
         authFetch('/api/team'),
-        authFetch(`/api/projects/${id}/blueprint`),
-        authFetch(`/api/board-proxy?projectId=${id}`),
-        authFetch(`/api/projects/${id}/iterations`),
-        authFetch(`/api/projects/${id}/diagrams`),
-        authFetch(`/api/analytics-proxy?endpoint=aggregate&projectId=${id}`),
-        authFetch(`/api/analytics-proxy?endpoint=engineering&projectId=${id}`),
+        authFetch(`/api/sessions/${id}/blueprint`),
+        authFetch(`/api/board-proxy?sessionId=${id}`),
+        authFetch(`/api/sessions/${id}/iterations`),
+        authFetch(`/api/sessions/${id}/diagrams`),
+        authFetch(`/api/analytics-proxy?endpoint=aggregate&sessionId=${id}`),
+        authFetch(`/api/analytics-proxy?endpoint=engineering&sessionId=${id}`),
       ]);
 
       if (!projectResp.ok) {
@@ -1214,9 +1212,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         // Cascade may have deleted other sessions too — refetch everything
         if (completingIter) {
           const [sessResp, bpResp, iterResp] = await Promise.all([
-            authFetch(`/api/projects/${id}/sessions`),
-            authFetch(`/api/projects/${id}/blueprint`),
-            authFetch(`/api/projects/${id}/iterations`),
+            authFetch(`/api/sessions/${id}/continuations`),
+            authFetch(`/api/sessions/${id}/blueprint`),
+            authFetch(`/api/sessions/${id}/iterations`),
           ]);
           if (sessResp.ok) setSessions(await sessResp.json());
           if (bpResp.ok) {
@@ -1230,7 +1228,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           }
         } else {
           setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-          const bpResp = await authFetch(`/api/projects/${id}/blueprint`);
+          const bpResp = await authFetch(`/api/sessions/${id}/blueprint`);
           if (bpResp.ok) {
             const bp = await bpResp.json();
             setBlueprint(bp.content || bp);
@@ -1260,15 +1258,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const handleDeleteProject = useCallback(async () => {
     const ok = await confirm({
-      title: 'Delete Project',
-      message: 'Delete this project and all its sessions? This cannot be undone.',
+      title: 'Delete session',
+      message: 'Delete this session and everything in it? This cannot be undone.',
       variant: 'danger',
       confirmLabel: 'Delete',
     });
     if (!ok) return;
     let resp: Response;
     try {
-      resp = await authFetch(`/api/projects/${id}`, { method: 'DELETE' });
+      resp = await authFetch(`/api/sessions/${id}`, { method: 'DELETE' });
     } catch {
       await confirm({
         title: 'Delete failed',
@@ -1280,7 +1278,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       return;
     }
     if (resp.ok || resp.status === 204) {
-      router.push('/projects');
+      router.push('/sessions');
       return;
     }
     let detail = `Delete failed with status ${resp.status}.`;
@@ -1305,7 +1303,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const status = nextStatus(project.status);
     let detail = 'The status could not be changed.';
     try {
-      const resp = await authFetch(`/api/projects/${id}`, {
+      const resp = await authFetch(`/api/sessions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -1335,7 +1333,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const references = (project.references ?? []).filter((_, i) => i !== index);
       let detail = 'The reference could not be removed.';
       try {
-        const resp = await authFetch(`/api/projects/${id}`, {
+        const resp = await authFetch(`/api/sessions/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ references }),
@@ -1363,7 +1361,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     async (attachmentId: string) => {
       let detail = 'The screenshot could not be removed.';
       try {
-        const resp = await authFetch(`/api/projects/${id}/attachments/${attachmentId}`, {
+        const resp = await authFetch(`/api/sessions/${id}/attachments/${attachmentId}`, {
           method: 'DELETE',
         });
         if (resp.ok || resp.status === 204) {
@@ -1456,7 +1454,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {/* Breadcrumb */}
         <div className="mb-8 animate-fade-in">
           <Link
-            href="/projects"
+            href="/sessions"
             className="text-xs font-body text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Projects
@@ -1482,7 +1480,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <button
                   onClick={() => setEditOpen(true)}
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-body text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
-                  title="Edit project"
+                  title="Edit session"
                 >
                   <Pencil className="w-3 h-3" />
                   Edit
@@ -1492,7 +1490,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <button
                   onClick={handleToggleStatus}
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-body text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
-                  title={isDone(project) ? 'Reopen this project' : 'Mark this project done'}
+                  title={isDone(project) ? 'Reopen this session' : 'Mark this session done'}
                 >
                   {isDone(project) ? (
                     <RotateCcw className="w-3 h-3" />
@@ -1534,7 +1532,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <button
                   onClick={handleDeleteProject}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-body text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  title="Delete project"
+                  title="Delete session"
                 >
                   <Trash2 className="w-3 h-3" />
                   Delete
@@ -1580,7 +1578,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         {firstRun ? (
           <div className="mb-10">
             <FirstRunCard projectId={project.id} canStart={project.is_own_team !== false}>
-              <RunInsidePanel project={project} />
+              <RunLinksPanel />
             </FirstRunCard>
           </div>
         ) : (
@@ -1588,7 +1586,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {/* The engine's two columns: run a mode inside this project, and the
             runs already inside it. */}
             <div className="mb-12 animate-slide-up stagger-3">
-              <RunInsidePanel project={project} />
+              <RunLinksPanel />
             </div>
 
             {/* Customisable Dashboard grid */}
@@ -1728,7 +1726,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                   onClick={async () => {
                                     setActiveIterationId(iter.id);
                                     const resp = await authFetch(
-                                      `/api/projects/${id}/blueprint?iteration_id=${iter.id}`,
+                                      `/api/sessions/${id}/blueprint?iteration_id=${iter.id}`,
                                     );
                                     if (resp.ok) {
                                       const bp = await resp.json();
@@ -1872,7 +1870,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                 if (!ok) return;
 
                                 const resp = await authFetch(
-                                  `/api/projects/${project.id}/iterations`,
+                                  `/api/sessions/${project.id}/iterations`,
                                   {
                                     method: 'POST',
                                   },
@@ -1882,7 +1880,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                   setIterations((prev) => [...prev, newIter]);
                                   setActiveIterationId(newIter.id);
                                   const bpResp = await authFetch(
-                                    `/api/projects/${id}/blueprint?iteration_id=${newIter.id}`,
+                                    `/api/sessions/${id}/blueprint?iteration_id=${newIter.id}`,
                                   );
                                   if (bpResp.ok) {
                                     const bp = await bpResp.json();

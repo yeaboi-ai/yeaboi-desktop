@@ -150,7 +150,7 @@ export function ResumeScreen({ sessionId, projectId, onContinue }: ResumeScreenP
         {/* Back + Header */}
         <div className="mb-10 animate-slide-up stagger-1">
           <button
-            onClick={() => router.push(`/projects/${projectId}`)}
+            onClick={() => router.push(`/sessions/${projectId}`)}
             className="text-[11px] font-body text-muted-foreground/50 hover:text-foreground/70 transition-colors mb-4 flex items-center gap-1"
           >
             ← Back to project

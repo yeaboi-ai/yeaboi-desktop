@@ -100,7 +100,7 @@ class BlueprintSectionUpdate(BaseModel):
 
 class BlueprintSnapshotResponse(BaseModel):
     id: str
-    project_id: str
+    session_id: str
     version_number: int
     content: dict
     created_by: str
@@ -131,10 +131,9 @@ class BlueprintSnapshotDetail(BaseModel):
     """Full snapshot payload — content + change metadata."""
 
     id: str
-    project_id: str
+    session_id: str
     version_number: int
     iteration_id: str | None = None
-    session_id: str | None = None
     content: dict
     created_by: str
     created_by_label: str
@@ -158,7 +157,7 @@ class BlueprintSnapshotDiff(BaseModel):
 
 class BlueprintIterationResponse(BaseModel):
     id: str
-    project_id: str
+    session_id: str
     iteration_number: int
     label: str
     display_name: str | None = None
@@ -259,8 +258,7 @@ class SuggestionBulkAccept(BaseModel):
 
 class SuggestionRead(BaseModel):
     id: str
-    project_id: str
-    session_id: str | None = None
+    session_id: str
     section: str
     content: str
     edited_content: str | None = None

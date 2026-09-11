@@ -1,7 +1,7 @@
 'use client';
 
 // The orgs and teams that scope the planning workspace, and which are chosen.
-// Solo and Team share the scoping data (the stored ids scope /api/projects);
+// Solo and Team share the scoping data (the stored ids scope /api/sessions);
 // only the Team world shows the pickers. The agents world reads local session
 // telemetry and has neither.
 

@@ -68,7 +68,7 @@ WAVE_ZERO_EXAMPLE = json.dumps(
                 "story_points": 3,
                 "labels": ["devops", "backend"],
                 "acceptance_criteria": [
-                    "Project builds and runs locally",
+                    "Session builds and runs locally",
                     "CI pipeline configured",
                     "README with setup instructions",
                 ],

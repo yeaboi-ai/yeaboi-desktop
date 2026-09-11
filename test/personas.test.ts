@@ -1,5 +1,5 @@
 // Who the duck can be: eight personas, a rotation every surface agrees on,
-// and the home's pair that changes only between visits.
+// and the home's own persona that changes only between visits.
 
 import { describe, expect, it } from 'vitest';
 import {
@@ -16,7 +16,7 @@ import {
   resolvePersona,
 } from '../src/shared/personas';
 import { PET_OUTFIT_RISE, petOutfit } from '../src/shared/pet-outfit';
-import { currentPair, nextVisit, visitPair } from '../src/renderer/lib/home/wardrobe';
+import { currentPersona, nextVisit, visitPersona } from '../src/renderer/lib/home/wardrobe';
 import { PERSONA_LAYERS } from '../src/renderer/lib/yeaboi/personas';
 
 describe('the roster', () => {
@@ -104,29 +104,23 @@ describe('the pet outfit', () => {
   });
 });
 
-describe('the home’s pair', () => {
-  it('is two different personas on every visit', () => {
+describe('the home’s duck', () => {
+  it('wears a different persona on consecutive visits', () => {
     for (let visit = 0; visit < 20; visit += 1) {
-      const pair = visitPair(visit);
-      expect(pair.projects).not.toBe(pair.sessions);
+      expect(visitPersona(visit)).not.toBe(visitPersona(visit + 1));
     }
   });
 
-  it('shows every persona within four visits', () => {
-    const seen = new Set<string>();
-    for (let visit = 0; visit < 4; visit += 1) {
-      const pair = visitPair(visit);
-      seen.add(pair.projects);
-      seen.add(pair.sessions);
-    }
+  it('shows every persona within one lap of the roster', () => {
+    const seen = new Set(PERSONA_IDS.map((_, visit) => visitPersona(visit)));
     expect([...seen].sort()).toEqual([...PERSONA_IDS].sort());
   });
 
   it('changes on a visit and holds between them', () => {
-    const before = currentPair();
+    const before = currentPersona();
     const next = nextVisit();
     expect(next).not.toEqual(before);
-    expect(currentPair()).toEqual(next);
-    expect(currentPair()).toEqual(next);
+    expect(currentPersona()).toEqual(next);
+    expect(currentPersona()).toEqual(next);
   });
 });

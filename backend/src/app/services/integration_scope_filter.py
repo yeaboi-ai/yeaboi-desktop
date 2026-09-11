@@ -21,7 +21,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Callable, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from ..models.integration import OrgIntegration
 

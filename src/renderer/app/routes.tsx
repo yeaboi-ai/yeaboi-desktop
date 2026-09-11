@@ -15,8 +15,6 @@ import RecordingPage from '@/pages/recordings/recording-page';
 import SharedClipPage from '@/pages/recordings/shared-clip-page';
 import SharedRecordingPage from '@/pages/recordings/shared-recording-page';
 import AgentsPage from '@/pages/yeaboi/agents/agents-page';
-import AgentsProjectPage from '@/pages/yeaboi/agents/agents-project-page';
-import AgentsProjectsPage from '@/pages/yeaboi/agents/agents-projects-page';
 import SessionsPage from '@/pages/yeaboi/sessions-page';
 import AnalysisPage from '@/pages/yeaboi/analysis/analysis-page';
 import AnalysisResultsPage from '@/pages/yeaboi/analysis/analysis-results-page';
@@ -82,7 +80,7 @@ function BoardSettingsRoute() {
 }
 
 function SessionCompletedRoute() {
-  return <SessionCompletedPage params={useParamsPromise<{ id: string; sessionId: string }>()} />;
+  return <SessionCompletedPage params={useParamsPromise<{ id: string }>()} />;
 }
 
 function TicketRoute() {
@@ -102,6 +100,24 @@ function LegacyHumansRedirect() {
   return <Navigate to={rest ? `/team/${rest}` : '/team'} replace />;
 }
 
+// Projects were removed: a session is the workspace. An old /projects link keeps
+// its tail so a deep link into a blueprint or a plan lands on the same page, and
+// the nested session routes collapse onto the room and the recap. The id no
+// longer resolves to anything, which the workspace's own not-found copy says.
+function LegacyProjectRedirect() {
+  const { '*': rest } = useParams();
+  const [first, ...more] = (rest ?? '').split('/').filter(Boolean);
+  if (!first) return <Navigate to="/sessions" replace />;
+  if (first === 'new') return <Navigate to={`/sessions/new/${more.join('/')}`} replace />;
+  // A nested session was its own row all along, so /projects/:id/sessions/:sid
+  // lands on that session's own room rather than anywhere under the old parent.
+  if (more[0] === 'sessions' && more[1]) {
+    const suffix = more[2] === 'completed' ? 'completed' : 'room';
+    return <Navigate to={`/sessions/${more[1]}/${suffix}`} replace />;
+  }
+  return <Navigate to={`/sessions/${first}${more.length ? `/${more.join('/')}` : ''}`} replace />;
+}
+
 // Providers (theme, identity, Niko, the shell chrome) live inside the router
 // so AppShell's usePathname and every page's params resolve.
 function Root() {
@@ -118,7 +134,7 @@ function Root() {
 // not named here mounts the placeholder so nav, palette and manifest agree.
 const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/home': <HomePage />,
-  '/sessions': <SessionsPage />,
+  '/runs': <SessionsPage />,
   '/music': <MusicPage />,
   '/whats-new': <WhatsNewPage />,
   '/feedback': <FeedbackPage />,
@@ -149,8 +165,6 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
   '/agents/usage': <AgentsPage />,
   '/agents/advisor': <AgentsPage />,
   '/agents/security': <AgentsPage />,
-  '/agents/projects': <AgentsProjectsPage />,
-  '/agents/projects/:id': <AgentsProjectPage />,
   '/ceremonies': <CeremoniesPage />,
   '/ceremonies/slack': <CeremoniesSlackPage />,
   '/provenance': <ProvenancePage />,
@@ -169,15 +183,15 @@ const YEABOI_PAGES: Record<string, React.ReactElement> = {
 // affordances (`action:*`, `dialog:*`) the palette owns.
 const NON_PAGE = (path: string) => !path.startsWith('/');
 const PLANNING_SERVED = new Set([
-  '/projects',
-  '/projects/:id',
-  '/projects/:id/board-settings',
-  '/projects/:id/blueprint',
-  '/projects/:id/plan',
-  '/projects/new/from-roadmap',
-  '/projects/:id/sessions/new',
-  '/projects/:id/sessions/:sessionId',
-  '/projects/:id/sessions/:sessionId/completed',
+  '/sessions',
+  '/sessions/new/from-roadmap',
+  '/sessions/:id',
+  '/sessions/:id/new',
+  '/sessions/:id/room',
+  '/sessions/:id/completed',
+  '/sessions/:id/board-settings',
+  '/sessions/:id/blueprint',
+  '/sessions/:id/plan',
   '/board',
   '/tickets/:id',
   '/settings',
@@ -215,36 +229,42 @@ export const router = createHashRouter([
     children: [
       { path: '/', element: <Navigate to="/home" replace /> },
       ...yeaboiRoutes,
-      // The standalone planning pages folded into the project flow; anything
+      // The standalone planning pages folded into the session flow; anything
       // that still links to them (an old tray notice, muscle memory) lands on
       // the workspace rather than a placeholder.
       {
         path: '/team/planning/roadmap',
-        element: <Navigate to="/projects/new/from-roadmap" replace />,
+        element: <Navigate to="/sessions/new/from-roadmap" replace />,
       },
-      { path: '/team/planning/*', element: <Navigate to="/projects" replace /> },
-      { path: '/team/planning', element: <Navigate to="/projects" replace /> },
+      { path: '/team/planning/*', element: <Navigate to="/sessions" replace /> },
+      { path: '/team/planning', element: <Navigate to="/sessions" replace /> },
       { path: '/humans/*', element: <LegacyHumansRedirect /> },
       { path: '/humans', element: <LegacyHumansRedirect /> },
-      // The agentwatch family's first door: its projects, scoped by linked repo.
       {
         path: '/agents',
         element: (
           <SoloOnly>
-            <Navigate to="/agents/projects" replace />
+            <Navigate to="/agents/usage" replace />
           </SoloOnly>
         ),
       },
-      { path: '/projects', element: <ProjectsPage /> },
-      { path: '/projects/new/from-roadmap', element: <FromRoadmapPage /> },
-      { path: '/projects/:id', element: <ProjectRoute /> },
-      { path: '/projects/:id/board', element: <ProjectBoardRedirect /> },
-      { path: '/projects/:id/board-settings', element: <BoardSettingsRoute /> },
-      { path: '/projects/:id/blueprint', element: <BlueprintPage /> },
-      { path: '/projects/:id/plan', element: <ProjectPlanPage /> },
-      { path: '/projects/:id/sessions/new', element: <NewSessionPage /> },
-      { path: '/projects/:id/sessions/:sessionId', element: <SessionPage /> },
-      { path: '/projects/:id/sessions/:sessionId/completed', element: <SessionCompletedRoute /> },
+      // Projects are gone: a session is the workspace. Old deep links are kept
+      // rather than dropped — an unknown id lands on the workspace's own
+      // not-found copy, which says what happened.
+      { path: '/agents/projects/*', element: <Navigate to="/sessions" replace /> },
+      { path: '/agents/projects', element: <Navigate to="/sessions" replace /> },
+      { path: '/projects/*', element: <LegacyProjectRedirect /> },
+      { path: '/projects', element: <Navigate to="/sessions" replace /> },
+      { path: '/sessions', element: <ProjectsPage /> },
+      { path: '/sessions/new/from-roadmap', element: <FromRoadmapPage /> },
+      { path: '/sessions/:id', element: <ProjectRoute /> },
+      { path: '/sessions/:id/new', element: <NewSessionPage /> },
+      { path: '/sessions/:id/board', element: <ProjectBoardRedirect /> },
+      { path: '/sessions/:id/board-settings', element: <BoardSettingsRoute /> },
+      { path: '/sessions/:id/blueprint', element: <BlueprintPage /> },
+      { path: '/sessions/:id/plan', element: <ProjectPlanPage /> },
+      { path: '/sessions/:id/room', element: <SessionPage /> },
+      { path: '/sessions/:id/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
       { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },

@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_session_factory
 from ..models.board import Board, BoardColumn, Card
-from ..models.project import Project
+from ..models.session import Session
 from ..services.html_text import ac_done, ac_text, html_to_text
 from ..services.slack_dispatcher import dispatch_event
 from .agent_runner import run_agent
@@ -31,37 +31,37 @@ logger = logging.getLogger(__name__)
 _running_orchestrators: dict[str, bool] = {}
 
 
-async def start_orchestrator(project_id: str) -> None:
+async def start_orchestrator(session_id: str) -> None:
     """Start the orchestrator polling loop for a project."""
-    if _running_orchestrators.get(project_id):
-        logger.info("Orchestrator already running for %s", project_id)
+    if _running_orchestrators.get(session_id):
+        logger.info("Orchestrator already running for %s", session_id)
         return
 
     from ..metrics import ORCHESTRATOR_ACTIVE
 
-    _running_orchestrators[project_id] = True
+    _running_orchestrators[session_id] = True
     ORCHESTRATOR_ACTIVE.inc()
-    logger.info("Starting orchestrator for project %s", project_id)
+    logger.info("Starting orchestrator for project %s", session_id)
 
     try:
-        while _running_orchestrators.get(project_id):
-            await _poll_and_dispatch(project_id)
+        while _running_orchestrators.get(session_id):
+            await _poll_and_dispatch(session_id)
             await asyncio.sleep(10)
     finally:
-        _running_orchestrators[project_id] = False
+        _running_orchestrators[session_id] = False
         ORCHESTRATOR_ACTIVE.dec()
 
 
-def stop_orchestrator(project_id: str) -> None:
-    _running_orchestrators[project_id] = False
+def stop_orchestrator(session_id: str) -> None:
+    _running_orchestrators[session_id] = False
 
 
-def is_running(project_id: str) -> bool:
-    return _running_orchestrators.get(project_id, False)
+def is_running(session_id: str) -> bool:
+    return _running_orchestrators.get(session_id, False)
 
 
-async def _get_repo_url(project_id: str, db: AsyncSession) -> str | None:
-    result = await db.execute(select(Project).where(Project.id == project_id))
+async def _get_repo_url(session_id: str, db: AsyncSession) -> str | None:
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     return project.repo_url if project else None
 
@@ -144,16 +144,16 @@ def _log(card: Card, message: str, output: str = "") -> None:
     card.agent_log = [*(card.agent_log or []), entry]
 
 
-async def _poll_and_dispatch(project_id: str) -> None:
+async def _poll_and_dispatch(session_id: str) -> None:
     """Find all ready cards and process them in parallel (wave-based)."""
     session_factory = get_session_factory()
     async with session_factory() as db:
-        result = await db.execute(select(Board).where(Board.project_id == project_id))
+        result = await db.execute(select(Board).where(Board.session_id == session_id))
         board = result.scalar_one_or_none()
         if not board:
             return
 
-        repo_url = await _get_repo_url(project_id, db)
+        repo_url = await _get_repo_url(session_id, db)
         if not repo_url:
             return
 
@@ -260,13 +260,13 @@ async def _poll_and_dispatch(project_id: str) -> None:
 
         async def _limited(card_id: str) -> None:
             async with sem:
-                await _process_card_standalone(card_id, board.id, repo_url, project_id)
+                await _process_card_standalone(card_id, board.id, repo_url, session_id)
 
         tasks = [_limited(card.id) for card in ready]
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
-async def _process_card_standalone(card_id: str, board_id: str, repo_url: str, project_id: str) -> None:
+async def _process_card_standalone(card_id: str, board_id: str, repo_url: str, session_id: str) -> None:
     """Process a single card with its own DB session (for parallel execution)."""
     session_factory = get_session_factory()
     async with session_factory() as db:
@@ -298,15 +298,15 @@ async def _process_card_standalone(card_id: str, board_id: str, repo_url: str, p
 
                 board_result = await db.execute(select(Board).where(Board.id == board_id))
                 board_obj = board_result.scalar_one()
-                project_result = await db.execute(select(Project).where(Project.id == board_obj.project_id))
+                project_result = await db.execute(select(Session).where(Session.id == board_obj.session_id))
                 project_obj = project_result.scalar_one()
                 await notify(
                     user_id=project_obj.owner_id,
                     title=f"Task failed: {card.title}",
                     body="AI agent encountered an error. Check the orchestrator for details.",
                     type="card_failed",
-                    link=f"/projects/{project_obj.id}/orchestrator",
-                    project_id=project_obj.id,
+                    link=f"/sessions/{project_obj.id}/orchestrator",
+                    session_id=project_obj.id,
                     db=db,
                 )
                 await dispatch_event(
@@ -316,7 +316,7 @@ async def _process_card_standalone(card_id: str, board_id: str, repo_url: str, p
                     payload={
                         "card_id": card.id,
                         "card_title": card.title,
-                        "project_id": project_obj.id,
+                        "session_id": project_obj.id,
                         "error": "AI agent encountered an error. Check the orchestrator for details.",
                     },
                 )
@@ -334,7 +334,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
     # Look up project from board for notifications
     board_result = await db.execute(select(Board).where(Board.id == board_id))
     board_obj = board_result.scalar_one()
-    project_result = await db.execute(select(Project).where(Project.id == board_obj.project_id))
+    project_result = await db.execute(select(Session).where(Session.id == board_obj.session_id))
     project_obj = project_result.scalar_one()
 
     # Detect if this is a retry — check if branch already exists
@@ -524,7 +524,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                             body=f"PR was auto-approved and merged ({card.priority} priority).",
                             type="card_auto_approved",
                             link=card.agent_pr_url,
-                            project_id=project_obj.id,
+                            session_id=project_obj.id,
                             db=db,
                         )
                         await dispatch_event(
@@ -534,7 +534,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                             payload={
                                 "card_id": card.id,
                                 "card_title": card.title,
-                                "project_id": project_obj.id,
+                                "session_id": project_obj.id,
                                 "pr_url": card.agent_pr_url,
                             },
                         )
@@ -552,7 +552,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                             body="AI completed implementation and opened a PR for review.",
                             type="pr_ready",
                             link=card.agent_pr_url,
-                            project_id=project_obj.id,
+                            session_id=project_obj.id,
                             db=db,
                         )
                         await dispatch_event(
@@ -562,7 +562,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                             payload={
                                 "card_id": card.id,
                                 "card_title": card.title,
-                                "project_id": project_obj.id,
+                                "session_id": project_obj.id,
                                 "pr_url": card.agent_pr_url,
                             },
                         )
@@ -580,7 +580,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                         body="AI completed implementation and opened a PR for review.",
                         type="pr_ready",
                         link=card.agent_pr_url,
-                        project_id=project_obj.id,
+                        session_id=project_obj.id,
                         db=db,
                     )
                     await dispatch_event(
@@ -590,7 +590,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                         payload={
                             "card_id": card.id,
                             "card_title": card.title,
-                            "project_id": project_obj.id,
+                            "session_id": project_obj.id,
                             "pr_url": card.agent_pr_url,
                         },
                     )
@@ -607,7 +607,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                     body="AI completed implementation and opened a PR for review.",
                     type="pr_ready",
                     link=card.agent_pr_url,
-                    project_id=project_obj.id,
+                    session_id=project_obj.id,
                     db=db,
                 )
                 await dispatch_event(
@@ -617,7 +617,7 @@ async def _process_card(card: Card, board_id: str, repo_url: str, db: AsyncSessi
                     payload={
                         "card_id": card.id,
                         "card_title": card.title,
-                        "project_id": project_obj.id,
+                        "session_id": project_obj.id,
                         "pr_url": card.agent_pr_url,
                     },
                 )

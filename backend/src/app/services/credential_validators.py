@@ -121,12 +121,12 @@ async def _validate_gcp(credentials: dict) -> dict:
         except json.JSONDecodeError:
             return {"ok": False, "error": "service_account_json is not valid JSON"}
 
-    required = ("client_email", "private_key", "project_id")
+    required = ("client_email", "private_key", "session_id")
     missing = [k for k in required if not sa.get(k)]
     if missing:
         return {"ok": False, "error": f"Service account key missing fields: {', '.join(missing)}"}
 
-    logger.info("GCP service account key structure validated for project %s", sa.get("project_id"))
+    logger.info("GCP service account key structure validated for project %s", sa.get("session_id"))
     return {"ok": True}
 
 

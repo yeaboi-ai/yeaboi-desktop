@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..models.board import Board, BoardColumn, Card
-from ..models.project import Project
+from ..models.session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,11 @@ def _register_board_columns(board: Board) -> None:
 
 
 async def get_or_create_board(
-    project_id: str, db: AsyncSession,
+    session_id: str, db: AsyncSession,
     iteration_id: str | None = None,
 ) -> Board:
     """Get an existing board for a project/iteration or create one."""
-    query = select(Board).where(Board.project_id == project_id)
+    query = select(Board).where(Board.session_id == session_id)
     if iteration_id:
         query = query.where(Board.iteration_id == iteration_id)
     result = await db.execute(
@@ -53,11 +53,11 @@ async def get_or_create_board(
 
     if not board:
         proj_result = await db.execute(
-            select(Project.org_id).where(Project.id == project_id)
+            select(Session.org_id).where(Session.id == session_id)
         )
         org_id = proj_result.scalar_one_or_none()
         board = Board(
-            project_id=project_id,
+            session_id=session_id,
             org_id=org_id,
             iteration_id=iteration_id,
         )

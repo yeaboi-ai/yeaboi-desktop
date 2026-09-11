@@ -5,10 +5,10 @@ from src.app.config import get_settings
 
 async def test_get_livekit_token(client, auth_headers):
     # Create project + session (starts "live" today — no lobby transition needed).
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )
@@ -32,10 +32,10 @@ async def test_livekit_token_auto_adds_non_participant(client, auth_headers, oth
     """The endpoint auto-adds any authenticated user as a session participant —
     there's no cross-team gate at this layer. Test that behaviour rather than
     asserting 403."""
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )
@@ -55,10 +55,10 @@ async def test_livekit_token_auto_adds_non_participant(client, auth_headers, oth
 async def test_livekit_token_rejects_inactive_session(client, auth_headers):
     """After transitioning to a non-active state (paused→completed), token
     issuance must return 400."""
-    proj = await client.post("/api/projects", json={"name": "P1"}, headers=auth_headers)
-    project_id = proj.json()["id"]
+    proj = await client.post("/api/sessions", json={"name": "P1"}, headers=auth_headers)
+    session_id = proj.json()["id"]
     sess = await client.post(
-        f"/api/projects/{project_id}/sessions",
+        f"/api/sessions/{session_id}/continuations",
         json={"initial_idea": "Test"},
         headers=auth_headers,
     )

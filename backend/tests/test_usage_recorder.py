@@ -6,7 +6,6 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
 from src.app.models.session import Session
 from src.app.models.usage_event import PricingOverride, UsageEvent
 from src.app.services.usage_recorder import (
@@ -33,23 +32,15 @@ def _clear_cache():
 
 
 @pytest.fixture
-async def project(db_session, sample_org, sample_team, sample_user):
-    proj = Project(
+async def session_row(db_session, sample_org, sample_team, sample_user):
+    sess = Session(
         org_id=sample_org.id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
         name="Cost Test",
         description="for tests",
+        status="active",
     )
-    db_session.add(proj)
-    await db_session.commit()
-    await db_session.refresh(proj)
-    return proj
-
-
-@pytest.fixture
-async def session_row(db_session, project, sample_org):
-    sess = Session(project_id=project.id, org_id=sample_org.id, status="active")
     db_session.add(sess)
     await db_session.commit()
     await db_session.refresh(sess)
@@ -57,8 +48,8 @@ async def session_row(db_session, project, sample_org):
 
 
 class TestRecordUsage:
-    async def test_writes_row_with_computed_cost(self, db_session, sample_org, project, session_row):
-        ctx = UsageContext(org_id=sample_org.id, project_id=project.id, session_id=session_row.id)
+    async def test_writes_row_with_computed_cost(self, db_session, sample_org, session_row):
+        ctx = UsageContext(org_id=sample_org.id, session_id=session_row.id)
         event = await record_usage(
             db_session,
             provider="anthropic",
@@ -71,7 +62,6 @@ class TestRecordUsage:
 
         assert event.id is not None
         assert event.org_id == sample_org.id
-        assert event.project_id == project.id
         assert event.session_id == session_row.id
         assert event.provider == "anthropic"
         assert event.operation == "chat"

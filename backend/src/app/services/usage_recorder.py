@@ -8,7 +8,7 @@ sites should never write to `usage_events` directly — they call
 2. Computes `cost_usd` via `services.usage_costs.compute_cost`.
 3. Inserts the row, flushed on the caller's session (caller commits).
 
-Threading the call site context (`org_id`, `session_id`, `project_id`) is the
+Threading the call site context (`org_id`, `session_id`, `session_id`) is the
 caller's responsibility — pass a `UsageContext` constructed at request entry.
 """
 
@@ -39,7 +39,6 @@ class UsageContext:
     report invoking the LLM)."""
 
     org_id: str
-    project_id: str | None = None
     session_id: str | None = None
     user_id: str | None = None
     request_id: str | None = None
@@ -148,7 +147,6 @@ async def record_usage(
 
     event = UsageEvent(
         org_id=ctx.org_id,
-        project_id=ctx.project_id,
         session_id=ctx.session_id,
         provider=provider,
         operation=operation,

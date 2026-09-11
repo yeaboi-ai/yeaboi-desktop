@@ -115,12 +115,11 @@ function initials(name?: string | null, email?: string | null): string {
   return src.slice(0, 2).toUpperCase();
 }
 
-export default function SessionCompletedPage({
-  params,
-}: {
-  params: Promise<{ id: string; sessionId: string }>;
-}) {
-  const { id: projectId, sessionId } = use(params);
+export default function SessionCompletedPage({ params }: { params: Promise<{ id: string }> }) {
+  // One session is the workspace and the conversation, so one id serves both.
+  const { id } = use(params);
+  const projectId = id;
+  const sessionId = id;
   const { authFetch } = useAuthFetch();
   const [session, setSession] = useState<SessionResp | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -138,8 +137,8 @@ export default function SessionCompletedPage({
       const [sessResp, msgResp, boardResp, snapsResp] = await Promise.all([
         authFetch(`/api/sessions/${sessionId}`).then((r) => (r.ok ? r.json() : null)),
         authFetch(`/api/sessions/${sessionId}/messages`).then((r) => (r.ok ? r.json() : [])),
-        authFetch(`/api/projects/${projectId}/board`).then((r) => (r.ok ? r.json() : null)),
-        authFetch(`/api/projects/${projectId}/blueprint/snapshots?limit=200`).then((r) =>
+        authFetch(`/api/sessions/${projectId}/board`).then((r) => (r.ok ? r.json() : null)),
+        authFetch(`/api/sessions/${projectId}/blueprint/snapshots?limit=200`).then((r) =>
           r.ok ? r.json() : [],
         ),
       ]);
@@ -168,7 +167,7 @@ export default function SessionCompletedPage({
         if (match) {
           setSnapshotMeta(match);
           const detailResp = await authFetch(
-            `/api/projects/${projectId}/blueprint/snapshots/${match.id}`,
+            `/api/sessions/${projectId}/blueprint/snapshots/${match.id}`,
           );
           if (detailResp.ok && !cancelled) {
             const detail = (await detailResp.json()) as SnapshotDetail;
@@ -368,7 +367,7 @@ export default function SessionCompletedPage({
                     return (
                       <Link
                         key={c.id}
-                        href={`/projects/${projectId}/board`}
+                        href={`/sessions/${projectId}/board`}
                         className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-card/60 transition-colors group"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -391,7 +390,7 @@ export default function SessionCompletedPage({
                   })}
                   {linkedCards.length > 6 && (
                     <Link
-                      href={`/projects/${projectId}/board`}
+                      href={`/sessions/${projectId}/board`}
                       className="block px-3 py-2 text-[11px] font-body text-muted-foreground hover:text-foreground hover:bg-card/60 transition-colors"
                     >
                       +{linkedCards.length - 6} more on the board →
@@ -407,7 +406,7 @@ export default function SessionCompletedPage({
                   Blueprint snapshot
                 </p>
                 <Link
-                  href={`/projects/${projectId}/blueprint`}
+                  href={`/sessions/${projectId}/blueprint`}
                   className="block rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:bg-card/80 transition-colors group"
                 >
                   <div className="flex items-center gap-2 mb-2">
@@ -457,23 +456,23 @@ export default function SessionCompletedPage({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <SummaryCard
-                href={`/projects/${projectId}/board`}
+                href={`/sessions/${projectId}/board`}
                 Icon={Kanban}
                 label="Open board"
                 description={taskCount ? `${taskCount} new tasks` : 'View kanban'}
                 tone="primary"
               />
               <SummaryCard
-                href={`/projects/${projectId}/blueprint`}
+                href={`/sessions/${projectId}/blueprint`}
                 Icon={FileText}
                 label="View blueprint"
                 description="Locked snapshot of this iteration"
                 tone="default"
               />
               <SummaryCard
-                href={`/projects/${projectId}`}
+                href={`/sessions/${projectId}`}
                 Icon={ArrowRight}
-                label="Back to project"
+                label="Back to session"
                 description="All sessions and outputs"
                 tone="default"
               />

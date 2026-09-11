@@ -7,7 +7,7 @@ import { CoachMarks, type CoachMarkStep } from '@/components/ui/coach-marks';
 
 const DEMO_STOPS: CoachMarkStep[] = [
   {
-    title: 'This is a sample project',
+    title: 'This is a sample session',
     body: "We pre-built a Plant Care App so you can see how a conversation becomes a blueprint and a board. Delete it whenever you're ready.",
     position: { top: '12%', left: 'calc(50% - 180px)' },
   },
@@ -23,13 +23,13 @@ const DEMO_STOPS: CoachMarkStep[] = [
   },
   {
     title: 'Start your own',
-    body: "When you're ready, create a real project and start a session. You'll get one of these in minutes.",
+    body: "When you're ready, describe your own work and start a session. You'll get one of these in minutes.",
     position: { bottom: '12%', right: '32px' },
   },
 ];
 
 /**
- * Mounts the onboarding tour on a demo project. Gated server-side on
+ * Mounts the onboarding tour on the demo session. Gated server-side on
  * User.tour_completed_at so dismissal follows the user across devices.
  *
  * Renders nothing until /api/me resolves to avoid a one-frame flash.

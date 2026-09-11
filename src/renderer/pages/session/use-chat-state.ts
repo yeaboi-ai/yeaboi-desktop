@@ -105,7 +105,7 @@ export function useChatState({
           return;
         }
         if (cmd === 'export') {
-          const bpResp = await authFetch(`/api/projects/${projectId}/blueprint`);
+          const bpResp = await authFetch(`/api/sessions/${projectId}/blueprint`);
           if (bpResp.ok) {
             const bp = await bpResp.json();
             const md = Object.entries(bp.content as Record<string, string>)

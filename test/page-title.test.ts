@@ -12,7 +12,8 @@ describe('pageTitle', () => {
   });
 
   it('matches a dynamic route by segment', () => {
-    const dynamic = APP_ROUTES.find((r) => r.path.includes(':'));
+    // A path route with a parameter — `action:*` rows carry a colon but are not paths.
+    const dynamic = APP_ROUTES.find((r) => r.path.startsWith('/') && r.path.includes('/:'));
     expect(dynamic).toBeDefined();
     const concrete = dynamic!.path.replace(/:[^/]+/g, 'x1');
     expect(pageTitle(concrete)).toBe(dynamic!.title.split(' · ')[0]);

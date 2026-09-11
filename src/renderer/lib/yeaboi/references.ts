@@ -1,9 +1,9 @@
 // What a project can point at, and the pure half of the composer's @ menu:
 // which sources to offer (from the connections catalog), where a trigger
 // sits in the text, how a pick becomes a chip, and every sentence the menu
-// says. The wire halves are the sidecar's /api/projects/references and the
+// says. The wire halves are the sidecar's /api/references and the
 // planning backend's `references` list and attachments routes
-// (contracts/v1/app_http.md, backend/src/app/schemas/project.py). Pure, so
+// (contracts/v1/app_http.md, backend/src/app/schemas/session.py). Pure, so
 // test/references.test.ts pins it in the node lane.
 
 import { apiGetOptional } from '@/lib/yeaboi/api';
@@ -265,12 +265,12 @@ export async function loadReferenceItems(
   limit = 8,
 ): Promise<ReferenceSearch | null> {
   const params = new URLSearchParams({ source: sidecarSource(source), q, limit: String(limit) });
-  return apiGetOptional<ReferenceSearch>(`/api/projects/references?${params.toString()}`);
+  return apiGetOptional<ReferenceSearch>(`/api/references?${params.toString()}`);
 }
 
 /** Every sentence the menu and the chips say. */
 export const REFERENCE_COPY = {
-  ADD_HEADING: 'Add to this project',
+  ADD_HEADING: 'Add to this session',
   LINK_HINT: 'Paste a URL',
   LINK_PLACEHOLDER: 'https://',
   SCREENSHOT_HINT: 'Choose an image, or paste one',
@@ -279,7 +279,7 @@ export const REFERENCE_COPY = {
   FAILED: 'Could not search right now.',
   BAD_URL: 'That needs to start with http:// or https://.',
   COMPOSER_HINT: '@ adds a link, a ticket or a screenshot.',
-  TOO_MANY_SHOTS: `${SCREENSHOT_MAX_COUNT} screenshots is the most a project takes.`,
+  TOO_MANY_SHOTS: `${SCREENSHOT_MAX_COUNT} screenshots is the most a session takes.`,
   DROP_LABEL: 'Drop the screenshot here',
   NOT_ATTACHED_TITLE: 'Screenshots not attached',
   searchPlaceholder: (label: string) => `Search ${label}`,

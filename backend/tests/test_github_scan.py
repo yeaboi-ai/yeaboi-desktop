@@ -1,13 +1,11 @@
 """Tests for the GitHub scan connector."""
 
-import pytest
 
 from src.app.services.connectors.github_scan import (
     CATEGORY_PROMPTS,
     _build_category_prompt,
     _categorize_files,
 )
-
 
 # ---------------------------------------------------------------------------
 # _categorize_files
@@ -58,7 +56,7 @@ def test_categorize_files_detects_security():
 
 def test_categorize_files_readme_goes_to_services_and_overview():
     files = {
-        "README.md": "# My Project\nA cool project.",
+        "README.md": "# My Session\nA cool project.",
     }
     categories = _categorize_files(files, "Python")
     assert "services" in categories

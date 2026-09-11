@@ -6,9 +6,9 @@ from src.app.config import get_settings
 
 
 async def _create_session(client, auth_headers) -> str:
-    proj = await client.post("/api/projects", json={"name": "MetaP"}, headers=auth_headers)
+    proj = await client.post("/api/sessions", json={"name": "MetaP"}, headers=auth_headers)
     sess = await client.post(
-        f"/api/projects/{proj.json()['id']}/sessions",
+        f"/api/sessions/{proj.json()['id']}/continuations",
         json={"initial_idea": "meta"},
         headers=auth_headers,
     )

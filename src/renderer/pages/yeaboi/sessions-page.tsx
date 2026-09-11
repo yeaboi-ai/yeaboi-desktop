@@ -15,8 +15,8 @@ import { GlimpseList } from '@/components/yeaboi/glimpse-list';
 import { ModeList } from '@/components/yeaboi/mode-list';
 import { Scheduled } from '@/components/yeaboi/scheduled';
 import { TipCompanion } from '@/components/yeaboi/tip-companion';
-import { DOOR_MASCOT } from '@/lib/audience/worlds';
-import { SESSIONS_FOOT_LINKS } from '@/lib/nav/sections';
+import { WORLD_MASCOT } from '@/lib/audience/worlds';
+import { RUNS_FOOT_LINKS } from '@/lib/nav/sections';
 import { apiGet } from '@/lib/yeaboi/api';
 import {
   allCards,
@@ -44,7 +44,7 @@ function SessionsBody() {
   const [tips, setTips] = useState<Tip[]>([]);
   const [sessions, setSessions] = useState<RecentSession[] | null | 'error'>([]);
   const [ceremonies, setCeremonies] = useState<CeremonyRow[]>([]);
-  const Mascot = DOOR_MASCOT[audience].sessions;
+  const Mascot = WORLD_MASCOT[audience];
   const now = new Date();
 
   useEffect(() => {
@@ -119,7 +119,7 @@ function SessionsBody() {
       </div>
 
       <footer className="mt-14 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-body">
-        {SESSIONS_FOOT_LINKS.map((link) => (
+        {RUNS_FOOT_LINKS.map((link) => (
           <Link
             key={link.href}
             href={link.href}

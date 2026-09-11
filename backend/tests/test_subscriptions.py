@@ -105,7 +105,7 @@ class TestComputeNextRun:
 @pytest.fixture
 async def populated_org_and_sub(client, auth_headers, db_session):
     # Bootstrap the auth user's org by hitting the API once.
-    resp = await client.get("/api/projects", headers=auth_headers)
+    resp = await client.get("/api/sessions", headers=auth_headers)
     assert resp.status_code == 200
     from tests.conftest import TEST_USER_EMAIL
 
@@ -199,7 +199,7 @@ def _payload_daily() -> dict:
 class TestSubscriptionCRUD:
     async def test_create_returns_201_and_persists(self, client, auth_headers):
         # Bootstrap org first.
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         resp = await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         assert resp.status_code == 201, resp.text
         body = resp.json()
@@ -207,7 +207,7 @@ class TestSubscriptionCRUD:
         assert body["next_run_at"] is not None  # scheduler computed it
 
     async def test_weekly_requires_day_of_week(self, client, auth_headers):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         payload = _payload_daily() | {
             "frequency": "weekly",
             "schedule_config": {"time_of_day": "09:00", "timezone": "UTC"},
@@ -217,7 +217,7 @@ class TestSubscriptionCRUD:
         assert "day_of_week" in resp.json()["detail"]
 
     async def test_monthly_requires_day_of_month(self, client, auth_headers):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         payload = _payload_daily() | {
             "frequency": "monthly",
             "schedule_config": {"time_of_day": "09:00", "timezone": "UTC"},
@@ -226,7 +226,7 @@ class TestSubscriptionCRUD:
         assert resp.status_code == 422
 
     async def test_invalid_timezone_rejected(self, client, auth_headers):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         payload = _payload_daily() | {
             "schedule_config": {"time_of_day": "09:00", "timezone": "Mars/Olympus"},
         }
@@ -234,13 +234,13 @@ class TestSubscriptionCRUD:
         assert resp.status_code == 422
 
     async def test_project_scope_requires_id(self, client, auth_headers):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         payload = _payload_daily() | {"scope_kind": "project"}
         resp = await client.post("/api/report-subscriptions", json=payload, headers=auth_headers)
         assert resp.status_code == 422
 
     async def test_list_returns_org_subscriptions(self, client, auth_headers):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         await client.post(
             "/api/report-subscriptions",
@@ -258,7 +258,7 @@ class TestSubscriptionCRUD:
         # user has no org (the test infra doesn't auto-provision a second
         # one), so org-scoped endpoints return 400. The point is: the other
         # user can't see or touch the row regardless.
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         created = await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         sub_id = created.json()["id"]
 
@@ -266,7 +266,7 @@ class TestSubscriptionCRUD:
         assert resp.status_code in (400, 403, 404)
 
     async def test_patch_updates_and_reschedules(self, client, auth_headers, db_session):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         created = await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         sub_id = created.json()["id"]
 
@@ -276,7 +276,7 @@ class TestSubscriptionCRUD:
         assert resp.json()["name"] == "Renamed"
 
     async def test_delete_marks_soft_deleted(self, client, auth_headers, db_session):
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         created = await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         sub_id = created.json()["id"]
 
@@ -297,7 +297,7 @@ class TestSubscriptionCRUD:
 
         get_settings.cache_clear()
 
-        await client.get("/api/projects", headers=auth_headers)
+        await client.get("/api/sessions", headers=auth_headers)
         created = await client.post("/api/report-subscriptions", json=_payload_daily(), headers=auth_headers)
         sub_id = created.json()["id"]
 

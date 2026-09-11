@@ -15,7 +15,6 @@ from src.app.services.blueprint_template_service import (
     ensure_org_blueprints,
 )
 
-
 # ── helpers ──────────────────────────────────────────────────────────
 
 
@@ -156,7 +155,7 @@ async def test_ensure_org_blueprints_heals_already_seeded_org(db_session, sample
         BlueprintSection(
             org_id=sample_org.id,
             slug="project_overview",
-            label="Project Overview",
+            label="Session Overview",
             description="",
             is_system=True,
             sort_order=0,
@@ -187,7 +186,7 @@ async def test_ensure_org_blueprints_no_op_when_healthy(db_session, sample_org):
     await db_session.flush()
     db_session.add(
         BlueprintSection(
-            org_id=sample_org.id, slug="project_overview", label="Project Overview",
+            org_id=sample_org.id, slug="project_overview", label="Session Overview",
             description="", is_system=True, sort_order=0,
         )
     )

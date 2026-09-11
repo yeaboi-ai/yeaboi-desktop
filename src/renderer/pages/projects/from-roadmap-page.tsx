@@ -118,15 +118,15 @@ function RoadmapBody() {
       // The backend resolves the roadmap item into the description a
       // project plans from; that seeds both the project and its blueprint.
       const picked = await planProject(roadmapId, index);
-      const resp = await authFetch('/api/projects', {
+      const resp = await authFetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description: picked.description }),
       });
-      if (!resp.ok) throw new Error(`could not create the project (${resp.status})`);
+      if (!resp.ok) throw new Error(`could not create the session (${resp.status})`);
       const created = (await resp.json()) as { id: string };
       const seed = await authFetch(
-        `/api/projects/${created.id}/blueprint/sections/project_overview`,
+        `/api/sessions/${created.id}/blueprint/sections/project_overview`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,7 @@ function RoadmapBody() {
             becomes a project with its blueprint started.
           </p>
         </div>
-        <Link href="/projects" className="text-[12px] text-muted-foreground hover:text-foreground">
+        <Link href="/sessions" className="text-[12px] text-muted-foreground hover:text-foreground">
           Back
         </Link>
       </header>
@@ -228,7 +228,7 @@ function RoadmapBody() {
                     disabled={creating >= 0}
                     onClick={() => void makeProject(index, project.name)}
                   >
-                    {creating === index ? 'Creating…' : 'Start this project'}
+                    {creating === index ? 'Creating…' : 'Start this session'}
                   </Button>
                 </div>
               </Section>

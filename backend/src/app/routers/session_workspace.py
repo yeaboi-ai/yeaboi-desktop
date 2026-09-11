@@ -13,16 +13,16 @@ from ..models.board import Board, BoardColumn, Card
 from ..models.feedback import Feedback
 from ..models.harness import HarnessConfig
 from ..models.organization import Organization, Team, TeamMember
-from ..models.project import Project
-from ..models.project_attachment import ProjectAttachment
-from ..models.project_output import ProjectOutput
 from ..models.session import ChatMessage, Participant, Session, TranscriptEntry
+from ..models.session_attachment import SessionAttachment
 from ..models.session_event import SessionContext, SessionEvent
+from ..models.session_output import SessionOutput
 from ..models.ticket_template import TicketTemplate
 from ..models.usage_event import UsageEvent
 from ..models.user import User
 from ..models.vocabulary import TranscriptionCorrection
-from ..schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from ..schemas.session import SessionResponse
+from ..schemas.session_workspace import SessionCreate
 from ..services.ai_provider import get_ai_client
 from ..services.attachment_storage import get_storage
 from ..services.audit_service import get_client_ip, log_audit
@@ -47,10 +47,10 @@ def _ai_error_detail(e: Exception) -> str:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/projects", tags=["projects"])
+router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
 
-def _dedupe_references(rows: list[dict]) -> list[dict]:
+def dedupe_references(rows: list[dict]) -> list[dict]:
     """The same (source, subject) once, first wins, order kept."""
     seen: set[tuple[str, str]] = set()
     out: list[dict] = []
@@ -63,12 +63,12 @@ def _dedupe_references(rows: list[dict]) -> list[dict]:
     return out
 
 
-async def project_attachment_rows(project_id: str, db: AsyncSession) -> list[dict]:
+async def session_attachment_rows(session_id: str, db: AsyncSession) -> list[dict]:
     """The project's attachments, oldest first, with their fetchable URLs."""
     result = await db.execute(
-        select(ProjectAttachment)
-        .where(ProjectAttachment.project_id == project_id)
-        .order_by(ProjectAttachment.created_at.asc(), ProjectAttachment.id.asc())
+        select(SessionAttachment)
+        .where(SessionAttachment.session_id == session_id)
+        .order_by(SessionAttachment.created_at.asc(), SessionAttachment.id.asc())
     )
     storage = get_storage()
     return [
@@ -86,16 +86,46 @@ async def project_attachment_rows(project_id: str, db: AsyncSession) -> list[dic
     ]
 
 
-@router.post("", status_code=201, response_model=ProjectResponse)
+def _workspace_row(session: Session, *, is_own_team: bool = False, attachments=None) -> dict:
+    """The workspace half of a session, for the routes that never load a
+    conversation's participants (returning the ORM row would lazy-load them
+    outside the async context)."""
+    return {
+        "id": session.id,
+        "org_id": session.org_id,
+        "status": session.status,
+        "title": session.title,
+        "initial_idea": session.initial_idea,
+        "join_code": session.join_code,
+        "ai_config": session.ai_config or {},
+        "name": session.name,
+        "description": session.description,
+        "repo_url": session.repo_url,
+        "owner_id": session.owner_id,
+        "team_id": session.team_id,
+        "is_demo": session.is_demo,
+        "key": session.key,
+        "is_own_team": is_own_team,
+        "default_generation_style": session.default_generation_style,
+        "default_modifiers": list(session.default_modifiers or []),
+        "references": list(session.references or []),
+        "attachments": attachments,
+        "continued_from_id": session.continued_from_id,
+        "created_at": session.created_at,
+        "updated_at": session.updated_at,
+    }
+
+
+@router.post("", status_code=201, response_model=SessionResponse)
 @limiter.limit("60/minute")
 async def create_project(
     request: Request,
-    body: ProjectCreate,
+    body: SessionCreate,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     team: Team = Depends(get_current_team),
     db: AsyncSession = Depends(get_db),
-) -> Project:
+) -> Session:
     # Auto-generate project name from description if not provided
     name = body.name
     if (not name or not name.strip()) and body.description and body.description.strip():
@@ -113,17 +143,20 @@ async def create_project(
             name = name.strip().strip('"').strip("'")
         except Exception:
             logger.debug("AI project name generation failed, using default")
-            name = "Untitled Project"
+            name = "Untitled Session"
     elif not name or not name.strip():
-        name = "Untitled Project"
+        name = "Untitled Session"
 
-    project = Project(
+    project = Session(
         name=name,
         description=body.description,
         owner_id=user.id,
         org_id=org.id,
         team_id=team.id,
-        references=_dedupe_references([r.model_dump() for r in body.references or []]),
+        # The workspace vocabulary: active while it is being worked, completed
+        # when the owner says so. `live`/`reviewing` are the conversation's own.
+        status="active",
+        references=dedupe_references([r.model_dump() for r in body.references or []]),
     )
     db.add(project)
     await db.flush()
@@ -132,18 +165,18 @@ async def create_project(
         org_id=org.id,
         user_id=user.id,
         action="create",
-        resource_type="project",
+        resource_type="session",
         resource_id=project.id,
         metadata={"name": name},
         ip_address=get_client_ip(request),
     )
     await db.commit()
-    logger.info("Project created: %s (owner=%s)", project.id, user.id)
+    logger.info("Session created: %s (owner=%s)", project.id, user.id)
     await db.refresh(project)
-    return project
+    return _workspace_row(project)
 
 
-@router.get("", response_model=list[ProjectResponse])
+@router.get("", response_model=list[SessionResponse])
 @limiter.limit("60/minute")
 async def list_projects(
     request: Request,
@@ -151,157 +184,28 @@ async def list_projects(
     org: Organization = Depends(get_current_org),
     team: Team = Depends(get_current_team),
     db: AsyncSession = Depends(get_db),
-) -> list[Project]:
+) -> list[dict]:
     # Filter by org + selected team
     result = await db.execute(
-        select(Project).where(Project.org_id == org.id, Project.team_id == team.id).order_by(Project.created_at.desc())
+        select(Session)
+        .where(Session.org_id == org.id, Session.team_id == team.id, Session.deleted_at.is_(None))
+        .order_by(Session.created_at.desc())
     )
-    return list(result.scalars().all())
+    return [_workspace_row(row) for row in result.scalars().all()]
 
 
-@router.get("/{project_id}", response_model=ProjectResponse)
-@limiter.limit("60/minute")
-async def get_project(
-    request: Request,
-    project_id: str,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    # All org members can view any project
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    # Check if the current user belongs to the project's team
-    team_check = await db.execute(
-        select(TeamMember).where(
-            TeamMember.team_id == project.team_id,
-            TeamMember.user_id == user.id,
-        )
-    )
-    is_own_team = team_check.scalar_one_or_none() is not None
-
-    response = {
-        "id": project.id,
-        "name": project.name,
-        "description": project.description,
-        "repo_url": project.repo_url,
-        "owner_id": project.owner_id,
-        "created_at": project.created_at,
-        "updated_at": project.updated_at,
-        "is_own_team": is_own_team,
-        "is_demo": project.is_demo,
-        "default_generation_style": project.default_generation_style,
-        "default_modifiers": list(project.default_modifiers or []),
-        "yeaboi_project_id": project.yeaboi_project_id,
-        "status": project.status,
-        "references": list(project.references or []),
-        "attachments": await project_attachment_rows(project.id, db),
-    }
-    return response
-
-
-@router.patch("/{project_id}", response_model=ProjectResponse)
-@limiter.limit("60/minute")
-async def update_project(
-    request: Request,
-    project_id: str,
-    body: ProjectUpdate,
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> Project:
-    # All team members can edit any project
-    result = await db.execute(select(Project).where(Project.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    update_data = body.model_dump(exclude_unset=True)
-    # Validate granularity + modifier slugs against the org's editable rows
-    # (admin-created customs are first-class) BEFORE applying any mutations.
-    # Backwards compat: if default_generation_style was sent with a known
-    # MODIFIER slug (legacy single-axis API), re-route it into
-    # default_modifiers and clear the granularity field.
-    if (
-        "default_generation_style" in update_data
-        or "default_modifiers" in update_data
-    ):
-        from ..services.granularity_service import (
-            ensure_org_granularities,
-            get_org_granularities,
-        )
-        from ..services.modifier_service import ensure_org_modifiers, get_org_modifiers
-
-        await ensure_org_granularities(project.org_id, db)
-        await ensure_org_modifiers(project.org_id, db)
-        org_gran_slugs = {r.slug for r in await get_org_granularities(project.org_id, db)}
-        org_mod_slugs = {r.slug for r in await get_org_modifiers(project.org_id, db)}
-
-        style_val = update_data.get("default_generation_style")
-        if isinstance(style_val, str) and style_val not in org_gran_slugs and style_val in org_mod_slugs:
-            # Legacy-API re-route: the value names a modifier, not a granularity.
-            existing_mods = list(update_data.get("default_modifiers") or project.default_modifiers or [])
-            if style_val not in existing_mods:
-                existing_mods.append(style_val)
-            update_data["default_modifiers"] = existing_mods
-            update_data["default_generation_style"] = None
-        elif isinstance(style_val, str) and style_val not in org_gran_slugs:
-            raise HTTPException(
-                status_code=422,
-                detail=f"Unknown granularity {style_val!r}. Valid: {sorted(org_gran_slugs)}",
-            )
-
-        mods_val = update_data.get("default_modifiers")
-        if isinstance(mods_val, list):
-            bad = [m for m in mods_val if m not in org_mod_slugs]
-            if bad:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Unknown modifier(s) {bad}. Valid: {sorted(org_mod_slugs)}",
-                )
-            # Dedupe preserving order.
-            seen: set[str] = set()
-            update_data["default_modifiers"] = [m for m in mods_val if not (m in seen or seen.add(m))]
-
-    if "status" in update_data and update_data["status"] not in ("active", "done"):
-        raise HTTPException(status_code=422, detail="status must be 'active' or 'done'")
-    if "references" in update_data:
-        if update_data["references"] is None:
-            raise HTTPException(status_code=422, detail="references must be a list")
-        update_data["references"] = _dedupe_references(update_data["references"])
-
-    for key, value in update_data.items():
-        setattr(project, key, value)
-
-    await log_audit(
-        db,
-        org_id=project.org_id,
-        user_id=user.id,
-        action="update",
-        resource_type="project",
-        resource_id=project_id,
-        metadata={"fields": list(update_data.keys())},
-        ip_address=get_client_ip(request),
-    )
-    await db.commit()
-    logger.info("Project updated: %s", project_id)
-    await db.refresh(project)
-    return project
-
-
-@router.delete("/{project_id}", status_code=204)
+@router.delete("/{session_id}", status_code=204)
 @limiter.limit("60/minute")
 async def delete_project(
     request: Request,
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     # Owner can always delete; otherwise require team admin role on the project's team.
     if project.owner_id != user.id:
@@ -317,16 +221,16 @@ async def delete_project(
         if not team_admin:
             logger.warning(
                 "Permission denied deleting project %s by user %s (not owner, not team admin)",
-                project_id,
+                session_id,
                 user.id,
             )
-            raise HTTPException(status_code=403, detail="Not authorised to delete this project")
+            raise HTTPException(status_code=403, detail="Not authorised to delete this session")
 
     # Delete all related records (FK constraints prevent direct project delete)
     # Order matters: children before parents
 
-    # Sessions → messages + participants first
-    session_ids = (await db.execute(select(Session.id).where(Session.project_id == project_id))).scalars().all()
+    # The session's own children first — the row being deleted is the session.
+    session_ids = [session_id]
     if session_ids:
         await db.execute(delete(ChatMessage).where(ChatMessage.session_id.in_(session_ids)))
         await db.execute(delete(Participant).where(Participant.session_id.in_(session_ids)))
@@ -347,41 +251,36 @@ async def delete_project(
         await db.execute(
             Card.__table__.update().where(Card.session_id.in_(session_ids)).values(session_id=None)
         )
-        # Billing ledger: detach from the session being removed. project_id is cleared later.
+        # Billing ledger: detach from the session being removed, keep the spend.
         await db.execute(
             UsageEvent.__table__.update()
             .where(UsageEvent.session_id.in_(session_ids))
             .values(session_id=None)
         )
-    await db.execute(delete(Session).where(Session.project_id == project_id))
+    # The session row itself goes last, after everything that points at it.
 
     # Board → cards → columns
-    board_ids = (await db.execute(select(Board.id).where(Board.project_id == project_id))).scalars().all()
+    board_ids = (await db.execute(select(Board.id).where(Board.session_id == session_id))).scalars().all()
     if board_ids:
         col_ids = (await db.execute(select(BoardColumn.id).where(BoardColumn.board_id.in_(board_ids)))).scalars().all()
         if col_ids:
             await db.execute(delete(Card).where(Card.column_id.in_(col_ids)))
         await db.execute(delete(BoardColumn).where(BoardColumn.board_id.in_(board_ids)))
-    await db.execute(delete(Board).where(Board.project_id == project_id))
+    await db.execute(delete(Board).where(Board.session_id == session_id))
 
     # Blueprints (snapshots before iterations due to FK) + harness configs
-    await db.execute(delete(BlueprintSnapshot).where(BlueprintSnapshot.project_id == project_id))
-    await db.execute(delete(BlueprintSuggestion).where(BlueprintSuggestion.project_id == project_id))
-    await db.execute(delete(BlueprintIteration).where(BlueprintIteration.project_id == project_id))
-    await db.execute(delete(HarnessConfig).where(HarnessConfig.project_id == project_id))
-    await db.execute(delete(ProjectOutput).where(ProjectOutput.project_id == project_id))
+    await db.execute(delete(BlueprintSnapshot).where(BlueprintSnapshot.session_id == session_id))
+    await db.execute(delete(BlueprintSuggestion).where(BlueprintSuggestion.session_id == session_id))
+    await db.execute(delete(BlueprintIteration).where(BlueprintIteration.session_id == session_id))
+    await db.execute(delete(HarnessConfig).where(HarnessConfig.session_id == session_id))
+    await db.execute(delete(SessionOutput).where(SessionOutput.session_id == session_id))
 
-    # Project-scoped ticket templates. Org-level templates have project_id=NULL and survive.
-    await db.execute(delete(TicketTemplate).where(TicketTemplate.project_id == project_id))
-
-    # Billing ledger: preserve rows for historical reporting, detach from the deleted project.
-    await db.execute(
-        UsageEvent.__table__.update().where(UsageEvent.project_id == project_id).values(project_id=None)
-    )
+    # Session-scoped ticket templates. Org-level templates have session_id=NULL and survive.
+    await db.execute(delete(TicketTemplate).where(TicketTemplate.session_id == session_id))
 
     # Screenshots: the files first, then the rows.
     attachment_rows = await db.execute(
-        select(ProjectAttachment).where(ProjectAttachment.project_id == project_id)
+        select(SessionAttachment).where(SessionAttachment.session_id == session_id)
     )
     attachments = attachment_rows.scalars().all()
     if attachments:
@@ -389,7 +288,7 @@ async def delete_project(
         for attachment in attachments:
             await storage.delete(attachment.storage_key)
         await db.execute(
-            delete(ProjectAttachment).where(ProjectAttachment.project_id == project_id)
+            delete(SessionAttachment).where(SessionAttachment.session_id == session_id)
         )
 
     # Finally delete the project
@@ -398,14 +297,14 @@ async def delete_project(
         org_id=project.org_id,
         user_id=user.id,
         action="delete",
-        resource_type="project",
-        resource_id=project_id,
+        resource_type="session",
+        resource_id=session_id,
         metadata={"name": project.name},
         ip_address=get_client_ip(request),
     )
     await db.delete(project)
     await db.commit()
-    logger.info("Project deleted: %s", project_id)
+    logger.info("Session deleted: %s", session_id)
 
 
 class GenerateDescriptionRequest(BaseModel):
@@ -423,7 +322,7 @@ async def generate_description(
 ) -> dict:
     """Generate a project description from a project name using AI."""
     if not body.name.strip():
-        raise HTTPException(status_code=422, detail="Project name is required")
+        raise HTTPException(status_code=422, detail="Session name is required")
 
     try:
         ai = await get_ai_client(org.id, db, task="fast")
@@ -433,7 +332,7 @@ async def generate_description(
                 "Be specific about what the project does and who it's for. "
                 "Don't use buzzwords. Just describe the product plainly."
             ),
-            messages=[{"role": "user", "content": f"Project name: {body.name.strip()}"}],
+            messages=[{"role": "user", "content": f"Session name: {body.name.strip()}"}],
             max_tokens=150,
         )
         return {"description": text.strip()}
@@ -443,7 +342,7 @@ async def generate_description(
 
 class RewriteIdeaRequest(BaseModel):
     text: str
-    project_id: str | None = None
+    session_id: str | None = None
 
 
 @router.post("/rewrite-idea")
@@ -459,20 +358,20 @@ async def rewrite_idea(
     if not body.text.strip():
         raise HTTPException(status_code=422, detail="Text is required")
 
-    # Build context from project + blueprint if project_id provided
+    # Build context from project + blueprint if session_id provided
     context_parts = []
-    if body.project_id:
-        result = await db.execute(select(Project).where(Project.id == body.project_id))
+    if body.session_id:
+        result = await db.execute(select(Session).where(Session.id == body.session_id))
         project = result.scalar_one_or_none()
         if project:
-            context_parts.append(f"Project: {project.name}")
+            context_parts.append(f"Session: {project.name}")
             if project.description:
-                context_parts.append(f"Project description: {project.description}")
+                context_parts.append(f"Session description: {project.description}")
             # Get blueprint gaps
             from ..services.blueprint_service import get_or_create_blueprint
             from ..services.facilitator import SECTION_LABELS, assess_coverage
 
-            bp = await get_or_create_blueprint(body.project_id, db)
+            bp = await get_or_create_blueprint(body.session_id, db)
             cov = assess_coverage(bp.content)
             gaps = [SECTION_LABELS.get(s, s) for s in cov["gaps"]]
             if gaps:
@@ -503,16 +402,16 @@ async def rewrite_idea(
         raise HTTPException(status_code=502, detail=_ai_error_detail(e))
 
 
-@router.get("/{project_id}/diagrams")
+@router.get("/{session_id}/diagrams")
 async def get_project_diagrams(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     """Return all diagrams from a project's sessions."""
     result = await db.execute(
         select(Session.id, Session.title, Session.diagram_state, Session.created_at)
-        .where(Session.project_id == project_id, Session.diagram_state.isnot(None))
+        .where(Session.id == session_id, Session.diagram_state.isnot(None))
         .order_by(Session.created_at.desc())
     )
     rows = result.all()

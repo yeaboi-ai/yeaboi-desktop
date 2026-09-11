@@ -13,7 +13,6 @@ from ..models.board import Board, BoardColumn, Card, CardComment
 from ..models.card_event import CardEvent
 from ..models.card_link import CardLink
 from ..models.organization import Organization
-from ..models.project import Project
 from ..models.session import Session
 from ..models.user import User
 from ..schemas.board import (
@@ -168,34 +167,28 @@ async def get_global_board(
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Return kanban board aggregating cards from all projects in the org."""
-    # Get all projects scoped to the current org
-    projects_result = await db.execute(
-        select(Project).where(Project.org_id == org.id).order_by(Project.created_at.desc())
+    """Return kanban board aggregating cards from every session in the org."""
+    sessions_result = await db.execute(
+        select(Session).where(Session.org_id == org.id).order_by(Session.created_at.desc())
     )
-    projects = list(projects_result.scalars().all())
+    sessions = list(sessions_result.scalars().all())
 
-    if not projects:
+    if not sessions:
         return {"columns": []}
 
     # Get all boards with columns and cards
     boards_result = await db.execute(
         select(Board)
-        .where(Board.project_id.in_([p.id for p in projects]))
+        .where(Board.session_id.in_([s.id for s in sessions]))
         .options(selectinload(Board.columns).selectinload(BoardColumn.cards).selectinload(Card.assignee))
     )
     boards = list(boards_result.scalars().all())
 
-    # Build project name + key lookups so the global board can render friendly_ids
-    # without an extra round-trip from the frontend.
-    project_names = {p.id: p.name for p in projects}
-    project_keys = {p.id: p.key for p in projects}
-
-    # Build session title lookup
-    sessions_result = await db.execute(
-        select(Session.id, Session.title).where(Session.project_id.in_([p.id for p in projects]))
-    )
-    session_titles = {row.id: row.title for row in sessions_result.all()}
+    # Name + key lookups so the global board can render friendly_ids without an
+    # extra round-trip from the frontend.
+    session_names = {s.id: s.name for s in sessions}
+    session_keys = {s.id: s.key for s in sessions}
+    session_titles = {s.id: s.title for s in sessions}
 
     # Aggregate per-card counts in three flat queries so the board endpoint
     # stays O(boards) round-trips. Without this, the new attachment/link/comment
@@ -203,16 +196,16 @@ async def get_global_board(
     all_card_ids = [card.id for board in boards for col in board.columns for card in col.cards]
     counts = await _aggregate_card_counts(all_card_ids, db) if all_card_ids else _empty_counts()
 
-    # Compute exec_label per project so wave numbering doesn't bleed across
-    # unrelated projects (each project has its own DAG, its own wave 0).
+    # Compute exec_label per session so wave numbering doesn't bleed across
+    # unrelated sessions (each has its own DAG, its own wave 0).
     exec_labels: dict[str, str] = {}
-    cards_by_project: dict[str, list[Card]] = {}
+    cards_by_session: dict[str, list[Card]] = {}
     for board in boards:
         for col in board.columns:
             for card in col.cards:
-                cards_by_project.setdefault(board.project_id, []).append(card)
-    for project_cards in cards_by_project.values():
-        exec_labels.update(_compute_exec_labels(project_cards))
+                cards_by_session.setdefault(board.session_id, []).append(card)
+    for session_cards in cards_by_session.values():
+        exec_labels.update(_compute_exec_labels(session_cards))
 
     # Merge columns by name across all boards
     merged: dict[str, dict] = {}
@@ -255,15 +248,14 @@ async def get_global_board(
                         "agent_log": card.agent_log,
                         "created_at": card.created_at,
                         "updated_at": card.updated_at,
-                        "project_id": board.project_id,
-                        "project_name": project_names.get(board.project_id, "Unknown"),
-                        "session_id": card.session_id,
-                        "session_title": session_titles.get(card.session_id) if card.session_id else None,
-                        # Phase 0 — friendly id + template fields. project_key looked up
-                        # from the parent project so the frontend can render PROJ-123 directly.
+                        "session_id": board.session_id,
+                        "session_name": session_names.get(board.session_id, "Unknown"),
+                        "session_title": session_titles.get(board.session_id),
+                        # Phase 0 — friendly id + template fields. session_key looked up
+                        # from the owning session so the frontend can render PROJ-123 directly.
                         "number": card.number,
                         "friendly_id": card.friendly_id,
-                        "project_key": project_keys.get(board.project_id),
+                        "session_key": session_keys.get(board.session_id),
                         "template_id": card.template_id,
                         "template_version": card.template_version,
                         "custom_fields": card.custom_fields or {},
@@ -288,20 +280,20 @@ async def get_global_board(
     return {"columns": columns}
 
 
-@router.get("/api/projects/{project_id}/board", response_model=BoardResponse)
+@router.get("/api/sessions/{session_id}/board", response_model=BoardResponse)
 async def get_board(
-    project_id: str,
+    session_id: str,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Board:
     """Get (or auto-create) the kanban board for a project."""
     # Verify project ownership
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(select(Session).where(Session.id == session_id))
     project = result.scalar_one_or_none()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Session not found")
 
-    board = await get_or_create_board(project_id, db)
+    board = await get_or_create_board(session_id, db)
     return board
 
 
@@ -349,7 +341,7 @@ async def create_card(
     )
     db.add(card)
     await db.flush()
-    await assign_friendly_id(card, board.project_id, db)
+    await assign_friendly_id(card, board.session_id, db)
     await log_audit(
         db,
         org_id=board.org_id,
@@ -370,7 +362,7 @@ async def create_card(
         mention_text = f"{card.title}\n{card.description or ''}"
         mentioned_ids = await resolve_mentions(db, board.org_id, mention_text)
         for _uid in mentioned_ids:
-            proj_result = await db.execute(select(Project).where(Project.id == board.project_id))
+            proj_result = await db.execute(select(Session).where(Session.id == board.session_id))
             proj = proj_result.scalar_one_or_none()
             if proj:
                 await dispatch_event(
@@ -470,7 +462,7 @@ async def update_card(
             )
             board_obj = board_result.scalar_one_or_none()
             if board_obj:
-                proj_result = await db.execute(select(Project).where(Project.id == board_obj.project_id))
+                proj_result = await db.execute(select(Session).where(Session.id == board_obj.session_id))
                 proj = proj_result.scalar_one_or_none()
                 if proj:
                     await dispatch_event(
@@ -482,7 +474,7 @@ async def update_card(
                             "card_title": card.title,
                             "from_state": old_col.name if old_col else old_column_id,
                             "to_state": new_col.name if new_col else card.column_id,
-                            "project_id": board_obj.project_id,
+                            "session_id": board_obj.session_id,
                         },
                     )
         except Exception as _exc:
@@ -501,7 +493,7 @@ async def update_card(
                     mentioned_ids = await resolve_mentions(db, _board_obj.org_id, mention_text)
                     for _uid in mentioned_ids:
                         _proj_result = await db.execute(
-                            select(Project).where(Project.id == _board_obj.project_id)
+                            select(Session).where(Session.id == _board_obj.session_id)
                         )
                         _proj = _proj_result.scalar_one_or_none()
                         if _proj:
@@ -642,7 +634,7 @@ async def delete_card_comment(
 @router.get("/api/cards/search")
 async def search_cards(
     q: str,
-    project_id: str | None = None,
+    session_id: str | None = None,
     user: User = Depends(get_current_user),
     org: Organization = Depends(get_current_org),
     db: AsyncSession = Depends(get_db),
@@ -650,7 +642,7 @@ async def search_cards(
     """Full-text search across title, description, friendly_id and labels.
 
     Org-scoped via the card's project. Returns lightweight rows (id, friendly_id,
-    title, column_id, project_id) — the frontend intersects this with the loaded
+    title, column_id, session_id) — the frontend intersects this with the loaded
     board to keep search non-destructive of the visible data.
     """
     needle = (q or "").strip()
@@ -665,11 +657,11 @@ async def search_cards(
         select(Card)
         .join(BoardColumn, BoardColumn.id == Card.column_id)
         .join(Board, Board.id == BoardColumn.board_id)
-        .join(Project, Project.id == Board.project_id)
-        .where(Project.org_id == org.id)
+        .join(Session, Session.id == Board.session_id)
+        .where(Session.org_id == org.id)
     )
-    if project_id:
-        stmt = stmt.where(Board.project_id == project_id)
+    if session_id:
+        stmt = stmt.where(Board.session_id == session_id)
 
     # ILIKE on title/description/friendly_id; for labels JSON, cast to text and
     # ILIKE the serialised representation. Works on Postgres (jsonb) and SQLite (json text).
@@ -691,7 +683,7 @@ async def search_cards(
             "friendly_id": c.friendly_id,
             "title": c.title,
             "column_id": c.column_id,
-            "project_id": c.project_id,
+            "session_id": c.session_id,
         }
         for c in rows
     ]
@@ -727,8 +719,8 @@ async def bulk_update_cards(
             select(Card)
             .join(BoardColumn, BoardColumn.id == Card.column_id)
             .join(Board, Board.id == BoardColumn.board_id)
-            .join(Project, Project.id == Board.project_id)
-            .where(Card.id.in_(ids), Project.org_id == org.id)
+            .join(Session, Session.id == Board.session_id)
+            .where(Card.id.in_(ids), Session.org_id == org.id)
         )
     ).scalars().all()
 
@@ -775,10 +767,10 @@ async def get_ticket_detail(
         raise HTTPException(status_code=404, detail="Ticket not found")
 
     # Org scoping — load the card's project and reject cross-org access.
-    project: Project | None = None
-    if card.project_id:
+    project: Session | None = None
+    if card.session_id:
         project = (
-            await db.execute(select(Project).where(Project.id == card.project_id))
+            await db.execute(select(Session).where(Session.id == card.session_id))
         ).scalar_one_or_none()
     if project and project.org_id != org.id:
         raise HTTPException(status_code=403, detail="Forbidden")

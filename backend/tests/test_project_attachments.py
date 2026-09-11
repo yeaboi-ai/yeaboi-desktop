@@ -1,4 +1,4 @@
-"""Tests for /api/projects/{id}/attachments — the screenshots a project carries."""
+"""Tests for /api/sessions/{id}/attachments — the screenshots a project carries."""
 
 import io
 
@@ -30,17 +30,17 @@ def _png(width: int = 12, height: int = 7) -> bytes:
 
 
 async def _project(client, headers, name="Shots") -> str:
-    return (await client.post("/api/projects", json={"name": name}, headers=headers)).json()["id"]
+    return (await client.post("/api/sessions", json={"name": name}, headers=headers)).json()["id"]
 
 
-async def _upload(client, headers, project_id, name="login.png", data=None, mime="image/png"):
+async def _upload(client, headers, session_id, name="login.png", data=None, mime="image/png"):
     files = {"file": (name, io.BytesIO(data if data is not None else _png()), mime)}
-    return await client.post(f"/api/projects/{project_id}/attachments", files=files, headers=headers)
+    return await client.post(f"/api/sessions/{session_id}/attachments", files=files, headers=headers)
 
 
 async def test_upload_lists_and_shows_on_the_detail(client, auth_headers, upload_dir):
-    project_id = await _project(client, auth_headers)
-    resp = await _upload(client, auth_headers, project_id)
+    session_id = await _project(client, auth_headers)
+    resp = await _upload(client, auth_headers, session_id)
     assert resp.status_code == 201, resp.text
     body = resp.json()
     assert body["filename"] == "login.png" and body["mime_type"] == "image/png"
@@ -49,15 +49,15 @@ async def test_upload_lists_and_shows_on_the_detail(client, auth_headers, upload
     assert (upload_dir / body["url"].removeprefix("/uploads/")).exists()
     assert set(body) == {"id", "filename", "mime_type", "size_bytes", "width", "height", "url", "created_at"}
 
-    second = (await _upload(client, auth_headers, project_id, name="dash.png")).json()
-    listed = (await client.get(f"/api/projects/{project_id}/attachments", headers=auth_headers)).json()
+    second = (await _upload(client, auth_headers, session_id, name="dash.png")).json()
+    listed = (await client.get(f"/api/sessions/{session_id}/attachments", headers=auth_headers)).json()
     # Both are there, and both endpoints agree on the order. Which order that is
     # cannot be asserted here: SQLite's CURRENT_TIMESTAMP has one-second
     # resolution, so two uploads in the same second tie and fall through to the
     # uuid tiebreak. Postgres timestamps them apart.
     assert {a["id"] for a in listed} == {body["id"], second["id"]}
 
-    detail = (await client.get(f"/api/projects/{project_id}", headers=auth_headers)).json()
+    detail = (await client.get(f"/api/sessions/{session_id}", headers=auth_headers)).json()
     assert [a["id"] for a in detail["attachments"]] == [a["id"] for a in listed]
 
 
@@ -72,29 +72,29 @@ async def test_upload_lists_and_shows_on_the_detail(client, auth_headers, upload
     ],
 )
 async def test_only_readable_images_are_accepted(client, auth_headers, upload_dir, name, data, mime, status):
-    project_id = await _project(client, auth_headers)
-    resp = await _upload(client, auth_headers, project_id, name=name, data=data, mime=mime)
+    session_id = await _project(client, auth_headers)
+    resp = await _upload(client, auth_headers, session_id, name=name, data=data, mime=mime)
     assert resp.status_code == status, resp.text
 
 
 async def test_oversize_is_413(client, auth_headers, upload_dir, monkeypatch):
-    from src.app.routers import project_attachments
+    from src.app.routers import session_attachments
 
-    monkeypatch.setattr(project_attachments, "MAX_FILE_SIZE", 100)
-    project_id = await _project(client, auth_headers)
-    resp = await _upload(client, auth_headers, project_id, data=_png(64, 64))
+    monkeypatch.setattr(session_attachments, "MAX_FILE_SIZE", 100)
+    session_id = await _project(client, auth_headers)
+    resp = await _upload(client, auth_headers, session_id, data=_png(64, 64))
     assert resp.status_code == 413
 
 
 async def test_delete_by_uploader_removes_the_file(client, auth_headers, upload_dir):
-    project_id = await _project(client, auth_headers)
-    body = (await _upload(client, auth_headers, project_id)).json()
+    session_id = await _project(client, auth_headers)
+    body = (await _upload(client, auth_headers, session_id)).json()
     path = upload_dir / body["url"].removeprefix("/uploads/")
-    resp = await client.delete(f"/api/projects/{project_id}/attachments/{body['id']}", headers=auth_headers)
+    resp = await client.delete(f"/api/sessions/{session_id}/attachments/{body['id']}", headers=auth_headers)
     assert resp.status_code == 204
     assert not path.exists()
-    assert (await client.get(f"/api/projects/{project_id}/attachments", headers=auth_headers)).json() == []
-    resp = await client.delete(f"/api/projects/{project_id}/attachments/{body['id']}", headers=auth_headers)
+    assert (await client.get(f"/api/sessions/{session_id}/attachments", headers=auth_headers)).json() == []
+    resp = await client.delete(f"/api/sessions/{session_id}/attachments/{body['id']}", headers=auth_headers)
     assert resp.status_code == 404
 
 
@@ -104,29 +104,29 @@ async def test_a_teammate_may_add_but_not_remove_anothers_shot(
     from sqlalchemy import select
 
     from src.app.models.organization import OrgMember, TeamMember
-    from src.app.models.project import Project
+    from src.app.models.session import Session
     from src.app.models.user import User
 
-    project_id = await _project(client, auth_headers)
-    project = (await db_session.execute(select(Project).where(Project.id == project_id))).scalar_one()
+    session_id = await _project(client, auth_headers)
+    project = (await db_session.execute(select(Session).where(Session.id == session_id))).scalar_one()
     await client.get("/api/me", headers=other_auth_headers)
     other = (await db_session.execute(select(User).where(User.email == "other@example.com"))).scalar_one()
     db_session.add(OrgMember(org_id=project.org_id, user_id=other.id, role="member"))
     db_session.add(TeamMember(team_id=project.team_id, user_id=other.id, role="member"))
     await db_session.commit()
 
-    owners = (await _upload(client, auth_headers, project_id, name="owner.png")).json()
-    theirs = (await _upload(client, other_auth_headers, project_id, name="theirs.png")).json()
+    owners = (await _upload(client, auth_headers, session_id, name="owner.png")).json()
+    theirs = (await _upload(client, other_auth_headers, session_id, name="theirs.png")).json()
 
-    resp = await client.delete(f"/api/projects/{project_id}/attachments/{owners['id']}", headers=other_auth_headers)
+    resp = await client.delete(f"/api/sessions/{session_id}/attachments/{owners['id']}", headers=other_auth_headers)
     assert resp.status_code == 403
     # The uploader removes their own; the project owner removes anyone's.
     assert (
-        await client.delete(f"/api/projects/{project_id}/attachments/{theirs['id']}", headers=other_auth_headers)
+        await client.delete(f"/api/sessions/{session_id}/attachments/{theirs['id']}", headers=other_auth_headers)
     ).status_code == 204
-    theirs = (await _upload(client, other_auth_headers, project_id, name="again.png")).json()
+    theirs = (await _upload(client, other_auth_headers, session_id, name="again.png")).json()
     assert (
-        await client.delete(f"/api/projects/{project_id}/attachments/{theirs['id']}", headers=auth_headers)
+        await client.delete(f"/api/sessions/{session_id}/attachments/{theirs['id']}", headers=auth_headers)
     ).status_code == 204
 
 
@@ -136,7 +136,7 @@ async def test_cross_org_is_403_and_unknown_is_404(client, auth_headers, other_a
     from src.app.models.organization import Organization, OrgMember
     from src.app.models.user import User
 
-    project_id = await _project(client, auth_headers)
+    session_id = await _project(client, auth_headers)
     await client.get("/api/me", headers=other_auth_headers)
     other = (await db_session.execute(select(User).where(User.email == "other@example.com"))).scalar_one()
     org = Organization(name="Elsewhere", slug="elsewhere")
@@ -146,26 +146,26 @@ async def test_cross_org_is_403_and_unknown_is_404(client, auth_headers, other_a
     await db_session.commit()
 
     headers = {**other_auth_headers, "X-Org-Id": org.id}
-    assert (await _upload(client, headers, project_id)).status_code == 403
-    assert (await client.get(f"/api/projects/{project_id}/attachments", headers=headers)).status_code == 403
+    assert (await _upload(client, headers, session_id)).status_code == 403
+    assert (await client.get(f"/api/sessions/{session_id}/attachments", headers=headers)).status_code == 403
     assert (await _upload(client, auth_headers, "nope")).status_code == 404
 
 
 async def test_deleting_the_project_removes_rows_and_files(client, auth_headers, db_session, upload_dir):
     from sqlalchemy import select
 
-    from src.app.models.project_attachment import ProjectAttachment
+    from src.app.models.session_attachment import SessionAttachment
 
-    project_id = await _project(client, auth_headers)
-    body = (await _upload(client, auth_headers, project_id)).json()
+    session_id = await _project(client, auth_headers)
+    body = (await _upload(client, auth_headers, session_id)).json()
     path = upload_dir / body["url"].removeprefix("/uploads/")
     assert path.exists()
 
-    resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
+    resp = await client.delete(f"/api/sessions/{session_id}", headers=auth_headers)
     assert resp.status_code == 204, resp.text
     assert not path.exists()
     rows = (
-        (await db_session.execute(select(ProjectAttachment).where(ProjectAttachment.project_id == project_id)))
+        (await db_session.execute(select(SessionAttachment).where(SessionAttachment.session_id == session_id)))
         .scalars()
         .all()
     )

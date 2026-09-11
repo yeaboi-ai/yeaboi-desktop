@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.app.models.project import Project
+from src.app.models.session import Session
 from src.app.services.slack_event_handler import _dispatch_ask, handle
 
 
@@ -34,7 +34,7 @@ class _FakeAI:
 async def test_mention_triggers_tool_loop_and_creates_session_with_link(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -42,7 +42,7 @@ async def test_mention_triggers_tool_loop_and_creates_session_with_link(
     )
     db_session.add(project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = project.id
+    sample_team.last_viewed_session_id = project.id
     await db_session.commit()
 
     envelope = {
@@ -116,7 +116,7 @@ async def test_mention_triggers_tool_loop_and_creates_session_with_link(
     blocks = posted.await_args.kwargs.get("blocks")
     assert blocks, "expected Block Kit blocks on the session-created reply"
     action = next(b for b in blocks if b["type"] == "actions")
-    assert "/projects/" in action["elements"][0]["url"]
+    assert "/sessions/" in action["elements"][0]["url"]
     assert "/sessions/" in action["elements"][0]["url"]
 
 
@@ -124,15 +124,15 @@ async def test_mention_triggers_tool_loop_and_creates_session_with_link(
 async def test_dm_triggers_tool_loop_and_posts_in_dm(
     db_session, sample_team, sample_user
 ):
-    project = Project(
+    project = Session(
         org_id=sample_team.org_id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
-        name="DM Project",
+        name="DM Session",
     )
     db_session.add(project)
     await db_session.flush()
-    sample_team.last_viewed_project_id = project.id
+    sample_team.last_viewed_session_id = project.id
     await db_session.commit()
 
     envelope = {

@@ -70,7 +70,7 @@ Return ONLY valid JSON in this format (no markdown fences, no commentary):
     "story_points": 3,
     "labels": ["devops", "backend"],
     "acceptance_criteria": [
-      "Project builds and runs locally",
+      "Session builds and runs locally",
       "CI pipeline configured",
       "README with setup instructions"
     ],
@@ -96,7 +96,7 @@ Return ONLY valid JSON in this format (no markdown fences, no commentary):
 def _blueprint_to_text(content: dict[str, str]) -> str:
     """Convert blueprint content dict to readable text."""
     section_labels = {
-        "project_overview": "Project Overview",
+        "project_overview": "Session Overview",
         "goals_constraints": "Goals & Constraints",
         "users_personas": "Users & Personas",
         "architecture": "Architecture",
@@ -382,19 +382,18 @@ async def preview_tasks_from_blueprint(
 
 
 async def persist_tasks_to_board(
-    project_id: str,
+    session_id: str,
     tasks: list[dict],
     db: AsyncSession,
-    session_id: str | None = None,
 ) -> tuple[Board, int]:
-    """Persist a parsed task list as Cards in the project's Backlog. Returns (board, card_count).
+    """Persist a parsed task list as Cards in the session's Backlog. Returns (board, card_count).
 
     Reads each task's optional ``template_slug`` and ``custom_fields`` and resolves
     them against the org's TicketTemplate set, stamping ``template_id`` and the
     template's current ``version`` on the Card so it survives later prompt edits.
     """
 
-    board = await get_or_create_board(project_id, db)
+    board = await get_or_create_board(session_id, db)
     backlog_col = next((c for c in board.columns if c.name == "Backlog"), None)
     if not backlog_col:
         logger.error("No Backlog column found on board %s", board.id)
@@ -410,11 +409,11 @@ async def persist_tasks_to_board(
     # Look up the project's org so we can resolve template slugs once for the whole batch.
     from sqlalchemy import select as _select  # local import to avoid touching module header
 
-    from ..models.project import Project
+    from ..models.session import Session
     from ..services.ticket_template_service import get_org_ticket_templates
 
     proj_row = (
-        await db.execute(_select(Project.org_id).where(Project.id == project_id))
+        await db.execute(_select(Session.org_id).where(Session.id == session_id))
     ).scalar_one_or_none()
     template_lookup: dict[str, tuple[str, int, list[str], int | None, str | None]] = {}
     if proj_row:
@@ -479,7 +478,7 @@ async def persist_tasks_to_board(
         )
         db.add(card)
         await db.flush()
-        await assign_friendly_id(card, project_id, db)
+        await assign_friendly_id(card, session_id, db)
         index_to_card[i] = card
         created += 1
 
@@ -510,7 +509,7 @@ async def persist_tasks_to_board(
             )
             db.add(child_card)
             await db.flush()
-            await assign_friendly_id(child_card, project_id, db)
+            await assign_friendly_id(child_card, session_id, db)
             children_for_task.append(child_card)
             created += 1
         child_card_groups[i] = children_for_task
@@ -537,7 +536,7 @@ async def persist_tasks_to_board(
                 ]
 
     await db.commit()
-    logger.info("Persisted %d cards for project %s", created, project_id)
+    logger.info("Persisted %d cards for project %s", created, session_id)
 
     result = await db.execute(
         select(Board).where(Board.id == board.id).options(selectinload(Board.columns).selectinload(BoardColumn.cards))
@@ -546,11 +545,10 @@ async def persist_tasks_to_board(
 
 
 async def generate_tasks_from_blueprint(
-    project_id: str,
+    session_id: str,
     blueprint_content: dict[str, str],
     db: AsyncSession,
     org_id: str | None = None,
-    session_id: str | None = None,
 ) -> Board:
     """Use Claude to generate kanban cards from a blueprint, then persist them.
 
@@ -561,8 +559,8 @@ async def generate_tasks_from_blueprint(
     """
     tasks = await preview_tasks_from_blueprint(blueprint_content, db, org_id=org_id)
     if not tasks:
-        return await get_or_create_board(project_id, db)
-    board, _ = await persist_tasks_to_board(project_id, tasks, db, session_id=session_id)
+        return await get_or_create_board(session_id, db)
+    board, _ = await persist_tasks_to_board(session_id, tasks, db)
     return board
 
 

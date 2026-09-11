@@ -10,7 +10,7 @@ class HarnessConfig(TimestampMixin, Base):
     __tablename__ = "harness_configs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id"), unique=True, nullable=False)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("sessions.id"), unique=True, nullable=False)
     org_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("organizations.id"))
     repo_name: Mapped[str | None] = mapped_column(String(255))
     repo_url: Mapped[str | None] = mapped_column(String(500))

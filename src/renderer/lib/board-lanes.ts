@@ -216,7 +216,7 @@ function buildProjectLanes(cards: Card[]): Lane[] {
   const buckets = new Map<string, { name: string; ids: string[] }>();
   for (const card of cards) {
     const id = card.project_id ?? '__noproject__';
-    const name = card.project_name ?? 'Unknown project';
+    const name = card.project_name ?? 'Unknown session';
     const bucket = buckets.get(id);
     if (bucket) {
       bucket.ids.push(card.id);

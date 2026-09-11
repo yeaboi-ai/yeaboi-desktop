@@ -22,7 +22,6 @@ from ..models.blueprint import BlueprintIteration, BlueprintSnapshot
 from ..models.board import Board, BoardColumn, Card, CardComment
 from ..models.directory import DirectoryEntry
 from ..models.organization import OrgMember
-from ..models.project import Project
 from ..models.session import Participant, Session
 from ..models.user import User
 from .html_text import html_to_text, normalize_ac
@@ -229,7 +228,7 @@ TOOL_SCHEMAS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "name": {"type": "string", "description": "Project name (2-5 words)"},
+                "name": {"type": "string", "description": "Session name (2-5 words)"},
                 "description": {"type": "string", "description": "Brief project description"},
             },
             "required": [],
@@ -282,7 +281,7 @@ TOOL_SCHEMAS = [
                 "project_name": {
                     "type": "string",
                     "description": (
-                        "Project name (case-insensitive partial match). Optional — "
+                        "Session name (case-insensitive partial match). Optional — "
                         "falls back to the team's current project when omitted."
                     ),
                 },
@@ -572,7 +571,7 @@ async def _list_projects(
     user_id: str | None = None,
 ) -> list:
     result = await db.execute(
-        select(Project).where(Project.org_id == org_id, Project.deleted_at.is_(None)).order_by(Project.name)
+        select(Session).where(Session.org_id == org_id, Session.deleted_at.is_(None)).order_by(Session.name)
     )
     projects = result.scalars().all()
     return [{"id": p.id, "name": p.name, "description": p.description or ""} for p in projects]
@@ -588,16 +587,16 @@ async def _get_project(
 ) -> dict:
     name = input_data["project_name"]
     result = await db.execute(
-        select(Project).where(Project.org_id == org_id, Project.name.ilike(f"%{name}%"), Project.deleted_at.is_(None))
+        select(Session).where(Session.org_id == org_id, Session.name.ilike(f"%{name}%"), Session.deleted_at.is_(None))
     )
     project = result.scalar_one_or_none()
     if not project:
         return {"error": f"No project found matching '{name}'"}
 
     # Count sessions and board cards
-    session_count = (await db.execute(select(func.count()).where(Session.project_id == project.id))).scalar() or 0
+    session_count = (await db.execute(select(func.count()).where(Session.id == project.id))).scalar() or 0
 
-    board_result = await db.execute(select(Board).where(Board.project_id == project.id).limit(1))
+    board_result = await db.execute(select(Board).where(Board.session_id == project.id).limit(1))
     board = board_result.scalar_one_or_none()
     card_count = 0
     if board:
@@ -630,13 +629,13 @@ async def _list_board_cards(
 ) -> list:
     name = input_data["project_name"]
     project_result = await db.execute(
-        select(Project).where(Project.org_id == org_id, Project.name.ilike(f"%{name}%"), Project.deleted_at.is_(None))
+        select(Session).where(Session.org_id == org_id, Session.name.ilike(f"%{name}%"), Session.deleted_at.is_(None))
     )
     project = project_result.scalar_one_or_none()
     if not project:
         return [{"error": f"No project found matching '{name}'"}]
 
-    board_result = await db.execute(select(Board).where(Board.project_id == project.id).limit(1))
+    board_result = await db.execute(select(Board).where(Board.session_id == project.id).limit(1))
     board = board_result.scalar_one_or_none()
     if not board:
         return []
@@ -829,14 +828,14 @@ async def _list_sessions(
 ) -> list:
     name = input_data["project_name"]
     project_result = await db.execute(
-        select(Project).where(Project.org_id == org_id, Project.name.ilike(f"%{name}%"), Project.deleted_at.is_(None))
+        select(Session).where(Session.org_id == org_id, Session.name.ilike(f"%{name}%"), Session.deleted_at.is_(None))
     )
     project = project_result.scalar_one_or_none()
     if not project:
         return [{"error": f"No project found matching '{name}'"}]
 
     result = await db.execute(
-        select(Session).where(Session.project_id == project.id).order_by(Session.created_at.desc())
+        select(Session).where(Session.id == project.id).order_by(Session.created_at.desc())
     )
     sessions = result.scalars().all()
     return [
@@ -859,7 +858,7 @@ async def _get_blueprint(
 ) -> dict:
     name = input_data["project_name"]
     project_result = await db.execute(
-        select(Project).where(Project.org_id == org_id, Project.name.ilike(f"%{name}%"), Project.deleted_at.is_(None))
+        select(Session).where(Session.org_id == org_id, Session.name.ilike(f"%{name}%"), Session.deleted_at.is_(None))
     )
     project = project_result.scalar_one_or_none()
     if not project:
@@ -868,7 +867,7 @@ async def _get_blueprint(
     # Get latest iteration
     iter_result = await db.execute(
         select(BlueprintIteration)
-        .where(BlueprintIteration.project_id == project.id)
+        .where(BlueprintIteration.session_id == project.id)
         .order_by(BlueprintIteration.iteration_number.desc())
         .limit(1)
     )
@@ -925,18 +924,18 @@ async def _suggest_session(
     project_name = input_data["project_name"]
     is_new = input_data.get("is_new_project", False)
 
-    project_id = None
+    session_id = None
     if not is_new:
         result = await db.execute(
-            select(Project).where(
-                Project.org_id == org_id,
-                Project.name.ilike(f"%{project_name}%"),
-                Project.deleted_at.is_(None),
+            select(Session).where(
+                Session.org_id == org_id,
+                Session.name.ilike(f"%{project_name}%"),
+                Session.deleted_at.is_(None),
             )
         )
         project = result.scalar_one_or_none()
         if project:
-            project_id = project.id
+            session_id = project.id
             project_name = project.name
         else:
             is_new = True
@@ -944,7 +943,7 @@ async def _suggest_session(
     return {
         "_action": "suggest_session",
         "project_name": project_name,
-        "project_id": project_id,
+        "session_id": session_id,
         "idea_summary": input_data["idea_summary"],
         "is_new_project": is_new,
     }
@@ -964,8 +963,8 @@ async def _create_project(
     if not user_id:
         return {"error": "user_id is required to create a project"}
 
-    name = input_data.get("name") or "Untitled Project"
-    project = Project(
+    name = input_data.get("name") or "Untitled Session"
+    project = Session(
         name=name,
         description=input_data.get("description"),
         owner_id=user_id,
@@ -988,10 +987,10 @@ async def _update_project(
 ) -> dict:
     name = input_data["project_name"]
     result = await db.execute(
-        select(Project).where(
-            Project.org_id == org_id,
-            Project.name.ilike(f"%{name}%"),
-            Project.deleted_at.is_(None),
+        select(Session).where(
+            Session.org_id == org_id,
+            Session.name.ilike(f"%{name}%"),
+            Session.deleted_at.is_(None),
         )
     )
     project = result.scalar_one_or_none()
@@ -1016,10 +1015,10 @@ async def _delete_project(
 ) -> dict:
     name = input_data["project_name"]
     result = await db.execute(
-        select(Project).where(
-            Project.org_id == org_id,
-            Project.name.ilike(f"%{name}%"),
-            Project.deleted_at.is_(None),
+        select(Session).where(
+            Session.org_id == org_id,
+            Session.name.ilike(f"%{name}%"),
+            Session.deleted_at.is_(None),
         )
     )
     project = result.scalar_one_or_none()
@@ -1047,14 +1046,14 @@ async def _create_session(
     from .slack_query_flow import list_candidate_projects, resolve_project
 
     name = input_data.get("project_name")
-    project: Project | None = None
+    project: Session | None = None
 
     if name:
         project_result = await db.execute(
-            select(Project).where(
-                Project.org_id == org_id,
-                Project.name.ilike(f"%{name}%"),
-                Project.deleted_at.is_(None),
+            select(Session).where(
+                Session.org_id == org_id,
+                Session.name.ilike(f"%{name}%"),
+                Session.deleted_at.is_(None),
             )
         )
         project = project_result.scalar_one_or_none()
@@ -1082,8 +1081,12 @@ async def _create_session(
                 "options": [{"id": p.id, "name": p.name} for p in candidates],
             }
 
+    # A new session, seeded from the one it follows.
     session = Session(
-        project_id=project.id,
+        continued_from_id=project.id,
+        name=project.name,
+        team_id=project.team_id,
+        owner_id=project.owner_id,
         org_id=org_id,
         title=input_data.get("title"),
         initial_idea=input_data.get("initial_idea"),
@@ -1097,8 +1100,8 @@ async def _create_session(
     return {
         "id": session.id,
         "title": session.title,
-        "project": project.name,
-        "project_id": project.id,
+        "continues_from": project.name,
+        "continued_from_id": project.id,
         "join_code": session.join_code,
     }
 
@@ -1115,10 +1118,10 @@ async def _create_card(
 
     name = input_data["project_name"]
     project_result = await db.execute(
-        select(Project).where(
-            Project.org_id == org_id,
-            Project.name.ilike(f"%{name}%"),
-            Project.deleted_at.is_(None),
+        select(Session).where(
+            Session.org_id == org_id,
+            Session.name.ilike(f"%{name}%"),
+            Session.deleted_at.is_(None),
         )
     )
     project = project_result.scalar_one_or_none()
@@ -1234,10 +1237,10 @@ async def _update_blueprint_section(
 
     name = input_data["project_name"]
     project_result = await db.execute(
-        select(Project).where(
-            Project.org_id == org_id,
-            Project.name.ilike(f"%{name}%"),
-            Project.deleted_at.is_(None),
+        select(Session).where(
+            Session.org_id == org_id,
+            Session.name.ilike(f"%{name}%"),
+            Session.deleted_at.is_(None),
         )
     )
     project = project_result.scalar_one_or_none()
@@ -1245,7 +1248,7 @@ async def _update_blueprint_section(
         return {"error": f"No project found matching '{name}'"}
 
     snapshot = await update_section(
-        project_id=project.id,
+        session_id=project.id,
         section_name=input_data["section_key"],
         content=input_data["content"],
         created_by=user_id or "chat",

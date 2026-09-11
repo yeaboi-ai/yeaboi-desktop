@@ -165,17 +165,17 @@ async def test_metrics_increment_on_request(client):
 async def test_audit_log_created_on_project_create(client, auth_headers, db_session):
     """Creating a project should write an audit log entry."""
     resp = await client.post(
-        "/api/projects",
-        json={"name": "Audit Test Project", "description": "testing audit"},
+        "/api/sessions",
+        json={"name": "Audit Test Session", "description": "testing audit"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
-    project_id = resp.json()["id"]
+    session_id = resp.json()["id"]
 
     # Query audit logs from the test DB
     result = await db_session.execute(
         select(AuditLog).where(
-            AuditLog.resource_type == "project",
+            AuditLog.resource_type == "session",
             AuditLog.action == "create",
         )
     )
@@ -184,31 +184,31 @@ async def test_audit_log_created_on_project_create(client, auth_headers, db_sess
 
     log = logs[-1]
     assert log.action == "create"
-    assert log.resource_type == "project"
-    assert log.resource_id == project_id
-    assert log.metadata_.get("name") == "Audit Test Project"
+    assert log.resource_type == "session"
+    assert log.resource_id == session_id
+    assert log.metadata_.get("name") == "Audit Test Session"
 
 
 async def test_audit_log_created_on_project_delete(client, auth_headers, db_session):
     """Deleting a project should write an audit log entry."""
     # Create first
     resp = await client.post(
-        "/api/projects",
+        "/api/sessions",
         json={"name": "Delete Me"},
         headers=auth_headers,
     )
-    project_id = resp.json()["id"]
+    session_id = resp.json()["id"]
 
     # Delete
-    resp = await client.delete(f"/api/projects/{project_id}", headers=auth_headers)
+    resp = await client.delete(f"/api/sessions/{session_id}", headers=auth_headers)
     assert resp.status_code == 204
 
     # Check audit log
     result = await db_session.execute(
         select(AuditLog).where(
-            AuditLog.resource_type == "project",
+            AuditLog.resource_type == "session",
             AuditLog.action == "delete",
-            AuditLog.resource_id == project_id,
+            AuditLog.resource_id == session_id,
         )
     )
     log = result.scalar_one_or_none()

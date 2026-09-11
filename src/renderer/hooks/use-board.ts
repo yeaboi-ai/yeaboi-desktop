@@ -158,7 +158,7 @@ export function useBoard(projectId: string | null, fetchFn?: FetchFn) {
 
   const fetchBoard = useCallback(async () => {
     try {
-      const url = projectId ? `/api/board-proxy?projectId=${projectId}` : `/api/global-board-proxy`;
+      const url = projectId ? `/api/board-proxy?sessionId=${projectId}` : `/api/global-board-proxy`;
       const resp = await fetchFnRef.current(url);
       if (!resp.ok) throw new Error(`Failed to load board: ${resp.status}`);
       const data = (await resp.json()) as Board;

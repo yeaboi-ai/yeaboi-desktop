@@ -70,16 +70,17 @@ class SendResponse(BaseModel):
     report_summary: dict
 
 
-def _scope_args(req: GenerateRequest | SendRequest) -> tuple[str | None, str | None]:
-    if req.scope == "project":
+def _scope_args(req: GenerateRequest | SendRequest) -> str | None:
+    """The session a report is scoped to, or None for the whole org.
+
+    `project` and `session` name the same row now; both are accepted so an
+    older client keeps working.
+    """
+    if req.scope in ("project", "session"):
         if not req.id:
-            raise HTTPException(status_code=422, detail="id is required when scope=project")
-        return req.id, None
-    if req.scope == "session":
-        if not req.id:
-            raise HTTPException(status_code=422, detail="id is required when scope=session")
-        return None, req.id
-    return None, None
+            raise HTTPException(status_code=422, detail=f"id is required when scope={req.scope}")
+        return req.id
+    return None
 
 
 def _render(report, fmt: ReportFormat):
@@ -131,11 +132,10 @@ async def generate_report(
     Synchronous and capped — the assembler streams from the analytics SQL
     layer so even a 30-day org-wide rollup typically completes in under a
     second on the seed data."""
-    project_id, session_id = _scope_args(req)
+    session_id = _scope_args(req)
     report = await build_report(
         db,
         org=org,
-        project_id=project_id,
         session_id=session_id,
         start=req.start,
         end=req.end,
@@ -162,11 +162,10 @@ async def send_report(
     if not req.email_recipients and not req.slack_channel:
         raise HTTPException(status_code=422, detail="provide email_recipients and/or slack_channel")
 
-    project_id, session_id = _scope_args(req)
+    session_id = _scope_args(req)
     report = await build_report(
         db,
         org=org,
-        project_id=project_id,
         session_id=session_id,
         start=req.start,
         end=req.end,

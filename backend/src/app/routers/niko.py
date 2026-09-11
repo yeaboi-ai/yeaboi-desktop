@@ -146,8 +146,8 @@ async def delete_conversation(
 async def magic_prompts(
     request: Request,
     page: str = Query(default="/projects"),
-    project_id: str | None = Query(default=None),
+    session_id: str | None = Query(default=None),
     user: User = Depends(get_current_user),
 ) -> list[NikoMagicPrompt]:
     """Get contextual magic prompt suggestions for the current page."""
-    return get_magic_prompts(page, project_id)
+    return get_magic_prompts(page, session_id)

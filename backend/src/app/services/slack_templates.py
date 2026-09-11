@@ -104,7 +104,7 @@ def _blocks_card_failed(p: dict) -> list:
         _actions([
             _button("Retry", "card_failed:retry", style="primary"),
             _button("Mark done anyway", "card_failed:mark_done"),
-            _button("View card", "noop", url=f"/projects/{p.get('project_id', '')}/orchestrator?card={card_id}"),
+            _button("View card", "noop", url=f"/sessions/{p.get('session_id', '')}/orchestrator?card={card_id}"),
         ]),
     ]
 
@@ -208,7 +208,7 @@ def session_created_block(
     *,
     slack_user_id: str,
     title: str,
-    project_name: str,
+    continues_from: str,
     session_url: str,
 ) -> list[dict]:
     """Block Kit message announcing a new session with a clickable link."""
@@ -219,7 +219,7 @@ def session_created_block(
                 "type": "mrkdwn",
                 "text": (
                     f":spiral_note_pad: *<@{slack_user_id}>* created a session: *{title}*\n"
-                    f"In project *{project_name}*"
+                    f"Continuing *{continues_from}*"
                 ),
             },
         },
@@ -238,7 +238,7 @@ def session_created_block(
     ]
 
 
-def over_project_limit_block(*, projects_url: str) -> list[dict]:
+def over_session_limit_block(*, sessions_url: str) -> list[dict]:
     """Ephemeral block when the picker would have more than 10 entries."""
     return [
         {
@@ -246,7 +246,7 @@ def over_project_limit_block(*, projects_url: str) -> list[dict]:
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    ":warning: Your org has more than 10 active projects — "
+                    ":warning: Your org has more than 10 active sessions — "
                     "please pick one in the web app."
                 ),
             },
@@ -257,21 +257,21 @@ def over_project_limit_block(*, projects_url: str) -> list[dict]:
                 {
                     "type": "button",
                     "text": {"type": "plain_text", "text": "Open yeaboi →"},
-                    "url": projects_url,
-                    "action_id": "session_open_projects_list",
+                    "url": sessions_url,
+                    "action_id": "session_open_sessions_list",
                 }
             ],
         },
     ]
 
 
-def project_picker_block(
+def session_picker_block(
     *,
     title: str,
-    projects: list[dict],
+    sessions: list[dict],
     source: str = "slash",
 ) -> list[dict]:
-    """Block Kit picker — one button per candidate project (max 10).
+    """Block Kit picker — one button per candidate session (max 10).
 
     ``source`` is tagged into each button's ``value`` so the action handler
     knows whether to delete the picker message after a click. Use ``"mention"``
@@ -285,20 +285,20 @@ def project_picker_block(
             "text": {"type": "plain_text", "text": p["name"][:75]},
             # Slack requires unique action_ids within a single message —
             # suffix with the index so the dispatcher still matches via
-            # startswith("session_create_pick_project").
-            "action_id": f"session_create_pick_project:{i}",
+            # startswith("session_create_pick").
+            "action_id": f"session_create_pick:{i}",
             "value": json.dumps(
-                {"project_id": p["id"], "title": title, "source": source}
+                {"session_id": p["id"], "title": title, "source": source}
             ),
         }
-        for i, p in enumerate(projects[:10])
+        for i, p in enumerate(sessions[:10])
     ]
     return [
         {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f":thinking_face: Which project should *{title}* go under?",
+                "text": f":thinking_face: Which session should *{title}* continue?",
             },
         },
         {"type": "actions", "elements": elements},

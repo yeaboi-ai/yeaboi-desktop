@@ -8,7 +8,6 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import select
 
-from src.app.models.project import Project
 from src.app.models.recording import Recording
 from src.app.models.session import ChatMessage, Participant, Session, TranscriptEntry
 from src.app.models.usage_event import UsageEvent
@@ -17,7 +16,7 @@ from src.app.services.usage_backfill import backfill_org_usage
 
 @pytest.fixture
 async def project(db_session, sample_org, sample_team, sample_user):
-    proj = Project(
+    proj = Session(
         org_id=sample_org.id,
         team_id=sample_team.id,
         owner_id=sample_user.id,
@@ -31,13 +30,10 @@ async def project(db_session, sample_org, sample_team, sample_user):
 
 @pytest.fixture
 async def session_with_history(db_session, project, sample_org, sample_user):
-    s = Session(
-        project_id=project.id,
-        org_id=sample_org.id,
-        status="completed",
-        ai_config={"model": "claude-opus-4-7"},
-    )
-    db_session.add(s)
+    # One row: the session is the workspace the `project` fixture made.
+    s = project
+    s.status = "completed"
+    s.ai_config = {"model": "claude-opus-4-7"}
     await db_session.flush()
 
     db_session.add_all(
@@ -139,10 +135,8 @@ class TestBackfill:
         assert first.rows_written > 0
 
     async def test_session_without_data_skipped(self, db_session, sample_org, project):
-        # Empty session — no messages, no recordings, no transcripts.
-        empty = Session(project_id=project.id, org_id=sample_org.id, status="created")
-        db_session.add(empty)
-        await db_session.commit()
+        # `project` is itself an empty session — no messages, recordings or
+        # transcripts — so the scan finds it and writes nothing.
         counts = await backfill_org_usage(db_session, org_id=sample_org.id, dry_run=False)
         rows = (await db_session.execute(select(UsageEvent))).scalars().all()
         assert rows == []
