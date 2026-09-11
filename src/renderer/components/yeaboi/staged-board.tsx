@@ -620,14 +620,16 @@ body > [class^='_'] {
  * fill and a 1px line, which next to the rest reads as a different surface.
  * These are the same values, written in the board's names. */
 .board-frame .${HOST} [class*='dockApp'] {
-  /* At the right end of the bottom row, inside the presence chips. The board
-     parks it in its own JS and lets it be dragged along the wall; here the row
-     has a fixed shape, so the placement is pinned and the drag goes with it.
-     Anchored by its right edge, so the player unfolding to the left of the
-     notch grows into the room rather than pushing the notch off the edge. */
+  /* On the bottom row, closing it to the left of the identity chips — their
+     width is a person's name, so it is measured onto the root rather than
+     guessed at. The board parks the dock in its own JS and lets it be dragged
+     along the wall; here the row has a fixed shape, so the placement is pinned
+     and the drag goes with it. Anchored by its right edge, so the player
+     unfolding to the left of the notch grows into the room rather than pushing
+     the notch off the wall. */
   left: auto;
-  right: 16px;
-  bottom: 60px;
+  right: calc(16px + var(--board-identity-w, 180px) + 14px);
+  bottom: 16px;
   transform: none;
   translate: none;
   /* Wider than the space between keys, or the player reads as the last key on
@@ -951,6 +953,34 @@ export function StagedBoard({
       style.remove();
     };
   }, [boardId]);
+
+  // How wide the identity chips are, so the dock can close the row to their
+  // left. Their width is whatever the person is called.
+  useEffect(() => {
+    if (!ready) return;
+    const root = document.documentElement;
+    let watch: ResizeObserver | null = null;
+    let timer = 0;
+    const find = (): boolean => {
+      const chips = document.querySelector(`.${HOST} [class*='identity']`);
+      if (!chips) return false;
+      watch = new ResizeObserver(([entry]) => {
+        root.style.setProperty('--board-identity-w', `${Math.round(entry!.contentRect.width)}px`);
+      });
+      watch.observe(chips);
+      return true;
+    };
+    if (!find()) {
+      timer = window.setInterval(() => {
+        if (find()) window.clearInterval(timer);
+      }, 120);
+    }
+    return () => {
+      watch?.disconnect();
+      window.clearInterval(timer);
+      root.style.removeProperty('--board-identity-w');
+    };
+  }, [ready]);
 
   // The board paints its own surface, in its own palette, and expects to own
   // the page it is on — so it is given a block of the window to own.
