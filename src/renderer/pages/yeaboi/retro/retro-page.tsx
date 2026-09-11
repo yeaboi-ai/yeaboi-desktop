@@ -215,7 +215,10 @@ function OpenActions({ rows }: { rows: RetroActionItem[] }) {
     // around it is a second object saying the same thing more quietly, and
     // padding where the box was is the box's ghost.
     <section className="flex flex-col py-5">
-      <div className="flex items-baseline justify-between gap-3">
+      {/* The count beside the name, not pushed to the far edge: the column is
+          wide and the notes are on the left of it, so a figure out at the
+          right belongs to nothing. */}
+      <div className="flex items-baseline gap-2.5">
         <h2 className="font-display text-[19px] leading-none text-foreground">Open actions</h2>
         {rows.length > 0 && (
           <span className="font-code text-[11px] text-muted-foreground tabular-nums">
@@ -344,7 +347,8 @@ function RetroBody() {
             on, not a different screen: the panel that offered it becomes the
             panel that runs it, and what carried in stays beside it. */}
         {runs && (
-          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <OpenActions rows={actions} />
             {board ? (
               <LivePanel
                 board={board}
@@ -378,7 +382,6 @@ function RetroBody() {
                 onStart={() => void start()}
               />
             )}
-            <OpenActions rows={actions} />
           </div>
         )}
 
