@@ -359,5 +359,66 @@
       "sections": ["storage", "standup", "voice", "privacy", "advanced"]
     }
   ],
-  "commands": []
+  "commands": [
+    {
+      "name": "help",
+      "tui": "help",
+      "help": "shortcuts and everything you can type"
+    },
+    {
+      "name": "export",
+      "tui": "export",
+      "help": "save the plan and/or chat transcript"
+    },
+    {
+      "name": "skip",
+      "tui": "skip",
+      "help": "skip the current question"
+    },
+    {
+      "name": "defaults",
+      "tui": "defaults",
+      "help": "accept defaults for all remaining questions"
+    },
+    {
+      "name": "form",
+      "tui": "form",
+      "help": "see every question in one panel and answer them in any order"
+    },
+    {
+      "name": "finish",
+      "tui": "finish",
+      "help": "answer the remaining questions with defaults"
+    },
+    {
+      "name": "summary",
+      "tui": "summary",
+      "help": "show your answers so far"
+    },
+    {
+      "name": "questions",
+      "tui": "questions",
+      "help": "see what I'll ask and what's already answered"
+    },
+    {
+      "name": "edit",
+      "tui": "edit",
+      "help": "browse your answers (/edit 6 re-asks one) or refine the last artifact"
+    },
+    {
+      "name": "small",
+      "tui": "small",
+      "help": "switch to a Small plan"
+    },
+    {
+      "name": "large",
+      "tui": "large",
+      "help": "switch to a Large plan"
+    },
+    {
+      "name": "duck",
+      "tui": "duck",
+      "help": "mute or unmute the duck's speech bubble"
+    }
+  ]
 }
