@@ -56,6 +56,7 @@ export function BoardHost({
   onClosed,
   onStage,
   extras,
+  fill,
 }: {
   board: BoardSnapshot;
   onClosed: (runId: number) => void;
@@ -67,6 +68,9 @@ export function BoardHost({
    *  under it: three rows of two buttons is a stack of rows, not a set of
    *  choices. */
   extras?: React.ReactNode;
+  /** Share the row's width between the controls rather than leaving them
+   *  bunched at its left end. For a panel the row is the full width of. */
+  fill?: boolean;
 }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -88,7 +92,10 @@ export function BoardHost({
           {board.link.notice}
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Its own buttons only: whatever `extras` is asks for the share it
+          needs, and one share for a pair of controls squeezes them onto two
+          lines. */}
+      <div className={`flex flex-wrap items-center gap-2 ${fill ? '[&>button]:flex-1' : ''}`}>
         {/* One way in. The board plays here now, so a second copy of it in a
             window of its own is two rooms with the same people in them — the
             window is only the way in where the app cannot stage a board. */}

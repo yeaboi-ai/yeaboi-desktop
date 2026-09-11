@@ -80,7 +80,7 @@ function BoardState({ board }: { board: BoardSnapshot }) {
   const columns = Object.keys(GRID_TITLES).filter((key) => key in grids);
   const shown = columns.length > 0 ? columns : Object.keys(grids);
   return (
-    <div className="mb-3 grid grid-cols-2 gap-2">
+    <div className="mb-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
       {shown.map((key) => (
         <div key={key} className="rounded-xl bg-secondary/40 px-3 py-2">
           <p className="font-body text-[10px] tracking-wide text-muted-foreground uppercase">
@@ -119,16 +119,17 @@ function LivePanel({
     <section className="flex flex-col py-5">
       <h2 className="font-display text-[19px] leading-none text-foreground">On the board</h2>
 
-      <div className="mt-4">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">
         <BoardState board={board} />
       </div>
 
-      <div className="mt-auto pt-1">
+      <div className="pt-1">
         {/* One row. Drafting the actions is the host's, and the only thing on
             this page the board itself does not offer; the export and share are
             the same set of choices about the same session, so they stand
             beside it rather than under it. */}
         <BoardHost
+          fill
           board={board}
           onStage={onStage}
           onClosed={onClosed}
@@ -138,6 +139,7 @@ function LivePanel({
             // actually made. A second button for it here was the same job
             // named twice.
             <ResultActions
+              fill
               refer={{ kind: 'retro', session_id: board.session_id }}
               mode="retro"
               anonNote={anonNote}
@@ -385,7 +387,9 @@ function RetroBody() {
         {runs && (
           <div
             className={
-              board ? 'grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' : ''
+              board
+                ? 'grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'
+                : ''
             }
           >
             <OpenActions

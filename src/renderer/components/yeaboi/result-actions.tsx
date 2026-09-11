@@ -74,6 +74,9 @@ export interface ResultActionsProps {
   anonNote?: string;
   /** Handed the replacement map, or null to revert to the real names. */
   onAnonymize?: (replacements: [string, string][], note: string) => void;
+  /** Share the width of the row this sits on, rather than taking only what the
+   *  labels need. */
+  fill?: boolean;
 }
 
 export function ResultActions({
@@ -82,6 +85,7 @@ export function ResultActions({
   extras = [],
   anonNote = '',
   onAnonymize,
+  fill,
 }: ResultActionsProps) {
   const [dialog, setDialog] = useState<Dialog>('');
   const [message, setMessage] = useState('');
@@ -106,8 +110,11 @@ export function ResultActions({
     ) : null;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+    // `flex-[2]` for the two controls it holds, so a row that shares its width
+    // between its children gives this pair two shares and every button on the
+    // row comes out the same width.
+    <div className={fill ? 'flex-[2] space-y-3' : 'space-y-3'}>
+      <div className={`flex flex-wrap items-center gap-2 ${fill ? 'w-full [&>*]:flex-1' : ''}`}>
         {can?.export && (
           <Button
             variant="outline"
