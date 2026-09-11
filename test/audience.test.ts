@@ -94,7 +94,6 @@ describe('audiencesForRoute', () => {
       '/team/ship/run',
       '/planning',
       '/planning/p1',
-      '/sessions',
       '/board',
       '/tickets/t1',
       '/ceremonies',

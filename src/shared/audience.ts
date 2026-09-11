@@ -92,7 +92,6 @@ const SOLO_ONLY_PREFIXES = ['/solo', '/agents'];
 const SHARED_WORKSPACE_PREFIXES = [
   '/team',
   '/planning',
-  '/sessions',
   '/board',
   '/tickets',
   '/ceremonies',

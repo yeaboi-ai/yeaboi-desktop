@@ -414,7 +414,7 @@ describe('the palette in the window', () => {
   const TITLE_BAR = read('../src/renderer/components/title-bar.tsx');
   const PROVIDER = read('../src/renderer/components/providers/palette-provider.tsx');
   const MENU = read('../src/main/menu.ts');
-  const SESSION_PAGE = read('../src/renderer/pages/session/session-page.tsx');
+  const ROOM_PAGE = read('../src/renderer/pages/planning/room-page.tsx');
   const DIALOG = read('../src/renderer/components/palette/global-palette.tsx');
 
   it('mounts once, for every page', () => {
@@ -436,7 +436,7 @@ describe('the palette in the window', () => {
 
   it('leaves the chord to the menu', () => {
     expect(PROVIDER).not.toContain("addEventListener('keydown'");
-    expect(SESSION_PAGE).not.toContain("'mod+k'");
+    expect(ROOM_PAGE).not.toContain("'mod+k'");
     expect(PALETTE_COMMAND.accelerator).toBe('CmdOrCtrl+K');
   });
 });

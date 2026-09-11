@@ -17,12 +17,9 @@ const read = (rel: string) => readFileSync(join(RENDERER, rel), 'utf8');
 // own (the ticket workspace is shared with the side panel and sizes itself).
 const OUTSIDE_THE_FRAME = [
   'pages/planning/room-page.tsx',
-  'pages/session/session-page.tsx',
-  'pages/session/session-completed-page.tsx',
   'pages/recordings/',
   'pages/board-page.tsx',
   'pages/ticket-page.tsx',
-  'pages/projects/blueprint-page.tsx',
 ];
 
 function walk(dir: string): string[] {

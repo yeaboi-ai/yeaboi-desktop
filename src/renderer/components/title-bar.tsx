@@ -79,9 +79,7 @@ export function TitleBar() {
   const edges = useHistoryEdges();
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
   // Inside a plan the duck in its persona leads; elsewhere the world's mark.
-  const Mascot = /^\/(planning|sessions)(\/|$)/.test(pathname)
-    ? PersonaMascot
-    : WORLD_MASCOT[audience];
+  const Mascot = /^\/planning(\/|$)/.test(pathname) ? PersonaMascot : WORLD_MASCOT[audience];
 
   return (
     <header

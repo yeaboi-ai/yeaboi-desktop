@@ -136,7 +136,6 @@ describe('activeRailRoute over the default rail', () => {
     ['/planning/p1/completed', '/planning'],
     ['/planning/new', '/planning'],
     ['/planning/from-roadmap', '/planning'],
-    ['/sessions/p1', '/planning'],
     ['/board', '/board'],
     ['/tickets/t1', '/planning'],
     ['/team/standup', '/home'],
@@ -214,7 +213,6 @@ describe('isBareRoom', () => {
       '/planning/new',
       '/planning/from-roadmap',
       '/planning/p1/completed',
-      '/sessions/p1',
       '/home',
     ]) {
       expect(isBareRoom(path), path).toBe(false);

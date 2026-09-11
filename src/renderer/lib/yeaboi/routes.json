@@ -257,51 +257,6 @@
       "title": "Plan \u00b7 Recap"
     },
     {
-      "path": "/sessions",
-      "capability": "planning",
-      "title": "Sessions"
-    },
-    {
-      "path": "/sessions/:id",
-      "capability": "planning",
-      "title": "Session"
-    },
-    {
-      "path": "/sessions/:id/board-settings",
-      "capability": null,
-      "title": "Board settings"
-    },
-    {
-      "path": "/sessions/:id/blueprint",
-      "capability": "planning",
-      "title": "Blueprint"
-    },
-    {
-      "path": "/sessions/:id/plan",
-      "capability": "planning",
-      "title": "Session \u00b7 Plan"
-    },
-    {
-      "path": "/sessions/new/from-roadmap",
-      "capability": "roadmap",
-      "title": "New session \u00b7 From roadmap"
-    },
-    {
-      "path": "/sessions/:id/new",
-      "capability": null,
-      "title": "New conversation"
-    },
-    {
-      "path": "/sessions/:id/room",
-      "capability": null,
-      "title": "Session \u00b7 Room"
-    },
-    {
-      "path": "/sessions/:id/completed",
-      "capability": null,
-      "title": "Session recap"
-    },
-    {
       "path": "/board",
       "capability": null,
       "title": "Board"

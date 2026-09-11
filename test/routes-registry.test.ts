@@ -1,5 +1,5 @@
 // The planning routes: every one the registry names is served by the router,
-// and the old session paths are on their way out rather than multiplying.
+// and the old session paths are gone rather than multiplying.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -35,6 +35,12 @@ describe('the planning routes', () => {
     expect(caps['/planning/from-roadmap']).toBe('roadmap');
     expect(caps['/planning/:id/completed']).toBeNull();
     expect(caps['dialog:context-scope']).toBe('context');
+  });
+
+  it('has no session path left, only redirects for the old links', () => {
+    expect(registry.routes.map((r) => r.path).filter((p) => p.startsWith('/sessions'))).toEqual([]);
+    expect(ROUTER).toContain("path: '/sessions/*'");
+    expect(ROUTER).toContain("path: '/projects/*'");
   });
 
   it('keeps the room bare and the recap framed', () => {

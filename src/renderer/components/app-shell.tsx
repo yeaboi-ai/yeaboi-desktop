@@ -13,8 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Full-screen pages — no sidebar. Explicit, not a substring test: the plan
   // room is bare, its recap keeps the frame; the old session room and recap
   // stay bare until they go.
-  const isFullScreen =
-    isBareRoom(pathname ?? '') || /^\/sessions\/[^/]+\/(room|completed)$/.test(pathname ?? '');
+  const isFullScreen = isBareRoom(pathname ?? '');
   const isAuth = pathname?.startsWith('/auth');
   const isInvite = pathname?.startsWith('/invite');
   const isOnboarding = pathname?.startsWith('/onboarding');

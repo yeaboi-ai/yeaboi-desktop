@@ -45,8 +45,8 @@ export const HOME_FOOT_LINKS: readonly PageLink[] = [
 ];
 
 const SETTINGS_PREFIXES = ['/settings', '/setup'];
-/** The plan family. `/sessions` is the old workspace, lit here until it goes. */
-const PLANNING_PREFIXES = ['/planning', '/sessions', '/board', '/tickets'];
+/** The plan family: the hub, the rooms, the board and its tickets. */
+const PLANNING_PREFIXES = ['/planning', '/board', '/tickets'];
 /** The mode pages and what the home's foot reaches: pages of the menu, so
  *  they light the mascot. */
 const MODE_PREFIXES = [

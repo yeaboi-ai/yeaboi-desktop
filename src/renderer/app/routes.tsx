@@ -55,15 +55,6 @@ import ShipRunPage from '@/pages/yeaboi/ship/ship-run-page';
 import SystemCheckPage from '@/pages/yeaboi/system-check-page';
 import UsagePage from '@/pages/yeaboi/usage-page';
 import WhatsNewPage from '@/pages/yeaboi/whats-new-page';
-import BlueprintPage from '@/pages/projects/blueprint-page';
-import BoardSettingsPage from '@/pages/projects/board-settings-page';
-import FromRoadmapPage from '@/pages/projects/from-roadmap-page';
-import ProjectDetailPage from '@/pages/projects/project-page';
-import ProjectPlanPage from '@/pages/projects/project-plan-page';
-import ProjectsPage from '@/pages/projects/projects-page';
-import SessionCompletedPage from '@/pages/session/session-completed-page';
-import NewSessionPage from '@/pages/session/session-new-page';
-import SessionPage from '@/pages/session/session-page';
 import ThemeEditorPage from '@/pages/settings/theme-edit-page';
 import ThemesSettingsPage from '@/pages/settings/themes-page';
 import TicketPage from '@/pages/ticket-page';
@@ -76,25 +67,8 @@ function useParamsPromise<T extends Record<string, string>>(): Promise<T> {
   return useMemo(() => Promise.resolve(params as T), [JSON.stringify(params)]);
 }
 
-function ProjectRoute() {
-  return <ProjectDetailPage params={useParamsPromise<{ id: string }>()} />;
-}
-
-function BoardSettingsRoute() {
-  return <BoardSettingsPage params={useParamsPromise<{ id: string }>()} />;
-}
-
-function SessionCompletedRoute() {
-  return <SessionCompletedPage params={useParamsPromise<{ id: string }>()} />;
-}
-
 function TicketRoute() {
   return <TicketPage params={useParamsPromise<{ id: string }>()} />;
-}
-
-function ProjectBoardRedirect() {
-  const { id } = useParams();
-  return <Navigate to={`/board?project=${id}`} replace />;
 }
 
 // The Humans world became Team; a pre-rename deep link (a tray notice, a
@@ -105,22 +79,22 @@ function LegacyHumansRedirect() {
   return <Navigate to={rest ? `/team/${rest}` : '/team'} replace />;
 }
 
-// Projects were removed: a session is the workspace. An old /projects link keeps
-// its tail so a deep link into a blueprint or a plan lands on the same page, and
-// the nested session routes collapse onto the room and the recap. The id no
-// longer resolves to anything, which the workspace's own not-found copy says.
-function LegacyProjectRedirect() {
+// Two redesigns of the workspace ago there were projects, then sessions; now a
+// plan is the room. An old deep link keeps its id, so /projects/:id,
+// /sessions/:id and the nested /projects/:id/sessions/:sid all land on
+// /planning/<id>, whose own not-found copy says the id predates the redesign
+// rather than dumping the reader on the hub. A bare link lands on the hub.
+function LegacyWorkspaceRedirect() {
   const { '*': rest } = useParams();
   const [first, ...more] = (rest ?? '').split('/').filter(Boolean);
-  if (!first) return <Navigate to="/sessions" replace />;
-  if (first === 'new') return <Navigate to={`/sessions/new/${more.join('/')}`} replace />;
-  // A nested session was its own row all along, so /projects/:id/sessions/:sid
-  // lands on that session's own room rather than anywhere under the old parent.
-  if (more[0] === 'sessions' && more[1]) {
-    const suffix = more[2] === 'completed' ? 'completed' : 'room';
-    return <Navigate to={`/sessions/${more[1]}/${suffix}`} replace />;
+  if (!first) return <Navigate to="/planning" replace />;
+  if (first === 'new') {
+    const roadmap = more[0] === 'from-roadmap';
+    return <Navigate to={roadmap ? '/planning/from-roadmap' : '/planning/new'} replace />;
   }
-  return <Navigate to={`/sessions/${first}${more.length ? `/${more.join('/')}` : ''}`} replace />;
+  const nested = more[0] === 'sessions' && more[1] ? more[1] : first;
+  const completed = more.includes('completed');
+  return <Navigate to={`/planning/${nested}${completed ? '/completed' : ''}`} replace />;
 }
 
 // Providers (theme, identity, Niko, the shell chrome) live inside the router
@@ -193,15 +167,6 @@ const NON_PAGE = (path: string) => !path.startsWith('/');
 const PLANNING_SERVED = new Set([
   '/planning/:id',
   '/planning/:id/completed',
-  '/sessions',
-  '/sessions/new/from-roadmap',
-  '/sessions/:id',
-  '/sessions/:id/new',
-  '/sessions/:id/room',
-  '/sessions/:id/completed',
-  '/sessions/:id/board-settings',
-  '/sessions/:id/blueprint',
-  '/sessions/:id/plan',
   '/board',
   '/tickets/:id',
   '/settings',
@@ -260,25 +225,17 @@ export const router = createHashRouter([
           </SoloOnly>
         ),
       },
-      // Projects are gone: a session is the workspace. Old deep links are kept
-      // rather than dropped — an unknown id lands on the workspace's own
-      // not-found copy, which says what happened.
-      { path: '/agents/projects/*', element: <Navigate to="/sessions" replace /> },
-      { path: '/agents/projects', element: <Navigate to="/sessions" replace /> },
-      { path: '/projects/*', element: <LegacyProjectRedirect /> },
-      { path: '/projects', element: <Navigate to="/sessions" replace /> },
+      // The workspace's older names: projects, then sessions. Old deep links
+      // keep their id and land on the plan, whose not-found copy says what
+      // happened when the id predates the redesign.
+      { path: '/agents/projects/*', element: <LegacyWorkspaceRedirect /> },
+      { path: '/agents/projects', element: <Navigate to="/planning" replace /> },
+      { path: '/projects/*', element: <LegacyWorkspaceRedirect /> },
+      { path: '/projects', element: <Navigate to="/planning" replace /> },
+      { path: '/sessions/*', element: <LegacyWorkspaceRedirect /> },
+      { path: '/sessions', element: <Navigate to="/planning" replace /> },
       { path: '/planning/:id', element: <PlanRoomPage /> },
       { path: '/planning/:id/completed', element: <PlanCompletedPage /> },
-      { path: '/sessions', element: <ProjectsPage /> },
-      { path: '/sessions/new/from-roadmap', element: <FromRoadmapPage /> },
-      { path: '/sessions/:id', element: <ProjectRoute /> },
-      { path: '/sessions/:id/new', element: <NewSessionPage /> },
-      { path: '/sessions/:id/board', element: <ProjectBoardRedirect /> },
-      { path: '/sessions/:id/board-settings', element: <BoardSettingsRoute /> },
-      { path: '/sessions/:id/blueprint', element: <BlueprintPage /> },
-      { path: '/sessions/:id/plan', element: <ProjectPlanPage /> },
-      { path: '/sessions/:id/room', element: <SessionPage /> },
-      { path: '/sessions/:id/completed', element: <SessionCompletedRoute /> },
       { path: '/board', element: <GlobalBoardPage /> },
       { path: '/tickets/:id', element: <TicketRoute /> },
       { path: '/settings', element: <Navigate to="/settings/credentials" replace /> },

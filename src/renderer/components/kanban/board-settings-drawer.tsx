@@ -1,7 +1,6 @@
 'use client';
 
-import { ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
-import Link from 'next/link';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import { useState } from 'react';
 
 import type { Board, BoardColumn, ColumnCreate, ColumnUpdate } from '@/hooks/use-board';
@@ -30,7 +29,6 @@ export function BoardSettingsDrawer({
   open,
   onOpenChange,
   board,
-  projectId,
   projectName,
   onCreateColumn,
   onUpdateColumn,
@@ -40,9 +38,7 @@ export function BoardSettingsDrawer({
   const [expanded, setExpanded] = useState(false);
 
   // The Sheet's max-width is bumped to full when expanded so the workflow
-  // diagram has room to breathe. Header buttons toggle expand and open the
-  // dedicated /projects/[id]/board-settings page in a new tab.
-  const settingsHref = projectId ? `/sessions/${projectId}/board-settings` : null;
+  // diagram has room to breathe; this drawer is the whole of the settings.
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -74,18 +70,6 @@ export function BoardSettingsDrawer({
               >
                 {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
-              {settingsHref && (
-                <Link
-                  href={settingsHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open in new tab"
-                  title="Open settings in a new tab"
-                  className="rounded-md p-1.5 text-white/40 hover:bg-white/5 hover:text-white/80"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              )}
             </div>
           </div>
         </SheetHeader>
