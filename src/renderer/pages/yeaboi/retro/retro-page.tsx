@@ -36,7 +36,7 @@ import { Button } from '@/components/ui/button';
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** How many past retros the ledger shows before it is asked for the rest. */
-const LEDGER_SHOWN = 4;
+const LEDGER_SHOWN = 5;
 
 const GRID_TITLES: Record<string, string> = {
   went_well: 'Went well',
@@ -362,8 +362,11 @@ function RetroBody() {
             buttons — six of them filled the window to say very little. One
             line each, and the actions sit at the end of the line they belong
             to. */}
+        {/* At the foot of the screen. What you came here to do is at the top;
+            what you did last is the floor under it, not the next thing down
+            the page. */}
         {runs && runs.length > 0 && (
-          <div>
+          <div className="mt-auto">
             <div className="mb-2 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-[15px] leading-none text-muted-foreground">
                 Recent retros
