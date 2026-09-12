@@ -41,7 +41,7 @@ describe('hubRows', () => {
     expect(rows[0]).toEqual({
       id: 'new',
       title: 'Barber booking',
-      detail: 'Refine, Atlas, q3',
+      detail: 'Sprints, Atlas, q3',
       when: 'yesterday',
       href: '/planning/new',
     });

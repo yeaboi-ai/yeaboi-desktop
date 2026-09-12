@@ -24,3 +24,8 @@ export function stageStep(stage: Stage, asked: boolean): number {
       return 5;
   }
 }
+
+/** The word the strip lights for a stage — the header and the hub row say the same. */
+export function stageWord(stage: Stage, asked: boolean): string {
+  return STAGE_WORDS[stageStep(stage, asked)];
+}

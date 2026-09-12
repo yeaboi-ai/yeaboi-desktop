@@ -67,9 +67,9 @@ function PerformanceBody() {
         </div>
       ) : (
         <Section title="No engineers yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> {roster.empty_message}
-          </p>
+          </div>
         </Section>
       )}
     </div>

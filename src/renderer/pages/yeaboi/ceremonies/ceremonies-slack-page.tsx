@@ -151,9 +151,9 @@ function CeremoniesSlackBody() {
 
       {!page.two_way ? (
         <Section title="Write-only">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> {page.empty_message}
-          </p>
+          </div>
           <p className="text-[12px] text-muted-foreground mt-2">{page.why}</p>
         </Section>
       ) : (

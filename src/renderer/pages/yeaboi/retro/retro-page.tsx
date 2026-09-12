@@ -149,10 +149,10 @@ function RetroBody() {
 
       {runs && runs.length === 0 && (
         <Section title="No retros yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Start a board and send the invite — everyone adds
             cards from their own browser, and yeaboi drafts the action items when you are done.
-          </p>
+          </div>
         </Section>
       )}
     </div>

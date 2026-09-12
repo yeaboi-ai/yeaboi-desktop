@@ -233,10 +233,10 @@ function ReviewHub() {
         </>
       ) : (
         <Section title="No reviews yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Run one on a Friday: yeaboi reads your standups,
             what shipped and your sprint plan, then drafts the review for you to correct.
-          </p>
+          </div>
         </Section>
       )}
 

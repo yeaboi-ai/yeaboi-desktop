@@ -302,15 +302,12 @@ export function PlanComposer({
           {note.lead}
         </span>
         {note.tail && (
-          <>
-            <span className="sr-only">. </span>
-            <span
-              key={note.tail}
-              className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
-            >
-              {note.tail}
-            </span>
-          </>
+          <span
+            key={note.tail}
+            className="animate-fade-in text-[12px] font-body text-muted-foreground/70"
+          >
+            {note.tail}
+          </span>
         )}
       </p>
       {error && (

@@ -235,9 +235,9 @@ function ShipBody() {
 
       {plan.stories.length === 0 && boardStories.length === 0 ? (
         <Section title="No stories yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> {plan.empty_message}
-          </p>
+          </div>
         </Section>
       ) : (
         <>

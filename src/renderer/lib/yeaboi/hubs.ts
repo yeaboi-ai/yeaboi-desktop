@@ -6,7 +6,7 @@
 import { visibleTags } from '@/lib/context/scope';
 import { deleteChat, listChats, planName, type ChatSummary } from './chat';
 import { relativeDay } from './sessions';
-import { stageLabel } from './chat';
+import { stageWord } from '@/lib/planning/stages';
 
 export interface HubRow {
   id: string;
@@ -39,7 +39,11 @@ export function hubRows(sessions: readonly ChatSummary[], now: Date, base = '/pl
     .map((session) => ({
       id: session.session_id,
       title: planName(session),
-      detail: [stageLabel(session.stage), session.project_label, ...visibleTags(session.tags ?? [])]
+      detail: [
+        stageWord(session.stage, Boolean(session.last_node_completed)),
+        session.project_label,
+        ...visibleTags(session.tags ?? []),
+      ]
         .filter(Boolean)
         .join(', '),
       when: relativeDay(stamp(session), now),

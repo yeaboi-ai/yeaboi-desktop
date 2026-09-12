@@ -1,7 +1,7 @@
 // The stage strip: six words, and which one a wire stage lights.
 
 import { describe, expect, it } from 'vitest';
-import { STAGE_WORDS, stageStep } from '../src/renderer/lib/planning/stages';
+import { STAGE_WORDS, stageStep, stageWord } from '../src/renderer/lib/planning/stages';
 
 describe('the strip', () => {
   it('reads as the terminal does, in plain words', () => {
@@ -17,5 +17,16 @@ describe('the strip', () => {
       expect(stageStep(stage, true)).toBe(4);
     }
     expect(stageStep('chat', true)).toBe(5);
+  });
+});
+
+describe('stageWord', () => {
+  it('says the word the strip lights, so the header and the hub agree', () => {
+    expect(stageWord('intake', false)).toBe('Describe');
+    expect(stageWord('intake', true)).toBe('Questions');
+    expect(stageWord('review', true)).toBe('Review');
+    expect(stageWord('epic', true)).toBe('Epic');
+    expect(stageWord('capacity', true)).toBe('Build');
+    expect(stageWord('chat', true)).toBe('Sprints');
   });
 });

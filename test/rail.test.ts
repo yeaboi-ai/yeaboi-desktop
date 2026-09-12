@@ -38,6 +38,11 @@ describe('RAIL_DEFAULTS', () => {
     }
   });
 
+  it('is what a fresh profile gets, nothing more', () => {
+    expect(normalizeRailPrefs({})).toEqual(RAIL_DEFAULTS);
+    expect(normalizeRailPrefs(undefined)).toEqual(RAIL_DEFAULTS);
+  });
+
   it('is itself a fixed point of normalisation', () => {
     expect(normalizeRailPrefs(RAIL_DEFAULTS)).toEqual(RAIL_DEFAULTS);
     for (const audience of AUDIENCES) {

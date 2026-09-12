@@ -107,10 +107,10 @@ function PokerBody() {
 
       {runs && runs.length === 0 && (
         <Section title="No sessions yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Pick a sprint or the backlog, send the invite, and
             everyone votes at once — no anchoring on whoever spoke first.
-          </p>
+          </div>
         </Section>
       )}
     </div>

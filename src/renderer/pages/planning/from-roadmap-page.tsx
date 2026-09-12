@@ -221,10 +221,10 @@ function RoadmapBody() {
           </div>
           {analysis.projects.length === 0 && (
             <Section title="Nothing to plan">
-              <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+              <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                 <DuckMark state="idle" size={28} /> No concrete projects came out of that document.
                 Check its content, or try another source.
-              </p>
+              </div>
             </Section>
           )}
         </>

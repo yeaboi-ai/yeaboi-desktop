@@ -29,11 +29,10 @@ import { useRoomLink } from '@/hooks/planning/use-room-link';
 import { useRoomVoice } from '@/hooks/planning/use-room-voice';
 import { SOCKET_DRAWERS, roomKey, toggleDrawer, type DrawerKind } from '@/lib/planning/drawers';
 import { roomLayout } from '@/lib/planning/room-layout';
-import { stageStep } from '@/lib/planning/stages';
+import { stageStep, stageWord } from '@/lib/planning/stages';
 import { personaName } from '@/lib/planning/voice';
 import { apiGet } from '@/lib/yeaboi/api';
 import { allCards, loadCapabilities, type ModeCard } from '@/lib/yeaboi/capabilities';
-import { stageLabel } from '@/lib/yeaboi/chat';
 import { isTyping } from '@/lib/yeaboi/palette';
 import { openShortcuts } from '@/lib/yeaboi/palette';
 import { tipsForAudience, type Tip } from '@/lib/yeaboi/tips';
@@ -188,7 +187,8 @@ function RoomBody({ sessionId }: { sessionId: string }) {
     );
   }
 
-  const step = stageStep(room.stage, Boolean(room.question?.current_question));
+  const asked = Boolean(room.question?.current_question);
+  const step = stageStep(room.stage, asked);
   const hint = HINTS[room.stage] ?? 'Reply, or / for commands';
 
   return (
@@ -203,7 +203,7 @@ function RoomBody({ sessionId }: { sessionId: string }) {
             Back
           </button>
           <EditableTitle title={view?.title ?? ''} onSave={(next) => void chat.rename(next)} />
-          <span className="text-[12px] text-muted-foreground">{stageLabel(room.stage)}</span>
+          <span className="text-[12px] text-muted-foreground">{stageWord(room.stage, asked)}</span>
           <div className="flex-1" />
           {voice.call.inCall ? (
             <button
@@ -371,7 +371,7 @@ function RoomBody({ sessionId }: { sessionId: string }) {
 export default function PlanRoomPage() {
   const { id = '' } = useParams<{ id: string }>();
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden pt-[var(--titlebar-h)]">
+    <div className="flex h-[calc(100vh-var(--titlebar-h))] w-screen flex-col overflow-hidden">
       <BackendGate>
         {/* Keyed so switching plans remounts with clean state. */}
         <RoomBody key={id} sessionId={id} />

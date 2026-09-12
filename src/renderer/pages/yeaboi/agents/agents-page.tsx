@@ -207,10 +207,10 @@ function AgentsBody() {
 
       {!report ? (
         <Section title="Nothing yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> The first pass reads every session log on this
             machine. It takes a moment.
-          </p>
+          </div>
         </Section>
       ) : (
         <ReportView kind={kind} report={report} actions={kind === 'security' ? { security } : {}} />

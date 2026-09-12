@@ -89,11 +89,11 @@ function AnalysisBody() {
           <h2 className="text-[13px] font-body font-medium text-foreground mb-3">
             Nothing analysed yet
           </h2>
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Point yeaboi at your tracker and it will read the
             last few sprints — how fast the team goes, what a point means here, and where work
             spills.
-          </p>
+          </div>
           <div className="mt-3">
             <Button size="sm" onClick={() => router.push('/team/analysis/new')}>
               Run the first analysis
