@@ -18,6 +18,7 @@ import {
   reduceLine,
   type RoomState,
   emptyRoom,
+  restoreGate,
 } from '@/lib/planning/chat-reducer';
 import { openingWithChips, takeOpening } from '@/lib/planning/composer';
 import type { PlanView } from '@/lib/planning/plan-view';
@@ -76,6 +77,9 @@ export function usePlanChat(sessionId: string): PlanChat {
   // The reducer's latest state, for decisions taken after a stream ends.
   const latest = useRef(room);
   latest.current = room;
+  // Set the moment a turn starts, before any await: `latest` is one render
+  // behind, so two submits in one tick would both pass it.
+  const inFlight = useRef(false);
 
   const reloadPlan = useCallback(async () => {
     try {
@@ -88,20 +92,25 @@ export function usePlanChat(sessionId: string): PlanChat {
 
   const stream = useCallback(
     async (text: string, start: (onLine: (line: ChatLine) => void) => Promise<void>) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
       setRoom((state) => beginTurn(state, text));
       try {
         await start((line) => setRoom((state) => reduceLine(state, line)));
       } catch (e) {
         const message = (e as Error).message;
         setRoom((state) => ({ ...state, error: message }));
+      } finally {
+        inFlight.current = false;
       }
       setRoom((state) => endTurn(state));
-      // The question view (choices, the phase) follows the state the turn
-      // just produced, so it is re-read rather than guessed.
+      // The question view (choices, the phase) and the parked gate follow the
+      // state the turn left, so they are re-read rather than guessed — a
+      // cancelled turn leaves the gate exactly where it was.
       loadChat(sessionId).then(
         (next) => {
           setView(next);
-          setRoom((state) => ({ ...state, question: next.question ?? null }));
+          setRoom((state) => restoreGate(state, next));
         },
         () => undefined,
       );
@@ -114,7 +123,7 @@ export function usePlanChat(sessionId: string): PlanChat {
       text: string,
       { synthetic = false, images: given }: { synthetic?: boolean; images?: string[] } = {},
     ) => {
-      if (latest.current.busy) return;
+      if (latest.current.busy || inFlight.current) return;
       // The opening turn names its images itself: the ref would still be one
       // render behind the stash it just attached.
       const images = given ?? latest.current.attachments;
@@ -126,7 +135,7 @@ export function usePlanChat(sessionId: string): PlanChat {
   );
 
   const advance = useCallback(async () => {
-    if (latest.current.busy) return;
+    if (latest.current.busy || inFlight.current) return;
     await stream('', (onLine) => advanceTurn(sessionId, onLine));
   }, [sessionId, stream]);
 

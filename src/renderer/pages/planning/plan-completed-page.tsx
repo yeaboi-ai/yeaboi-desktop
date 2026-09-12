@@ -4,6 +4,7 @@
 // become — a file, a page, cards on the board, real tickets. Inside the
 // frame; the room is one link away.
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'react-router';
 import { PageShell } from '@/components/page-shell';
@@ -11,9 +12,25 @@ import { PlanPanel } from '@/components/planning/plan-panel';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { useRoomLink } from '@/hooks/planning/use-room-link';
 import { PersonaMascot } from '@/lib/audience/worlds';
+import { linkNaming } from '@/lib/planning/room-link';
+import { loadChat, type SessionView } from '@/lib/yeaboi/chat';
 
 function CompletedBody({ sessionId }: { sessionId: string }) {
-  const link = useRoomLink(sessionId, '', '');
+  // The row the board import hangs off is named after the plan, so the plan
+  // is read once here as the room reads it.
+  const [view, setView] = useState<SessionView | null>(null);
+  useEffect(() => {
+    let live = true;
+    loadChat(sessionId).then(
+      (loaded) => live && setView(loaded),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [sessionId]);
+  const naming = linkNaming(view);
+  const link = useRoomLink(sessionId, naming.title, naming.description);
   return (
     <>
       <header className="animate-slide-up stagger-1">

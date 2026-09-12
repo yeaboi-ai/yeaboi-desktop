@@ -77,10 +77,11 @@ export function BlueprintDrawer({
   const [note, setNote] = useState('');
   const sections = sectionsOf(plan);
 
+  // Re-read while the pane is open too: an accept lands a new version.
   useEffect(() => {
     if (pane !== 'history') return;
     loadPlanVersions(sessionId).then(setVersions, (e: Error) => setNote(e.message));
-  }, [pane, sessionId]);
+  }, [pane, sessionId, plan]);
 
   useEffect(() => {
     if (pane !== 'export') return;

@@ -204,8 +204,15 @@ export function setProject(scope: ContextScope, label: string): ContextScope {
   return { ...scope, projects: clean ? [clean] : [] };
 }
 
-/** The `context` key of a run body — the engine's JSON twin, verbatim. */
-export function serializeScope(scope: ContextScope): ContextScope {
+/**
+ * The `context` key of a run body — the engine's JSON twin. Its `tags` are a
+ * filter over the runs read (all of them must carry every tag), so the mode's
+ * own stamps stay out of it: they label the run being made, not the reading.
+ */
+export function serializeScope(
+  scope: ContextScope,
+  defaults: readonly string[] = [],
+): ContextScope {
   const window: ScopeWindow = { kind: scope.window.kind };
   if (scope.window.kind === 'sprints') window.count = Math.max(1, scope.window.count ?? 1);
   if (scope.window.kind === 'custom') {
@@ -216,7 +223,7 @@ export function serializeScope(scope: ContextScope): ContextScope {
     sources: scope.sources === null ? null : [...scope.sources],
     window,
     projects: [...scope.projects],
-    tags: [...scope.tags],
+    tags: customTags(scope, defaults),
     limits: { ...scope.limits },
   };
 }
@@ -294,12 +301,21 @@ export function visibleTags(tags: readonly string[]): string[] {
 }
 
 /**
- * The three keys a run body carries once a scope was chosen. Nothing when the
+ * The three keys a run body carries once a scope was chosen: `context` (what
+ * it reads, the reader's tags only), `tags` (what the run is labelled with —
+ * the mode's defaults and the reader's) and `project_label`. Nothing when the
  * sidecar has no context routes, so an older engine sees the body it always saw.
  */
-export function runBody(scope: ContextScope | null, available: boolean): Record<string, unknown> {
+export function runBody(
+  scope: ContextScope | null,
+  available: boolean,
+  defaults: readonly string[] = [],
+): Record<string, unknown> {
   if (!available || !scope) return {};
-  const body: Record<string, unknown> = { context: serializeScope(scope), tags: [...scope.tags] };
+  const body: Record<string, unknown> = {
+    context: serializeScope(scope, defaults),
+    tags: [...scope.tags],
+  };
   const project = scope.projects[0]?.trim();
   if (project) body['project_label'] = project;
   return body;

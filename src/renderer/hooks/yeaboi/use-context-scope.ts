@@ -38,7 +38,12 @@ export function useContextScope(mode: string): ContextScopeState {
   }, [mode]);
 
   const available = options !== null;
-  const body = useCallback(() => runBody(scope, available), [scope, available]);
+  const defaults = options?.defaults?.tags ?? [];
+  const body = useCallback(
+    () => runBody(scope, available, defaults),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scope, available, defaults.join('\n')],
+  );
 
   return { options, scope, setScope, available, body };
 }

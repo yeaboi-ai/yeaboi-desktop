@@ -14,6 +14,7 @@ import {
   quickReplies,
   reduceLine,
   type RoomState,
+  restoreGate,
 } from '../src/renderer/lib/planning/chat-reducer';
 import type { ChatLine, SessionView } from '../src/renderer/lib/yeaboi/chat';
 
@@ -306,5 +307,42 @@ describe('quick replies at a confirmation', () => {
       ] as [string, boolean][],
     };
     expect(quickReplies(null, question).map((r) => r.label)).toEqual(['Yes', 'No']);
+  });
+});
+
+describe('restoreGate', () => {
+  const view = {
+    stage: 'review',
+    transcript: [],
+    question: { question_text: 'Who is it for?', choices: [] },
+    opening: '',
+    pending: { type: 'await_review', node: 'story_writer', kind: 'stories', prompt: 'accept?' },
+  } as unknown as Parameters<typeof restoreGate>[1];
+
+  it('brings a gate back after a turn that broke off, so the chips return', () => {
+    const before = endTurn(reduceLine(beginTurn(emptyRoom(), 'x'), { type: 'cancelled' }));
+    expect(before.awaiting).toBeNull();
+    const after = restoreGate(before, view);
+    expect(after.awaiting).toEqual({
+      type: 'review',
+      node: 'story_writer',
+      kind: 'stories',
+      prompt: 'accept?',
+    });
+    expect(after.question?.question_text).toBe('Who is it for?');
+    expect(after.stage).toBe('review');
+  });
+
+  it('keeps a gate the stream parked on itself', () => {
+    const parked = reduceLine(beginTurn(emptyRoom(), 'x'), {
+      type: 'await_confirm',
+      kind: 'tool_write',
+      prompt: 'write?',
+    });
+    expect(restoreGate(parked, view).awaiting).toEqual({
+      type: 'confirm',
+      kind: 'tool_write',
+      prompt: 'write?',
+    });
   });
 });

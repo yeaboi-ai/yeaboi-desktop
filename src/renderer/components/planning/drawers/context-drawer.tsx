@@ -1,8 +1,9 @@
 'use client';
 
 // What this plan reads from, changed after the fact: the same picker the
-// composer showed, seeded from the labels the plan carries, saved back onto
-// the plan. A sidecar without the context routes draws one sentence instead.
+// composer showed, seeded from the scope the plan was made under, saved back
+// onto the plan. The plan's own labels are not the filter and stay as they
+// are. A sidecar without the context routes draws one sentence instead.
 
 import { useEffect, useRef, useState } from 'react';
 import { ContextPicker } from '@/components/context/context-picker';
@@ -47,11 +48,7 @@ export function ContextDrawer({
         const next = scopeFromWire(labels?.scope, loaded);
         const seed = seedView.current;
         const project = labels?.project_label || seed?.project_label || '';
-        setScope({
-          ...next,
-          projects: project ? [project] : next.projects,
-          tags: [...new Set([...next.tags, ...(labels?.tags ?? seed?.tags ?? [])])],
-        });
+        setScope({ ...next, projects: project ? [project] : next.projects });
       },
       () => live && setOptions(null),
     );
@@ -75,9 +72,8 @@ export function ContextDrawer({
     setNote('');
     try {
       const saved = await updateChat(sessionId, {
-        context: serializeScope(scope),
+        context: serializeScope(scope, options.defaults?.tags ?? []),
         projectLabel: (scope.projects[0] ?? '').trim(),
-        tags: scope.tags,
       });
       onSaved({ project_label: saved.project_label, tags: saved.tags });
       setNote('Saved. The next turn reads under this.');

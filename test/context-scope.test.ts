@@ -214,17 +214,26 @@ describe('runBody', () => {
   };
 
   it('carries the scope, the project label and the tags once the routes exist', () => {
-    expect(runBody(scope, true)).toEqual({
+    expect(runBody(scope, true, ['mode:standup'])).toEqual({
       context: {
         sources: ['standup', 'retro'],
         window: { kind: 'sprints', count: 2 },
         projects: ['Atlas'],
-        tags: ['mode:standup', 'q3'],
+        // The filter is the reader's tag alone; the stamp labels the run.
+        tags: ['q3'],
         limits: {},
       },
       project_label: 'Atlas',
       tags: ['mode:standup', 'q3'],
     });
+  });
+
+  it('reads everything when only the default tags are on, and still labels the run', () => {
+    const untouched = defaultScope(OPTIONS);
+    const body = runBody(untouched, true, OPTIONS.defaults.tags);
+    expect((body['context'] as ContextScope).tags).toEqual([]);
+    expect(body['tags']).toEqual(['mode:standup', 'world:team', '2026-09']);
+    expect(serializeScope(untouched, OPTIONS.defaults.tags).tags).toEqual([]);
   });
 
   it('leaves the project label out when there is none', () => {

@@ -170,6 +170,18 @@ export function endTurn(state: RoomState): RoomState {
   return { ...state, pending: '', opId: '', busy: false, progress: null, stalled };
 }
 
+/** The view read back after a turn: the question follows it, and a gate the
+ *  stream did not park on itself comes back from the view — a cancelled or
+ *  failed turn leaves the gate where it was. */
+export function restoreGate(state: RoomState, view: SessionView): RoomState {
+  return {
+    ...state,
+    stage: view.stage,
+    question: view.question ?? null,
+    awaiting: state.awaiting ?? awaitingOf(view.pending),
+  };
+}
+
 /** The drawer has read the plan again. */
 export function planRead(state: RoomState): RoomState {
   return { ...state, planDirty: false };

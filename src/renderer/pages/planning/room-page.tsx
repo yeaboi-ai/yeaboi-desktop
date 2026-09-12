@@ -26,6 +26,7 @@ import { CallLayer } from '@/components/session/call-layer';
 import { useAudience } from '@/components/providers/audience-provider';
 import { usePlanChat } from '@/hooks/planning/use-plan-chat';
 import { useRoomLink } from '@/hooks/planning/use-room-link';
+import { linkNaming } from '@/lib/planning/room-link';
 import { useRoomVoice } from '@/hooks/planning/use-room-voice';
 import { SOCKET_DRAWERS, roomKey, toggleDrawer, type DrawerKind } from '@/lib/planning/drawers';
 import { roomLayout } from '@/lib/planning/room-layout';
@@ -100,7 +101,8 @@ function RoomBody({ sessionId }: { sessionId: string }) {
   const { audience } = useAudience();
   const chat = usePlanChat(sessionId);
   const { room, view, plan } = chat;
-  const link = useRoomLink(sessionId, view?.title ?? '', view?.opening ?? '');
+  const naming = linkNaming(view);
+  const link = useRoomLink(sessionId, naming.title, naming.description);
   const [drawer, setDrawer] = useState<DrawerKind | null>(null);
   const [drawerWidth, setDrawerWidth] = useState(0);
   const windowWidth = useWindowWidth();

@@ -59,44 +59,48 @@ export function useRoomVoice(link: UseRoomLinkResult, socketWanted: boolean) {
       .catch(() => setTeamMembers([]));
   }, [authFetch, ready, vendoredId]);
 
+  // The link is a fresh object every render; its parts are what the
+  // callbacks actually depend on.
+  const { session: linkSession, setSession, ensure } = link;
+
   /** The row again, with its participants — the list route trims them. */
   const refreshSession = useCallback(async () => {
     if (!vendoredId) return;
     try {
       const resp = await authFetch(`/api/sessions/${vendoredId}`);
-      if (resp.ok) link.setSession(await resp.json());
+      if (resp.ok) setSession(await resp.json());
     } catch (e) {
       logger.warn('room: session refresh failed', e);
     }
-  }, [authFetch, link, vendoredId]);
+  }, [authFetch, setSession, vendoredId]);
 
   const patchAiConfig = useCallback(
     async (patch: Record<string, unknown>) => {
-      if (!vendoredId || !link.session) return;
-      const previous = (link.session.ai_config ?? {}) as Record<string, unknown>;
+      if (!vendoredId || !linkSession) return;
+      const previous = (linkSession.ai_config ?? {}) as Record<string, unknown>;
       const ai_config = { ...previous, ...patch };
-      link.setSession({ ...link.session, ai_config });
+      setSession({ ...linkSession, ai_config });
       try {
         const resp = await authFetch(`/api/sessions/${vendoredId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ai_config }),
         });
-        if (resp.ok) link.setSession(await resp.json());
+        if (resp.ok) setSession(await resp.json());
       } catch (e) {
         logger.warn('room: ai_config patch failed', e);
       }
     },
-    [authFetch, link, vendoredId],
+    [authFetch, linkSession, setSession, vendoredId],
   );
 
   // A call on a plan that has no row yet: make the row first, then join once
   // the call hook has been handed its id on the next render.
   const startCall = useCallback(async () => {
-    const row = await link.ensure();
+    const row = await ensure();
     if (!row) return;
     setJoinPending(true);
-  }, [link]);
+  }, [ensure]);
 
   useEffect(() => {
     if (!joinPending || !vendoredId || call.inCall || call.isConnecting) return;
