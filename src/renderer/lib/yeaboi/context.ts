@@ -44,32 +44,3 @@ export function loadLabels(
     `/api/sessions/${encodeURIComponent(mode)}/${encodeURIComponent(sessionId)}/labels${suffix}`,
   );
 }
-
-export function setLabels(
-  mode: string,
-  sessionId: string,
-  patch: { runId?: string; projectLabel?: string; tags?: string[]; mergeTags?: boolean },
-): Promise<SessionLabels> {
-  const body: Record<string, unknown> = {};
-  if (patch.runId) body['run_id'] = patch.runId;
-  if (patch.projectLabel !== undefined) body['project_label'] = patch.projectLabel;
-  if (patch.tags !== undefined) body['tags'] = patch.tags;
-  if (patch.mergeTags !== undefined) body['merge_tags'] = patch.mergeTags;
-  return apiPost<SessionLabels>(
-    `/api/sessions/${encodeURIComponent(mode)}/${encodeURIComponent(sessionId)}/labels`,
-    body,
-  );
-}
-
-/** The three keys every run body carries when a scope was chosen. */
-export function contextBody(
-  scope: ContextScope | null,
-  projectLabel = '',
-  tags: readonly string[] = [],
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {};
-  if (scope) body['context'] = scope;
-  if (projectLabel.trim()) body['project_label'] = projectLabel.trim();
-  if (tags.length) body['tags'] = [...tags];
-  return body;
-}

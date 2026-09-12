@@ -13,10 +13,13 @@ const DEFAULT_WIDTH = 440;
 export function RoomDrawer({
   kind,
   onClose,
+  onWidth,
   children,
 }: {
   kind: DrawerKind | null;
   onClose: () => void;
+  /** The drawn width, so the room can decide push or overlay. */
+  onWidth?: (width: number) => void;
   children: React.ReactNode;
 }) {
   if (!kind) return null;
@@ -30,6 +33,7 @@ export function RoomDrawer({
       defaultWidth={DEFAULT_WIDTH}
       minWidth={MIN_WIDTH}
       maxFraction={0.5}
+      onWidthChange={onWidth}
       headerSlot={
         <span className="mr-auto pl-2 font-display text-[16px] italic text-muted-foreground">
           {spec?.label}

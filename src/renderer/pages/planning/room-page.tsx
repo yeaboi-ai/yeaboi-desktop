@@ -8,7 +8,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft } from 'lucide-react';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { AllTipsSheet } from '@/components/yeaboi/all-tips-sheet';
 import { Composer, type ComposerHandle } from '@/components/planning/composer';
@@ -29,6 +28,7 @@ import { usePlanChat } from '@/hooks/planning/use-plan-chat';
 import { useRoomLink } from '@/hooks/planning/use-room-link';
 import { useRoomVoice } from '@/hooks/planning/use-room-voice';
 import { SOCKET_DRAWERS, roomKey, toggleDrawer, type DrawerKind } from '@/lib/planning/drawers';
+import { roomLayout } from '@/lib/planning/room-layout';
 import { stageStep } from '@/lib/planning/stages';
 import { personaName } from '@/lib/planning/voice';
 import { apiGet } from '@/lib/yeaboi/api';
@@ -44,6 +44,17 @@ const HINTS: Record<string, string> = {
   epic: 'accept, or say what to change',
   chat: 'Ask anything about the plan',
 };
+
+/** The window's width, for the layout that arranges the drawer around the chat. */
+function useWindowWidth(): number {
+  const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 0 : window.innerWidth));
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return width;
+}
 
 function EditableTitle({ title, onSave }: { title: string; onSave: (next: string) => void }) {
   const [editing, setEditing] = useState(false);
@@ -92,6 +103,11 @@ function RoomBody({ sessionId }: { sessionId: string }) {
   const { room, view, plan } = chat;
   const link = useRoomLink(sessionId, view?.title ?? '', view?.opening ?? '');
   const [drawer, setDrawer] = useState<DrawerKind | null>(null);
+  const [drawerWidth, setDrawerWidth] = useState(0);
+  const windowWidth = useWindowWidth();
+  // Push the column aside while it keeps its reading width; slide over its
+  // edge once it would not.
+  const layout = roomLayout(windowWidth, drawer ? drawerWidth : 0);
   const voice = useRoomVoice(link, drawer !== null && SOCKET_DRAWERS.has(drawer));
   const [pane, setPane] = useState<'plan' | 'history' | 'export'>('plan');
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -105,12 +121,15 @@ function RoomBody({ sessionId }: { sessionId: string }) {
   );
 
   // A turn that asked for something the drawer does: /export, a sync at a gate.
+  const { want, clearWant } = chat;
   useEffect(() => {
-    if (!chat.want) return;
+    if (!want) return;
     setPane('export');
     setDrawer('blueprint');
-    chat.clearWant();
-  }, [chat.want, chat]);
+    clearWant();
+    // The hook hands out a fresh clearWant each render; the want is the signal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [want]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -173,16 +192,15 @@ function RoomBody({ sessionId }: { sessionId: string }) {
   const hint = HINTS[room.stage] ?? 'Reply, or / for commands';
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="relative flex h-full min-h-0">
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-4">
           <button
             type="button"
             onClick={() => navigate('/planning')}
-            aria-label="Back to Planning"
-            className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="text-[12px] text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
+            Back
           </button>
           <EditableTitle title={view?.title ?? ''} onSave={(next) => void chat.rename(next)} />
           <span className="text-[12px] text-muted-foreground">{stageLabel(room.stage)}</span>
@@ -212,7 +230,8 @@ function RoomBody({ sessionId }: { sessionId: string }) {
             type="button"
             disabled={!(room.stage === 'review' || room.stage === 'chat')}
             onClick={() => navigate(`/planning/${encodeURIComponent(sessionId)}/completed`)}
-            className="rounded-lg border border-success/20 bg-success/10 px-2.5 py-1 text-[11px] text-success transition-colors hover:bg-success/20 disabled:opacity-40"
+            className="border-b pb-px text-[12px] text-foreground transition-colors hover:text-primary disabled:opacity-40"
+            style={{ borderBottomColor: 'var(--audience-accent)' }}
           >
             Wrap up
           </button>
@@ -235,6 +254,21 @@ function RoomBody({ sessionId }: { sessionId: string }) {
               setDrawer('blueprint');
             }}
           />
+          {room.stalled && !room.busy && (
+            <div className="px-6 pb-2">
+              <button
+                type="button"
+                onClick={() => void chat.advance()}
+                className="border-b pb-px text-[13px] text-foreground hover:text-primary"
+                style={{ borderBottomColor: 'var(--audience-accent)' }}
+              >
+                Continue
+              </button>
+              <span className="ml-3 text-[12px] text-muted-foreground">
+                picks the plan up where the last step stopped
+              </span>
+            </div>
+          )}
           <Composer
             ref={composer}
             draft={chat.draft}
@@ -249,34 +283,40 @@ function RoomBody({ sessionId }: { sessionId: string }) {
         </div>
       </div>
 
-      <RoomDrawer kind={drawer} onClose={() => setDrawer(null)}>
-        {drawer === 'blueprint' && (
-          <BlueprintDrawer
-            sessionId={sessionId}
-            plan={plan}
-            busy={room.busy}
-            onSend={(text) => void chat.submit(text)}
-            pane={pane}
-            onPane={setPane}
-            projectId={link.vendoredId ?? undefined}
-            ensureProject={ensureProject}
-          />
-        )}
-        {drawer === 'context' && (
-          <ContextDrawer sessionId={sessionId} view={view} onSaved={chat.patchView} />
-        )}
-        {drawer === 'integrations' && <IntegrationsDrawer />}
-        {drawer === 'video' && <VideoDrawer link={link} voice={voice} />}
-        {drawer === 'recap' && (
-          <RecapDrawer
-            bubbles={room.bubbles}
-            planName={view?.title ?? ''}
-            createdAt={view?.created_at ?? ''}
-            voice={voice}
-          />
-        )}
-        {drawer === 'settings' && <SettingsDrawer link={link} voice={voice} />}
-      </RoomDrawer>
+      <div
+        className={
+          layout.mode === 'overlay' && drawer ? 'absolute inset-y-0 right-11 z-30' : 'contents'
+        }
+      >
+        <RoomDrawer kind={drawer} onClose={() => setDrawer(null)} onWidth={setDrawerWidth}>
+          {drawer === 'blueprint' && (
+            <BlueprintDrawer
+              sessionId={sessionId}
+              plan={plan}
+              busy={room.busy}
+              onSend={(text) => void chat.submit(text)}
+              pane={pane}
+              onPane={setPane}
+              projectId={link.vendoredId ?? undefined}
+              ensureProject={ensureProject}
+            />
+          )}
+          {drawer === 'context' && (
+            <ContextDrawer sessionId={sessionId} view={view} onSaved={chat.patchView} />
+          )}
+          {drawer === 'integrations' && <IntegrationsDrawer />}
+          {drawer === 'video' && <VideoDrawer link={link} voice={voice} />}
+          {drawer === 'recap' && (
+            <RecapDrawer
+              bubbles={room.bubbles}
+              planName={view?.title ?? ''}
+              createdAt={view?.created_at ?? ''}
+              voice={voice}
+            />
+          )}
+          {drawer === 'settings' && <SettingsDrawer link={link} voice={voice} />}
+        </RoomDrawer>
+      </div>
 
       <CallLayer
         inCall={voice.call.inCall}

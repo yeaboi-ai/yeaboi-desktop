@@ -1,5 +1,6 @@
 'use client';
 
+import { clampDrawerWidth } from '@/lib/planning/room-layout';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GripVertical, X } from 'lucide-react';
 
@@ -17,6 +18,8 @@ interface Props {
   /** `modal` (the default) dims the page behind a backdrop; `panel` sits
    *  beside the content with no backdrop, the way a room's drawer does. */
   variant?: 'modal' | 'panel';
+  /** The panel's width as it is drawn, for a layout that arranges around it. */
+  onWidthChange?: (width: number) => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -43,6 +46,7 @@ export function ResizableSheet({
   maxFraction = 0.6,
   headerSlot,
   variant = 'modal',
+  onWidthChange,
   children,
   className,
 }: Props) {
@@ -55,7 +59,8 @@ export function ResizableSheet({
     try {
       const raw = window.localStorage.getItem(storageKey);
       const parsed = raw == null ? NaN : Number(raw);
-      if (Number.isFinite(parsed) && parsed >= minWidth) return parsed;
+      if (Number.isFinite(parsed) && parsed >= minWidth)
+        return clampDrawerWidth(parsed, window.innerWidth, minWidth, maxFraction);
     } catch {
       // quota / private mode
     }
@@ -128,6 +133,10 @@ export function ResizableSheet({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (open) onWidthChange?.(width);
+  }, [open, width, onWidthChange]);
 
   if (!open) return null;
 

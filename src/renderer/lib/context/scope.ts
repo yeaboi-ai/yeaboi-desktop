@@ -288,6 +288,11 @@ export function customTags(scope: ContextScope, defaults: readonly string[] = []
   return scope.tags.filter((tag) => !defaults.includes(tag));
 }
 
+/** The tags a reader typed, without the engine's `key:value` stamps and month marks. */
+export function visibleTags(tags: readonly string[]): string[] {
+  return tags.filter((tag) => !tag.includes(':') && !/^\d{4}-\d{2}$/.test(tag));
+}
+
 /**
  * The three keys a run body carries once a scope was chosen. Nothing when the
  * sidecar has no context routes, so an older engine sees the body it always saw.

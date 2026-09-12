@@ -239,3 +239,72 @@ describe('endTurn and attach', () => {
     expect(state.attachments).toEqual(['/a.png', '/b.png']);
   });
 });
+
+describe('a turn that breaks off', () => {
+  const parked = { ...emptyRoom(), stage: 'pipeline' as const };
+
+  it('leaves the room offering to continue rather than asking again on its own', () => {
+    const failed = reduceLine(beginTurn(parked, ''), { type: 'error', message: 'boom' });
+    const ended = endTurn(failed);
+    expect(ended.needsAdvance).toBe(false);
+    expect(ended.stalled).toBe(true);
+    expect(ended.busy).toBe(false);
+  });
+
+  it('does not offer it on a stage the reader leaves by replying', () => {
+    const chatting = { ...emptyRoom(), stage: 'chat' as const };
+    const failed = reduceLine(beginTurn(chatting, 'hi'), { type: 'cancelled' });
+    expect(endTurn(failed).stalled).toBe(false);
+  });
+
+  it('is over once the next turn starts or a step lands', () => {
+    const stalled = endTurn(reduceLine(beginTurn(parked, ''), { type: 'error', message: 'x' }));
+    expect(beginTurn(stalled, '').stalled).toBe(false);
+    const landed = reduceLine(beginTurn(stalled, ''), { type: 'done', stage: 'review' });
+    expect(endTurn(landed).stalled).toBe(false);
+  });
+});
+
+describe('quick replies at a confirmation', () => {
+  it("offers the question's own verdicts when the gate is not a tool write", () => {
+    const state = reduceLine(emptyRoom(), {
+      type: 'await_confirm',
+      kind: 'intake_summary',
+      prompt: 'Does this look right?',
+    });
+    const question = {
+      ...QUESTION,
+      choices: [
+        ['Looks right', true],
+        ['Change something', false],
+      ] as [string, boolean][],
+    };
+    expect(quickReplies(state.awaiting, question).map((r) => r.text)).toEqual([
+      'Looks right',
+      'Change something',
+    ]);
+    // Without verdicts there is still one word to say.
+    expect(quickReplies(state.awaiting, QUESTION).map((r) => r.text)).toEqual(['confirm']);
+  });
+
+  it('keeps yes and no for a tool write whatever the question says', () => {
+    const state = reduceLine(emptyRoom(), {
+      type: 'await_confirm',
+      kind: 'tool_write',
+      prompt: 'p',
+    });
+    const question = { ...QUESTION, choices: [['Looks right', true]] as [string, boolean][] };
+    expect(quickReplies(state.awaiting, question).map((r) => r.text)).toEqual(['yes', 'no']);
+  });
+
+  it("offers a question's choices when nothing is parked", () => {
+    const question = {
+      ...QUESTION,
+      choices: [
+        ['Yes', true],
+        ['No', false],
+      ] as [string, boolean][],
+    };
+    expect(quickReplies(null, question).map((r) => r.label)).toEqual(['Yes', 'No']);
+  });
+});

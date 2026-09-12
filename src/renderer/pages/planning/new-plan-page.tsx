@@ -15,7 +15,7 @@ import { PlanComposer, type PlanDraft } from '@/components/planning/plan-compose
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PersonaMascot } from '@/lib/audience/worlds';
-import { stashOpening } from '@/lib/planning/composer';
+import { stashOpening, withReferences } from '@/lib/planning/composer';
 import { attachImage, createChat, sessionIdOf } from '@/lib/yeaboi/chat';
 import { toBase64 } from '@/lib/yeaboi/voice';
 import { logger } from '@/lib/logger';
@@ -30,8 +30,7 @@ function NewPlanBody() {
   async function create(draft: PlanDraft): Promise<{ id: string }> {
     const body = reads.body();
     const view = await createChat({
-      description: draft.description,
-      references: draft.references.map((ref) => ({ ...ref, url: ref.url ?? '' })),
+      description: withReferences(draft.description, draft.references),
       analysisProfileId: profileId || undefined,
       projectLabel: body['project_label'] as string | undefined,
       tags: body['tags'] as string[] | undefined,

@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  withReferences,
   COMPOSER_COPY,
   composerNote,
   createErrorMessage,
@@ -72,5 +73,22 @@ describe('the opening stash', () => {
       'Build a pond [image #1]',
     );
     expect(openingWithChips('Build a pond', null)).toBe('Build a pond');
+  });
+});
+
+describe('withReferences', () => {
+  it('writes the chosen references under the description, one line each', () => {
+    const text = withReferences('Build a booking site', [
+      { label: 'PROJ-12 Login', subject: 'PROJ-12', url: 'https://jira/PROJ-12' },
+      { label: 'owner/repo', subject: 'owner/repo', url: null },
+      { label: '', subject: 'a page id' },
+    ]);
+    expect(text).toBe(
+      'Build a booking site\n\nReferences:\n- PROJ-12 Login — https://jira/PROJ-12\n- owner/repo\n- a page id',
+    );
+  });
+
+  it('leaves a description alone when there are none', () => {
+    expect(withReferences('Just words', [])).toBe('Just words');
   });
 });

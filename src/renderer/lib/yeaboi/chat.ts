@@ -104,13 +104,6 @@ export interface ChatSummary {
   counts: { features: number; stories: number; tasks: number; sprints: number };
 }
 
-export interface ChatReference {
-  source: string;
-  subject: string;
-  label: string;
-  url: string;
-}
-
 export interface CreateChatOptions {
   description: string;
   intakeMode?: '' | 'small_project' | 'smart';
@@ -121,14 +114,6 @@ export interface CreateChatOptions {
   tags?: string[];
   /** A context scope's JSON twin (lib/context/scope.ts, serializeScope). */
   context?: object;
-  references?: ChatReference[];
-}
-
-/** A slash command as the sidecar lists it — the client runs it, never the model. */
-export interface WireCommand {
-  name: string;
-  help: string;
-  availability: string;
 }
 
 /** One drawn row of the conversation. Cards carry a kind, prose carries
@@ -150,7 +135,6 @@ export function createChatBody(options: CreateChatOptions): Record<string, unkno
   if (options.projectLabel?.trim()) body['project_label'] = options.projectLabel.trim();
   if (options.tags?.length) body['tags'] = [...options.tags];
   if (options.context) body['context'] = options.context;
-  if (options.references?.length) body['references'] = [...options.references];
   return body;
 }
 
@@ -233,11 +217,6 @@ export async function loadPlanVersions(sessionId: string): Promise<PlanVersionRe
     `/api/chat/sessions/${encodeURIComponent(sessionId)}/plan/versions`,
   );
   return body.versions;
-}
-
-export async function loadCommands(): Promise<WireCommand[]> {
-  const body = await apiGet<{ commands: WireCommand[] }>('/api/chat/commands');
-  return body.commands;
 }
 
 export function loadChat(projectId: string): Promise<SessionView> {

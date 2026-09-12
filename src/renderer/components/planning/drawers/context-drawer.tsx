@@ -4,7 +4,7 @@
 // composer showed, seeded from the labels the plan carries, saved back onto
 // the plan. A sidecar without the context routes draws one sentence instead.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ContextPicker } from '@/components/context/context-picker';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +30,10 @@ export function ContextDrawer({
   const [scope, setScope] = useState<ContextScope>(() => defaultScope(null));
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
+  // The view is re-read after every turn; the seed reads it once, so a scope
+  // being edited is not overwritten mid-edit.
+  const seedView = useRef(view);
+  seedView.current = view;
 
   useEffect(() => {
     let live = true;
@@ -41,11 +45,12 @@ export function ContextDrawer({
         if (!live) return;
         setOptions(loaded);
         const next = scopeFromWire(labels?.scope, loaded);
-        const project = labels?.project_label || view?.project_label || '';
+        const seed = seedView.current;
+        const project = labels?.project_label || seed?.project_label || '';
         setScope({
           ...next,
           projects: project ? [project] : next.projects,
-          tags: [...new Set([...next.tags, ...(labels?.tags ?? view?.tags ?? [])])],
+          tags: [...new Set([...next.tags, ...(labels?.tags ?? seed?.tags ?? [])])],
         });
       },
       () => live && setOptions(null),
@@ -53,7 +58,7 @@ export function ContextDrawer({
     return () => {
       live = false;
     };
-  }, [sessionId, view?.project_label, view?.tags]);
+  }, [sessionId]);
 
   if (options === 'unread') return <p className="text-[13px] text-muted-foreground">Reading…</p>;
   if (!options) {

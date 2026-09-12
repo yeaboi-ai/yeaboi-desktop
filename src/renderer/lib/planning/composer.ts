@@ -85,4 +85,28 @@ export function openingWithChips(opening: string, images: OpeningImages | null):
   return `${opening.trimEnd()} ${images.chips.join(' ')}`.trim();
 }
 
+/** A reference as the composer's chips hold it. */
+export interface ComposerReference {
+  label: string;
+  subject: string;
+  url?: string | null;
+}
+
+/** The description with its references written under it, since the engine
+ *  reads the description and nothing else on create. */
+export function withReferences(
+  description: string,
+  references: readonly ComposerReference[],
+): string {
+  const lines = references
+    .map((ref) => {
+      const where = ref.url?.trim() || ref.subject.trim();
+      const label = ref.label.trim() || ref.subject.trim();
+      return where && where !== label ? `${label} — ${where}` : label;
+    })
+    .filter(Boolean);
+  if (!lines.length) return description;
+  return `${description.trimEnd()}\n\nReferences:\n${lines.map((line) => `- ${line}`).join('\n')}`;
+}
+
 const isString = (value: unknown): value is string => typeof value === 'string';

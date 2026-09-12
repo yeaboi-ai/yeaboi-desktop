@@ -28,7 +28,12 @@ describe('hubRows', () => {
     const rows = hubRows(
       [
         summary({ session_id: 'old', last_modified: '2026-09-01T09:00:00' }),
-        summary({ session_id: 'new', project_label: 'Atlas', tags: ['q3'], stage: 'chat' }),
+        summary({
+          session_id: 'new',
+          project_label: 'Atlas',
+          tags: ['mode:planning', '2026-09', 'q3'],
+          stage: 'chat',
+        }),
       ],
       NOW,
     );

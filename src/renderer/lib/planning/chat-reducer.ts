@@ -49,6 +49,8 @@ export interface RoomState {
   needsAdvance: boolean;
   /** Something the room should do: a sync typed at a gate. */
   action: { name: string; tracker: string } | null;
+  /** A turn broke off on a stage only advanceTurn can leave; the reader continues by hand. */
+  stalled: boolean;
 }
 
 export function emptyRoom(): RoomState {
@@ -67,6 +69,7 @@ export function emptyRoom(): RoomState {
     planDirty: false,
     needsAdvance: false,
     action: null,
+    stalled: false,
   };
 }
 
@@ -110,6 +113,7 @@ export function beginTurn(state: RoomState, text: string): RoomState {
     awaiting: null,
     action: null,
     needsAdvance: false,
+    stalled: false,
   };
 }
 
@@ -160,7 +164,10 @@ export function reduceLine(state: RoomState, line: ChatLine): RoomState {
 
 /** The stream is over, however it ended. */
 export function endTurn(state: RoomState): RoomState {
-  return { ...state, pending: '', opId: '', busy: false, progress: null };
+  // A cancelled or failed step leaves the stage where it was; the room does
+  // not ask again on its own, it offers to.
+  const stalled = state.error !== '' && needsAdvance(state.stage);
+  return { ...state, pending: '', opId: '', busy: false, progress: null, stalled };
 }
 
 /** The drawer has read the plan again. */
@@ -178,9 +185,15 @@ export function attach(state: RoomState, path: string): RoomState {
   return { ...state, attachments: [...state.attachments, path] };
 }
 
-/** The quick replies a parked gate offers, in the words the engine accepts. */
-export function quickReplies(awaiting: Awaiting | null): { label: string; text: string }[] {
-  if (!awaiting) return [];
+/** The quick replies a parked gate offers, in the words the engine accepts.
+ *  A confirmation that is not a tool write is the intake's own verdicts, so
+ *  the question's choices are what to offer there. */
+export function quickReplies(
+  awaiting: Awaiting | null,
+  question: QuestionView | null = null,
+): { label: string; text: string }[] {
+  const choices = (question?.choices ?? []).map(([label]) => ({ label, text: label }));
+  if (!awaiting) return choices;
   switch (awaiting.type) {
     case 'review':
       return [
@@ -190,11 +203,12 @@ export function quickReplies(awaiting: Awaiting | null): { label: string; text: 
     case 'choice':
       return awaiting.options.map((option) => ({ label: option.label, text: option.key }));
     case 'confirm':
-      return awaiting.kind === 'tool_write'
-        ? [
-            { label: 'Yes', text: 'yes' },
-            { label: 'No', text: 'no' },
-          ]
-        : [{ label: 'Confirm', text: 'confirm' }];
+      if (awaiting.kind === 'tool_write') {
+        return [
+          { label: 'Yes', text: 'yes' },
+          { label: 'No', text: 'no' },
+        ];
+      }
+      return choices.length ? choices : [{ label: 'Confirm', text: 'confirm' }];
   }
 }

@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  visibleTags,
   ALL_WINDOW,
   SOURCES,
   WINDOW_PRESETS,
@@ -279,5 +280,13 @@ describe('scopeFromWire', () => {
       tags: [],
       limits: {},
     });
+  });
+});
+
+describe('visibleTags', () => {
+  it("drops the engine's stamps and month marks, keeps what a reader typed", () => {
+    expect(
+      visibleTags(['mode:planning', 'world:team', '2026-09', 'size:smart', 'atlas', 'q3-launch']),
+    ).toEqual(['atlas', 'q3-launch']);
   });
 });

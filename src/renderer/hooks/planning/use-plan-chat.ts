@@ -50,7 +50,9 @@ export interface PlanChat {
   setDraft: (next: string) => void;
   /** A composer line: a command runs locally, anything else is a turn. */
   submit: (line: string) => Promise<void>;
-  send: (text: string, options?: { synthetic?: boolean }) => Promise<void>;
+  send: (text: string, options?: { synthetic?: boolean; images?: string[] }) => Promise<void>;
+  /** The next step the engine takes on its own, asked for by hand after a turn broke off. */
+  advance: () => Promise<void>;
   cancel: () => Promise<void>;
   paste: (event: React.ClipboardEvent<HTMLTextAreaElement>) => Promise<void>;
   reloadPlan: () => Promise<void>;
@@ -108,9 +110,14 @@ export function usePlanChat(sessionId: string): PlanChat {
   );
 
   const send = useCallback(
-    async (text: string, { synthetic = false }: { synthetic?: boolean } = {}) => {
+    async (
+      text: string,
+      { synthetic = false, images: given }: { synthetic?: boolean; images?: string[] } = {},
+    ) => {
       if (latest.current.busy) return;
-      const images = latest.current.attachments;
+      // The opening turn names its images itself: the ref would still be one
+      // render behind the stash it just attached.
+      const images = given ?? latest.current.attachments;
       if (!text.trim() && !images.length && !synthetic) return;
       setDraft('');
       await stream(text, (onLine) => sendTurn(sessionId, text, onLine, images));
@@ -137,7 +144,7 @@ export function usePlanChat(sessionId: string): PlanChat {
         if (loaded.opening) {
           const images = takeOpening(sessionId);
           if (images) setRoom((state) => images.paths.reduce(attach, state));
-          void send(openingWithChips(loaded.opening, images));
+          void send(openingWithChips(loaded.opening, images), { images: images?.paths ?? [] });
         }
       },
       (e: Error) => live && setLoadError(e.message),
@@ -244,8 +251,13 @@ export function usePlanChat(sessionId: string): PlanChat {
 
   const rename = useCallback(
     async (title: string) => {
-      const saved = await updateChat(sessionId, { title });
-      setView((prior) => (prior ? { ...prior, title: saved.title } : prior));
+      try {
+        const saved = await updateChat(sessionId, { title });
+        setView((prior) => (prior ? { ...prior, title: saved.title } : prior));
+      } catch (e) {
+        // The title on screen is still the saved one; say why the new one did not take.
+        notice(`The name was not saved: ${(e as Error).message}`);
+      }
     },
     [sessionId],
   );
@@ -254,12 +266,7 @@ export function usePlanChat(sessionId: string): PlanChat {
     setView((prior) => (prior ? { ...prior, ...patch } : prior));
   }, []);
 
-  const replies = [
-    ...quickReplies(room.awaiting),
-    ...(!room.awaiting && room.question?.choices
-      ? room.question.choices.map(([label]) => ({ label, text: label }))
-      : []),
-  ];
+  const replies = quickReplies(room.awaiting, room.question);
 
   return {
     room,
@@ -270,6 +277,7 @@ export function usePlanChat(sessionId: string): PlanChat {
     setDraft,
     submit,
     send,
+    advance,
     cancel,
     paste,
     reloadPlan,
