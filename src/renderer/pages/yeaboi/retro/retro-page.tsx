@@ -17,6 +17,8 @@ import {
   startRetroBoard,
 } from '@/lib/yeaboi/boards';
 import { ResultActions } from '@/components/yeaboi/result-actions';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -61,6 +63,7 @@ function RetroBody() {
   const [live, setLive] = useState<BoardSnapshot | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const reads = useContextScope('retro');
 
   useEffect(() => {
     retroHistory().then(
@@ -80,7 +83,7 @@ function RetroBody() {
     setBusy(true);
     setError('');
     try {
-      const board = await startRetroBoard();
+      const board = await startRetroBoard({ ...reads.body() });
       router.push(`/team/retro/board?id=${encodeURIComponent(board.board_id)}`);
     } catch (e) {
       setError((e as Error).message);
@@ -113,6 +116,16 @@ function RetroBody() {
         )}
       </header>
 
+      {!live && (
+        <ContextPicker
+          mode="retro"
+          options={reads.options}
+          scope={reads.scope}
+          onChange={reads.setScope}
+          disabled={busy}
+        />
+      )}
+
       {error && <Notice title="Could not start the board" items={[error]} />}
       {!runs && <p className="text-[13px] text-muted-foreground">Loading…</p>}
 
@@ -136,10 +149,10 @@ function RetroBody() {
 
       {runs && runs.length === 0 && (
         <Section title="No retros yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Start a board and send the invite — everyone adds
             cards from their own browser, and yeaboi drafts the action items when you are done.
-          </p>
+          </div>
         </Section>
       )}
     </div>

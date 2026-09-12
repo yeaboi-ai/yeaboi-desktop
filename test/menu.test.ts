@@ -49,9 +49,15 @@ describe('menu bar', () => {
     }
   });
 
-  it('sends both worlds to the same sessions ledger', () => {
-    expect(goPages('solo').find((p) => p.label === 'Sessions')?.route).toBe('/sessions');
-    expect(goPages('team').find((p) => p.label === 'Sessions')?.route).toBe('/sessions');
+  it('sends both worlds to the same planning hub', () => {
+    expect(goPages('solo').find((p) => p.label === 'Planning')?.route).toBe('/planning');
+    expect(goPages('team').find((p) => p.label === 'Planning')?.route).toBe('/planning');
+  });
+
+  it('opens the paper from Go, now that the home is the menu', () => {
+    expect(goPages('team').find((p) => p.label === 'Front page')?.route).toBe('/news');
+    expect(FILE_PAGES.map((p) => p.label)).toEqual(['New plan…']);
+    expect(FILE_PAGES[0]!.route).toBe('/planning/new');
   });
 
   it('claims every shortcut once', () => {

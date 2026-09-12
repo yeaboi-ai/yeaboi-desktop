@@ -78,8 +78,8 @@ export function TitleBar() {
   const { open } = usePalette();
   const edges = useHistoryEdges();
   const updateDot = updateIndicatorVisible(useUpdateState(), null);
-  // Inside a session the duck in its persona leads; elsewhere the world's mark.
-  const Mascot = /^\/sessions(\/|$)/.test(pathname) ? PersonaMascot : WORLD_MASCOT[audience];
+  // Inside a plan the duck in its persona leads; elsewhere the world's mark.
+  const Mascot = /^\/planning(\/|$)/.test(pathname) ? PersonaMascot : WORLD_MASCOT[audience];
 
   return (
     <header

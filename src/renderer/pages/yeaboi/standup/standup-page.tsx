@@ -30,6 +30,8 @@ import {
   runStandup,
 } from '@/lib/yeaboi/dashboards';
 import { appendSpoken } from '@/lib/yeaboi/voice';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { MicButton } from '@/components/yeaboi/mic-button';
@@ -109,6 +111,7 @@ const inputClass =
 
 function StandupBody() {
   const { audience } = useAudience();
+  const reads = useContextScope('standup');
   const [data, setData] = useState<StandupDashboard | null>(null);
   const [error, setError] = useState('');
   const [run, setRun] = useState(emptyRun());
@@ -154,7 +157,7 @@ function StandupBody() {
           state = reduceRun(state, line);
           setRun(state);
         },
-        { solo: audience === 'solo' },
+        { solo: audience === 'solo', ...reads.body() },
       );
     } catch (e) {
       setError((e as Error).message);
@@ -223,6 +226,14 @@ function StandupBody() {
           </Link>
         </div>
       </header>
+
+      <ContextPicker
+        mode="standup"
+        options={reads.options}
+        scope={reads.scope}
+        onChange={reads.setScope}
+        disabled={busy}
+      />
 
       {report && (
         <>

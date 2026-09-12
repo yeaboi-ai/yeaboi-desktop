@@ -1,5 +1,6 @@
 'use client';
 
+import { clampDrawerWidth } from '@/lib/planning/room-layout';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GripVertical, X } from 'lucide-react';
 
@@ -14,6 +15,11 @@ interface Props {
   maxFraction?: number;
   /** Extra elements rendered to the right of the close button in the header strip. */
   headerSlot?: React.ReactNode;
+  /** `modal` (the default) dims the page behind a backdrop; `panel` sits
+   *  beside the content with no backdrop, the way a room's drawer does. */
+  variant?: 'modal' | 'panel';
+  /** The panel's width as it is drawn, for a layout that arranges around it. */
+  onWidthChange?: (width: number) => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -39,6 +45,8 @@ export function ResizableSheet({
   minWidth = DEFAULT_MIN,
   maxFraction = 0.6,
   headerSlot,
+  variant = 'modal',
+  onWidthChange,
   children,
   className,
 }: Props) {
@@ -51,7 +59,8 @@ export function ResizableSheet({
     try {
       const raw = window.localStorage.getItem(storageKey);
       const parsed = raw == null ? NaN : Number(raw);
-      if (Number.isFinite(parsed) && parsed >= minWidth) return parsed;
+      if (Number.isFinite(parsed) && parsed >= minWidth)
+        return clampDrawerWidth(parsed, window.innerWidth, minWidth, maxFraction);
     } catch {
       // quota / private mode
     }
@@ -125,57 +134,72 @@ export function ResizableSheet({
     return () => window.removeEventListener('keydown', handler);
   }, [open, onOpenChange]);
 
+  useEffect(() => {
+    if (open) onWidthChange?.(width);
+  }, [open, width, onWidthChange]);
+
   if (!open) return null;
+
+  const panel = (
+    <div
+      className={[
+        'relative h-full overflow-hidden bg-background border-l border-border shadow-xl flex flex-col',
+        className ?? '',
+      ].join(' ')}
+      style={{ width: `${width}px` }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Drag handle on the left edge. 8px hit zone, visual line shown on hover. */}
+      <div
+        ref={handleRef}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize panel"
+        tabIndex={0}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onKeyDown={onKeyDown}
+        className="group absolute left-0 top-0 z-10 h-full w-2 -translate-x-1 cursor-col-resize select-none"
+      >
+        <div className="mx-auto h-full w-px bg-transparent group-hover:bg-primary/40 group-active:bg-primary transition-colors" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-background/80 p-0.5 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+      </div>
+
+      {/* Sticky close strip — keeps Close + headerSlot reachable while content scrolls. */}
+      <div className="flex items-center justify-end gap-1 border-b border-border px-2 py-1.5 shrink-0">
+        {headerSlot}
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Close panel"
+          title="Close (Esc)"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">{children}</div>
+    </div>
+  );
+
+  if (variant === 'panel') {
+    return (
+      <div className="h-full shrink-0" role="complementary">
+        {panel}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-40 flex" aria-modal="true" role="dialog">
       {/* Backdrop — click to close. */}
       <div className="flex-1 bg-black/30 transition-opacity" onClick={() => onOpenChange(false)} />
-      {/* Panel */}
-      <div
-        className={[
-          'relative h-full overflow-hidden bg-background border-l border-border shadow-xl flex flex-col',
-          className ?? '',
-        ].join(' ')}
-        style={{ width: `${width}px` }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drag handle on the left edge. 8px hit zone, visual line shown on hover. */}
-        <div
-          ref={handleRef}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize panel"
-          tabIndex={0}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onKeyDown={onKeyDown}
-          className="group absolute left-0 top-0 z-10 h-full w-2 -translate-x-1 cursor-col-resize select-none"
-        >
-          <div className="mx-auto h-full w-px bg-transparent group-hover:bg-primary/40 group-active:bg-primary transition-colors" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-background/80 p-0.5 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
-            <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
-        </div>
-
-        {/* Sticky close strip — keeps Close + headerSlot reachable while content scrolls. */}
-        <div className="flex items-center justify-end gap-1 border-b border-border px-2 py-1.5 shrink-0">
-          {headerSlot}
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Close panel"
-            title="Close (Esc)"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">{children}</div>
-      </div>
+      {panel}
     </div>
   );
 }

@@ -22,6 +22,8 @@ import {
   runAnalysis,
   reduceRun,
 } from '@/lib/yeaboi/dashboards';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { useAudience } from '@/components/providers/audience-provider';
@@ -84,6 +86,7 @@ const checkInput = 'mt-0.5 accent-[var(--primary)]';
 
 function AnalysisSetupBody() {
   const { audience } = useAudience();
+  const reads = useContextScope('analysis');
   const [options, setOptions] = useState<AnalysisOptions | null>(null);
   const [answers, setAnswers] = useState<Answers | null>(null);
   const [plan, setPlan] = useState<StepPlan | null>(null);
@@ -153,7 +156,7 @@ function AnalysisSetupBody() {
     let state = emptyRun();
     setRun(state);
     try {
-      await runAnalysis(plan!.run as RunRequest, (line: RunLine) => {
+      await runAnalysis({ ...(plan!.run as RunRequest), ...reads.body() }, (line: RunLine) => {
         state = reduceRun(state, line);
         setRun(state);
       });
@@ -406,6 +409,16 @@ function AnalysisSetupBody() {
           </ul>
         )}
       </Section>
+
+      {step === 'review' && (
+        <ContextPicker
+          mode="analysis"
+          options={reads.options}
+          scope={reads.scope}
+          onChange={reads.setScope}
+          disabled={busy}
+        />
+      )}
 
       {error && <Notice title="Something went wrong" items={[error]} />}
 

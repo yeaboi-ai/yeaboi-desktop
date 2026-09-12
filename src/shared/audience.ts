@@ -13,9 +13,9 @@ export type Audience = 'solo' | 'team';
 
 export const AUDIENCES: readonly Audience[] = ['solo', 'team'];
 
-/** The sessions ledger for a world. Both worlds land on the same one. */
-export function sessionsHref(_audience: Audience): string {
-  return '/sessions';
+/** The planning hub for a world. Both worlds land on the same one. */
+export function planningHref(_audience: Audience): string {
+  return '/planning';
 }
 
 /** Clamp whatever settings.json holds. `humans` is the pre-split name for the
@@ -91,7 +91,7 @@ const SOLO_ONLY_PREFIXES = ['/solo', '/agents'];
 
 const SHARED_WORKSPACE_PREFIXES = [
   '/team',
-  '/sessions',
+  '/planning',
   '/board',
   '/tickets',
   '/ceremonies',
@@ -107,8 +107,8 @@ function matches(pathname: string, prefix: string): boolean {
 }
 
 /** The worlds a pathname belongs to, canonical owner first; `[]` for shared
- *  chrome (`/home`, `/runs`, `/settings*`, `/whats-new`, `/feedback`,
- *  `/setup`). `/runs` is every world's run history, so it belongs to none.
+ *  chrome (`/home`, `/news`, `/settings*`, `/whats-new`, `/feedback`,
+ *  `/setup`). The home is every world's menu, so it belongs to none.
  *  Note `/usage`
  *  is the app's own LLM spend for scrum runs — workspace-side; the agentwatch
  *  usage report is `/agents/usage`. */

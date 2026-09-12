@@ -3,6 +3,7 @@
 // relay whose auth lives in the main process.
 
 import { duckQuip } from '@/lib/duck-events';
+import { isOk } from './http-status';
 import { runNotice } from './run-notices';
 
 export interface Envelope<T = unknown> {
@@ -48,7 +49,7 @@ function bridge(): Bridge {
 
 export async function apiGet<T>(path: string): Promise<T> {
   const { status, body } = await bridge().api(path);
-  if (status !== 200)
+  if (!isOk(status))
     throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
   return body as T;
 }
@@ -59,14 +60,14 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiGetOptional<T>(path: string): Promise<T | null> {
   const { status, body } = await bridge().api(path);
   if (status === 404) return null;
-  if (status !== 200)
+  if (!isOk(status))
     throw new Error((body as { error?: string }).error ?? `GET ${path} → ${status}`);
   return body as T;
 }
 
 export async function apiPost<T>(path: string, body: object = {}): Promise<T> {
   const { status, body: resp } = await bridge().api(path, { method: 'POST', body });
-  if (status !== 200)
+  if (!isOk(status))
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
   return resp as T;
 }
@@ -86,7 +87,7 @@ export async function apiStream(
     if (notice) duckQuip(notice.key, { route: notice.route });
     onLine(line);
   });
-  if (status !== 200)
+  if (!isOk(status))
     throw new Error((resp as { error?: string }).error ?? `POST ${path} → ${status}`);
 }
 
@@ -99,7 +100,7 @@ export async function callTool<T = unknown>(
     method: 'POST',
     body: { arguments: args, ...(options.opId ? { op_id: options.opId } : {}) },
   });
-  if (status !== 200)
+  if (!isOk(status))
     throw new Error((body as { error?: string }).error ?? `tool ${name} → ${status}`);
   return body as Envelope<T>;
 }

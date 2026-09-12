@@ -5,7 +5,7 @@
 // stored blob, the renderer can clamp the same blob again with the routes it
 // knows (`known`), and the tests cover both in the node lane.
 
-import { AUDIENCES, sessionsHref, type Audience } from './audience';
+import { AUDIENCES, planningHref, type Audience } from './audience';
 import { isPersonaId, type PersonaId } from './personas';
 
 /** The drawn glyphs a rail icon may pick from. Renderer-side, lib/nav/rail-icons.ts
@@ -131,20 +131,15 @@ export function isRailLucideName(value: unknown): value is RailLucideName {
   return typeof value === 'string' && (RAIL_LUCIDE_ICONS as readonly string[]).includes(value);
 }
 
-/** Where every world's rail starts: your sessions, their runs, the board. */
+/** Where every world's rail starts: your plans and the board. The modes
+ *  are the home's menu, behind the mascot. */
 export function railDefaultsFor(audience: Audience): RailItem[] {
   return [
     {
-      id: 'sessions',
-      route: sessionsHref(audience),
-      label: 'Sessions',
+      id: 'planning',
+      route: planningHref(audience),
+      label: 'Planning',
       icon: { kind: 'lucide', name: 'NotebookPen' },
-    },
-    {
-      id: 'runs',
-      route: '/runs',
-      label: 'Runs',
-      icon: { kind: 'lucide', name: 'Sunrise' },
     },
     {
       id: 'board',

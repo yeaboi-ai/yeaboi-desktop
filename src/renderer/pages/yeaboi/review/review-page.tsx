@@ -11,6 +11,8 @@ import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { BetaChip } from '@/components/yeaboi/beta-chip';
 import { ReviewBody } from '@/components/yeaboi/review-body';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { useNdjsonRun } from '@/hooks/yeaboi/use-ndjson-run';
 import {
   type ReviewAction,
@@ -99,6 +101,7 @@ function ReviewHub() {
   const [error, setError] = useState('');
   const [marks, setMarks] = useState<Record<string, ReviewActionStatus>>({});
   const stream = useNdjsonRun();
+  const reads = useContextScope('review');
 
   const refresh = useCallback(async () => {
     try {
@@ -118,6 +121,7 @@ function ReviewHub() {
     if (home === null || home === 'unsupported' || stream.status === 'running') return;
     const outcome = await stream.start('/api/solo/review/run', {
       carried_statuses: carriedStatusesPayload(home.carried, marks),
+      ...reads.body(),
     });
     // A failed run recorded nothing, so the marks are still the user's to send.
     if (outcome !== 'done') return;
@@ -162,6 +166,14 @@ function ReviewHub() {
           {running ? 'Reviewing…' : "Run this week's review"}
         </Button>
       </header>
+
+      <ContextPicker
+        mode="review"
+        options={reads.options}
+        scope={reads.scope}
+        onChange={reads.setScope}
+        disabled={running}
+      />
 
       {home.beta_notice && (
         <div className="rounded-2xl bg-card ring-1 ring-border/60 p-4">
@@ -221,10 +233,10 @@ function ReviewHub() {
         </>
       ) : (
         <Section title="No reviews yet">
-          <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <DuckMark state="idle" size={28} /> Run one on a Friday: yeaboi reads your standups,
             what shipped and your sprint plan, then drafts the review for you to correct.
-          </p>
+          </div>
         </Section>
       )}
 

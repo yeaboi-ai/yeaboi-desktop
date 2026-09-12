@@ -18,6 +18,8 @@ import {
   loadPokerTypes,
   startPokerBoard,
 } from '@/lib/yeaboi/boards';
+import { ContextPicker } from '@/components/context/context-picker';
+import { useContextScope } from '@/hooks/yeaboi/use-context-scope';
 import { PageShell } from '@/components/page-shell';
 import { BackendGate } from '@/components/yeaboi/backend-gate';
 import { Button } from '@/components/ui/button';
@@ -66,6 +68,7 @@ function PokerSetupBody() {
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [scopeLabel, setScopeLabel] = useState('');
   const [busy, setBusy] = useState(false);
+  const reads = useContextScope('poker');
 
   useEffect(() => {
     loadPokerOptions().then(setOptions, (e: Error) => setError(e.message));
@@ -135,7 +138,12 @@ function PokerSetupBody() {
     if (!tickets?.length) return;
     setBusy(true);
     try {
-      const board = await startPokerBoard({ source, scope_label: scopeLabel, tickets });
+      const board = await startPokerBoard({
+        source,
+        scope_label: scopeLabel,
+        tickets,
+        ...reads.body(),
+      });
       router.push(`/team/poker/board?id=${encodeURIComponent(board.board_id)}`);
     } catch (e) {
       setError((e as Error).message);
@@ -279,6 +287,15 @@ function PokerSetupBody() {
               …and {tickets.length - 12} more.
             </p>
           )}
+          <div className="mt-3">
+            <ContextPicker
+              mode="poker"
+              options={reads.options}
+              scope={reads.scope}
+              onChange={reads.setScope}
+              disabled={busy}
+            />
+          </div>
           <div className="mt-3">
             <Button disabled={busy} onClick={() => void deal()}>
               {busy ? 'Dealing…' : 'Open the table'}

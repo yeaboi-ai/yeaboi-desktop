@@ -3,7 +3,7 @@
 // survive their own normalisation unchanged.
 
 import { describe, expect, it } from 'vitest';
-import { AUDIENCES, sessionsHref } from '../src/shared/audience';
+import { AUDIENCES, planningHref } from '../src/shared/audience';
 import {
   RAIL_DEFAULTS,
   RAIL_LIMITS,
@@ -30,13 +30,17 @@ const item = (over: Partial<RailItem> = {}): RailItem => ({
 const PNG = `data:image/png;base64,${'A'.repeat(64)}`;
 
 describe('RAIL_DEFAULTS', () => {
-  it('draws Sessions, Runs and Board in every world', () => {
+  it('draws Planning and Board in every world', () => {
     for (const audience of AUDIENCES) {
-      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Sessions', 'Runs', 'Board']);
-      expect(RAIL_DEFAULTS[audience][0]!.route).toBe(sessionsHref(audience));
-      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/runs');
-      expect(RAIL_DEFAULTS[audience][2]!.route).toBe('/board');
+      expect(RAIL_DEFAULTS[audience].map((i) => i.label)).toEqual(['Planning', 'Board']);
+      expect(RAIL_DEFAULTS[audience][0]!.route).toBe(planningHref(audience));
+      expect(RAIL_DEFAULTS[audience][1]!.route).toBe('/board');
     }
+  });
+
+  it('is what a fresh profile gets, nothing more', () => {
+    expect(normalizeRailPrefs({})).toEqual(RAIL_DEFAULTS);
+    expect(normalizeRailPrefs(undefined)).toEqual(RAIL_DEFAULTS);
   });
 
   it('is itself a fixed point of normalisation', () => {
@@ -188,7 +192,7 @@ describe('normalizeRailItems', () => {
   });
 
   it('applies the known set to the defaults too', () => {
-    expect(normalizeRailItems(undefined, 'team', new Set(['/runs']))).toEqual([
+    expect(normalizeRailItems(undefined, 'team', new Set(['/board']))).toEqual([
       RAIL_DEFAULTS.team[1],
     ]);
   });

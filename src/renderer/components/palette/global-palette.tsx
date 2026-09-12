@@ -30,7 +30,7 @@ import {
   groupHits,
   moveSelection,
   pageHits,
-  workspaceHits,
+  planHits,
   rankHits,
   runHits,
   settingHits,
@@ -48,7 +48,7 @@ export function GlobalPalette() {
   const update = useUpdateState();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { caps, projects, sessions, settings } = usePaletteSources(isOpen);
+  const { caps, plans, sessions, settings } = usePaletteSources(isOpen);
   const [text, setText] = useState('');
   const [selected, setSelected] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -68,13 +68,13 @@ export function GlobalPalette() {
       ? visibleSessions(shapeSessions(sessions, cards, now), soloEnabled)
       : [];
     return [
-      ...workspaceHits(projects ?? [], audience),
+      ...planHits(plans ?? []),
       ...runHits(shaped),
       ...pageHits(visibleRailDestinations(soloEnabled), caps, audience),
       ...settingHits(settings ?? []),
       ...actionHits(audience, update, audiencesShown(soloEnabled)),
     ];
-  }, [caps, projects, sessions, settings, audience, soloEnabled, update, now]);
+  }, [caps, plans, sessions, settings, audience, soloEnabled, update, now]);
 
   const shown = useMemo(() => rankHits(hits, text), [hits, text]);
   const sections = useMemo(() => groupHits(shown), [shown]);

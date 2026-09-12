@@ -66,7 +66,7 @@ describe('railCatalogue', () => {
       }
     }
     const solo = railCatalogue('solo').map((entry) => entry.route);
-    expect(solo).toContain('/sessions');
+    expect(solo).toContain('/planning');
     expect(railCatalogue('team').map((e) => e.route)).not.toContain('/solo/review');
     expect(railCatalogue('solo').map((e) => e.route)).not.toContain('/team/retro');
     expect(railCatalogue('team').map((e) => e.route)).toContain('/team/retro');
@@ -118,8 +118,9 @@ describe('railCatalogue', () => {
 
 describe('railGroupFor', () => {
   it.each([
-    ['/sessions', 'work'],
-    ['/runs', 'work'],
+    ['/planning', 'work'],
+    ['/planning/new', 'work'],
+    ['/news', 'work'],
     ['/board', 'work'],
     ['/ceremonies/slack', 'work'],
     ['/team/standup', 'modes'],
@@ -159,7 +160,7 @@ describe('visibleRailDestinations', () => {
     const hidden = visibleRailDestinations(false).map((entry) => entry.route);
     expect(hidden.some((route) => route.startsWith('/agents'))).toBe(false);
     expect(hidden.some((route) => route.startsWith('/solo'))).toBe(false);
-    expect(hidden).toContain('/sessions');
+    expect(hidden).toContain('/planning');
   });
 
   it('offers everything when it does', () => {

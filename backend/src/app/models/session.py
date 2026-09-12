@@ -41,6 +41,9 @@ class Session(TimestampMixin, Base):
     # A follow-up opens from the session before it; the chain is what makes the
     # ledger read chronologically rather than as a folder tree.
     continued_from_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("sessions.id"))
+    # The engine plan this row serves — the sidecar's session id, set once
+    # when the row is made and looked up by the list route's filter.
+    yeaboi_session_id: Mapped[str | None] = mapped_column(String(64), index=True)
     initial_idea: Mapped[str | None] = mapped_column(Text)
     join_code: Mapped[str] = mapped_column(String(12), unique=True, default=lambda: gen_uuid()[:8])
     ai_config: Mapped[dict] = mapped_column(JSON, default=lambda: {"assertiveness": "balanced", "muted": False})

@@ -943,6 +943,7 @@ def _serialize_session(session: Session) -> dict:
         "default_modifiers": list(session.default_modifiers or []),
         "references": list(session.references or []),
         "continued_from_id": session.continued_from_id,
+        "yeaboi_session_id": session.yeaboi_session_id,
         "title": session.title,
         "initial_idea": session.initial_idea,
         "join_code": session.join_code,

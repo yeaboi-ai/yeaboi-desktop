@@ -13,7 +13,7 @@
 // own, with no second source of truth to keep in step.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import {
   GripHorizontal,
   Loader2,
@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import { DuckMark } from '@/components/brand/duck';
+import { isBareRoom } from '@/lib/nav/sections';
 import { useYeaboiBackend } from '@/hooks/yeaboi/use-yeaboi-backend';
 import {
   COLLAPSED_HEIGHT,
@@ -223,6 +224,10 @@ export function NikoBar() {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', end);
   };
+
+  // The room carries its own duck on the drawer strip; the pill would sit on
+  // the composer.
+  if (isBareRoom(location.pathname)) return null;
 
   return (
     <div

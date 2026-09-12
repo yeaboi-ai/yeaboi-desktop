@@ -53,7 +53,9 @@ function matches(row: ConnectionRow, needle: string): boolean {
   );
 }
 
-export function IntegrationsCatalog() {
+/** `embedded` draws the catalog inside another surface (a room's drawer):
+ *  search and the shelves stay, the create-your-own doors do not. */
+export function IntegrationsCatalog({ embedded = false }: { embedded?: boolean } = {}) {
   const [payload, setPayload] = useState<ConnectionsPayload | null>(null);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -141,10 +143,12 @@ export function IntegrationsCatalog() {
           <p className="text-[12px] font-mono text-muted-foreground">
             {connected.length} of {rows.length} connected
           </p>
-          <Button size="xs" variant="secondary" onClick={() => setCreating(true)}>
-            <Plus aria-hidden className="mr-1 size-3" />
-            Create your own
-          </Button>
+          {!embedded && (
+            <Button size="xs" variant="secondary" onClick={() => setCreating(true)}>
+              <Plus aria-hidden className="mr-1 size-3" />
+              Create your own
+            </Button>
+          )}
         </div>
       </div>
 
@@ -191,23 +195,25 @@ export function IntegrationsCatalog() {
         ))
       )}
 
-      <button
-        type="button"
-        onClick={() => setCreating(true)}
-        className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
-      >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
-          <Plus aria-hidden className="size-5 text-muted-foreground" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-[13.5px] font-body font-medium text-foreground">
-            Create your own
+      {!embedded && (
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex w-full items-center gap-3.5 rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-secondary/30 focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:outline-none"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 ring-1 ring-border/40">
+            <Plus aria-hidden className="size-5 text-muted-foreground" />
           </span>
-          <span className="block text-[12px] text-muted-foreground/70">
-            A generic API, an inbound webhook or an MCP server — describe it, or fill the form.
+          <span className="min-w-0">
+            <span className="block text-[13.5px] font-body font-medium text-foreground">
+              Create your own
+            </span>
+            <span className="block text-[12px] text-muted-foreground/70">
+              A generic API, an inbound webhook or an MCP server — describe it, or fill the form.
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+      )}
 
       <ConnectorSheet row={openRow} onClose={() => setOpenKey('')} onChanged={refresh} />
       <CreateCustomSheet

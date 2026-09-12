@@ -62,13 +62,16 @@ export function relativeDay(iso: string, now: Date): string {
   return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
 }
 
-/** Where a saved run opens. Only the weekly review addresses a run by id;
+/** Where a saved run opens. A plan and a weekly review are addressed by id;
  *  every other row lands on its mode's hub, which lists it. */
 function routeFor(row: RecentSession, cardKey: string): string {
   if (cardKey === 'weekly-review' && Number(row.run_id) > 0) {
     return `/solo/review/report?id=${encodeURIComponent(String(row.run_id))}`;
   }
-  return MODE_ROUTES[cardKey] ?? '/sessions';
+  if (cardKey === 'project-planning' && row.session_id) {
+    return `/planning/${encodeURIComponent(row.session_id)}`;
+  }
+  return MODE_ROUTES[cardKey] ?? '/planning';
 }
 
 const stamp = (row: RecentSession): string => row.last_modified || row.created_at;

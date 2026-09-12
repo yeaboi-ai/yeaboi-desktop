@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { isBareRoom } from '@/lib/nav/sections';
 import { Sidebar } from './sidebar';
 import { ThemePreviewBar } from './theme-preview-bar';
 
@@ -9,10 +10,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
-  // Full-screen pages — no sidebar. Explicit, not a substring test: the
-  // session workspace at /sessions/:id keeps the frame; only the room and the
-  // recap are bare.
-  const isFullScreen = /^\/sessions\/[^/]+\/(room|completed)$/.test(pathname ?? '');
+  // Full-screen pages — no sidebar. Explicit, not a substring test: the plan
+  // room is bare, its recap keeps the frame.
+  const isFullScreen = isBareRoom(pathname ?? '');
   const isAuth = pathname?.startsWith('/auth');
   const isInvite = pathname?.startsWith('/invite');
   const isOnboarding = pathname?.startsWith('/onboarding');

@@ -197,7 +197,7 @@ describe('tipRoute', () => {
     // These are _MODE_CARDS keys, not the short names — the home grid used to
     // key its table on the short ones and silently opened nothing.
     expect(tipRoute({ mode_key: 'team-analysis' })).toBe('/team/analysis');
-    expect(tipRoute({ mode_key: 'project-planning' })).toBe('/projects');
+    expect(tipRoute({ mode_key: 'project-planning' })).toBe('/planning');
     expect(tipRoute({ mode_key: 'daily-standup' })).toBe('/team/standup');
   });
 

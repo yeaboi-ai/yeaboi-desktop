@@ -57,14 +57,17 @@ export function loadBoard(boardId: string): Promise<BoardSnapshot> {
   return apiGet<BoardSnapshot>(`/api/boards/${encodeURIComponent(boardId)}`);
 }
 
-export function startRetroBoard(): Promise<BoardSnapshot> {
-  return apiPost<BoardSnapshot>('/api/boards/retro');
+export function startRetroBoard(body: Record<string, unknown> = {}): Promise<BoardSnapshot> {
+  return apiPost<BoardSnapshot>('/api/boards/retro', body);
 }
 
 export function startPokerBoard(body: {
   source: string;
   scope_label: string;
   tickets: unknown[];
+  context?: unknown;
+  project_label?: string;
+  tags?: string[];
 }): Promise<BoardSnapshot> {
   return apiPost<BoardSnapshot>('/api/boards/poker', body);
 }

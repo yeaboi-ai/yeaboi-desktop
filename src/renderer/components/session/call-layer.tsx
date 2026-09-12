@@ -1602,19 +1602,8 @@ function VideoPanel({
     onAiRingingChangeRef.current?.(true);
 
     // Delay dispatch by 3s so the ringing animation plays first,
-    // then the agent connects and speaks from the beginning
-    const sid = window.location.pathname.match(/sessions\/([^/]+)/)?.[1];
-    if (sid) {
-      setTimeout(() => {
-        fetch('/api/dispatch-agent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: sid }),
-        })
-          .then((r) => console.log('[Agent] Dispatch:', r.status))
-          .catch((e) => console.warn('[Agent] Dispatch failed:', e));
-      }, 3000);
-    }
+    // then the agent connects and speaks from the beginning.
+    if (onDispatchAgent) setTimeout(() => onDispatchAgent(), 3000);
 
     // Synthesise a gentle chime ringtone (FaceTime-style)
     try {

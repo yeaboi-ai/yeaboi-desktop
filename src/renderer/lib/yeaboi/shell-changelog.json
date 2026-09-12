@@ -2,6 +2,30 @@
   "schema_version": 1,
   "entries": [
     {
+      "version": "6.0.0",
+      "date": "2026-09-12",
+      "headline": "Planning shifts to chat",
+      "summary": "Planning becomes a chat-driven room with panels for blueprint, context, video and recap; the home shows mode cards and recent work. The canvas diagram editor is retired.",
+      "highlights": [
+        {
+          "text": "Planning is a chat room with drawers for blueprint, context, video and recap",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Home now shows mode cards and your recent activity",
+          "areas": ["shell"]
+        },
+        {
+          "text": "The canvas diagram editor is retired",
+          "areas": ["shell"]
+        },
+        {
+          "text": "Set which sources and timeframes a plan reads with the context picker",
+          "areas": ["shell"]
+        }
+      ]
+    },
+    {
       "version": "5.0.0",
       "date": "2026-09-10",
       "headline": "One kind of thing: a session",
